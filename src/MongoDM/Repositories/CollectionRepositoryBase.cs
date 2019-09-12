@@ -158,7 +158,7 @@ namespace Digicando.MongoDM.Repositories
             var filter = Builders<TModel>.Filter.Eq(m => m.Id, id);
             var element = await Collection.Find(filter).SingleOrDefaultAsync(cancellationToken);
             if (element as TModel == default(TModel))
-                throw new KeyNotFoundException();
+                throw new KeyNotFoundException($"Can't find key {id}");
 
             return element as TModel;
         }
