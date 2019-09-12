@@ -80,7 +80,7 @@ namespace Digicando.MongoDM.Repositories
             var filter = Builders<GridFSFileInfo>.Filter.Eq("_id", ObjectId.Parse(id));
             var mongoFile = await GridFSBucket.Find(filter).SingleOrDefaultAsync(cancellationToken);
             if (mongoFile == null)
-                throw new KeyNotFoundException();
+                throw new KeyNotFoundException($"Can't find key {id}");
 
             var file = ProxyGenerator.CreateInstance<TModel>();
             ReflectionHelper.SetValue(file, m => m.Id, mongoFile.Id.ToString());
