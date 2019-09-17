@@ -93,7 +93,7 @@ namespace Digicando.MongoDM
             IsMigrating = false;
         }
 
-        public async Task SaveChangesAsync(CancellationToken cancellationToken = default)
+        public virtual async Task SaveChangesAsync(CancellationToken cancellationToken = default)
         {
             /*
              * Currently at MongoDB 4.0 sessions are only available for Replica Sets.
