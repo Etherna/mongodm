@@ -1,4 +1,5 @@
-﻿using Digicando.MongoDM.ProxyModels;
+﻿using Digicando.MongoDM.Models;
+using Digicando.MongoDM.ProxyModels;
 using Digicando.MongoDM.Repositories;
 using Digicando.MongoDM.Serialization;
 using Digicando.MongoDM.Utility;
@@ -56,6 +57,10 @@ namespace Digicando.MongoDM
         }
 
         // Public properties.
+        public IReadOnlyCollection<IEntityModel> ChangedModelsList =>
+            DBCache.LoadedModels.Values
+                .Where(model => (model as IAuditable).IsChanged)
+                .ToList();
         public IMongoClient Client { get; }
         public IMongoDatabase Database { get; }
         public IDBCache DBCache { get; }
@@ -126,9 +131,7 @@ namespace Digicando.MongoDM
             //}
 
             // Commit updated models replacement.
-            foreach (var model in DBCache.LoadedModels.Values
-                .Where(model => (model as IAuditable).IsChanged)
-                .ToList())
+            foreach (var model in ChangedModelsList)
             {
                 var modelType = model.GetType().BaseType;
                 if (ModelCollectionRepositoryMap.ContainsKey(modelType)) //can't replace if is a file
