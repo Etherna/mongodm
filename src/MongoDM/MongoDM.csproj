@@ -5,7 +5,7 @@
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
     <RootNamespace>Digicando.MongoDM</RootNamespace>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
-    <Version>0.18.0-dev</Version>
+    <Version>0.18.2</Version>
     <Authors>Digicando Srl</Authors>
     <Description>ODM framework for MongoDB</Description>
   </PropertyGroup>
