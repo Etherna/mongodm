@@ -60,7 +60,7 @@ namespace Digicando.MongoDM.Serialization
 
         // Methods.
         public string MemberPathToString() =>
-            string.Join('.', MemberPath.Select(member => member.MemberMap.MemberInfo.Name));
+            string.Join(".", MemberPath.Select(member => member.MemberMap.MemberInfo.Name));
 
         public string FullPathToString() => $"{RootModelType.Name}.{MemberPathToString()}";
 

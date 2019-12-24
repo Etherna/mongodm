@@ -32,7 +32,7 @@ namespace Digicando.MongoDM.Utility
             foreach (var dependencyGroup in dependencies.GroupBy(d => d.RootModelType))
             {
                 var idPaths = dependencyGroup
-                    .Select(dependency => string.Join('.', dependency.MemberPathToId.Select(member => member.MemberMap.MemberInfo.Name)))
+                    .Select(dependency => string.Join(".", dependency.MemberPathToId.Select(member => member.MemberMap.MemberInfo.Name)))
                     .Distinct();
 
                 // Enqueue call for background job.
