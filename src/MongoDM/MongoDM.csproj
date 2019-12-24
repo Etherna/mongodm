@@ -1,23 +1,23 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>netcoreapp2.2</TargetFramework>
+    <TargetFramework>netstandard2.0</TargetFramework>
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
     <RootNamespace>Digicando.MongoDM</RootNamespace>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
-    <Version>0.18.2</Version>
+    <Version>0.18.3</Version>
     <Authors>Digicando Srl</Authors>
     <Description>ODM framework for MongoDB</Description>
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="DomainHelper" Version="0.18.0-dev" />
-    <PackageReference Include="Hangfire.Mongo" Version="0.6.3" />
+    <PackageReference Include="DomainHelper" Version="0.18.1" />
+    <PackageReference Include="Hangfire.Mongo" Version="0.6.6" />
     <PackageReference Include="Microsoft.AspNetCore.Http.Abstractions" Version="2.2.0" />
     <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="2.2.0" />
-    <PackageReference Include="MongoDB.Driver" Version="2.9.1" />
-    <PackageReference Include="MongoDB.Driver.GridFS" Version="2.9.1" />
-    <PackageReference Include="morelinq" Version="3.2.0" />
+    <PackageReference Include="MongoDB.Driver" Version="2.10.0" />
+    <PackageReference Include="MongoDB.Driver.GridFS" Version="2.10.0" />
+    <PackageReference Include="morelinq" Version="3.3.1" />
   </ItemGroup>
 
 </Project>

@@ -23,6 +23,8 @@ namespace Digicando.MongoDM
             services.AddSingleton<IDBMaintainer, DBMaintainer>();
             services.AddSingleton<IDocumentSchemaRegister, DocumentSchemaRegister>();
             services.AddSingleton<IHangfireContextAccessor, HangfireContextAccessor>();
+            services.AddSingleton<ILocalContextAccessor, LocalContextAccessor>();
+            services.AddSingleton<ILocalContextFactory, LocalContextFactory>();
             services.AddSingleton<ISerializerModifierAccessor, SerializerModifierAccessor>();
 
             // Proxy generator.
