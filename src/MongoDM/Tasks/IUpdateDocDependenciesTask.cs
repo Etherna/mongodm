@@ -1,22 +1,14 @@
-﻿using Hangfire;
-using Hangfire.Server;
-using System;
+﻿using Digicando.MongoDM.Models;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 
 namespace Digicando.MongoDM.Tasks
 {
-    internal interface IUpdateDocDependenciesTask
+    public interface IUpdateDocDependenciesTask
     {
-        /// <summary>
-        /// Needed because https://github.com/sergeyzwezdin/Hangfire.Mongo/issues/165
-        /// </summary>
-        [Queue(Queues.DB_MAINTENANCE)]
-        Task Run_NOTGENERICPROXY_Async(
-            PerformContext performContext,
-            Type modelType,
-            Type keyType,
+        Task RunAsync<TModel, TKey>(
             IEnumerable<string> idPaths,
-            object modelId);
+            TKey modelId)
+            where TModel : class, IEntityModel<TKey>;
     }
 }

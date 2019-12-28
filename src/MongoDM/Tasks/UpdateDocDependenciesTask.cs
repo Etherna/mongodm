@@ -1,16 +1,13 @@
 ﻿using Digicando.MongoDM.Models;
 using Digicando.MongoDM.Repositories;
 using Digicando.MongoDM.Serialization.Modifiers;
-using Hangfire.Server;
 using MongoDB.Driver;
-using System;
 using System.Collections.Generic;
-using System.Reflection;
 using System.Threading.Tasks;
 
 namespace Digicando.MongoDM.Tasks
 {
-    class UpdateDocDependenciesTask : IUpdateDocDependenciesTask
+    public class UpdateDocDependenciesTask : IUpdateDocDependenciesTask
     {
         // Fields.
         private readonly IDBContextBase dbContext;
@@ -26,20 +23,7 @@ namespace Digicando.MongoDM.Tasks
         }
 
         // Methods.
-        public Task Run_NOTGENERICPROXY_Async(
-            PerformContext performContext,
-            Type modelType,
-            Type keyType,
-            IEnumerable<string> idPaths,
-            object modelId)
-        {
-            return typeof(UpdateDocDependenciesTask).GetMethod(nameof(RunAsync), BindingFlags.NonPublic | BindingFlags.Instance)
-                .MakeGenericMethod(modelType, keyType)
-                .Invoke(this, new object[] { idPaths, modelId }) as Task;
-        }
-
-        // Helpers.
-        private async Task RunAsync<TModel, TKey>(
+        public async Task RunAsync<TModel, TKey>(
             IEnumerable<string> idPaths,
             TKey modelId)
             where TModel : class, IEntityModel<TKey>
