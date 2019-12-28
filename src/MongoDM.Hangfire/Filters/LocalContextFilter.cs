@@ -8,7 +8,7 @@ namespace Digicando.MongoDM.HF.Filters
     {
         // Fields.
         private readonly IAsyncLocalContextAccessor localContextAccessor;
-        private readonly Dictionary<PerformContext, IAsyncLocalContext> contexts = new Dictionary<PerformContext, IAsyncLocalContext>();
+        private readonly Dictionary<string, IAsyncLocalContext> contexts = new Dictionary<string, IAsyncLocalContext>();
 
         // Constructors.
         public LocalContextFilter(IAsyncLocalContextAccessor localContextAccessor)
@@ -21,7 +21,7 @@ namespace Digicando.MongoDM.HF.Filters
         {
             lock (contexts)
             {
-                contexts.Add(filterContext, localContextAccessor.GetNewLocalContext());
+                contexts.Add(filterContext.BackgroundJob.Id, localContextAccessor.GetNewLocalContext());
             }
         }
 
@@ -29,8 +29,9 @@ namespace Digicando.MongoDM.HF.Filters
         {
             lock (contexts)
             {
-                var context = contexts[filterContext];
-                contexts.Remove(filterContext);
+                var jobId = filterContext.BackgroundJob.Id;
+                var context = contexts[jobId];
+                contexts.Remove(jobId);
                 context.Dispose();
             }
         }
