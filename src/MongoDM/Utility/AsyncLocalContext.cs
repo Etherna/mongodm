@@ -1,15 +1,14 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 
 namespace Digicando.MongoDM.Utility
 {
-    public class LocalContext : IDisposable
+    public class AsyncLocalContext : IAsyncLocalContext
     {
         // Fields.
-        private readonly ILocalContextAccessor localContextAccessor;
+        private readonly IAsyncLocalContextAccessor localContextAccessor;
 
         // Constructors.
-        internal LocalContext(ILocalContextAccessor localContextAccessor)
+        internal AsyncLocalContext(IAsyncLocalContextAccessor localContextAccessor)
         {
             this.localContextAccessor = localContextAccessor;
             localContextAccessor.OnCreated(this);

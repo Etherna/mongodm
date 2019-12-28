@@ -1,7 +1,6 @@
 ﻿using Digicando.MongoDM.ProxyModels;
 using Digicando.MongoDM.Serialization;
 using Digicando.MongoDM.Tasks;
-using Hangfire;
 using MongoDB.Driver;
 using System.Linq;
 
@@ -10,16 +9,16 @@ namespace Digicando.MongoDM.Utility
     public class DBMaintainer : IDBMaintainer
     {
         // Fields.
-        private readonly IBackgroundJobClient backgroundJobClient;
         private readonly IDocumentSchemaRegister documentSchemaRegister;
+        private readonly ITaskRunner taskRunner;
 
         // Constructors.
         public DBMaintainer(
-            IBackgroundJobClient backgroundJobClient,
-            IDocumentSchemaRegister documentSchemaRegister)
+            IDocumentSchemaRegister documentSchemaRegister,
+            ITaskRunner taskRunner)
         {
-            this.backgroundJobClient = backgroundJobClient;
             this.documentSchemaRegister = documentSchemaRegister;
+            this.taskRunner = taskRunner;
         }
 
         // Methods.
@@ -36,8 +35,7 @@ namespace Digicando.MongoDM.Utility
                     .Distinct();
 
                 // Enqueue call for background job.
-                backgroundJobClient.Enqueue<IUpdateDocDependenciesTask>(
-                    task => task.Run_NOTGENERICPROXY_Async(null, dependencyGroup.Key, typeof(TKey), idPaths, modelId));
+                taskRunner.RunUpdateDocDependenciesTask(dependencyGroup.Key, typeof(TKey), idPaths, modelId);
             }
         }
     }

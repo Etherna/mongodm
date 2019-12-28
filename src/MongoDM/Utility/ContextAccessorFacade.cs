@@ -9,18 +9,15 @@ namespace Digicando.MongoDM.Utility
     {
         // Fields.
         private readonly IHttpContextAccessor httpContextAccessor;
-        private readonly ILocalContextAccessor localContextAccessor;
-        private readonly IHangfireContextAccessor performContextAccessor;
+        private readonly IAsyncLocalContextAccessor localContextAccessor;
 
         // Constructors.
         public ContextAccessorFacade(
             IHttpContextAccessor httpContextAccessor,
-            ILocalContextAccessor localContextAccessor,
-            IHangfireContextAccessor performContextAccessor)
+            IAsyncLocalContextAccessor localContextAccessor)
         {
             this.httpContextAccessor = httpContextAccessor; // Provided by Asp.Net, available only on client call.
             this.localContextAccessor = localContextAccessor; // Optional context created by user on local async method stack.
-            this.performContextAccessor = performContextAccessor; // Provided by HangFire, available only during task execution.
         }
 
         // Proeprties.
@@ -32,8 +29,6 @@ namespace Digicando.MongoDM.Utility
                     return localContextAccessor.Context.Items.ToDictionary(pair => pair.Key as object, pair => pair.Value);
                 if (httpContextAccessor.HttpContext != null)
                     return httpContextAccessor.HttpContext.Items.ToDictionary(pair => pair.Key, pair => pair.Value);
-                if (performContextAccessor.PerformContext != null)
-                    return performContextAccessor.PerformContext.Items.ToDictionary(pair => pair.Key as object, pair => pair.Value);
                 throw new InvalidOperationException();
             }
         }
@@ -46,8 +41,6 @@ namespace Digicando.MongoDM.Utility
                     return localContextAccessor.Context.Items;
                 if (httpContextAccessor.HttpContext != null)
                     return httpContextAccessor.HttpContext.Items;
-                if (performContextAccessor.PerformContext != null)
-                    return performContextAccessor.PerformContext.Items;
                 throw new InvalidOperationException();
             }
         }
@@ -59,8 +52,6 @@ namespace Digicando.MongoDM.Utility
                 localContextAccessor.Context.Items.Add(key, value);
             else if (httpContextAccessor.HttpContext != null)
                 httpContextAccessor.HttpContext.Items.Add(key, value);
-            else if (performContextAccessor.PerformContext != null)
-                performContextAccessor.PerformContext.Items.Add(key, value);
             else
                 throw new InvalidOperationException();
         }
@@ -71,8 +62,6 @@ namespace Digicando.MongoDM.Utility
                 return localContextAccessor.Context.Items.Remove(key);
             else if (httpContextAccessor.HttpContext != null)
                 return httpContextAccessor.HttpContext.Items.Remove(key);
-            else if (performContextAccessor.PerformContext != null)
-                return performContextAccessor.PerformContext.Items.Remove(key);
             else
                 throw new InvalidOperationException();
         }

@@ -11,6 +11,8 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MongoDM", "src\MongoDM\Mong
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MongoDM.Tests", "test\MongoDM.Tests\MongoDM.Tests.csproj", "{82789357-2EC1-4159-B3F6-0F830ABAFF4C}"
 EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MongoDM.Hangfire", "src\MongoDM.Hangfire\MongoDM.Hangfire.csproj", "{10897D0D-4898-4A4D-8D1E-B2435E93D9A1}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -25,6 +27,10 @@ Global
 		{82789357-2EC1-4159-B3F6-0F830ABAFF4C}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{82789357-2EC1-4159-B3F6-0F830ABAFF4C}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{82789357-2EC1-4159-B3F6-0F830ABAFF4C}.Release|Any CPU.Build.0 = Release|Any CPU
+		{10897D0D-4898-4A4D-8D1E-B2435E93D9A1}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{10897D0D-4898-4A4D-8D1E-B2435E93D9A1}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{10897D0D-4898-4A4D-8D1E-B2435E93D9A1}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{10897D0D-4898-4A4D-8D1E-B2435E93D9A1}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -32,6 +38,7 @@ Global
 	GlobalSection(NestedProjects) = preSolution
 		{AA9CE7D3-169F-4725-970E-4CE900E91EDD} = {490DAED7-DAD8-459A-A20E-F57F2F6F619E}
 		{82789357-2EC1-4159-B3F6-0F830ABAFF4C} = {CF1ABDEA-794F-4474-858D-BCB61F367D72}
+		{10897D0D-4898-4A4D-8D1E-B2435E93D9A1} = {490DAED7-DAD8-459A-A20E-F57F2F6F619E}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {43A8089E-9445-4DE1-B509-F049E211B555}

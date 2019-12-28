@@ -3,28 +3,26 @@ using Digicando.MongoDM.Serialization;
 using Digicando.MongoDM.Serialization.Modifiers;
 using Digicando.MongoDM.Tasks;
 using Digicando.MongoDM.Utility;
-using Hangfire;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace Digicando.MongoDM
 {
     public static class ServiceCollectionExtensions
     {
-        public static void AddMongoDM<TDBContext, TDBContexImpl, TProxyGenerator>(this IServiceCollection services)
+        public static void AddMongoDM<TDBContext, TDBContexImpl, TProxyGenerator, TTaskRunner>(this IServiceCollection services)
             where TDBContext : class, IDBContextBase
             where TDBContexImpl : class, TDBContext
             where TProxyGenerator: class, IProxyGenerator
+            where TTaskRunner: class, ITaskRunner
         {
             services.AddSingleton<TDBContext, TDBContexImpl>();
             services.AddSingleton<IDBContextBase>(provider => provider.GetService<TDBContext>());
 
+            services.AddSingleton(AsyncLocalContextAccessor.Instance);
             services.AddSingleton<IContextAccessorFacade, ContextAccessorFacade>();
             services.AddSingleton<IDBCache, DBCache>();
             services.AddSingleton<IDBMaintainer, DBMaintainer>();
             services.AddSingleton<IDocumentSchemaRegister, DocumentSchemaRegister>();
-            services.AddSingleton<IHangfireContextAccessor, HangfireContextAccessor>();
-            services.AddSingleton<ILocalContextAccessor, LocalContextAccessor>();
-            services.AddSingleton<ILocalContextFactory, LocalContextFactory>();
             services.AddSingleton<ISerializerModifierAccessor, SerializerModifierAccessor>();
 
             // Proxy generator.
@@ -32,10 +30,8 @@ namespace Digicando.MongoDM
             services.AddSingleton<Castle.DynamicProxy.IProxyGenerator>(new Castle.DynamicProxy.ProxyGenerator());
 
             // Add tasks.
+            services.AddSingleton<ITaskRunner, TTaskRunner>();
             services.AddScoped<IUpdateDocDependenciesTask, UpdateDocDependenciesTask>();
-
-            // Add Hangfire filters.
-            GlobalJobFilters.Filters.Add(new HangfireContextAccessor());
         }
     }
 }
