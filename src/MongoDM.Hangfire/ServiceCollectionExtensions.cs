@@ -9,12 +9,12 @@ namespace Digicando.MongoDM.HF
 {
     public static class ServiceCollectionExtensions
     {
-        public static void AddMongoDMHangfire<TDBContext, TDBContexImpl, TProxyGenerator>(this IServiceCollection services)
-            where TDBContext : class, IDBContextBase
-            where TDBContexImpl : class, TDBContext
+        public static void AddMongoDMHangfire<TDbContext, TDbContextImpl, TProxyGenerator>(this IServiceCollection services)
+            where TDbContext : class, IDbContext
+            where TDbContextImpl : class, TDbContext
             where TProxyGenerator: class, IProxyGenerator
         {
-            services.AddMongoDM<TDBContext, TDBContexImpl, TProxyGenerator, TaskRunner>();
+            services.AddMongoDM<TDbContext, TDbContextImpl, TProxyGenerator, TaskRunner>();
 
             // Add Hangfire filters.
             GlobalJobFilters.Filters.Add(new LocalContextFilter(AsyncLocalContextAccessor.Instance));

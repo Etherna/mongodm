@@ -10,12 +10,12 @@ namespace Digicando.MongoDM.Tasks
     public class UpdateDocDependenciesTask : IUpdateDocDependenciesTask
     {
         // Fields.
-        private readonly IDBContextBase dbContext;
+        private readonly IDbContext dbContext;
         private readonly ISerializerModifierAccessor serializerModifierAccessor;
 
         // Constructors.
         public UpdateDocDependenciesTask(
-            IDBContextBase dbContext,
+            IDbContext dbContext,
             ISerializerModifierAccessor serializerModifierAccessor)
         {
             this.dbContext = dbContext;

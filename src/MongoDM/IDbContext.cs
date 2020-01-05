@@ -10,7 +10,7 @@ using System.Threading.Tasks;
 
 namespace Digicando.MongoDM
 {
-    public interface IDBContextBase
+    public interface IDbContext
     {
         // Properties.
         IMongoClient Client { get; }

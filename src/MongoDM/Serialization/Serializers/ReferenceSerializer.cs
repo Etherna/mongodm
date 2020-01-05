@@ -25,7 +25,7 @@ namespace Digicando.MongoDM.Serialization.Serializers
         private readonly ReaderWriterLockSlim configLockClassMaps = new ReaderWriterLockSlim(LockRecursionPolicy.SupportsRecursion);
         private readonly ReaderWriterLockSlim configLockSerializers = new ReaderWriterLockSlim(LockRecursionPolicy.SupportsRecursion);
         
-        private readonly IDBContextBase dbContext;
+        private readonly IDbContext dbContext;
         private readonly ISerializerModifierAccessor serializerModifierAccessor;
 
         private readonly IDictionary<Type, IBsonSerializer> registeredAdapters = new Dictionary<Type, IBsonSerializer>();
@@ -34,7 +34,7 @@ namespace Digicando.MongoDM.Serialization.Serializers
 
         // Constructors.
         public ReferenceSerializer(
-            IDBContextBase dbContext,
+            IDbContext dbContext,
             ISerializerModifierAccessor serializerModifierAccessor,
             bool useCascadeDelete)
         {

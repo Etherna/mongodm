@@ -25,7 +25,7 @@ namespace Digicando.MongoDM.Repositories
         // Constructors.
         public CollectionRepositoryBase(
             string collectionName,
-            IDBContextBase dbContext)
+            IDbContext dbContext)
             : base(dbContext)
         {
             Collection = dbContext.Database.GetCollection<TModel>(collectionName);
@@ -61,7 +61,7 @@ namespace Digicando.MongoDM.Repositories
             newIndexes.Add(
                 ("ver",
                  new CreateIndexModel<TModel>(
-                    Builders<TModel>.IndexKeys.Ascending(DBContextBase.DocumentVersionElementName),
+                    Builders<TModel>.IndexKeys.Ascending(DbContext.DocumentVersionElementName),
                     new CreateIndexOptions { Name = "ver" })));
 
             //referenced documents

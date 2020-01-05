@@ -23,7 +23,7 @@ namespace Digicando.MongoDM.Repositories
         // Constructors.
         public GridFSRepositoryBase(
             string bucketName,
-            IDBContextBase dbContext)
+            IDbContext dbContext)
             : base(dbContext)
         {
             var bucketOptions = new GridFSBucketOptions();

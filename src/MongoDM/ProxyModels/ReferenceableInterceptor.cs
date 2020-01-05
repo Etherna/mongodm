@@ -23,13 +23,13 @@ namespace Digicando.MongoDM.ProxyModels
         // Constructors.
         public ReferenceableInterceptor(
             IEnumerable<Type> additionalInterfaces,
-            IDBContextBase dBContext)
+            IDbContext dbContext)
             : base(additionalInterfaces)
         {
             if (typeof(TModel).GetInterfaces().Contains(typeof(IFileModel)))
-                repository = dBContext.ModelGridFSRepositoryMap[typeof(TModel)] as IRepository<TModel, TKey>;
+                repository = dbContext.ModelGridFSRepositoryMap[typeof(TModel)] as IRepository<TModel, TKey>;
             else
-                repository = dBContext.ModelCollectionRepositoryMap[typeof(TModel)] as IRepository<TModel, TKey>;
+                repository = dbContext.ModelCollectionRepositoryMap[typeof(TModel)] as IRepository<TModel, TKey>;
         }
 
         // Protected methods.

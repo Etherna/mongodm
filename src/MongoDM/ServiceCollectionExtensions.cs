@@ -9,14 +9,14 @@ namespace Digicando.MongoDM
 {
     public static class ServiceCollectionExtensions
     {
-        public static void AddMongoDM<TDBContext, TDBContexImpl, TProxyGenerator, TTaskRunner>(this IServiceCollection services)
-            where TDBContext : class, IDBContextBase
-            where TDBContexImpl : class, TDBContext
+        public static void AddMongoDM<TDbContext, TDbContextImpl, TProxyGenerator, TTaskRunner>(this IServiceCollection services)
+            where TDbContext : class, IDbContext
+            where TDbContextImpl : class, TDbContext
             where TProxyGenerator: class, IProxyGenerator
             where TTaskRunner: class, ITaskRunner
         {
-            services.AddSingleton<TDBContext, TDBContexImpl>();
-            services.AddSingleton<IDBContextBase>(provider => provider.GetService<TDBContext>());
+            services.AddSingleton<TDbContext, TDbContextImpl>();
+            services.AddSingleton<IDbContext>(provider => provider.GetService<TDbContext>());
 
             services.AddSingleton(AsyncLocalContextAccessor.Instance);
             services.AddSingleton<IContextAccessorFacade, ContextAccessorFacade>();

@@ -36,26 +36,26 @@ namespace Digicando.MongoDM.Migration
             var filterBuilder = Builders<TModel>.Filter;
             var filter = filterBuilder.Or(
                 // No version in document (very old).
-                filterBuilder.Exists(DBContextBase.DocumentVersionElementName, false),
+                filterBuilder.Exists(DbContext.DocumentVersionElementName, false),
 
                 // Version as string (doc.Version < "0.12.0").
                 //(can't query directly for string because https://docs.mongodb.com/v3.2/reference/operator/query/type/#arrays)
-                filterBuilder.Not(filterBuilder.Type(DBContextBase.DocumentVersionElementName, BsonType.Int32)),
+                filterBuilder.Not(filterBuilder.Type(DbContext.DocumentVersionElementName, BsonType.Int32)),
 
                 // Version is an array with values ("0.12.0" <= doc.Version).
                 //doc.Major < min.Major
-                filterBuilder.Lt($"{DBContextBase.DocumentVersionElementName}.0", MinimumDocumentVersion.MajorRelease),
+                filterBuilder.Lt($"{DbContext.DocumentVersionElementName}.0", MinimumDocumentVersion.MajorRelease),
 
                 //doc.Major == min.Major && doc.Minor < min.Minor
                 filterBuilder.And(
-                    filterBuilder.Eq($"{DBContextBase.DocumentVersionElementName}.0", MinimumDocumentVersion.MajorRelease),
-                    filterBuilder.Lt($"{DBContextBase.DocumentVersionElementName}.1", MinimumDocumentVersion.MinorRelease)),
+                    filterBuilder.Eq($"{DbContext.DocumentVersionElementName}.0", MinimumDocumentVersion.MajorRelease),
+                    filterBuilder.Lt($"{DbContext.DocumentVersionElementName}.1", MinimumDocumentVersion.MinorRelease)),
 
                 //doc.Major == min.Major && doc.Minor == min.Minor && doc.Patch < min.Patch
                 filterBuilder.And(
-                    filterBuilder.Eq($"{DBContextBase.DocumentVersionElementName}.0", MinimumDocumentVersion.MajorRelease),
-                    filterBuilder.Eq($"{DBContextBase.DocumentVersionElementName}.1", MinimumDocumentVersion.MinorRelease),
-                    filterBuilder.Lt($"{DBContextBase.DocumentVersionElementName}.2", MinimumDocumentVersion.PatchRelease)));
+                    filterBuilder.Eq($"{DbContext.DocumentVersionElementName}.0", MinimumDocumentVersion.MajorRelease),
+                    filterBuilder.Eq($"{DbContext.DocumentVersionElementName}.1", MinimumDocumentVersion.MinorRelease),
+                    filterBuilder.Lt($"{DbContext.DocumentVersionElementName}.2", MinimumDocumentVersion.PatchRelease)));
 
             // Replace documents.
             await collection.Find(filter, new FindOptions { NoCursorTimeout = true })

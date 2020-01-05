@@ -56,14 +56,14 @@ namespace Digicando.MongoDM
         }
 
         // Fields.
-        private readonly Mock<IDBContextBase> dbContextMock;
+        private readonly Mock<IDbContext> dbContextMock;
         private readonly DocumentVersion documentVersion = new DocumentVersion("1.0.0");
         private readonly Mock<ISerializerModifierAccessor> serializerModifierAccessorMock;
 
         // Constructor.
         public ExtendedClassMapSerializerTest()
         {
-            dbContextMock = new Mock<IDBContextBase>();
+            dbContextMock = new Mock<IDbContext>();
             dbContextMock.Setup(c => c.DocumentVersion)
                 .Returns(() => documentVersion);
             dbContextMock.Setup(c => c.DBCache.LoadedModels.ContainsKey(It.IsAny<object>()))

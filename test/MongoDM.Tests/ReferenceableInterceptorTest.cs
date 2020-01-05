@@ -14,7 +14,7 @@ namespace Digicando.MongoDM
     {
         private readonly ReferenceableInterceptor<FakeModel, string> interceptor;
         private readonly Mock<ICollectionRepository<FakeModel, string>> repositoryMock;
-        private readonly Mock<IDBContextBase> dbContextMock;
+        private readonly Mock<IDbContext> dbContextMock;
 
         private readonly Mock<Castle.DynamicProxy.IInvocation> getIsSummaryInvocationMock;
         private readonly Mock<Castle.DynamicProxy.IInvocation> getLoadedMembersInvocationMock;
@@ -23,7 +23,7 @@ namespace Digicando.MongoDM
         {
             repositoryMock = new Mock<ICollectionRepository<FakeModel, string>>();
 
-            dbContextMock = new Mock<IDBContextBase>();
+            dbContextMock = new Mock<IDbContext>();
             dbContextMock.Setup(r => r.ModelCollectionRepositoryMap[typeof(FakeModel)])
                 .Returns(() => repositoryMock.Object);
             

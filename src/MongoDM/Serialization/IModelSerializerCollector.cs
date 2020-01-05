@@ -3,6 +3,6 @@
     public interface IModelSerializerCollector
     {
         // Methods.
-        void Register(IDBContextBase dbContext);
+        void Register(IDbContext dbContext);
     }
 }

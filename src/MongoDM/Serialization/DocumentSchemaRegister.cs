@@ -23,7 +23,7 @@ namespace Digicando.MongoDM.Serialization
         private readonly Dictionary<Type, List<DocumentSchemaMemberMap>> modelEntityReferencesIdsMap =
             new Dictionary<Type, List<DocumentSchemaMemberMap>>();
 
-        private IDBContextBase dbContext;
+        private IDbContext dbContext;
         private readonly ISerializerModifierAccessor serializerModifierAccessor;
         private readonly List<DocumentSchema> schemas = new List<DocumentSchema>();
 
@@ -35,7 +35,7 @@ namespace Digicando.MongoDM.Serialization
         }
 
         //here for circular dependency injection with DBContext
-        public void Initialize(IDBContextBase dbContext)
+        public void Initialize(IDbContext dbContext)
         {
             if (this.dbContext != null)
                 throw new InvalidOperationException("Instance already initialized");

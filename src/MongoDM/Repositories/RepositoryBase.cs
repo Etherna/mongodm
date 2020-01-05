@@ -18,10 +18,10 @@ namespace Digicando.MongoDM.Repositories
         where TModel : class, IEntityModel<TKey>
     {
         // Fields.
-        private readonly IDBContextBase dbContext;
+        private readonly IDbContext dbContext;
 
         // Constructors.
-        public RepositoryBase(IDBContextBase dbContext)
+        public RepositoryBase(IDbContext dbContext)
         {
             this.dbContext = dbContext;
         }

@@ -25,7 +25,7 @@ namespace Digicando.MongoDM.Serialization
         /// Call before everything else. Used for avoid circular dependency injection with MongoStorage
         /// </summary>
         /// <param name="dbContext">Current instance of IDBContext</param>
-        void Initialize(IDBContextBase dbContext);
+        void Initialize(IDbContext dbContext);
 
         /// <summary>
         /// Register a new model schema

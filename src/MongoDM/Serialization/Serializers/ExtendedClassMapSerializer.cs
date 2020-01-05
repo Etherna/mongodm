@@ -35,14 +35,14 @@ namespace Digicando.MongoDM.Serialization.Serializers
 
         // Fields.
         private BsonClassMapSerializer<TModel> _serializer;
-        private readonly IDBContextBase dbContext;
+        private readonly IDbContext dbContext;
         private readonly ISerializerModifierAccessor serializerModifierAccessor;
         private readonly ICollection<ExtraElementCondition> extraElements;
         private readonly Func<TModel, DocumentVersion, Task<TModel>> fixDeserializedModelAsync;
 
         // Constructor.
         public ExtendedClassMapSerializer(
-            IDBContextBase dbContext,
+            IDbContext dbContext,
             ISerializerModifierAccessor serializerModifierAccessor,
             Func<TModel, DocumentVersion, Task<TModel>> fixDeserializedModelAsync = null)
         {
@@ -51,7 +51,7 @@ namespace Digicando.MongoDM.Serialization.Serializers
             extraElements = new List<ExtraElementCondition>();
             this.fixDeserializedModelAsync = fixDeserializedModelAsync ?? ((m, _) => Task.FromResult(m));
             documentVersionElement = new BsonElement(
-                DBContextBase.DocumentVersionElementName,
+                DbContext.DocumentVersionElementName,
                 DocumentVersionToBsonArray(dbContext.DocumentVersion));
         }
 
@@ -86,7 +86,7 @@ namespace Digicando.MongoDM.Serialization.Serializers
 
             // Get version.
             DocumentVersion documentVersion = null;
-            if (bsonDocument.TryGetElement(DBContextBase.DocumentVersionElementName, out BsonElement versionElement))
+            if (bsonDocument.TryGetElement(DbContext.DocumentVersionElementName, out BsonElement versionElement))
                 documentVersion = BsonValueToDocumentVersion(versionElement.Value);
 
             // Initialize localContext and bsonReader

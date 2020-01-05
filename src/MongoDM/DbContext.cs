@@ -14,13 +14,13 @@ using System.Threading.Tasks;
 
 namespace Digicando.MongoDM
 {
-    public abstract class DBContextBase : IDBContextBase
+    public abstract class DbContext : IDbContext
     {
         // Consts.
         public const string DocumentVersionElementName = "v";
 
         // Constructor.
-        public DBContextBase(
+        public DbContext(
             string connectionString,
             IDBCache dbCache,
             IDBMaintainer dbMaintainer,
