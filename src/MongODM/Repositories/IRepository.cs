@@ -1,0 +1,54 @@
+﻿using Digicando.MongODM.Migration;
+using Digicando.MongODM.Models;
+using Digicando.MongODM.Serialization;
+using System.Collections.Generic;
+using System.Threading;
+using System.Threading.Tasks;
+
+namespace Digicando.MongODM.Repositories
+{
+    public interface IRepository
+    {
+        MongoMigrationBase MigrationInfo { get; }
+
+        Task BuildIndexesAsync(IDocumentSchemaRegister schemaRegister);
+
+        Task DeleteAsync(
+            IEntityModel model,
+            CancellationToken cancellationToken = default);
+    }
+
+    public interface IRepository<TModel, TKey> : IRepository
+        where TModel : class, IEntityModel<TKey>
+    {
+        Task CreateAsync(
+            TModel model,
+            CancellationToken cancellationToken = default);
+
+        Task CreateAsync(
+            IEnumerable<TModel> models,
+            CancellationToken cancellationToken = default);
+
+        Task<TModel> FindOneAsync(
+            TKey id,
+            CancellationToken cancellationToken = default);
+
+        Task DeleteAsync(
+            TModel model,
+            CancellationToken cancellationToken = default);
+
+        Task DeleteAsync(
+            TKey id,
+            CancellationToken cancellationToken = default);
+
+        /// <summary>
+        /// Find a model and don't throw exception if Id is not found
+        /// </summary>
+        /// <param name="id">Model's Id</param>
+        /// <param name="cancellationToken">The cancellation token</param>
+        /// <returns>The model, null if it doesn't exist</returns>
+        Task<TModel> TryFindOneAsync(
+            TKey id,
+            CancellationToken cancellationToken = default);
+    }
+}
