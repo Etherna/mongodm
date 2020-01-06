@@ -21,23 +21,21 @@ namespace Digicando.MongODM
 
         // Constructor.
         public DbContext(
-            string connectionString,
             IDBCache dbCache,
             IDBMaintainer dbMaintainer,
-            string dbName,
             IDocumentSchemaRegister documentSchemaRegister,
-            DocumentVersion documentVersion,
+            DbContextOptions options,
             IProxyGenerator proxyGenerator)
         {
             DBCache = dbCache;
             DBMaintainer = dbMaintainer;
             DocumentSchemaRegister = documentSchemaRegister;
-            DocumentVersion = documentVersion;
+            DocumentVersion = options.DocumentVersion;
             ProxyGenerator = proxyGenerator;
 
             // Initialize MongoDB driver.
-            Client = new MongoClient(connectionString);
-            Database = Client.GetDatabase(dbName);
+            Client = new MongoClient(options.ConnectionString);
+            Database = Client.GetDatabase(options.DBName);
 
             // Init IoC dependencies.
             documentSchemaRegister.Initialize(this);
