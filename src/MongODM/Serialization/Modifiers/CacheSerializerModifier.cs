@@ -1,4 +1,4 @@
-﻿using Digicando.MongODM.Utility;
+﻿using Digicando.ExecContext;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -15,7 +15,7 @@ namespace Digicando.MongODM.Serialization.Modifiers
         private readonly ICollection<CacheSerializerModifier> requestes;
 
         // Constructors and dispose.
-        public CacheSerializerModifier(IContextAccessorFacade contextAccessor)
+        public CacheSerializerModifier(ICurrentContextAccessor contextAccessor)
         {
             if (contextAccessor == null)
                 throw new ArgumentNullException(nameof(contextAccessor));
@@ -39,7 +39,7 @@ namespace Digicando.MongODM.Serialization.Modifiers
         public bool NoCache { get; set; }
 
         // Static methods.
-        public static bool IsNoCacheEnabled(IReadOnlyDictionary<object, object> contextItems)
+        public static bool IsNoCacheEnabled(IReadOnlyDictionary<string, object> contextItems)
         {
             if (!contextItems.ContainsKey(ModifierKey))
                 return false;

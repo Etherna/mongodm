@@ -1,4 +1,5 @@
-﻿using Digicando.MongODM.Models;
+﻿using Digicando.ExecContext;
+using Digicando.MongODM.Models;
 using System;
 using System.Collections.Generic;
 
@@ -10,10 +11,10 @@ namespace Digicando.MongODM.Utility
         private const string CacheKey = "DBCache";
 
         // Fields.
-        private readonly IContextAccessorFacade contextAccessor;
+        private readonly ICurrentContextAccessor contextAccessor;
 
         // Constructors.
-        public DBCache(IContextAccessorFacade contextAccessor)
+        public DBCache(ICurrentContextAccessor contextAccessor)
         {
             this.contextAccessor = contextAccessor ?? throw new ArgumentNullException(nameof(contextAccessor));
         }

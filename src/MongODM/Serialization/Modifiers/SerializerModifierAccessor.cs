@@ -1,4 +1,4 @@
-﻿using Digicando.MongODM.Utility;
+﻿using Digicando.ExecContext;
 using System;
 
 namespace Digicando.MongODM.Serialization.Modifiers
@@ -6,31 +6,31 @@ namespace Digicando.MongODM.Serialization.Modifiers
     class SerializerModifierAccessor : ISerializerModifierAccessor
     {
         // Fields.
-        private readonly IContextAccessorFacade contextAccessorFacade;
+        private readonly ICurrentContextAccessor contextAccessorAccessor;
 
         // Constructors.
         public SerializerModifierAccessor(
-            IContextAccessorFacade contextAccessorFacade)
+            ICurrentContextAccessor contextAccessorAccessor)
         {
-            this.contextAccessorFacade = contextAccessorFacade;
+            this.contextAccessorAccessor = contextAccessorAccessor;
         }
 
         // Properties.
         public bool IsReadOnlyReferencedIdEnabled =>
-            ReferenceSerializerModifier.IsReadOnlyIdEnabled(contextAccessorFacade.Items);
+            ReferenceSerializerModifier.IsReadOnlyIdEnabled(contextAccessorAccessor.Items);
 
         public bool IsNoCacheEnabled => 
-            CacheSerializerModifier.IsNoCacheEnabled(contextAccessorFacade.Items);
+            CacheSerializerModifier.IsNoCacheEnabled(contextAccessorAccessor.Items);
 
         // Methods.
         public IDisposable EnableCacheSerializerModifier(bool noCache) =>
-            new CacheSerializerModifier(contextAccessorFacade)
+            new CacheSerializerModifier(contextAccessorAccessor)
             {
                 NoCache = noCache
             };
 
         public IDisposable EnableReferenceSerializerModifier(bool readOnlyId) =>
-            new ReferenceSerializerModifier(contextAccessorFacade)
+            new ReferenceSerializerModifier(contextAccessorAccessor)
             {
                 ReadOnlyId = readOnlyId
             };

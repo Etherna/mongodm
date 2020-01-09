@@ -5,13 +5,13 @@ using System.Collections.Generic;
 
 namespace Digicando.MongODM.HF.Tasks
 {
-    public class TaskRunner : ITaskRunner
+    public class HangfireTaskRunner : ITaskRunner
     {
         // Fields.
         private readonly IBackgroundJobClient backgroundJobClient;
 
         // Constructors.
-        public TaskRunner(
+        public HangfireTaskRunner(
             IBackgroundJobClient backgroundJobClient)
         {
             this.backgroundJobClient = backgroundJobClient;

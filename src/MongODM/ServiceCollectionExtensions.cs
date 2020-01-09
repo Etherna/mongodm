@@ -1,37 +1,35 @@
-﻿using Digicando.MongODM.ProxyModels;
+﻿using Castle.DynamicProxy;
 using Digicando.MongODM.Serialization;
 using Digicando.MongODM.Serialization.Modifiers;
 using Digicando.MongODM.Tasks;
 using Digicando.MongODM.Utility;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 
 namespace Digicando.MongODM
 {
     public static class ServiceCollectionExtensions
     {
-        public static void AddMongoDM<TDbContext, TDbContextImpl, TProxyGenerator, TTaskRunner>(this IServiceCollection services)
+        public static void UseMongoDbContext<TDbContext, TDbContextImpl>(
+            this IServiceCollection services,
+            DbContextOptions<TDbContextImpl> options)
             where TDbContext : class, IDbContext
-            where TDbContextImpl : class, TDbContext
-            where TProxyGenerator: class, IProxyGenerator
-            where TTaskRunner: class, ITaskRunner
+            where TDbContextImpl : DbContext, TDbContext
         {
             services.AddSingleton<TDbContext, TDbContextImpl>();
-            services.AddSingleton<IDbContext>(provider => provider.GetService<TDbContext>());
+            services.AddSingleton(options);
 
-            services.AddSingleton(AsyncLocalContextAccessor.Instance);
-            services.AddSingleton<IContextAccessorFacade, ContextAccessorFacade>();
-            services.AddSingleton<IDBCache, DBCache>();
-            services.AddSingleton<IDBMaintainer, DBMaintainer>();
-            services.AddSingleton<IDocumentSchemaRegister, DocumentSchemaRegister>();
-            services.AddSingleton<ISerializerModifierAccessor, SerializerModifierAccessor>();
+            // DbContext dependencies.
+            services.TryAddTransient<IDBCache, DBCache>();
+            services.TryAddTransient<IDBMaintainer, DBMaintainer>();
+            services.TryAddTransient<IDocumentSchemaRegister, DocumentSchemaRegister>();
+            services.TryAddTransient<ISerializerModifierAccessor, SerializerModifierAccessor>();
 
-            // Proxy generator.
-            services.AddSingleton<IProxyGenerator, TProxyGenerator>();
-            services.AddSingleton<Castle.DynamicProxy.IProxyGenerator>(new Castle.DynamicProxy.ProxyGenerator());
+            // Castle proxy generator.
+            services.TryAddSingleton<IProxyGenerator>(new ProxyGenerator());
 
-            // Add tasks.
-            services.AddSingleton<ITaskRunner, TTaskRunner>();
-            services.AddScoped<IUpdateDocDependenciesTask, UpdateDocDependenciesTask>();
+            // Tasks.
+            services.TryAddScoped<IUpdateDocDependenciesTask, UpdateDocDependenciesTask>();
         }
     }
 }

@@ -1,0 +1,13 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>netstandard2.0</TargetFramework>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <RootNamespace>Digicando.ExecContext</RootNamespace>
+    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+    <Version>0.19.0-dev</Version>
+    <Authors>Digicando Srl</Authors>
+    <Description>Execution context provider</Description>
+  </PropertyGroup>
+
+</Project>

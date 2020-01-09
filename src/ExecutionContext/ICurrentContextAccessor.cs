@@ -1,11 +1,11 @@
 ﻿using System.Collections.Generic;
 
-namespace Digicando.MongODM.Utility
+namespace Digicando.ExecContext
 {
-    public interface IContextAccessorFacade
+    public interface ICurrentContextAccessor
     {
         // Properties.
-        IReadOnlyDictionary<object, object> Items { get; }
+        IReadOnlyDictionary<string, object> Items { get; }
         object SyncRoot { get; }
 
         // Methods.
