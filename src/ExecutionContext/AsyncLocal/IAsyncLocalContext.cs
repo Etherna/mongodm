@@ -1,7 +1,11 @@
 ﻿namespace Digicando.ExecContext.AsyncLocal
 {
-    public interface IAsyncLocalContext : IContextAccessor
+    /// <summary>
+    ///     The <see cref="AsyncLocalContext"/> interface.
+    ///     Permits to create an async local context living with the method calling tree.
+    /// </summary>
+    public interface IAsyncLocalContext : IContext
     {
-        IAsyncLocalContextHandler StartNewAsyncLocalContext();
+        IAsyncLocalContextHandler InitAsyncLocalContext();
     }
 }

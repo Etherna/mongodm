@@ -21,7 +21,7 @@ namespace Digicando.MongODM.HF.Filters
         {
             lock (contextHandlers)
             {
-                contextHandlers.Add(filterContext.BackgroundJob.Id, asyncLocalContext.StartNewAsyncLocalContext());
+                contextHandlers.Add(filterContext.BackgroundJob.Id, asyncLocalContext.InitAsyncLocalContext());
             }
         }
 

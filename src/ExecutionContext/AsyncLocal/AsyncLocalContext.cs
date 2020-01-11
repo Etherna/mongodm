@@ -4,6 +4,18 @@ using System.Threading;
 
 namespace Digicando.ExecContext.AsyncLocal
 {
+    /// <summary>
+    ///     Async local context implementation. This can be used on a single or multiple instances.
+    ///     The <see cref="AsyncLocal{T}"/> container permits to have an Item instance inside this
+    ///     method calling tree.
+    /// </summary>
+    /// <remarks>
+    ///     <para>
+    ///         Before try to use an async local context, call the method <see cref="InitAsyncLocalContext"/>
+    ///         for initialize the <see cref="AsyncLocal{T}"/> container, and receive a context handler.
+    ///         After have used, dispose the handler for destroy the current context dictionary.
+    ///     </para>
+    /// </remarks>
     public class AsyncLocalContext : IAsyncLocalContext, IHandledAsyncLocalContext
     {
         // Fields.
@@ -13,7 +25,7 @@ namespace Digicando.ExecContext.AsyncLocal
         public IDictionary<string, object> Items => asyncLocalContext.Value;
 
         // Methods.
-        public IAsyncLocalContextHandler StartNewAsyncLocalContext() => new AsyncLocalContextHandler(this);
+        public IAsyncLocalContextHandler InitAsyncLocalContext() => new AsyncLocalContextHandler(this);
 
         public void OnCreated(IAsyncLocalContextHandler context)
         {

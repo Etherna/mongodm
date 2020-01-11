@@ -32,7 +32,7 @@ namespace Digicando.MongODM
             DBMaintainer = dbMaintainer;
             DocumentSchemaRegister = documentSchemaRegister;
             DocumentVersion = options.DocumentVersion;
-            ExecContextAccessor = new CurrentContextAccessor(options.ExecContextAccessors);
+            ExecContextAccessor = new ContextSelector(options.ExecContextAccessors);
             ProxyGenerator = proxyGenerator;
 
             // Initialize MongoDB driver.
@@ -67,7 +67,7 @@ namespace Digicando.MongODM
         public IDBMaintainer DBMaintainer { get; }
         public IDocumentSchemaRegister DocumentSchemaRegister { get; }
         public DocumentVersion DocumentVersion { get; }
-        public ICurrentContextAccessor ExecContextAccessor { get; }
+        public IContext ExecContextAccessor { get; }
         public bool IsMigrating { get; private set; }
         public abstract IReadOnlyDictionary<Type, ICollectionRepository> ModelCollectionRepositoryMap { get; }
         public abstract IReadOnlyDictionary<Type, IGridFSRepository> ModelGridFSRepositoryMap { get; }

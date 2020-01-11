@@ -13,7 +13,7 @@ namespace Digicando.MongODM
             string connectionString,
             string dbName,
             DocumentVersion documentVersion,
-            IEnumerable<IContextAccessor> execContextAccessors,
+            IEnumerable<IContext> execContextAccessors,
             IProxyGenerator proxyGenerator,
             ITaskRunner taskRunner)
         {
@@ -28,7 +28,7 @@ namespace Digicando.MongODM
         public string ConnectionString { get; }
         public string DBName { get; }
         public DocumentVersion DocumentVersion { get; }
-        public IEnumerable<IContextAccessor> ExecContextAccessors { get; }
+        public IEnumerable<IContext> ExecContextAccessors { get; }
         public IProxyGenerator ProxyGenerator { get; }
         public ITaskRunner TaskRunner { get; }
     }
@@ -40,7 +40,7 @@ namespace Digicando.MongODM
             string connectionString,
             string dbName,
             DocumentVersion documentVersion,
-            IEnumerable<IContextAccessor> execContextAccessors,
+            IEnumerable<IContext> execContextAccessors,
             IProxyGenerator proxyGenerator,
             ITaskRunner taskRunner)
             : base(connectionString, dbName, documentVersion, execContextAccessors, proxyGenerator, taskRunner)
