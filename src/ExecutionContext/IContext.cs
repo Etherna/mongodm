@@ -8,6 +8,9 @@ namespace Digicando.ExecContext
     /// </summary>
     public interface IContext
     {
+        /// <summary>
+        /// The context dictionary.
+        /// </summary>
         IDictionary<string, object> Items { get; }
     }
 }

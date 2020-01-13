@@ -4,7 +4,7 @@
     ///     The handler for an <see cref="AsyncLocalContext"/> initialization.
     ///     Dispose this for release the context.
     /// </summary>
-    public class AsyncLocalContextHandler : IAsyncLocalContextHandler
+    public sealed class AsyncLocalContextHandler : IAsyncLocalContextHandler
     {
         // Fields.
         private readonly IHandledAsyncLocalContext handledContext;
