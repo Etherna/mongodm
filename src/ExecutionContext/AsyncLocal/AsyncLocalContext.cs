@@ -23,14 +23,14 @@ namespace Digicando.ExecContext.AsyncLocal
         public IDictionary<string, object> Items => asyncLocalContext.Value;
 
         // Methods.
-        public IAsyncLocalContextHandler InitAsyncLocalContext() => new AsyncLocalContextHandler(this);
-
-        public void OnCreated(IAsyncLocalContextHandler context)
+        public IAsyncLocalContextHandler InitAsyncLocalContext()
         {
             if (asyncLocalContext.Value != null)
                 throw new InvalidOperationException("Only one context at time is supported");
 
             asyncLocalContext.Value = new Dictionary<string, object>();
+
+            return new AsyncLocalContextHandler(this);
         }
 
         public void OnDisposed(IAsyncLocalContextHandler context) =>

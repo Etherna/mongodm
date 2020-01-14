@@ -6,8 +6,6 @@
     /// </summary>
     internal interface IHandledAsyncLocalContext
     {
-        void OnCreated(IAsyncLocalContextHandler context);
-
         void OnDisposed(IAsyncLocalContextHandler context);
     }
 }

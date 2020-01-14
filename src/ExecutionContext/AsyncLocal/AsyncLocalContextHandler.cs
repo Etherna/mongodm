@@ -6,18 +6,16 @@
     /// </summary>
     public sealed class AsyncLocalContextHandler : IAsyncLocalContextHandler
     {
-        // Fields.
-        private readonly IHandledAsyncLocalContext handledContext;
-
         // Constructors.
         internal AsyncLocalContextHandler(IHandledAsyncLocalContext handledContext)
         {
-            this.handledContext = handledContext;
-            handledContext.OnCreated(this);
+            HandledContext = handledContext;
         }
 
+        // Properties.
+        internal IHandledAsyncLocalContext HandledContext { get; }
+
         // Methods.
-        public void Dispose() =>
-            handledContext.OnDisposed(this);
+        public void Dispose() => HandledContext.OnDisposed(this);
     }
 }
