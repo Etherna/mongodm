@@ -11,10 +11,10 @@ namespace Digicando.MongODM.Utility
         private const string CacheKey = "DBCache";
 
         // Fields.
-        private readonly IContext context;
+        private readonly IExecutionContext context;
 
         // Constructors.
-        public DBCache(IContext context)
+        public DBCache(IExecutionContext context)
         {
             this.context = context ?? throw new ArgumentNullException(nameof(context));
         }

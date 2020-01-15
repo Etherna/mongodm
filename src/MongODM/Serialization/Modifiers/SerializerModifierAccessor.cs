@@ -6,11 +6,11 @@ namespace Digicando.MongODM.Serialization.Modifiers
     class SerializerModifierAccessor : ISerializerModifierAccessor
     {
         // Fields.
-        private readonly IContext context;
+        private readonly IExecutionContext context;
 
         // Constructors.
         public SerializerModifierAccessor(
-            IContext context)
+            IExecutionContext context)
         {
             this.context = context;
         }

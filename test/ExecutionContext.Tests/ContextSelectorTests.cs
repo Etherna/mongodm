@@ -24,8 +24,8 @@ namespace Digicando.ExecContext
             string expectedResult)
         {
             // Setup.
-            Mock<IContext> context0 = new Mock<IContext>();
-            Mock<IContext> context1 = new Mock<IContext>();
+            Mock<IExecutionContext> context0 = new Mock<IExecutionContext>();
+            Mock<IExecutionContext> context1 = new Mock<IExecutionContext>();
             context0.SetupGet(c => c.Items)
                 .Returns(enableContext1 ? new Dictionary<string, object> { { "val", "0" } } : null);
             context1.SetupGet(c => c.Items)

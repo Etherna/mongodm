@@ -15,7 +15,7 @@ namespace Digicando.MongODM.Serialization.Modifiers
         private readonly ICollection<ReferenceSerializerModifier> requestes;
 
         // Constructors and dispose.
-        public ReferenceSerializerModifier(IContext context)
+        public ReferenceSerializerModifier(IExecutionContext context)
         {
             if (context == null)
                 throw new ArgumentNullException(nameof(context));
@@ -39,7 +39,7 @@ namespace Digicando.MongODM.Serialization.Modifiers
         public bool ReadOnlyId { get; set; }
 
         // Static methods.
-        public static bool IsReadOnlyIdEnabled(IContext context)
+        public static bool IsReadOnlyIdEnabled(IExecutionContext context)
         {
             if (!context.Items.ContainsKey(ModifierKey))
                 return false;

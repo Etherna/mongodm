@@ -1,5 +1,4 @@
-﻿using Castle.DynamicProxy;
-using Digicando.MongODM.Serialization;
+﻿using Digicando.MongODM.Serialization;
 using Digicando.MongODM.Serialization.Modifiers;
 using Digicando.MongODM.Tasks;
 using Digicando.MongODM.Utility;
@@ -10,26 +9,20 @@ namespace Digicando.MongODM
 {
     public static class ServiceCollectionExtensions
     {
-        public static void UseMongoDbContext<TDbContext, TDbContextImpl>(
-            this IServiceCollection services,
-            DbContextOptions<TDbContextImpl> options)
-            where TDbContext : class, IDbContext
-            where TDbContextImpl : DbContext, TDbContext
+        public static void UseMongODM(this IServiceCollection services)
         {
-            services.AddSingleton<TDbContext, TDbContextImpl>();
-            services.AddSingleton(options);
-
-            // DbContext dependencies.
+            // DbContext internal.
+            //dependencies
             services.TryAddTransient<IDBCache, DBCache>();
             services.TryAddTransient<IDBMaintainer, DBMaintainer>();
             services.TryAddTransient<IDocumentSchemaRegister, DocumentSchemaRegister>();
             services.TryAddTransient<ISerializerModifierAccessor, SerializerModifierAccessor>();
 
-            // Castle proxy generator.
-            services.TryAddSingleton<IProxyGenerator>(new ProxyGenerator());
+            //tasks
+            services.TryAddTransient<IUpdateDocDependenciesTask, UpdateDocDependenciesTask>();
 
-            // Tasks.
-            services.TryAddScoped<IUpdateDocDependenciesTask, UpdateDocDependenciesTask>();
+            //castle proxy generator.
+            services.TryAddSingleton<Castle.DynamicProxy.IProxyGenerator>(new Castle.DynamicProxy.ProxyGenerator());
         }
     }
 }
