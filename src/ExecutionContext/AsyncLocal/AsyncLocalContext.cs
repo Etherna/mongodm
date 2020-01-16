@@ -17,10 +17,10 @@ namespace Digicando.ExecContext.AsyncLocal
     public class AsyncLocalContext : IAsyncLocalContext, IHandledAsyncLocalContext
     {
         // Fields.
-        private static readonly AsyncLocal<IDictionary<string, object>> asyncLocalContext = new AsyncLocal<IDictionary<string, object>>();
+        private static readonly AsyncLocal<IDictionary<object, object>> asyncLocalContext = new AsyncLocal<IDictionary<object, object>>();
 
         // Properties.
-        public IDictionary<string, object> Items => asyncLocalContext.Value;
+        public IDictionary<object, object> Items => asyncLocalContext.Value;
 
         // Methods.
         public IAsyncLocalContextHandler InitAsyncLocalContext()
@@ -28,7 +28,7 @@ namespace Digicando.ExecContext.AsyncLocal
             if (asyncLocalContext.Value != null)
                 throw new InvalidOperationException("Only one context at time is supported");
 
-            asyncLocalContext.Value = new Dictionary<string, object>();
+            asyncLocalContext.Value = new Dictionary<object, object>();
 
             return new AsyncLocalContextHandler(this);
         }

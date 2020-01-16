@@ -14,19 +14,19 @@ namespace Digicando.ExecContext
     ///     The simplest way to perform this, is to return the first not null available dictionary
     ///     on subscribed contexts.
     /// </remarks>
-    public class ContextSelector : IExecutionContext
+    public class ExecutionContextSelector : IExecutionContext
     {
         // Fields.
         private readonly IEnumerable<IExecutionContext> contexts;
 
         // Constructors.
-        public ContextSelector(IEnumerable<IExecutionContext> contexts)
+        public ExecutionContextSelector(IEnumerable<IExecutionContext> contexts)
         {
             this.contexts = contexts ?? throw new ArgumentNullException(nameof(contexts));
         }
 
         // Proeprties.
-        public IDictionary<string, object> Items
+        public IDictionary<object, object> Items
         {
             get
             {
