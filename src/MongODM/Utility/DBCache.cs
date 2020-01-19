@@ -11,12 +11,12 @@ namespace Digicando.MongODM.Utility
         private const string CacheKey = "DBCache";
 
         // Fields.
-        private readonly IExecutionContext context;
+        private readonly IExecutionContext executionContext;
 
         // Constructors.
-        public DBCache(IExecutionContext context)
+        public DBCache(IExecutionContext executionContext)
         {
-            this.context = context ?? throw new ArgumentNullException(nameof(context));
+            this.executionContext = executionContext ?? throw new ArgumentNullException(nameof(executionContext));
         }
 
         // Properties.
@@ -24,7 +24,7 @@ namespace Digicando.MongODM.Utility
         {
             get
             {
-                lock (context.Items)
+                lock (executionContext.Items)
                     return GetScopedCache();
             }
         }
@@ -32,7 +32,7 @@ namespace Digicando.MongODM.Utility
         // Methods.
         public void ClearCache()
         {
-            lock (context.Items)
+            lock (executionContext.Items)
                 GetScopedCache().Clear();
         }
 
@@ -44,23 +44,23 @@ namespace Digicando.MongODM.Utility
             if (model == null)
                 throw new ArgumentNullException(nameof(model));
 
-            lock (context.Items)
+            lock (executionContext.Items)
                 GetScopedCache().Add(id, model);
         }
 
         public void RemoveModel(object id)
         {
-            lock (context.Items)
+            lock (executionContext.Items)
                 GetScopedCache().Remove(id);
         }
 
         // Helpers.
         private Dictionary<object, IEntityModel> GetScopedCache()
         {
-            if (!context.Items.ContainsKey(CacheKey))
-                context.Items.Add(CacheKey, new Dictionary<object, IEntityModel>());
+            if (!executionContext.Items.ContainsKey(CacheKey))
+                executionContext.Items.Add(CacheKey, new Dictionary<object, IEntityModel>());
 
-            return context.Items[CacheKey] as Dictionary<object, IEntityModel>;
+            return executionContext.Items[CacheKey] as Dictionary<object, IEntityModel>;
         }
     }
 }

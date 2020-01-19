@@ -1,7 +1,9 @@
 ﻿using Digicando.MongODM.Models;
 using Digicando.MongODM.Repositories;
 using Digicando.MongODM.Serialization.Modifiers;
+using Microsoft.Extensions.DependencyInjection;
 using MongoDB.Driver;
+using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 
@@ -10,24 +12,27 @@ namespace Digicando.MongODM.Tasks
     public class UpdateDocDependenciesTask : IUpdateDocDependenciesTask
     {
         // Fields.
-        private readonly IDbContext dbContext;
         private readonly ISerializerModifierAccessor serializerModifierAccessor;
+        private readonly IServiceProvider serviceProvider;
 
         // Constructors.
         public UpdateDocDependenciesTask(
-            IDbContext dbContext,
-            ISerializerModifierAccessor serializerModifierAccessor)
+            ISerializerModifierAccessor serializerModifierAccessor,
+            IServiceProvider serviceProvider)
         {
-            this.dbContext = dbContext;
             this.serializerModifierAccessor = serializerModifierAccessor;
+            this.serviceProvider = serviceProvider;
         }
 
         // Methods.
-        public async Task RunAsync<TModel, TKey>(
+        public async Task RunAsync<TDbContext, TModel, TKey>(
             IEnumerable<string> idPaths,
             TKey modelId)
             where TModel : class, IEntityModel<TKey>
+            where TDbContext : class, IDbContext
         {
+            var dbContext = serviceProvider.GetService<TDbContext>();
+
             // Get repository.
             if (!dbContext.ModelCollectionRepositoryMap.ContainsKey(typeof(TModel)))
                 return;

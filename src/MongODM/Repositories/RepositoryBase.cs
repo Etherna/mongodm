@@ -30,7 +30,7 @@ namespace Digicando.MongODM.Repositories
         public virtual MongoMigrationBase MigrationInfo { get; }
 
         // Public methods.
-        public abstract Task BuildIndexesAsync(IDocumentSchemaRegister schemaRegister);
+        public abstract Task BuildIndexesAsync(IDocumentSchemaRegister schemaRegister, CancellationToken cancellationToken = default);
 
         public virtual async Task CreateAsync(IEnumerable<TModel> models, CancellationToken cancellationToken = default)
         {

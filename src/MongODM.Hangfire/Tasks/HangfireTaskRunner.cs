@@ -18,8 +18,8 @@ namespace Digicando.MongODM.HF.Tasks
         }
 
         // Methods.
-        public void RunUpdateDocDependenciesTask(Type modelType, Type keyType, IEnumerable<string> idPaths, object modelId) =>
+        public void RunUpdateDocDependenciesTask(Type dbContextType, Type modelType, Type keyType, IEnumerable<string> idPaths, object modelId) =>
             backgroundJobClient.Enqueue<UpdateDocDependenciesTaskFacade>(
-                task => task.RunAsync(modelType, keyType, idPaths, modelId));
+                task => task.RunAsync(dbContextType, modelType, keyType, idPaths, modelId));
     }
 }

@@ -11,7 +11,9 @@ namespace Digicando.MongODM.Repositories
     {
         MongoMigrationBase MigrationInfo { get; }
 
-        Task BuildIndexesAsync(IDocumentSchemaRegister schemaRegister);
+        Task BuildIndexesAsync(
+            IDocumentSchemaRegister schemaRegister,
+            CancellationToken cancellationToken = default);
 
         Task DeleteAsync(
             IEntityModel model,

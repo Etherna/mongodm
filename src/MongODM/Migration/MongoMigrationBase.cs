@@ -1,4 +1,5 @@
-﻿using System.Threading.Tasks;
+﻿using System.Threading;
+using System.Threading.Tasks;
 
 namespace Digicando.MongODM.Migration
 {
@@ -11,6 +12,6 @@ namespace Digicando.MongODM.Migration
 
         public int PriorityIndex { get; }
 
-        public abstract Task MigrateAsync();
+        public abstract Task MigrateAsync(CancellationToken cancellationToken = default);
     }
 }

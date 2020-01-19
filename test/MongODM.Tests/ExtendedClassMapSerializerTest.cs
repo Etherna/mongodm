@@ -4,6 +4,7 @@ using Digicando.MongODM.Models;
 using Digicando.MongODM.Serialization;
 using Digicando.MongODM.Serialization.Modifiers;
 using Digicando.MongODM.Serialization.Serializers;
+using Digicando.MongODM.Utility;
 using MongoDB.Bson;
 using MongoDB.Bson.IO;
 using MongoDB.Bson.Serialization;
@@ -56,17 +57,15 @@ namespace Digicando.MongODM
         }
 
         // Fields.
-        private readonly Mock<IDbContext> dbContextMock;
+        private readonly Mock<IDBCache> dbCacheMock;
         private readonly DocumentVersion documentVersion = new DocumentVersion("1.0.0");
         private readonly Mock<ISerializerModifierAccessor> serializerModifierAccessorMock;
 
         // Constructor.
         public ExtendedClassMapSerializerTest()
         {
-            dbContextMock = new Mock<IDbContext>();
-            dbContextMock.Setup(c => c.DocumentVersion)
-                .Returns(() => documentVersion);
-            dbContextMock.Setup(c => c.DBCache.LoadedModels.ContainsKey(It.IsAny<object>()))
+            dbCacheMock = new Mock<IDBCache>();
+            dbCacheMock.Setup(c => c.LoadedModels.ContainsKey(It.IsAny<object>()))
                 .Returns(() => false);
 
             serializerModifierAccessorMock = new Mock<ISerializerModifierAccessor>();
@@ -137,7 +136,8 @@ namespace Digicando.MongODM
             // Setup
             var bsonReader = new BsonDocumentReader(test.Document);
             var serializer = new ExtendedClassMapSerializer<FakeModel>(
-                dbContextMock.Object,
+                dbCacheMock.Object,
+                documentVersion,
                 serializerModifierAccessorMock.Object,
                 (m, _) =>
                 {
@@ -166,7 +166,8 @@ namespace Digicando.MongODM
             var model = new FakeModel { Id = "idVal" };
             var comparisonSerializer = CreateBsonClassMapSerializer();
             var serializer = new ExtendedClassMapSerializer<FakeModel>(
-                dbContextMock.Object,
+                dbCacheMock.Object,
+                documentVersion,
                 serializerModifierAccessorMock.Object);
 
             // Action
@@ -196,7 +197,8 @@ namespace Digicando.MongODM
             var memberName = nameof(FakeModel.StringProp);
             var comparisonSerializer = CreateBsonClassMapSerializer();
             var serializer = new ExtendedClassMapSerializer<FakeModel>(
-                dbContextMock.Object,
+                dbCacheMock.Object,
+                documentVersion,
                 serializerModifierAccessorMock.Object);
 
             // Action
@@ -354,7 +356,8 @@ namespace Digicando.MongODM
         {
             // Setup
             var serializer = new ExtendedClassMapSerializer<FakeModel>(
-                dbContextMock.Object,
+                dbCacheMock.Object,
+                documentVersion,
                 serializerModifierAccessorMock.Object)
                 .AddExtraElement(new BsonElement("ExtraElement", new BsonString("extraValue")), test.Condition);
 
@@ -378,7 +381,8 @@ namespace Digicando.MongODM
             var model = new FakeModel();
             var comparisonSerializer = CreateBsonClassMapSerializer();
             var serializer = new ExtendedClassMapSerializer<FakeModel>(
-                dbContextMock.Object,
+                dbCacheMock.Object,
+                documentVersion,
                 serializerModifierAccessorMock.Object);
 
             // Action

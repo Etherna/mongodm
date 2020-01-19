@@ -39,7 +39,7 @@ namespace Digicando.MongODM.Repositories
             new (IndexKeysDefinition<TModel> keys, CreateIndexOptions<TModel> options)[0];
 
         // Public methods.
-        public override async Task BuildIndexesAsync(IDocumentSchemaRegister schemaRegister)
+        public override async Task BuildIndexesAsync(IDocumentSchemaRegister schemaRegister, CancellationToken cancellationToken = default)
         {
             var newIndexes = new List<(string name, CreateIndexModel<TModel> createIndex)>();
 
@@ -83,7 +83,7 @@ namespace Digicando.MongODM.Repositories
 
             // Get current indexes.
             var currentIndexes = new List<BsonDocument>();
-            using (var indexList = await Collection.Indexes.ListAsync())
+            using (var indexList = await Collection.Indexes.ListAsync(cancellationToken))
                 while (indexList.MoveNext())
                     currentIndexes.AddRange(indexList.Current);
 
@@ -94,11 +94,11 @@ namespace Digicando.MongODM.Repositories
                                      where !newIndexes.Any(newIndex => newIndex.name == indexName)
                                      select index)
             {
-                await Collection.Indexes.DropOneAsync(oldIndex.GetElement("name").Value.ToString());
+                await Collection.Indexes.DropOneAsync(oldIndex.GetElement("name").Value.ToString(), cancellationToken);
             }
 
             // Build new indexes.
-            await Collection.Indexes.CreateManyAsync(newIndexes.Select(i => i.createIndex));
+            await Collection.Indexes.CreateManyAsync(newIndexes.Select(i => i.createIndex), cancellationToken);
         }
 
         public virtual Task<IAsyncCursor<TProjection>> FindAsync<TProjection>(

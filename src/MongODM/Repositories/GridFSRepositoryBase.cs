@@ -41,7 +41,7 @@ namespace Digicando.MongODM.Repositories
         protected IProxyGenerator ProxyGenerator { get; }
 
         // Methods.
-        public override Task BuildIndexesAsync(IDocumentSchemaRegister schemaRegister) => Task.CompletedTask;
+        public override Task BuildIndexesAsync(IDocumentSchemaRegister schemaRegister, CancellationToken cancellationToken = default) => Task.CompletedTask;
 
         public virtual Task<byte[]> DownloadAsBytesAsync(string id, CancellationToken cancellationToken = default) =>
             GridFSBucket.DownloadAsBytesAsync(ObjectId.Parse(id), null, cancellationToken);

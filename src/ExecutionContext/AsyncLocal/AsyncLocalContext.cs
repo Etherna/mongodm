@@ -22,6 +22,9 @@ namespace Digicando.ExecContext.AsyncLocal
         // Properties.
         public IDictionary<object, object> Items => asyncLocalContext.Value;
 
+        // Static properties.
+        public static IAsyncLocalContext Instance { get; } = new AsyncLocalContext();
+
         // Methods.
         public IAsyncLocalContextHandler InitAsyncLocalContext()
         {

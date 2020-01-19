@@ -28,7 +28,7 @@ namespace Digicando.MongODM
                     executionContexts = new IExecutionContext[] //default
                     {
                         new HttpContextExecutionContext(serviceProvider.GetService<IHttpContextAccessor>()),
-                        new AsyncLocalContext()
+                        AsyncLocalContext.Instance
                     };
 
                 return executionContexts.Count() == 1 ?
@@ -40,10 +40,15 @@ namespace Digicando.MongODM
 
             // DbContext internal.
             //dependencies
+            /*****
+             * Transient dependencies have to be injected only into DbContext instance,
+             * and passed to other with Initialize() method. This because otherwise inside
+             * the same dbContext different components could have different instances of the same component.
+             */
             services.TryAddTransient<IDBCache, DBCache>();
             services.TryAddTransient<IDBMaintainer, DBMaintainer>();
             services.TryAddTransient<IDocumentSchemaRegister, DocumentSchemaRegister>();
-            services.TryAddTransient<ISerializerModifierAccessor, SerializerModifierAccessor>();
+            services.TryAddSingleton<ISerializerModifierAccessor, SerializerModifierAccessor>();
 
             //tasks
             services.TryAddTransient<IUpdateDocDependenciesTask, UpdateDocDependenciesTask>();

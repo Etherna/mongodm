@@ -16,6 +16,7 @@ namespace Digicando.MongODM.Serialization
     class DocumentSchemaRegister : IDocumentSchemaRegister
     {
         // Fields.
+        private readonly ReaderWriterLockSlim configLock = new ReaderWriterLockSlim(LockRecursionPolicy.SupportsRecursion);
         private readonly Dictionary<MemberInfo, List<DocumentSchemaMemberMap>> memberDependenciesMap =
             new Dictionary<MemberInfo, List<DocumentSchemaMemberMap>>();
         private readonly Dictionary<Type, List<DocumentSchemaMemberMap>> modelDependenciesMap =
@@ -34,36 +35,34 @@ namespace Digicando.MongODM.Serialization
             this.serializerModifierAccessor = serializerModifierAccessor;
         }
 
-        //here for circular dependency injection with DBContext
         public void Initialize(IDbContext dbContext)
         {
-            if (this.dbContext != null)
+            if (IsInitialized)
                 throw new InvalidOperationException("Instance already initialized");
             this.dbContext = dbContext;
+
+            IsInitialized = true;
         }
 
         // Properties.
-        public ReaderWriterLockSlim ConfigLock { get; } = new ReaderWriterLockSlim(LockRecursionPolicy.SupportsRecursion);
         public bool IsFrozen { get; private set; }
+        public bool IsInitialized { get; private set; }
         public IEnumerable<DocumentSchema> Schemas => schemas;
 
         // Methods.
-        public IDocumentSchemaRegister Freeze()
+        public void Freeze()
         {
-            ConfigLock.EnterReadLock();
+            configLock.EnterReadLock();
             try
             {
-                if (IsFrozen)
-                {
-                    return this;
-                }
+                if (IsFrozen) return;
             }
             finally
             {
-                ConfigLock.ExitReadLock();
+                configLock.ExitReadLock();
             }
 
-            ConfigLock.EnterWriteLock();
+            configLock.EnterWriteLock();
             try
             {
                 if (!IsFrozen)
@@ -98,10 +97,8 @@ namespace Digicando.MongODM.Serialization
             }
             finally
             {
-                ConfigLock.ExitWriteLock();
+                configLock.ExitWriteLock();
             }
-
-            return this;
         }
 
         public IEnumerable<DocumentSchemaMemberMap> GetMemberDependencies(MemberInfo memberInfo)
@@ -134,7 +131,7 @@ namespace Digicando.MongODM.Serialization
         public void RegisterModelSchema<TModel>(
             DocumentVersion fromVersion,
             Func<IBsonSerializer<TModel>> initCustomSerializer = null,
-            Func<TModel, DocumentVersion, ISerializerModifierAccessor, Task<TModel>> modelMigrationAsync = null)
+            Func<TModel, DocumentVersion, IDbContext, Task<TModel>> modelMigrationAsync = null)
             where TModel : class =>
             RegisterModelSchema(
                 fromVersion,
@@ -146,7 +143,7 @@ namespace Digicando.MongODM.Serialization
             DocumentVersion fromVersion,
             Action<BsonClassMap<TModel>, ISerializerModifierAccessor> classMapInitializer,
             Func<IBsonSerializer<TModel>> initCustomSerializer = null,
-            Func<TModel, DocumentVersion, ISerializerModifierAccessor, Task<TModel>> modelMigrationAsync = null)
+            Func<TModel, DocumentVersion, IDbContext, Task<TModel>> modelMigrationAsync = null)
             where TModel : class =>
             RegisterModelSchema(
                 fromVersion,
@@ -158,10 +155,10 @@ namespace Digicando.MongODM.Serialization
             DocumentVersion fromVersion,
             BsonClassMap<TModel> classMap,
             Func<IBsonSerializer<TModel>> initCustomSerializer = null,
-            Func<TModel, DocumentVersion, ISerializerModifierAccessor, Task<TModel>> modelMigrationAsync = null)
+            Func<TModel, DocumentVersion, IDbContext, Task<TModel>> modelMigrationAsync = null)
             where TModel : class
         {
-            ConfigLock.EnterWriteLock();
+            configLock.EnterWriteLock();
             try
             {
                 if (IsFrozen)
@@ -176,10 +173,11 @@ namespace Digicando.MongODM.Serialization
                 else if (!typeof(TModel).IsAbstract) //else if can deserialize, set default serializer
                     serializer =
                         new ExtendedClassMapSerializer<TModel>(
-                            dbContext,
+                            dbContext.DBCache,
+                            dbContext.DocumentVersion,
                             serializerModifierAccessor,
                             (m, v) => modelMigrationAsync?.Invoke(
-                                m, v, serializerModifierAccessor) ?? Task.FromResult(m))
+                                m, v, dbContext) ?? Task.FromResult(m))
                         { AddVersion = typeof(IEntityModel).IsAssignableFrom(typeof(TModel)) }; //true only for entity models
 
                 // Register schema.
@@ -187,7 +185,7 @@ namespace Digicando.MongODM.Serialization
             }
             finally
             {
-                ConfigLock.ExitWriteLock();
+                configLock.ExitWriteLock();
             }
         }
 
