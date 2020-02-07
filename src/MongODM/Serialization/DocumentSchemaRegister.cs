@@ -13,7 +13,7 @@ using System.Threading.Tasks;
 
 namespace Digicando.MongODM.Serialization
 {
-    class DocumentSchemaRegister : IDocumentSchemaRegister
+    public class DocumentSchemaRegister : IDocumentSchemaRegister
     {
         // Fields.
         private readonly ReaderWriterLockSlim configLock = new ReaderWriterLockSlim(LockRecursionPolicy.SupportsRecursion);

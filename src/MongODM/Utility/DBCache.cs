@@ -5,7 +5,7 @@ using System.Collections.Generic;
 
 namespace Digicando.MongODM.Utility
 {
-    class DBCache : IDBCache
+    public class DBCache : IDBCache
     {
         // Consts.
         private const string CacheKey = "DBCache";

@@ -3,7 +3,7 @@ using System;
 
 namespace Digicando.MongODM.Serialization.Modifiers
 {
-    class SerializerModifierAccessor : ISerializerModifierAccessor
+    public class SerializerModifierAccessor : ISerializerModifierAccessor
     {
         // Fields.
         private readonly IExecutionContext executionContext;

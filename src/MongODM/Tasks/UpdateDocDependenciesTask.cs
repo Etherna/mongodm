@@ -1,7 +1,6 @@
 ﻿using Digicando.MongODM.Models;
 using Digicando.MongODM.Repositories;
 using Digicando.MongODM.Serialization.Modifiers;
-using Microsoft.Extensions.DependencyInjection;
 using MongoDB.Driver;
 using System;
 using System.Collections.Generic;
@@ -31,7 +30,7 @@ namespace Digicando.MongODM.Tasks
             where TModel : class, IEntityModel<TKey>
             where TDbContext : class, IDbContext
         {
-            var dbContext = serviceProvider.GetService<TDbContext>();
+            var dbContext = serviceProvider.GetService(typeof(TDbContext)) as TDbContext;
 
             // Get repository.
             if (!dbContext.ModelCollectionRepositoryMap.ContainsKey(typeof(TModel)))

@@ -7,12 +7,11 @@ using Digicando.MongODM.Serialization.Modifiers;
 using Digicando.MongODM.Tasks;
 using Digicando.MongODM.Utility;
 using Microsoft.AspNetCore.Http;
-using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using System.Collections.Generic;
 using System.Linq;
 
-namespace Digicando.MongODM
+namespace Microsoft.Extensions.DependencyInjection
 {
     public static class ServiceCollectionExtensions
     {
