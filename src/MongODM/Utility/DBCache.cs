@@ -1,4 +1,5 @@
-﻿using Digicando.MongODM.Models;
+﻿using Digicando.ExecContext;
+using Digicando.MongODM.Models;
 using System;
 using System.Collections.Generic;
 
@@ -10,12 +11,12 @@ namespace Digicando.MongODM.Utility
         private const string CacheKey = "DBCache";
 
         // Fields.
-        private readonly IContextAccessorFacade contextAccessor;
+        private readonly IExecutionContext executionContext;
 
         // Constructors.
-        public DBCache(IContextAccessorFacade contextAccessor)
+        public DBCache(IExecutionContext executionContext)
         {
-            this.contextAccessor = contextAccessor ?? throw new ArgumentNullException(nameof(contextAccessor));
+            this.executionContext = executionContext ?? throw new ArgumentNullException(nameof(executionContext));
         }
 
         // Properties.
@@ -23,7 +24,7 @@ namespace Digicando.MongODM.Utility
         {
             get
             {
-                lock (contextAccessor.SyncRoot)
+                lock (executionContext.Items)
                     return GetScopedCache();
             }
         }
@@ -31,7 +32,7 @@ namespace Digicando.MongODM.Utility
         // Methods.
         public void ClearCache()
         {
-            lock (contextAccessor.SyncRoot)
+            lock (executionContext.Items)
                 GetScopedCache().Clear();
         }
 
@@ -43,23 +44,23 @@ namespace Digicando.MongODM.Utility
             if (model == null)
                 throw new ArgumentNullException(nameof(model));
 
-            lock (contextAccessor.SyncRoot)
+            lock (executionContext.Items)
                 GetScopedCache().Add(id, model);
         }
 
         public void RemoveModel(object id)
         {
-            lock (contextAccessor.SyncRoot)
+            lock (executionContext.Items)
                 GetScopedCache().Remove(id);
         }
 
         // Helpers.
         private Dictionary<object, IEntityModel> GetScopedCache()
         {
-            if (!contextAccessor.Items.ContainsKey(CacheKey))
-                contextAccessor.AddItem(CacheKey, new Dictionary<object, IEntityModel>());
+            if (!executionContext.Items.ContainsKey(CacheKey))
+                executionContext.Items.Add(CacheKey, new Dictionary<object, IEntityModel>());
 
-            return contextAccessor.Items[CacheKey] as Dictionary<object, IEntityModel>;
+            return executionContext.Items[CacheKey] as Dictionary<object, IEntityModel>;
         }
     }
 }

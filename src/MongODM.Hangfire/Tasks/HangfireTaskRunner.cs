@@ -5,21 +5,21 @@ using System.Collections.Generic;
 
 namespace Digicando.MongODM.HF.Tasks
 {
-    public class TaskRunner : ITaskRunner
+    public class HangfireTaskRunner : ITaskRunner
     {
         // Fields.
         private readonly IBackgroundJobClient backgroundJobClient;
 
         // Constructors.
-        public TaskRunner(
+        public HangfireTaskRunner(
             IBackgroundJobClient backgroundJobClient)
         {
             this.backgroundJobClient = backgroundJobClient;
         }
 
         // Methods.
-        public void RunUpdateDocDependenciesTask(Type modelType, Type keyType, IEnumerable<string> idPaths, object modelId) =>
+        public void RunUpdateDocDependenciesTask(Type dbContextType, Type modelType, Type keyType, IEnumerable<string> idPaths, object modelId) =>
             backgroundJobClient.Enqueue<UpdateDocDependenciesTaskFacade>(
-                task => task.RunAsync(modelType, keyType, idPaths, modelId));
+                task => task.RunAsync(dbContextType, modelType, keyType, idPaths, modelId));
     }
 }

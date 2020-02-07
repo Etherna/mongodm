@@ -1,4 +1,4 @@
-﻿using Digicando.MongODM.Utility;
+﻿using Digicando.ExecContext;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -15,15 +15,15 @@ namespace Digicando.MongODM.Serialization.Modifiers
         private readonly ICollection<ReferenceSerializerModifier> requestes;
 
         // Constructors and dispose.
-        public ReferenceSerializerModifier(IContextAccessorFacade contextAccessor)
+        public ReferenceSerializerModifier(IExecutionContext context)
         {
-            if (contextAccessor == null)
-                throw new ArgumentNullException(nameof(contextAccessor));
+            if (context == null)
+                throw new ArgumentNullException(nameof(context));
 
-            if (!contextAccessor.Items.ContainsKey(ModifierKey))
-                contextAccessor.AddItem(ModifierKey, new List<ReferenceSerializerModifier>());
+            if (!context.Items.ContainsKey(ModifierKey))
+                context.Items.Add(ModifierKey, new List<ReferenceSerializerModifier>());
 
-            requestes = contextAccessor.Items[ModifierKey] as ICollection<ReferenceSerializerModifier>;
+            requestes = context.Items[ModifierKey] as ICollection<ReferenceSerializerModifier>;
 
             lock (((ICollection)requestes).SyncRoot)
                 requestes.Add(this);
@@ -39,11 +39,11 @@ namespace Digicando.MongODM.Serialization.Modifiers
         public bool ReadOnlyId { get; set; }
 
         // Static methods.
-        public static bool IsReadOnlyIdEnabled(IReadOnlyDictionary<object, object> contextItems)
+        public static bool IsReadOnlyIdEnabled(IExecutionContext context)
         {
-            if (!contextItems.ContainsKey(ModifierKey))
+            if (!context.Items.ContainsKey(ModifierKey))
                 return false;
-            var requestes = contextItems[ModifierKey] as ICollection<ReferenceSerializerModifier>;
+            var requestes = context.Items[ModifierKey] as ICollection<ReferenceSerializerModifier>;
 
             lock (((ICollection)requestes).SyncRoot)
                 return requestes.Any(r => r.ReadOnlyId);

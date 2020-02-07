@@ -1,7 +1,7 @@
 ﻿using Digicando.MongODM.ProxyModels;
-using Digicando.MongODM.Serialization;
 using Digicando.MongODM.Tasks;
 using MongoDB.Driver;
+using System;
 using System.Linq;
 
 namespace Digicando.MongODM.Utility
@@ -9,23 +9,33 @@ namespace Digicando.MongODM.Utility
     public class DBMaintainer : IDBMaintainer
     {
         // Fields.
-        private readonly IDocumentSchemaRegister documentSchemaRegister;
+        private IDbContext dbContext;
         private readonly ITaskRunner taskRunner;
 
-        // Constructors.
-        public DBMaintainer(
-            IDocumentSchemaRegister documentSchemaRegister,
-            ITaskRunner taskRunner)
+        // Constructors and initialization.
+        public DBMaintainer(ITaskRunner taskRunner)
         {
-            this.documentSchemaRegister = documentSchemaRegister;
             this.taskRunner = taskRunner;
         }
+
+        public void Initialize(IDbContext dbContext)
+        {
+            if (IsInitialized)
+                throw new InvalidOperationException("Instance already initialized");
+
+            this.dbContext = dbContext;
+
+            IsInitialized = true;
+        }
+
+        // Properties.
+        public bool IsInitialized { get; private set; }
 
         // Methods.
         public void OnUpdatedModel<TKey>(IAuditable updatedModel, TKey modelId)
         {
             var updatedMembers = updatedModel.ChangedMembers;
-            var dependencies = updatedMembers.SelectMany(member => documentSchemaRegister.GetMemberDependencies(member))
+            var dependencies = updatedMembers.SelectMany(member => dbContext.DocumentSchemaRegister.GetMemberDependencies(member))
                                              .Where(d => d.IsEntityReferenceMember);
 
             foreach (var dependencyGroup in dependencies.GroupBy(d => d.RootModelType))
@@ -35,7 +45,7 @@ namespace Digicando.MongODM.Utility
                     .Distinct();
 
                 // Enqueue call for background job.
-                taskRunner.RunUpdateDocDependenciesTask(dependencyGroup.Key, typeof(TKey), idPaths, modelId);
+                taskRunner.RunUpdateDocDependenciesTask(dbContext.GetType(), dependencyGroup.Key, typeof(TKey), idPaths, modelId);
             }
         }
     }

@@ -14,9 +14,14 @@
     <PackageReference Include="DomainHelper" Version="0.18.1" />
     <PackageReference Include="Microsoft.AspNetCore.Http.Abstractions" Version="2.2.0" />
     <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="2.2.0" />
+    <PackageReference Include="Microsoft.Extensions.Options.ConfigurationExtensions" Version="2.2.0" />
     <PackageReference Include="MongoDB.Driver" Version="2.10.1" />
     <PackageReference Include="MongoDB.Driver.GridFS" Version="2.10.1" />
     <PackageReference Include="morelinq" Version="3.3.2" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\ExecutionContext\ExecutionContext.csproj" />
   </ItemGroup>
 
 </Project>

@@ -2,6 +2,7 @@
 using Digicando.MongODM.Models;
 using Digicando.MongODM.ProxyModels;
 using Digicando.MongODM.Serialization.Modifiers;
+using Digicando.MongODM.Utility;
 using MongoDB.Bson;
 using MongoDB.Bson.Serialization;
 using MongoDB.Bson.Serialization.Serializers;
@@ -35,24 +36,25 @@ namespace Digicando.MongODM.Serialization.Serializers
 
         // Fields.
         private BsonClassMapSerializer<TModel> _serializer;
-        private readonly IDbContext dbContext;
+        private readonly IDBCache dbCache;
         private readonly ISerializerModifierAccessor serializerModifierAccessor;
         private readonly ICollection<ExtraElementCondition> extraElements;
         private readonly Func<TModel, DocumentVersion, Task<TModel>> fixDeserializedModelAsync;
 
         // Constructor.
         public ExtendedClassMapSerializer(
-            IDbContext dbContext,
+            IDBCache dbCache,
+            DocumentVersion documentVersion,
             ISerializerModifierAccessor serializerModifierAccessor,
             Func<TModel, DocumentVersion, Task<TModel>> fixDeserializedModelAsync = null)
         {
-            this.dbContext = dbContext;
+            this.dbCache = dbCache;
             this.serializerModifierAccessor = serializerModifierAccessor;
             extraElements = new List<ExtraElementCondition>();
             this.fixDeserializedModelAsync = fixDeserializedModelAsync ?? ((m, _) => Task.FromResult(m));
             documentVersionElement = new BsonElement(
                 DbContext.DocumentVersionElementName,
-                DocumentVersionToBsonArray(dbContext.DocumentVersion));
+                DocumentVersionToBsonArray(documentVersion));
         }
 
         // Properties.
@@ -109,17 +111,17 @@ namespace Digicando.MongODM.Serialization.Serializers
             if (!serializerModifierAccessor.IsNoCacheEnabled &&
                 GetDocumentId(model, out var id, out _, out _) && id != null)
             {
-                if (dbContext.DBCache.LoadedModels.ContainsKey(id))
+                if (dbCache.LoadedModels.ContainsKey(id))
                 {
                     var fullModel = model;
-                    model = dbContext.DBCache.LoadedModels[id] as TModel;
+                    model = dbCache.LoadedModels[id] as TModel;
 
                     if ((model as IReferenceable).IsSummary)
                         (model as IReferenceable).MergeFullModel(fullModel);
                 }
                 else
                 {
-                    dbContext.DBCache.AddModel(id, model as IEntityModel);
+                    dbCache.AddModel(id, model as IEntityModel);
                 }
             }
 

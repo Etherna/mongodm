@@ -7,13 +7,20 @@ using System.Threading.Tasks;
 
 namespace Digicando.MongODM.Serialization
 {
+    /// <summary>
+    /// Interface for <see cref="DocumentSchemaRegister"/> implementation.
+    /// </summary>
     public interface IDocumentSchemaRegister
     {
+        bool IsFrozen { get; }
+        bool IsInitialized { get; }
+        IEnumerable<DocumentSchema> Schemas { get; }
+
+        // Methods.
         /// <summary>
-        /// Build and freeze the register
+        /// Build and freeze the register.
         /// </summary>
-        /// <returns>This instance</returns>
-        IDocumentSchemaRegister Freeze();
+        void Freeze();
 
         IEnumerable<DocumentSchemaMemberMap> GetMemberDependencies(MemberInfo memberInfo);
 
@@ -22,9 +29,9 @@ namespace Digicando.MongODM.Serialization
         IEnumerable<DocumentSchemaMemberMap> GetModelEntityReferencesIds(Type modelType);
 
         /// <summary>
-        /// Call before everything else. Used for avoid circular dependency injection with MongoStorage
+        /// Call before everything else.
         /// </summary>
-        /// <param name="dbContext">Current instance of IDBContext</param>
+        /// <param name="dbContext">Instance of <see cref="DbContext"/></param>
         void Initialize(IDbContext dbContext);
 
         /// <summary>
@@ -37,7 +44,7 @@ namespace Digicando.MongODM.Serialization
         void RegisterModelSchema<TModel>(
             DocumentVersion fromVersion,
             Func<IBsonSerializer<TModel>> initCustomSerializer = null,
-            Func<TModel, DocumentVersion, ISerializerModifierAccessor, Task<TModel>> modelMigrationAsync = null)
+            Func<TModel, DocumentVersion, IDbContext, Task<TModel>> modelMigrationAsync = null)
             where TModel : class;
 
         /// <summary>
@@ -52,7 +59,7 @@ namespace Digicando.MongODM.Serialization
             DocumentVersion fromVersion,
             Action<BsonClassMap<TModel>, ISerializerModifierAccessor> classMapInitializer,
             Func<IBsonSerializer<TModel>> initCustomSerializer = null,
-            Func<TModel, DocumentVersion, ISerializerModifierAccessor, Task<TModel>> modelMigrationAsync = null)
+            Func<TModel, DocumentVersion, IDbContext, Task<TModel>> modelMigrationAsync = null)
             where TModel : class;
 
         /// <summary>
@@ -67,7 +74,7 @@ namespace Digicando.MongODM.Serialization
             DocumentVersion fromVersion,
             BsonClassMap<TModel> classMap,
             Func<IBsonSerializer<TModel>> initCustomSerializer = null,
-            Func<TModel, DocumentVersion, ISerializerModifierAccessor, Task<TModel>> modelMigrationAsync = null)
+            Func<TModel, DocumentVersion, IDbContext, Task<TModel>> modelMigrationAsync = null)
             where TModel : class;
     }
 }

@@ -2,6 +2,7 @@
 using Digicando.MongODM.ProxyModels;
 using Digicando.MongODM.Repositories;
 using Digicando.MongODM.Serialization;
+using Digicando.MongODM.Serialization.Modifiers;
 using Digicando.MongODM.Utility;
 using MongoDB.Bson;
 using MongoDB.Bson.Serialization.Conventions;
@@ -19,26 +20,29 @@ namespace Digicando.MongODM
         // Consts.
         public const string DocumentVersionElementName = "v";
 
-        // Constructor.
+        // Constructors and initialization.
         public DbContext(
             IDBCache dbCache,
             IDBMaintainer dbMaintainer,
             IDocumentSchemaRegister documentSchemaRegister,
             DbContextOptions options,
-            IProxyGenerator proxyGenerator)
+            IProxyGenerator proxyGenerator,
+            ISerializerModifierAccessor serializerModifierAccessor)
         {
             DBCache = dbCache;
             DBMaintainer = dbMaintainer;
             DocumentSchemaRegister = documentSchemaRegister;
             DocumentVersion = options.DocumentVersion;
             ProxyGenerator = proxyGenerator;
+            SerializerModifierAccessor = serializerModifierAccessor;
 
             // Initialize MongoDB driver.
             Client = new MongoClient(options.ConnectionString);
             Database = Client.GetDatabase(options.DBName);
 
             // Init IoC dependencies.
-            documentSchemaRegister.Initialize(this);
+            DocumentSchemaRegister.Initialize(this);
+            DBMaintainer.Initialize(this);
 
             // Customize conventions.
             ConventionRegistry.Register("Enum string", new ConventionPack
@@ -48,10 +52,10 @@ namespace Digicando.MongODM
 
             // Register serializers.
             foreach (var serializerCollector in SerializerCollectors)
-                serializerCollector.Register(this);
+                serializerCollector.Register(DBCache, DocumentSchemaRegister, ProxyGenerator);
 
             // Build and freeze document schema register.
-            documentSchemaRegister.Freeze();
+            DocumentSchemaRegister.Freeze();
         }
 
         // Public properties.
@@ -74,12 +78,13 @@ namespace Digicando.MongODM
                 ModelGridFSRepositoryMap.Select(pair => (pair.Key, pair.Value as IRepository)))
             .ToDictionary(pair => pair.ModelType, pair => pair.Repository);
         public IProxyGenerator ProxyGenerator { get; }
+        public ISerializerModifierAccessor SerializerModifierAccessor { get; }
 
         // Protected properties.
         protected abstract IEnumerable<IModelSerializerCollector> SerializerCollectors { get; }
 
         // Methods.
-        public async Task MigrateRepositoriesAsync()
+        public async Task MigrateRepositoriesAsync(CancellationToken cancellationToken = default)
         {
             // Migrate documents.
             IsMigrating = true;
@@ -87,11 +92,11 @@ namespace Digicando.MongODM
                                       where repository.MigrationInfo != null
                                       orderby repository.MigrationInfo.PriorityIndex
                                       select repository.MigrationInfo)
-                await migration.MigrateAsync();
+                await migration.MigrateAsync(cancellationToken);
 
             // Build indexes.
             foreach (var repository in ModelCollectionRepositoryMap.Values)
-                await repository.BuildIndexesAsync(DocumentSchemaRegister);
+                await repository.BuildIndexesAsync(DocumentSchemaRegister, cancellationToken);
 
             IsMigrating = false;
         }

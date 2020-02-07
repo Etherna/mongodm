@@ -2,6 +2,7 @@
 using Digicando.MongODM.Serialization;
 using MongoDB.Bson;
 using MongoDB.Driver;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace Digicando.MongODM.Migration
@@ -31,7 +32,7 @@ namespace Digicando.MongODM.Migration
         /// <summary>
         /// Fix all documents prev of MinimumDocumentVersion
         /// </summary>
-        public override async Task MigrateAsync()
+        public override async Task MigrateAsync(CancellationToken cancellationToken = default)
         {
             var filterBuilder = Builders<TModel>.Filter;
             var filter = filterBuilder.Or(
@@ -59,7 +60,7 @@ namespace Digicando.MongODM.Migration
 
             // Replace documents.
             await collection.Find(filter, new FindOptions { NoCursorTimeout = true })
-                .ForEachAsync(obj => collection.ReplaceOneAsync(Builders<TModel>.Filter.Eq(m => m.Id, obj.Id), obj));
+                .ForEachAsync(obj => collection.ReplaceOneAsync(Builders<TModel>.Filter.Eq(m => m.Id, obj.Id), obj), cancellationToken);
         }
     }
 }

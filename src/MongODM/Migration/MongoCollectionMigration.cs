@@ -1,5 +1,6 @@
 ﻿using MongoDB.Driver;
 using System;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace Digicando.MongODM.Migration
@@ -30,7 +31,7 @@ namespace Digicando.MongODM.Migration
             this.sourceCollection = sourceCollection;
         }
 
-        public override async Task MigrateAsync()
+        public override async Task MigrateAsync(CancellationToken cancellationToken = default)
         {
             // Migrate documents.
             await sourceCollection.Find(Builders<TSource>.Filter.Empty, new FindOptions { NoCursorTimeout = true })
@@ -38,7 +39,7 @@ namespace Digicando.MongODM.Migration
                 {
                     if (discriminator(obj))
                         destinationCollection.InsertOneAsync(converter(obj));
-                });
+                }, cancellationToken);
         }
     }
 }

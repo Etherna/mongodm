@@ -2,6 +2,7 @@
 using Digicando.MongODM.Models;
 using Digicando.MongODM.ProxyModels;
 using Digicando.MongODM.Serialization.Modifiers;
+using Digicando.MongODM.Utility;
 using MongoDB.Bson;
 using MongoDB.Bson.Serialization;
 using MongoDB.Bson.Serialization.Conventions;
@@ -24,8 +25,8 @@ namespace Digicando.MongODM.Serialization.Serializers
         private readonly ReaderWriterLockSlim configLockAdapters = new ReaderWriterLockSlim(LockRecursionPolicy.SupportsRecursion);
         private readonly ReaderWriterLockSlim configLockClassMaps = new ReaderWriterLockSlim(LockRecursionPolicy.SupportsRecursion);
         private readonly ReaderWriterLockSlim configLockSerializers = new ReaderWriterLockSlim(LockRecursionPolicy.SupportsRecursion);
-        
-        private readonly IDbContext dbContext;
+        private readonly IDBCache dbCache;
+        private readonly IProxyGenerator proxyGenerator;
         private readonly ISerializerModifierAccessor serializerModifierAccessor;
 
         private readonly IDictionary<Type, IBsonSerializer> registeredAdapters = new Dictionary<Type, IBsonSerializer>();
@@ -34,11 +35,13 @@ namespace Digicando.MongODM.Serialization.Serializers
 
         // Constructors.
         public ReferenceSerializer(
-            IDbContext dbContext,
+            IDBCache dbCache,
+            IProxyGenerator proxyGenerator,
             ISerializerModifierAccessor serializerModifierAccessor,
             bool useCascadeDelete)
         {
-            this.dbContext = dbContext;
+            this.dbCache = dbCache;
+            this.proxyGenerator = proxyGenerator;
             this.serializerModifierAccessor = serializerModifierAccessor;
             UseCascadeDelete = useCascadeDelete;
         }
@@ -81,10 +84,10 @@ namespace Digicando.MongODM.Serialization.Serializers
                     return null;
 
                 // Check if model as been loaded in cache.
-                if (dbContext.DBCache.LoadedModels.ContainsKey(id) &&
+                if (dbCache.LoadedModels.ContainsKey(id) &&
                     !serializerModifierAccessor.IsNoCacheEnabled)
                 {
-                    var cachedModel = dbContext.DBCache.LoadedModels[id] as TModelBase;
+                    var cachedModel = dbCache.LoadedModels[id] as TModelBase;
 
                     if ((cachedModel as IReferenceable).IsSummary)
                     {
@@ -130,7 +133,7 @@ namespace Digicando.MongODM.Serialization.Serializers
 
                     // Add in cache.
                     if (!serializerModifierAccessor.IsNoCacheEnabled)
-                        dbContext.DBCache.AddModel(model.Id, model);
+                        dbCache.AddModel(model.Id, model);
                 }
             }
 
@@ -183,7 +186,7 @@ namespace Digicando.MongODM.Serialization.Serializers
 
             // Set creator.
             if (!typeof(TModel).IsAbstract)
-                classMap.SetCreator(() => dbContext.ProxyGenerator.CreateInstance<TModel>());
+                classMap.SetCreator(() => proxyGenerator.CreateInstance<TModel>());
 
             // Add info to dictionary of registered types.
             configLockClassMaps.EnterWriteLock();
@@ -354,7 +357,7 @@ namespace Digicando.MongODM.Serialization.Serializers
         private bool IsProxyClassType<TModel>(TModel value, out Type modelType)
         {
             modelType = value.GetType();
-            if (dbContext.ProxyGenerator.IsProxyType(modelType))
+            if (proxyGenerator.IsProxyType(modelType))
             {
                 modelType = modelType.BaseType;
                 return true;
