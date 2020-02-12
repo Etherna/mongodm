@@ -7,6 +7,7 @@ namespace Digicando.MongODM.Serialization
     {
         // Methods.
         void Register(IDBCache dbCache,
+            IDbContext dbContext,
             IDocumentSchemaRegister documentSchemaRegister,
             IProxyGenerator proxyGenerator);
     }

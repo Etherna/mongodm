@@ -1,5 +1,4 @@
-﻿using Digicando.MongODM.Serialization.Modifiers;
-using MongoDB.Bson.Serialization;
+﻿using MongoDB.Bson.Serialization;
 using System;
 using System.Collections.Generic;
 using System.Reflection;
@@ -44,7 +43,7 @@ namespace Digicando.MongODM.Serialization
         void RegisterModelSchema<TModel>(
             DocumentVersion fromVersion,
             Func<IBsonSerializer<TModel>> initCustomSerializer = null,
-            Func<TModel, DocumentVersion, IDbContext, Task<TModel>> modelMigrationAsync = null)
+            Func<TModel, DocumentVersion, Task<TModel>> modelMigrationAsync = null)
             where TModel : class;
 
         /// <summary>
@@ -57,9 +56,9 @@ namespace Digicando.MongODM.Serialization
         /// <param name="modelMigrationAsync">Model migration method</param>
         void RegisterModelSchema<TModel>(
             DocumentVersion fromVersion,
-            Action<BsonClassMap<TModel>, ISerializerModifierAccessor> classMapInitializer,
+            Action<BsonClassMap<TModel>> classMapInitializer,
             Func<IBsonSerializer<TModel>> initCustomSerializer = null,
-            Func<TModel, DocumentVersion, IDbContext, Task<TModel>> modelMigrationAsync = null)
+            Func<TModel, DocumentVersion, Task<TModel>> modelMigrationAsync = null)
             where TModel : class;
 
         /// <summary>
@@ -74,7 +73,7 @@ namespace Digicando.MongODM.Serialization
             DocumentVersion fromVersion,
             BsonClassMap<TModel> classMap,
             Func<IBsonSerializer<TModel>> initCustomSerializer = null,
-            Func<TModel, DocumentVersion, IDbContext, Task<TModel>> modelMigrationAsync = null)
+            Func<TModel, DocumentVersion, Task<TModel>> modelMigrationAsync = null)
             where TModel : class;
     }
 }

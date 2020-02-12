@@ -13,22 +13,27 @@ namespace Digicando.MongODM.Serialization.Serializers
     public class GeoPointSerializer<TInModel> : SerializerBase<TInModel>
         where TInModel : class
     {
+        // Fields.
         private readonly MemberInfo latitudeMemberInfo;
         private readonly MemberInfo longitudeMemberInfo;
         private readonly GeoJsonPointSerializer<GeoJson2DGeographicCoordinates> pointSerializer;
+        private readonly IDbContext dbContext;
         private readonly IProxyGenerator proxyGenerator;
 
+        // Constructors.
         public GeoPointSerializer(
+            IDbContext dbContext,
             Expression<Func<TInModel, double>> longitudeMember,
-            Expression<Func<TInModel, double>> latitudeMember,
-            IProxyGenerator proxyGenerator)
+            Expression<Func<TInModel, double>> latitudeMember)
         {
             longitudeMemberInfo = ReflectionHelper.GetMemberInfoFromLambda(longitudeMember);
             latitudeMemberInfo = ReflectionHelper.GetMemberInfoFromLambda(latitudeMember);
             pointSerializer = new GeoJsonPointSerializer<GeoJson2DGeographicCoordinates>();
-            this.proxyGenerator = proxyGenerator;
+            this.dbContext = dbContext;
+            proxyGenerator = dbContext.ProxyGenerator;
         }
 
+        // Methods.
         public override TInModel Deserialize(BsonDeserializationContext context, BsonDeserializationArgs args)
         {
             // Deserialize point.
@@ -39,7 +44,7 @@ namespace Digicando.MongODM.Serialization.Serializers
             }
 
             // Create model instance.
-            var model = proxyGenerator.CreateInstance<TInModel>();
+            var model = proxyGenerator.CreateInstance<TInModel>(dbContext);
 
             // Copy data.
             ReflectionHelper.SetValue(model, longitudeMemberInfo, point.Coordinates.Values[0]);

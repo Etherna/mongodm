@@ -52,7 +52,7 @@ namespace Digicando.MongODM
 
             // Register serializers.
             foreach (var serializerCollector in SerializerCollectors)
-                serializerCollector.Register(DBCache, DocumentSchemaRegister, ProxyGenerator);
+                serializerCollector.Register(DBCache, this, DocumentSchemaRegister, ProxyGenerator);
 
             // Build and freeze document schema register.
             DocumentSchemaRegister.Freeze();

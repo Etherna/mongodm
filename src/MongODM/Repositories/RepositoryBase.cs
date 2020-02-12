@@ -17,17 +17,17 @@ namespace Digicando.MongODM.Repositories
         IRepository<TModel, TKey>
         where TModel : class, IEntityModel<TKey>
     {
-        // Fields.
-        private readonly IDbContext dbContext;
-
         // Constructors.
         public RepositoryBase(IDbContext dbContext)
         {
-            this.dbContext = dbContext;
+            this.DbContext = dbContext;
         }
 
         // Properties.
         public virtual MongoMigrationBase MigrationInfo { get; }
+
+        // Protected properties.
+        protected IDbContext DbContext { get; }
 
         // Public methods.
         public abstract Task BuildIndexesAsync(IDocumentSchemaRegister schemaRegister, CancellationToken cancellationToken = default);
@@ -35,13 +35,13 @@ namespace Digicando.MongODM.Repositories
         public virtual async Task CreateAsync(IEnumerable<TModel> models, CancellationToken cancellationToken = default)
         {
             await CreateOnDBAsync(models, cancellationToken);
-            await dbContext.SaveChangesAsync();
+            await DbContext.SaveChangesAsync();
         }
 
         public virtual async Task CreateAsync(TModel model, CancellationToken cancellationToken = default)
         {
             await CreateOnDBAsync(model, cancellationToken);
-            await dbContext.SaveChangesAsync();
+            await DbContext.SaveChangesAsync();
         }
 
         public async Task DeleteAsync(TKey id, CancellationToken cancellationToken = default)
@@ -53,7 +53,7 @@ namespace Digicando.MongODM.Repositories
         public virtual async Task DeleteAsync(TModel model, CancellationToken cancellationToken = default)
         {
             // Process cascade delete.
-            var referencesIdsPaths = dbContext.DocumentSchemaRegister.GetModelEntityReferencesIds(typeof(TModel))
+            var referencesIdsPaths = DbContext.DocumentSchemaRegister.GetModelEntityReferencesIds(typeof(TModel))
                 .Where(d => d.UseCascadeDelete == true)
                 .Where(d => d.EntityClassMapPath.Count() == 2) //ignore references of references
                 .DistinctBy(d => d.FullPathToString())
@@ -64,14 +64,14 @@ namespace Digicando.MongODM.Repositories
 
             // Unlink dependent models.
             model.DisposeForDelete();
-            await dbContext.SaveChangesAsync();
+            await DbContext.SaveChangesAsync();
 
             // Delete model.
             await DeleteOnDBAsync(model, cancellationToken);
 
             // Remove from cache.
-            if (dbContext.DBCache.LoadedModels.ContainsKey(model.Id))
-                dbContext.DBCache.RemoveModel(model.Id);
+            if (DbContext.DBCache.LoadedModels.ContainsKey(model.Id))
+                DbContext.DBCache.RemoveModel(model.Id);
         }
 
         public async Task DeleteAsync(IEntityModel model, CancellationToken cancellationToken = default)
@@ -85,9 +85,9 @@ namespace Digicando.MongODM.Repositories
             TKey id,
             CancellationToken cancellationToken = default)
         {
-            if (dbContext.DBCache.LoadedModels.ContainsKey(id))
+            if (DbContext.DBCache.LoadedModels.ContainsKey(id))
             {
-                var cachedModel = dbContext.DBCache.LoadedModels[id] as TModel;
+                var cachedModel = DbContext.DBCache.LoadedModels[id] as TModel;
                 if ((cachedModel as IReferenceable)?.IsSummary == false)
                     return cachedModel;
             }
@@ -135,7 +135,7 @@ namespace Digicando.MongODM.Repositories
             if (currentMember.IsId)
             {
                 //cascade delete model
-                var repository = dbContext.ModelRepositoryMap[currentModel.GetType().BaseType];
+                var repository = DbContext.ModelRepositoryMap[currentModel.GetType().BaseType];
                 try { await repository.DeleteAsync(currentModel as IEntityModel); }
                 catch { }
             }

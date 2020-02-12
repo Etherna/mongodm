@@ -5,7 +5,7 @@
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
     <RootNamespace>Digicando.MongODM.AspNetCore</RootNamespace>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
-    <Version>0.19.0-dev</Version>
+    <Version>0.19.0-dev1</Version>
     <Authors>Digicando Srl</Authors>
     <Description>Asp.Net Core adapter for MongODM</Description>
   </PropertyGroup>

@@ -15,6 +15,12 @@ namespace Microsoft.Extensions.DependencyInjection
 {
     public static class ServiceCollectionExtensions
     {
+        public static void UseMongODM<TTaskRunner>(
+            this IServiceCollection services,
+            IEnumerable<IExecutionContext> executionContexts = null)
+            where TTaskRunner : class, ITaskRunner =>
+            UseMongODM<ProxyGenerator, TTaskRunner>(services, executionContexts);
+
         public static void UseMongODM<TProxyGenerator, TTaskRunner>(
             this IServiceCollection services,
             IEnumerable<IExecutionContext> executionContexts = null)

@@ -131,7 +131,7 @@ namespace Digicando.MongODM.Serialization
         public void RegisterModelSchema<TModel>(
             DocumentVersion fromVersion,
             Func<IBsonSerializer<TModel>> initCustomSerializer = null,
-            Func<TModel, DocumentVersion, IDbContext, Task<TModel>> modelMigrationAsync = null)
+            Func<TModel, DocumentVersion, Task<TModel>> modelMigrationAsync = null)
             where TModel : class =>
             RegisterModelSchema(
                 fromVersion,
@@ -141,13 +141,13 @@ namespace Digicando.MongODM.Serialization
 
         public void RegisterModelSchema<TModel>(
             DocumentVersion fromVersion,
-            Action<BsonClassMap<TModel>, ISerializerModifierAccessor> classMapInitializer,
+            Action<BsonClassMap<TModel>> classMapInitializer,
             Func<IBsonSerializer<TModel>> initCustomSerializer = null,
-            Func<TModel, DocumentVersion, IDbContext, Task<TModel>> modelMigrationAsync = null)
+            Func<TModel, DocumentVersion, Task<TModel>> modelMigrationAsync = null)
             where TModel : class =>
             RegisterModelSchema(
                 fromVersion,
-                new BsonClassMap<TModel>(cm => classMapInitializer(cm, serializerModifierAccessor)),
+                new BsonClassMap<TModel>(classMapInitializer),
                 initCustomSerializer,
                 modelMigrationAsync);
 
@@ -155,7 +155,7 @@ namespace Digicando.MongODM.Serialization
             DocumentVersion fromVersion,
             BsonClassMap<TModel> classMap,
             Func<IBsonSerializer<TModel>> initCustomSerializer = null,
-            Func<TModel, DocumentVersion, IDbContext, Task<TModel>> modelMigrationAsync = null)
+            Func<TModel, DocumentVersion, Task<TModel>> modelMigrationAsync = null)
             where TModel : class
         {
             configLock.EnterWriteLock();
@@ -176,8 +176,7 @@ namespace Digicando.MongODM.Serialization
                             dbContext.DBCache,
                             dbContext.DocumentVersion,
                             serializerModifierAccessor,
-                            (m, v) => modelMigrationAsync?.Invoke(
-                                m, v, dbContext) ?? Task.FromResult(m))
+                            (m, v) => modelMigrationAsync?.Invoke(m, v) ?? Task.FromResult(m))
                         { AddVersion = typeof(IEntityModel).IsAssignableFrom(typeof(TModel)) }; //true only for entity models
 
                 // Register schema.

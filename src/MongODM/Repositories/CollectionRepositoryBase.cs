@@ -61,7 +61,7 @@ namespace Digicando.MongODM.Repositories
             newIndexes.Add(
                 ("ver",
                  new CreateIndexModel<TModel>(
-                    Builders<TModel>.IndexKeys.Ascending(DbContext.DocumentVersionElementName),
+                    Builders<TModel>.IndexKeys.Ascending(MongODM.DbContext.DocumentVersionElementName),
                     new CreateIndexOptions { Name = "ver" })));
 
             //referenced documents

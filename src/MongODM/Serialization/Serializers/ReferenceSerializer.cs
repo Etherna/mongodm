@@ -26,6 +26,7 @@ namespace Digicando.MongODM.Serialization.Serializers
         private readonly ReaderWriterLockSlim configLockClassMaps = new ReaderWriterLockSlim(LockRecursionPolicy.SupportsRecursion);
         private readonly ReaderWriterLockSlim configLockSerializers = new ReaderWriterLockSlim(LockRecursionPolicy.SupportsRecursion);
         private readonly IDBCache dbCache;
+        private readonly IDbContext dbContext;
         private readonly IProxyGenerator proxyGenerator;
         private readonly ISerializerModifierAccessor serializerModifierAccessor;
 
@@ -35,14 +36,13 @@ namespace Digicando.MongODM.Serialization.Serializers
 
         // Constructors.
         public ReferenceSerializer(
-            IDBCache dbCache,
-            IProxyGenerator proxyGenerator,
-            ISerializerModifierAccessor serializerModifierAccessor,
+            IDbContext dbContext,
             bool useCascadeDelete)
         {
-            this.dbCache = dbCache;
-            this.proxyGenerator = proxyGenerator;
-            this.serializerModifierAccessor = serializerModifierAccessor;
+            this.dbCache = dbContext.DBCache;
+            this.proxyGenerator = dbContext.ProxyGenerator;
+            this.serializerModifierAccessor = dbContext.SerializerModifierAccessor;
+            this.dbContext = dbContext;
             UseCascadeDelete = useCascadeDelete;
         }
 
@@ -186,7 +186,7 @@ namespace Digicando.MongODM.Serialization.Serializers
 
             // Set creator.
             if (!typeof(TModel).IsAbstract)
-                classMap.SetCreator(() => proxyGenerator.CreateInstance<TModel>());
+                classMap.SetCreator(() => proxyGenerator.CreateInstance<TModel>(dbContext));
 
             // Add info to dictionary of registered types.
             configLockClassMaps.EnterWriteLock();

@@ -82,7 +82,7 @@ namespace Digicando.MongODM.Repositories
             if (mongoFile == null)
                 throw new KeyNotFoundException($"Can't find key {id}");
 
-            var file = ProxyGenerator.CreateInstance<TModel>();
+            var file = ProxyGenerator.CreateInstance<TModel>(DbContext);
             ReflectionHelper.SetValue(file, m => m.Id, mongoFile.Id.ToString());
             ReflectionHelper.SetValue(file, m => m.Length, mongoFile.Length);
             ReflectionHelper.SetValue(file, m => m.Name, mongoFile.Filename);
