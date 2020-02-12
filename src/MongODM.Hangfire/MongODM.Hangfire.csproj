@@ -15,7 +15,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\MongODM\MongODM.csproj" />
+    <ProjectReference Include="..\MongODM.Core\MongODM.Core.csproj" />
   </ItemGroup>
 
 </Project>
