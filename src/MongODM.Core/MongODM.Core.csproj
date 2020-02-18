@@ -12,8 +12,8 @@
 
   <ItemGroup>
     <PackageReference Include="DomainHelper" Version="0.18.1" />
-    <PackageReference Include="MongoDB.Driver" Version="2.10.1" />
-    <PackageReference Include="MongoDB.Driver.GridFS" Version="2.10.1" />
+    <PackageReference Include="MongoDB.Driver" Version="2.10.2" />
+    <PackageReference Include="MongoDB.Driver.GridFS" Version="2.10.2" />
     <PackageReference Include="morelinq" Version="3.3.2" />
   </ItemGroup>
 
