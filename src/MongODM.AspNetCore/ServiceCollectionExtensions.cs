@@ -27,6 +27,8 @@ namespace Microsoft.Extensions.DependencyInjection
             where TProxyGenerator: class, IProxyGenerator
             where TTaskRunner: class, ITaskRunner
         {
+            services.TryAddSingleton<IHttpContextAccessor, HttpContextAccessor>();
+
             services.TryAddSingleton(serviceProvider =>
             {
                 if (executionContexts is null || !executionContexts.Any())
