@@ -1,5 +1,6 @@
 ﻿using Digicando.ExecContext;
 using Digicando.ExecContext.AsyncLocal;
+using Digicando.MongODM;
 using Digicando.MongODM.AspNetCore;
 using Digicando.MongODM.ProxyModels;
 using Digicando.MongODM.Serialization;
@@ -62,6 +63,22 @@ namespace Microsoft.Extensions.DependencyInjection
 
             //castle proxy generator.
             services.TryAddSingleton<Castle.DynamicProxy.IProxyGenerator>(new Castle.DynamicProxy.ProxyGenerator());
+        }
+
+        public static void UseMongODMDbContext<TDbContext>(
+            this IServiceCollection services)
+            where TDbContext : class, IDbContext
+        {
+            services.AddSingleton<TDbContext>();
+        }
+
+        public static void UseMongODMDbContext<TDbContext, TDbContextImpl>(
+            this IServiceCollection services)
+            where TDbContext : class, IDbContext
+            where TDbContextImpl : class, TDbContext
+        {
+            services.AddSingleton<TDbContext, TDbContextImpl>();
+            services.AddSingleton(sp => sp.GetService<TDbContext>() as TDbContextImpl);
         }
     }
 }
