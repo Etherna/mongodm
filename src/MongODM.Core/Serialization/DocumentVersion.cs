@@ -18,9 +18,10 @@ namespace Digicando.MongODM.Serialization
             // * 3.1
             // * 3.1.4
             // * 3.1.4-alpha1
+            // * 3.1.4-beta.2
             // * 3.1-DEV
             var match = Regex.Match(version,
-                @"^(?<major>\d+)(\.(?<minor>\d+))?(\.(?<patch>\d+))?(-(?<label>[A-Z0-9]+))?$",
+                @"^(?<major>\d+)(\.(?<minor>\d+))?(\.(?<patch>\d+))?(-(?<label>[A-Z0-9.]+))?$",
                 RegexOptions.IgnoreCase);
             var majorGroup = match.Groups["major"];
             var minorGroup = match.Groups["minor"];
