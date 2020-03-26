@@ -31,6 +31,11 @@ namespace Digicando.MongODM.Repositories
             FindOptions<TModel, TProjection> options = null,
             CancellationToken cancellationToken = default);
 
+        Task<TModel> FindOneAsync(
+            FilterDefinition<TModel> filter,
+            FindOptions options = null,
+            CancellationToken cancellationToken = default);
+
         Task<TResult> QueryElementsAsync<TResult>(
             Func<IMongoQueryable<TModel>, Task<TResult>> query,
             AggregateOptions aggregateOptions = null);

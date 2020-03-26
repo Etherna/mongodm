@@ -107,6 +107,12 @@ namespace Digicando.MongODM.Repositories
             CancellationToken cancellationToken = default) =>
             Collection.FindAsync(filter, options, cancellationToken);
 
+        public Task<TModel> FindOneAsync(
+            FilterDefinition<TModel> filter,
+            FindOptions options = null,
+            CancellationToken cancellationToken = default) =>
+            FindOneOnDBAsync(filter, options, cancellationToken);
+
         public virtual Task<TResult> QueryElementsAsync<TResult>(
             Func<IMongoQueryable<TModel>, Task<TResult>> query,
             AggregateOptions aggregateOptions = null) =>
@@ -155,15 +161,25 @@ namespace Digicando.MongODM.Repositories
             if (id == null)
                 throw new ArgumentNullException(nameof(id));
 
-            var filter = Builders<TModel>.Filter.Eq(m => m.Id, id);
-            var element = await Collection.Find(filter).SingleOrDefaultAsync(cancellationToken);
+            return await FindOneOnDBAsync(Builders<TModel>.Filter.Eq(m => m.Id, id), cancellationToken: cancellationToken);
+        }
+
+        // Helpers.
+        private async Task<TModel> FindOneOnDBAsync(
+            FilterDefinition<TModel> filter,
+            FindOptions options = default,
+            CancellationToken cancellationToken = default)
+        {
+            if (filter is null)
+                throw new ArgumentNullException(nameof(filter));
+
+            var element = await Collection.Find(filter, options).SingleOrDefaultAsync(cancellationToken);
             if (element as TModel == default(TModel))
-                throw new KeyNotFoundException($"Can't find key {id}");
+                throw new KeyNotFoundException($"Can't find element with {filter}");
 
             return element as TModel;
         }
 
-        // Helpers.
         private async Task ReplaceHelperAsync(
             TModel model,
             IClientSessionHandle session,
