@@ -8,6 +8,7 @@ using MongoDB.Driver.Linq;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Linq.Expressions;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -108,10 +109,9 @@ namespace Digicando.MongODM.Repositories
             Collection.FindAsync(filter, options, cancellationToken);
 
         public Task<TModel> FindOneAsync(
-            FilterDefinition<TModel> filter,
-            FindOptions options = null,
+            Expression<Func<TModel, bool>> predicate,
             CancellationToken cancellationToken = default) =>
-            FindOneOnDBAsync(filter, options, cancellationToken);
+            FindOneOnDBAsync(predicate, cancellationToken);
 
         public virtual Task<TResult> QueryElementsAsync<TResult>(
             Func<IMongoQueryable<TModel>, Task<TResult>> query,
@@ -161,21 +161,29 @@ namespace Digicando.MongODM.Repositories
             if (id == null)
                 throw new ArgumentNullException(nameof(id));
 
-            return await FindOneOnDBAsync(Builders<TModel>.Filter.Eq(m => m.Id, id), cancellationToken: cancellationToken);
+            try
+            {
+                return await FindOneOnDBAsync(m => m.Id.Equals(id), cancellationToken: cancellationToken);
+            }
+            catch (KeyNotFoundException)
+            {
+                throw new KeyNotFoundException($"Can't find key {id}");
+            }
         }
 
         // Helpers.
         private async Task<TModel> FindOneOnDBAsync(
-            FilterDefinition<TModel> filter,
-            FindOptions options = default,
+            Expression<Func<TModel, bool>> predicate,
             CancellationToken cancellationToken = default)
         {
-            if (filter is null)
-                throw new ArgumentNullException(nameof(filter));
+            if (predicate is null)
+                throw new ArgumentNullException(nameof(predicate));
 
-            var element = await Collection.Find(filter, options).SingleOrDefaultAsync(cancellationToken);
+            var element = await Collection.AsQueryable()
+                                          .Where(predicate)
+                                          .SingleOrDefaultAsync(cancellationToken);
             if (element as TModel == default(TModel))
-                throw new KeyNotFoundException($"Can't find element with {filter}");
+                throw new KeyNotFoundException("Can't find element");
 
             return element as TModel;
         }

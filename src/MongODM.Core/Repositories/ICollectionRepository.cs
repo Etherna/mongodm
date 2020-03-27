@@ -2,6 +2,7 @@
 using MongoDB.Driver;
 using MongoDB.Driver.Linq;
 using System;
+using System.Linq.Expressions;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -32,8 +33,7 @@ namespace Digicando.MongODM.Repositories
             CancellationToken cancellationToken = default);
 
         Task<TModel> FindOneAsync(
-            FilterDefinition<TModel> filter,
-            FindOptions options = null,
+            Expression<Func<TModel, bool>> predicate,
             CancellationToken cancellationToken = default);
 
         Task<TResult> QueryElementsAsync<TResult>(
