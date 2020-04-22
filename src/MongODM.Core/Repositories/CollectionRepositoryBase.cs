@@ -1,4 +1,5 @@
-﻿using Digicando.MongODM.Models;
+﻿using Digicando.MongODM.Exceptions;
+using Digicando.MongODM.Models;
 using Digicando.MongODM.ProxyModels;
 using Digicando.MongODM.Serialization;
 using Digicando.MongODM.Utility;
@@ -165,9 +166,9 @@ namespace Digicando.MongODM.Repositories
             {
                 return await FindOneOnDBAsync(m => m.Id.Equals(id), cancellationToken: cancellationToken);
             }
-            catch (KeyNotFoundException)
+            catch (EntityNotFoundException)
             {
-                throw new KeyNotFoundException($"Can't find key {id}");
+                throw new EntityNotFoundException($"Can't find key {id}");
             }
         }
 
@@ -183,7 +184,7 @@ namespace Digicando.MongODM.Repositories
                                           .Where(predicate)
                                           .SingleOrDefaultAsync(cancellationToken);
             if (element as TModel == default(TModel))
-                throw new KeyNotFoundException("Can't find element");
+                throw new EntityNotFoundException("Can't find element");
 
             return element as TModel;
         }

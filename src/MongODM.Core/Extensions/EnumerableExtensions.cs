@@ -18,6 +18,7 @@ namespace Digicando.MongODM.Extensions
         /// <param name="page">Page to take</param>
         /// <param name="take">Elements per page</param>
         /// <returns>Selected elements page</returns>
+        /// <exception cref="ArgumentOutOfRangeException">Throw with invalid parameter values</exception>
         public static IEnumerable<TSource> Paginate<TSource, TKey>(
             this IEnumerable<TSource> values,
             Func<TSource, TKey> orderKeySelector,
@@ -25,9 +26,9 @@ namespace Digicando.MongODM.Extensions
             int take)
 		{
             if (page < 0)
-                throw new ArgumentOutOfRangeException(nameof(page));
+                throw new ArgumentOutOfRangeException(nameof(page), page, "Value can't be negative");
             if (take < 1)
-                throw new ArgumentOutOfRangeException(nameof(take));
+                throw new ArgumentOutOfRangeException(nameof(take), take, "Value can't be less than 1");
 
             return values.OrderBy(orderKeySelector)
                          .Skip(page * take)
@@ -44,6 +45,7 @@ namespace Digicando.MongODM.Extensions
         /// <param name="page">Page to take</param>
         /// <param name="take">Elements per page</param>
         /// <returns>Selected elements page</returns>
+        /// <exception cref="ArgumentOutOfRangeException">Throw with invalid parameter values</exception>
         public static IMongoQueryable<TSource> Paginate<TSource, TKey>(
             this IMongoQueryable<TSource> values,
             Expression<Func<TSource, TKey>> orderKeySelector,
@@ -51,9 +53,9 @@ namespace Digicando.MongODM.Extensions
             int take)
         {
             if (page < 0)
-                throw new ArgumentOutOfRangeException(nameof(page));
+                throw new ArgumentOutOfRangeException(nameof(page), page, "Value can't be negative");
             if (take < 1)
-                throw new ArgumentOutOfRangeException(nameof(take));
+                throw new ArgumentOutOfRangeException(nameof(take), take, "Value can't be less than 1");
 
             return values.OrderBy(orderKeySelector)
                          .Skip(page * take)
@@ -70,6 +72,7 @@ namespace Digicando.MongODM.Extensions
         /// <param name="page">Page to take</param>
         /// <param name="take">Elements per page</param>
         /// <returns>Selected elements page</returns>
+        /// <exception cref="ArgumentOutOfRangeException">Throw with invalid parameter values</exception>
         public static IEnumerable<TSource> PaginateDescending<TSource, TKey>(
             this IEnumerable<TSource> values,
             Func<TSource, TKey> orderKeySelector,
@@ -77,9 +80,9 @@ namespace Digicando.MongODM.Extensions
             int take)
         {
             if (page < 0)
-                throw new ArgumentOutOfRangeException(nameof(page));
+                throw new ArgumentOutOfRangeException(nameof(page), page, "Value can't be negative");
             if (take < 1)
-                throw new ArgumentOutOfRangeException(nameof(take));
+                throw new ArgumentOutOfRangeException(nameof(take), take, "Value can't be less than 1");
 
             return values.OrderByDescending(orderKeySelector)
                          .Skip(page * take)
@@ -96,6 +99,7 @@ namespace Digicando.MongODM.Extensions
         /// <param name="page">Page to take</param>
         /// <param name="take">Elements per page</param>
         /// <returns>Selected elements page</returns>
+        /// <exception cref="ArgumentOutOfRangeException">Throw with invalid parameter values</exception>
         public static IMongoQueryable<TSource> PaginateDescending<TSource, TKey>(
             this IMongoQueryable<TSource> values,
             Expression<Func<TSource, TKey>> orderKeySelector,
@@ -103,9 +107,9 @@ namespace Digicando.MongODM.Extensions
             int take)
         {
             if (page < 0)
-                throw new ArgumentOutOfRangeException(nameof(page));
+                throw new ArgumentOutOfRangeException(nameof(page), page, "Value can't be negative");
             if (take < 1)
-                throw new ArgumentOutOfRangeException(nameof(take));
+                throw new ArgumentOutOfRangeException(nameof(take), take, "Value can't be less than 1");
 
             return values.OrderByDescending(orderKeySelector)
                          .Skip(page * take)

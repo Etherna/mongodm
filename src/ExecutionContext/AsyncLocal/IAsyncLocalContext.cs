@@ -1,4 +1,6 @@
-﻿namespace Digicando.ExecContext.AsyncLocal
+﻿using System;
+
+namespace Digicando.ExecContext.AsyncLocal
 {
     /// <summary>
     ///     The <see cref="AsyncLocalContext"/> interface.
@@ -6,6 +8,11 @@
     /// </summary>
     public interface IAsyncLocalContext : IExecutionContext
     {
+        /// <summary>
+        /// Initialize a new async local context
+        /// </summary>
+        /// <returns>The new context handler</returns>
+        /// <exception cref="InvalidOperationException">Throw when another local context is found</exception>
         IAsyncLocalContextHandler InitAsyncLocalContext();
     }
 }

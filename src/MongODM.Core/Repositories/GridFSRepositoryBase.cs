@@ -1,4 +1,5 @@
 ﻿using Digicando.DomainHelper;
+using Digicando.MongODM.Exceptions;
 using Digicando.MongODM.Models;
 using Digicando.MongODM.ProxyModels;
 using Digicando.MongODM.Serialization;
@@ -80,7 +81,7 @@ namespace Digicando.MongODM.Repositories
             var filter = Builders<GridFSFileInfo>.Filter.Eq("_id", ObjectId.Parse(id));
             var mongoFile = await GridFSBucket.Find(filter).SingleOrDefaultAsync(cancellationToken);
             if (mongoFile == null)
-                throw new KeyNotFoundException($"Can't find key {id}");
+                throw new EntityNotFoundException($"Can't find key {id}");
 
             var file = ProxyGenerator.CreateInstance<TModel>(DbContext);
             ReflectionHelper.SetValue(file, m => m.Id, mongoFile.Id.ToString());

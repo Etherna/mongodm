@@ -1,4 +1,5 @@
 ﻿using Digicando.DomainHelper;
+using Digicando.MongODM.Exceptions;
 using Digicando.MongODM.Migration;
 using Digicando.MongODM.Models;
 using Digicando.MongODM.ProxyModels;
@@ -77,7 +78,7 @@ namespace Digicando.MongODM.Repositories
         public async Task DeleteAsync(IEntityModel model, CancellationToken cancellationToken = default)
         {
             if (!(model is TModel castedModel))
-                throw new ArgumentException("Invalid model type");
+                throw new InvalidEntityTypeException("Invalid model type");
             await DeleteAsync(castedModel, cancellationToken);
         }
 
@@ -108,7 +109,7 @@ namespace Digicando.MongODM.Repositories
             {
                 return await FindOneAsync(id, cancellationToken);
             }
-            catch (KeyNotFoundException)
+            catch (EntityNotFoundException)
             {
                 return null;
             }
@@ -127,7 +128,7 @@ namespace Digicando.MongODM.Repositories
         private async Task CascadeDeleteMembersAsync(object currentModel, IEnumerable<EntityMember> idPath)
         {
             if (!idPath.Any())
-                throw new ArgumentException("Member path can't be emty", nameof(idPath));
+                throw new ArgumentException("Member path can't be empty", nameof(idPath));
 
             var currentMember = idPath.First();
             var memberTail = idPath.Skip(1);
