@@ -279,7 +279,7 @@ namespace Digicando.MongODM.Serialization
             {
                 strBuilder.AppendLine($"{dependencies.Key.DeclaringType.Name}.{dependencies.Key.Name}");
                 foreach (var dependency in dependencies.Value)
-                    strBuilder.AppendLine($"  {dependency.ToString()}");
+                    strBuilder.AppendLine($"  {dependency}");
             }
             return strBuilder.ToString();
         }
@@ -293,7 +293,7 @@ namespace Digicando.MongODM.Serialization
             {
                 strBuilder.AppendLine($"{dependencies.Key.Name}");
                 foreach (var dependency in dependencies.Value)
-                    strBuilder.AppendLine($"  {dependency.ToString()}");
+                    strBuilder.AppendLine($"  {dependency}");
             }
             return strBuilder.ToString();
         }

@@ -9,8 +9,12 @@
     <Description>Execution context provider</Description>
   </PropertyGroup>
 
+  <PropertyGroup>
+    <NoWarn>$(NoWarn);NU5105</NoWarn>
+  </PropertyGroup>
+
   <ItemGroup>
-    <PackageReference Include="GitVersionTask" Version="5.1.3">
+    <PackageReference Include="GitVersionTask" Version="5.2.4">
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>

@@ -9,12 +9,16 @@
     <Description>Linker for use MongoDB with Hangfire</Description>
   </PropertyGroup>
 
+  <PropertyGroup>
+    <NoWarn>$(NoWarn);NU5105</NoWarn>
+  </PropertyGroup>
+
   <ItemGroup>
-    <PackageReference Include="GitVersionTask" Version="5.1.3">
+    <PackageReference Include="GitVersionTask" Version="5.2.4">
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
-    <PackageReference Include="Hangfire.Mongo" Version="0.6.6" />
+    <PackageReference Include="Hangfire.Mongo" Version="0.6.7" />
   </ItemGroup>
 
   <ItemGroup>
