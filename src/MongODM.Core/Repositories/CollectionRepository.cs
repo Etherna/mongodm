@@ -1,4 +1,5 @@
 ﻿using Digicando.MongODM.Exceptions;
+using Digicando.MongODM.Migration;
 using Digicando.MongODM.Models;
 using Digicando.MongODM.ProxyModels;
 using Digicando.MongODM.Serialization;
@@ -15,7 +16,7 @@ using System.Threading.Tasks;
 
 namespace Digicando.MongODM.Repositories
 {
-    public abstract class CollectionRepositoryBase<TModel, TKey> :
+    public class CollectionRepository<TModel, TKey> :
         RepositoryBase<TModel, TKey>,
         ICollectionRepository<TModel, TKey>
         where TModel : class, IEntityModel<TKey>
@@ -23,22 +24,31 @@ namespace Digicando.MongODM.Repositories
         // Fields.
         private readonly IDBMaintainer dbMaintainer;
         private readonly IDocumentSchemaRegister documentSchemaRegister;
+        private readonly CollectionRepositoryOptions<TModel> options;
 
         // Constructors.
-        public CollectionRepositoryBase(
-            string collectionName,
-            IDbContext dbContext)
+        public CollectionRepository(
+            IDbContext dbContext,
+            string name)
+            : this(dbContext, new CollectionRepositoryOptions<TModel>(name))
+        { }
+
+        public CollectionRepository(
+            IDbContext dbContext,
+            CollectionRepositoryOptions<TModel> options)
             : base(dbContext)
         {
-            Collection = dbContext.Database.GetCollection<TModel>(collectionName);
+            this.options = options ?? throw new ArgumentNullException(nameof(options));
+
+            Collection = dbContext.Database.GetCollection<TModel>(options.Name);
             dbMaintainer = dbContext.DBMaintainer;
             documentSchemaRegister = dbContext.DocumentSchemaRegister;
+            MigrationInfo = options.MigrationInfo;
         }
 
         // Properties.
         public IMongoCollection<TModel> Collection { get; }
-        protected virtual IEnumerable<(IndexKeysDefinition<TModel> keys, CreateIndexOptions<TModel> options)> IndexBuilders =>
-            new (IndexKeysDefinition<TModel> keys, CreateIndexOptions<TModel> options)[0];
+        public MongoMigrationBase<TModel> MigrationInfo { get; }
 
         // Public methods.
         public override async Task BuildIndexesAsync(IDocumentSchemaRegister schemaRegister, CancellationToken cancellationToken = default)
@@ -47,7 +57,7 @@ namespace Digicando.MongODM.Repositories
 
             // Define new indexes.
             //repository defined
-            newIndexes.AddRange(IndexBuilders.Select(pair =>
+            newIndexes.AddRange(options.IndexBuilders.Select(pair =>
             {
                 var (keys, options) = pair;
                 if (options.Name == null)

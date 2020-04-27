@@ -10,17 +10,15 @@ namespace Digicando.MongODM.Migration
     /// </summary>
     /// <typeparam name="TSource">Type of source model</typeparam>
     /// <typeparam name="TDest">Type of destination model</typeparam>
-    public class MongoCollectionMigration<TSource, TDest> : MongoMigrationBase
+    public class MongoCollectionMigration<TSource, TDest> : MongoMigrationBase<TSource>
     {
         private readonly Func<TSource, TDest> converter;
         private readonly IMongoCollection<TDest> destinationCollection;
         private readonly Func<TSource, bool> discriminator;
-        private readonly IMongoCollection<TSource> sourceCollection;
 
         public MongoCollectionMigration(
             Func<TSource, bool> discriminator,
             Func<TSource, TDest> converter,
-            IMongoCollection<TSource> sourceCollection,
             IMongoCollection<TDest> destinationCollection,
             int priorityIndex)
             : base(priorityIndex)
@@ -28,10 +26,9 @@ namespace Digicando.MongODM.Migration
             this.converter = converter;
             this.destinationCollection = destinationCollection;
             this.discriminator = discriminator;
-            this.sourceCollection = sourceCollection;
         }
 
-        public override async Task MigrateAsync(CancellationToken cancellationToken = default)
+        public override async Task MigrateAsync(IMongoCollection<TSource> sourceCollection, CancellationToken cancellationToken = default)
         {
             // Migrate documents.
             await sourceCollection.Find(Builders<TSource>.Filter.Empty, new FindOptions { NoCursorTimeout = true })

@@ -1,6 +1,5 @@
 ﻿using Digicando.DomainHelper;
 using Digicando.MongODM.Exceptions;
-using Digicando.MongODM.Migration;
 using Digicando.MongODM.Models;
 using Digicando.MongODM.ProxyModels;
 using Digicando.MongODM.Serialization;
@@ -23,9 +22,6 @@ namespace Digicando.MongODM.Repositories
         {
             this.DbContext = dbContext;
         }
-
-        // Properties.
-        public virtual MongoMigrationBase MigrationInfo { get; }
 
         // Protected properties.
         protected IDbContext DbContext { get; }

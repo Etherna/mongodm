@@ -12,18 +12,14 @@ namespace Digicando.MongODM.Migration
     /// </summary>
     /// <typeparam name="TModel">The model type</typeparam>
     /// <typeparam name="TKey">The model's key type</typeparam>
-    public class MongoDocumentMigration<TModel, TKey> : MongoMigrationBase
+    public class MongoDocumentMigration<TModel, TKey> : MongoMigrationBase<TModel>
         where TModel : class, IEntityModel<TKey>
     {
-        private readonly IMongoCollection<TModel> collection;
-
         public MongoDocumentMigration(
-            IMongoCollection<TModel> collection,
             DocumentVersion minimumDocumentVersion,
             int priorityIndex = 0)
             : base(priorityIndex)
         {
-            this.collection = collection;
             MinimumDocumentVersion = minimumDocumentVersion;
         }
 
@@ -32,7 +28,7 @@ namespace Digicando.MongODM.Migration
         /// <summary>
         /// Fix all documents prev of MinimumDocumentVersion
         /// </summary>
-        public override async Task MigrateAsync(CancellationToken cancellationToken = default)
+        public override async Task MigrateAsync(IMongoCollection<TModel> sourceCollection, CancellationToken cancellationToken = default)
         {
             var filterBuilder = Builders<TModel>.Filter;
             var filter = filterBuilder.Or(
@@ -59,8 +55,8 @@ namespace Digicando.MongODM.Migration
                     filterBuilder.Lt($"{DbContext.DocumentVersionElementName}.2", MinimumDocumentVersion.PatchRelease)));
 
             // Replace documents.
-            await collection.Find(filter, new FindOptions { NoCursorTimeout = true })
-                .ForEachAsync(obj => collection.ReplaceOneAsync(Builders<TModel>.Filter.Eq(m => m.Id, obj.Id), obj), cancellationToken);
+            await sourceCollection.Find(filter, new FindOptions { NoCursorTimeout = true })
+                .ForEachAsync(obj => sourceCollection.ReplaceOneAsync(Builders<TModel>.Filter.Eq(m => m.Id, obj.Id), obj), cancellationToken);
         }
     }
 }

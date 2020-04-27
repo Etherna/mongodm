@@ -4,8 +4,6 @@ using Digicando.MongODM.Models;
 using Digicando.MongODM.ProxyModels;
 using Digicando.MongODM.Serialization;
 using MongoDB.Bson;
-using MongoDB.Bson.IO;
-using MongoDB.Bson.Serialization;
 using MongoDB.Driver;
 using MongoDB.Driver.GridFS;
 using System;
@@ -16,24 +14,32 @@ using System.Threading.Tasks;
 
 namespace Digicando.MongODM.Repositories
 {
-    public abstract class GridFSRepositoryBase<TModel> :
+    public class GridFSRepository<TModel> :
         RepositoryBase<TModel, string>,
         IGridFSRepository<TModel>
         where TModel : class, IFileModel
     {
+        // Fields.
+        private readonly GridFSRepositoryOptions<TModel> options;
+
         // Constructors.
-        public GridFSRepositoryBase(
-            string bucketName,
-            IDbContext dbContext)
+        public GridFSRepository(
+            IDbContext dbContext,
+            string name)
+            : this(dbContext, new GridFSRepositoryOptions<TModel>(name))
+        { }
+
+        public GridFSRepository(
+            IDbContext dbContext,
+            GridFSRepositoryOptions<TModel> options)
             : base(dbContext)
         {
-            var bucketOptions = new GridFSBucketOptions();
-            if (bucketName != null)
-            {
-                bucketOptions.BucketName = bucketName;
-            }
+            this.options = options ?? throw new ArgumentNullException(nameof(options));
 
-            GridFSBucket = new GridFSBucket(dbContext.Database, bucketOptions);
+            GridFSBucket = new GridFSBucket(dbContext.Database, new GridFSBucketOptions
+            {
+                BucketName = options.Name
+            });
             ProxyGenerator = dbContext.ProxyGenerator;
         }
 
@@ -51,9 +57,6 @@ namespace Digicando.MongODM.Repositories
             await GridFSBucket.OpenDownloadStreamAsync(ObjectId.Parse(id), null, cancellationToken);
 
         // Protected methods.
-        protected virtual void CloneMetadataData(TModel src, TModel dest)
-        { }
-
         protected override async Task CreateOnDBAsync(IEnumerable<TModel> models, CancellationToken cancellationToken)
         {
             foreach (var model in models)
@@ -62,10 +65,14 @@ namespace Digicando.MongODM.Repositories
 
         protected override async Task CreateOnDBAsync(TModel model, CancellationToken cancellationToken)
         {
+            if (model is null)
+                throw new ArgumentNullException(nameof(model));
+
+            // Upload.
             model.Stream.Position = 0;
             var id = await GridFSBucket.UploadFromStreamAsync(model.Name, model.Stream, new GridFSUploadOptions
             {
-                Metadata = SerializeMetadata(model)
+                Metadata = options.MetadataSerializer?.Invoke(model)
             });
             ReflectionHelper.SetValue(model, m => m.Id, id.ToString());
         }
@@ -89,31 +96,9 @@ namespace Digicando.MongODM.Repositories
             ReflectionHelper.SetValue(file, m => m.Name, mongoFile.Filename);
 
             // Deserialize metadata.
-            DeserializeMetadata(file, mongoFile.Metadata);
+            options.MetadataDeserializer?.Invoke(mongoFile.Metadata, file);
 
             return file;
-        }
-
-        // Private helpers.
-        private void DeserializeMetadata(TModel obj, BsonDocument metadata)
-        {
-            if (metadata != null)
-            {
-                var metadataObject = BsonSerializer.Deserialize<TModel>(metadata);
-                CloneMetadataData(metadataObject, obj);
-            }
-        }
-
-        private BsonDocument SerializeMetadata(TModel obj)
-        {
-            if (obj == null)
-            {
-                return null;
-            }
-
-            var document = new BsonDocument();
-            BsonSerializer.Serialize(new BsonDocumentWriter(document), obj);
-            return document;
         }
     }
 }
