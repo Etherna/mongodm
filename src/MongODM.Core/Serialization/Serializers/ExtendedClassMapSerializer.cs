@@ -210,23 +210,18 @@ namespace Digicando.MongODM.Serialization.Serializers
         }
 
         // Helpers.
-        private static DocumentVersion BsonValueToDocumentVersion(BsonValue bsonValue)
-        {
-            switch (bsonValue)
+        private static DocumentVersion BsonValueToDocumentVersion(BsonValue bsonValue) =>
+            bsonValue switch
             {
-                case BsonNull _:
-                    return null;
-                case BsonString bsonString: // v < 0.12.0
-                    return new DocumentVersion(bsonString.AsString);
-                case BsonArray bsonArray: // 0.12.0 <= v
-                    return new DocumentVersion(
-                        bsonArray[0].AsInt32,
-                        bsonArray[1].AsInt32,
-                        bsonArray[2].AsInt32,
-                        bsonArray.Count >= 4 ? bsonArray[3].AsString : null);
-                default: throw new NotSupportedException();
-            }
-        }
+                BsonNull _ => null,
+                BsonString bsonString => new DocumentVersion(bsonString.AsString),
+                BsonArray bsonArray => new DocumentVersion(
+                    bsonArray[0].AsInt32,
+                    bsonArray[1].AsInt32,
+                    bsonArray[2].AsInt32,
+                    bsonArray.Count >= 4 ? bsonArray[3].AsString : null),
+                _ => throw new NotSupportedException(),
+            };
 
         private static BsonArray DocumentVersionToBsonArray(DocumentVersion documentVersion)
         {

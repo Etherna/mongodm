@@ -23,37 +23,46 @@ namespace Digicando.MongODM
         public class DeserializationTestElement
         {
             public DeserializationTestElement(
-                Action<BsonReader> bsonReaderPreAction = null,
-                Action<BsonReader> bsonReaderPostAction = null)
+                BsonDocument document,
+                FakeModel? expectedModel,
+                Action<BsonReader>? preAction = null,
+                Action<BsonReader>? postAction = null)
             {
-                BsonReaderPreAction = bsonReaderPreAction ?? (rd => { });
-                BsonReaderPostAction = bsonReaderPostAction ?? (rd => { });
+                Document = document;
+                ExpectedModel = expectedModel;
+                PreAction = preAction ?? (rd => { });
+                PostAction = postAction ?? (rd => { });
             }
 
-            public Action<BsonReader> BsonReaderPostAction { get; }
-            public Action<BsonReader> BsonReaderPreAction { get; }
-            public BsonDocument Document { get; set; }
-            public FakeModel ExpectedModel { get; set; }
+            public BsonDocument Document { get; }
+            public FakeModel? ExpectedModel { get; }
+            public Action<BsonReader> PreAction { get; }
+            public Action<BsonReader> PostAction { get; }
         }
         public class SerializationTestElement
         {
             public SerializationTestElement(
-                Action<BsonWriter> bsonWriterPreAction = null,
-                Action<BsonWriter> bsonWriterPostAction = null)
+                FakeModel? model,
+                BsonDocument expectedDocument,
+                Func<BsonSerializationContext, bool>? condition = null,
+                Action<BsonWriter>? preAction = null,
+                Action<BsonWriter>? postAction = null)
             {
-                SerializedDocument = new BsonDocument();
                 BsonWriter = new BsonDocumentWriter(SerializedDocument);
-                BsonWriterPreAction = bsonWriterPreAction ?? (wr => { });
-                BsonWriterPostAction = bsonWriterPostAction ?? (wr => { });
+                Condition = condition;
+                ExpectedDocument = expectedDocument;
+                Model = model;
+                PreAction = preAction ?? (wr => { });
+                PostAction = postAction ?? (wr => { });
             }
 
             public BsonWriter BsonWriter { get; }
-            public Action<BsonWriter> BsonWriterPostAction { get; }
-            public Action<BsonWriter> BsonWriterPreAction { get; }
-            public Func<BsonSerializationContext, bool> Condition { get; set; }
-            public BsonDocument ExpectedDocument { get; set; }
-            public FakeModel Model { get; set; }
-            public BsonDocument SerializedDocument { get; }
+            public Func<BsonSerializationContext, bool>? Condition { get; }
+            public BsonDocument ExpectedDocument { get; }
+            public FakeModel? Model { get; }
+            public Action<BsonWriter> PreAction { get; }
+            public Action<BsonWriter> PostAction { get; }
+            public BsonDocument SerializedDocument { get; } = new BsonDocument();
         }
 
         // Fields.
@@ -80,51 +89,45 @@ namespace Digicando.MongODM
                 {
                     // Null model
                     new DeserializationTestElement(
-                        rd =>
+                        new BsonDocument(new BsonElement("elem", BsonNull.Value)),
+                        null,
+                        preAction: rd =>
                         {
                             rd.ReadStartDocument();
                             rd.ReadName();
                         },
-                        rs => rs.ReadEndDocument())
-                    {
-                        ExpectedModel = null,
-                        Document = new BsonDocument(new BsonElement("elem", BsonNull.Value))
-                    },
+                        postAction: rd => rd.ReadEndDocument()),
 
                     // Model without extra members
-                    new DeserializationTestElement
-                    {
-                        ExpectedModel = new FakeModel
-                        {
-                            Id = "idVal",
-                            IntegerProp = 8,
-                            StringProp = "ok"
-                        },
-                        Document = new BsonDocument(new BsonElement[]
+                    new DeserializationTestElement(
+                        new BsonDocument(new BsonElement[]
                         {
                             new BsonElement("_id", new BsonString("idVal")),
                             new BsonElement("IntegerProp", new BsonInt32(8)),
                             new BsonElement("StringProp", new BsonString("ok"))
-                        } as IEnumerable<BsonElement>)
-                    },
-
-                    // Model with extra members
-                    new DeserializationTestElement
-                    {
-                        ExpectedModel = new FakeModel
+                        } as IEnumerable<BsonElement>),
+                        new FakeModel
                         {
                             Id = "idVal",
                             IntegerProp = 8,
-                            StringProp = "rightValue"
-                        },
-                        Document = new BsonDocument(new BsonElement[]
+                            StringProp = "ok"
+                        }),
+
+                    // Model with extra members
+                    new DeserializationTestElement(
+                        new BsonDocument(new BsonElement[]
                         {
                             new BsonElement("_id", new BsonString("idVal")),
                             new BsonElement("IntegerProp", new BsonInt32(8)),
                             new BsonElement("StringProp", new BsonString("wrongValue")),
                             new BsonElement("ExtraElement", new BsonString("rightValue"))
-                        } as IEnumerable<BsonElement>)
-                    }
+                        } as IEnumerable<BsonElement>),
+                        new FakeModel
+                        {
+                            Id = "idVal",
+                            IntegerProp = 8,
+                            StringProp = "rightValue"
+                        })
                 };
                 return tests.Select(t => new object[] { t });
             }
@@ -149,11 +152,11 @@ namespace Digicando.MongODM
                 });
 
             // Action
-            test.BsonReaderPreAction(bsonReader);
+            test.PreAction(bsonReader);
             var result = serializer.Deserialize(
                 BsonDeserializationContext.CreateRoot(bsonReader),
                 new BsonDeserializationArgs { NominalType = typeof(FakeModel) });
-            test.BsonReaderPostAction(bsonReader);
+            test.PostAction(bsonReader);
 
             // Assert
             Assert.Equal(test.ExpectedModel, result as FakeModel, new FakeModelComparer());
@@ -220,21 +223,18 @@ namespace Digicando.MongODM
                 {
                     // Null model
                     new SerializationTestElement(
-                        wr =>
+                        null,
+                        new BsonDocument(new BsonElement("elem", BsonNull.Value)),
+                        preAction: wr =>
                         {
                             wr.WriteStartDocument();
                             wr.WriteName("elem");
                         },
-                        wr => wr.WriteEndDocument())
-                    {
-                        Model = null,
-                        ExpectedDocument = new BsonDocument(new BsonElement("elem", BsonNull.Value))
-                    },
+                        postAction: wr => wr.WriteEndDocument()),
 
                     // Complex model
-                    new SerializationTestElement
-                    {
-                        Model = new FakeModel()
+                    new SerializationTestElement(
+                        new FakeModel()
                         {
                             EnumerableProp = new[] { new FakeModel(), null },
                             Id = "idVal",
@@ -242,7 +242,7 @@ namespace Digicando.MongODM
                             ObjectProp = new FakeModel(),
                             StringProp = "yes"
                         },
-                        ExpectedDocument = new BsonDocument(new BsonElement[]
+                        new BsonDocument(new BsonElement[]
                         {
                             new BsonElement("_id", new BsonString("idVal")),
                             new BsonElement("CreationDateTime", new BsonDateTime(new DateTime())),
@@ -271,18 +271,15 @@ namespace Digicando.MongODM
                             } as IEnumerable<BsonElement>)),
                             new BsonElement("StringProp", new BsonString("yes")),
                             new BsonElement("ExtraElement", new BsonString("extraValue"))
-                        } as IEnumerable<BsonElement>)
-                    },
+                        } as IEnumerable<BsonElement>)),
 
                     // True condition.
-                    new SerializationTestElement
-                    {
-                        Condition = _ => true,
-                        Model = new FakeModel()
+                    new SerializationTestElement(
+                        new FakeModel()
                         {
                             Id = "idVal",
                         },
-                        ExpectedDocument = new BsonDocument(new BsonElement[]
+                        new BsonDocument(new BsonElement[]
                         {
                             new BsonElement("_id", new BsonString("idVal")),
                             new BsonElement("CreationDateTime", new BsonDateTime(new DateTime())),
@@ -291,18 +288,16 @@ namespace Digicando.MongODM
                             new BsonElement("ObjectProp", BsonNull.Value),
                             new BsonElement("StringProp", BsonNull.Value),
                             new BsonElement("ExtraElement", new BsonString("extraValue"))
-                        } as IEnumerable<BsonElement>)
-                    },
+                        } as IEnumerable<BsonElement>),
+                        condition: _ => true),
 
                     // False condition.
-                    new SerializationTestElement
-                    {
-                        Condition = _ => false,
-                        Model = new FakeModel()
+                    new SerializationTestElement(
+                        new FakeModel()
                         {
                             Id = "idVal",
                         },
-                        ExpectedDocument = new BsonDocument(new BsonElement[]
+                        new BsonDocument(new BsonElement[]
                         {
                             new BsonElement("_id", new BsonString("idVal")),
                             new BsonElement("CreationDateTime", new BsonDateTime(new DateTime())),
@@ -310,24 +305,19 @@ namespace Digicando.MongODM
                             new BsonElement("IntegerProp", new BsonInt32(0)),
                             new BsonElement("ObjectProp", BsonNull.Value),
                             new BsonElement("StringProp", BsonNull.Value)
-                        } as IEnumerable<BsonElement>)
-                    }
-                };
-
-                // With a proxy class.
-                {
-                    var model = new FakeModelProxy()
-                    {
-                        Id = "idVal",
-                        IntegerProp = 42,
-                        ObjectProp = new FakeModel(),
-                        StringProp = "yes"
-                    };
-                    tests.Add(new SerializationTestElement
-                    {
-                        Condition = _ => false,
-                        Model = model,
-                        ExpectedDocument = new BsonDocument(new BsonElement[]
+                        } as IEnumerable<BsonElement>),
+                        condition: _ => false),
+                    
+                    // With a proxy class.
+                    new SerializationTestElement(
+                        new FakeModelProxy()
+                        {
+                            Id = "idVal",
+                            IntegerProp = 42,
+                            ObjectProp = new FakeModel(),
+                            StringProp = "yes"
+                        },
+                        new BsonDocument(new BsonElement[]
                         {
                             new BsonElement("_id", new BsonString("idVal")),
                             new BsonElement("CreationDateTime", new BsonDateTime(new DateTime())),
@@ -343,9 +333,9 @@ namespace Digicando.MongODM
                                 new BsonElement("StringProp", BsonNull.Value)
                             } as IEnumerable<BsonElement>)),
                             new BsonElement("StringProp", new BsonString("yes"))
-                        } as IEnumerable<BsonElement>)
-                    });
-                }
+                        } as IEnumerable<BsonElement>),
+                        condition: _ => false)
+                };
 
                 return tests.Select(t => new object[] { t });
             }
@@ -362,12 +352,12 @@ namespace Digicando.MongODM
                 .AddExtraElement(new BsonElement("ExtraElement", new BsonString("extraValue")), test.Condition);
 
             // Action
-            test.BsonWriterPreAction(test.BsonWriter);
+            test.PreAction(test.BsonWriter);
             serializer.Serialize(
                 BsonSerializationContext.CreateRoot(test.BsonWriter),
                 new BsonSerializationArgs { NominalType = typeof(FakeModel) },
-                test.Model);
-            test.BsonWriterPostAction(test.BsonWriter);
+                test.Model!);
+            test.PostAction(test.BsonWriter);
 
             // Assert
             Assert.Equal(0, test.SerializedDocument.CompareTo(test.ExpectedDocument));

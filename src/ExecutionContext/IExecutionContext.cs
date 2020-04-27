@@ -11,6 +11,6 @@ namespace Digicando.ExecContext
         /// <summary>
         /// The context dictionary.
         /// </summary>
-        IDictionary<object, object> Items { get; }
+        IDictionary<object, object>? Items { get; }
     }
 }

@@ -7,6 +7,7 @@
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
     <Authors>Digicando Srl</Authors>
     <Description>ODM framework for MongoDB</Description>
+    <LangVersion>8.0</LangVersion>
   </PropertyGroup>
 
   <PropertyGroup>

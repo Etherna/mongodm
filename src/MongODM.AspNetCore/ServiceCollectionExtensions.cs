@@ -18,13 +18,13 @@ namespace Microsoft.Extensions.DependencyInjection
     {
         public static void UseMongODM<TTaskRunner>(
             this IServiceCollection services,
-            IEnumerable<IExecutionContext> executionContexts = null)
+            IEnumerable<IExecutionContext>? executionContexts = null)
             where TTaskRunner : class, ITaskRunner =>
             UseMongODM<ProxyGenerator, TTaskRunner>(services, executionContexts);
 
         public static void UseMongODM<TProxyGenerator, TTaskRunner>(
             this IServiceCollection services,
-            IEnumerable<IExecutionContext> executionContexts = null)
+            IEnumerable<IExecutionContext>? executionContexts = null)
             where TProxyGenerator: class, IProxyGenerator
             where TTaskRunner: class, ITaskRunner
         {

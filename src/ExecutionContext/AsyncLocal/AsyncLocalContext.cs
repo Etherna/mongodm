@@ -17,10 +17,10 @@ namespace Digicando.ExecContext.AsyncLocal
     public class AsyncLocalContext : IAsyncLocalContext, IHandledAsyncLocalContext
     {
         // Fields.
-        private static readonly AsyncLocal<IDictionary<object, object>> asyncLocalContext = new AsyncLocal<IDictionary<object, object>>();
+        private static readonly AsyncLocal<IDictionary<object, object>?> asyncLocalContext = new AsyncLocal<IDictionary<object, object>?>();
 
         // Properties.
-        public IDictionary<object, object> Items => asyncLocalContext.Value;
+        public IDictionary<object, object>? Items => asyncLocalContext.Value;
 
         // Static properties.
         public static IAsyncLocalContext Instance { get; } = new AsyncLocalContext();

@@ -7,6 +7,8 @@
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
     <Authors>Digicando Srl</Authors>
     <Description>Execution context provider</Description>
+    <LangVersion>8.0</LangVersion>
+    <Nullable>enable</Nullable>
   </PropertyGroup>
 
   <PropertyGroup>

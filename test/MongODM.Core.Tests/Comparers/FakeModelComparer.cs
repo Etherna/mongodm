@@ -4,9 +4,9 @@ using System.Linq;
 
 namespace Digicando.MongODM.Comparers
 {
-    public class FakeModelComparer : EqualityComparer<FakeModel>
+    public class FakeModelComparer : EqualityComparer<FakeModel?>
     {
-        public override bool Equals(FakeModel x, FakeModel y)
+        public override bool Equals(FakeModel? x, FakeModel? y)
         {
             if (ReferenceEquals(x, y)) return true;
             if (x is null || y is null) return false;
@@ -50,7 +50,7 @@ namespace Digicando.MongODM.Comparers
             return true;
         }
 
-        public override int GetHashCode(FakeModel obj)
+        public override int GetHashCode(FakeModel? obj)
         {
             if (obj is null) return -1;
             return obj.GetHashCode();

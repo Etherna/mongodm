@@ -20,10 +20,13 @@ namespace Digicando.MongODM.HF.Tasks
 
         // Methods.
         [Queue(Queues.DB_MAINTENANCE)]
-        public Task RunAsync(Type dbContextType, Type modelType, Type keyType, IEnumerable<string> idPaths, object modelId) =>
-            typeof(UpdateDocDependenciesTask).GetMethod(
+        public Task RunAsync(Type dbContextType, Type modelType, Type keyType, IEnumerable<string> idPaths, object modelId)
+        {
+            var method = typeof(UpdateDocDependenciesTask).GetMethod(
                 nameof(UpdateDocDependenciesTask.RunAsync), BindingFlags.Public | BindingFlags.Instance)
-                .MakeGenericMethod(dbContextType, modelType, keyType)
-                .Invoke(task, new object[] { idPaths, modelId }) as Task;
+                .MakeGenericMethod(dbContextType, modelType, keyType);
+
+            return (Task)method.Invoke(task, new object[] { idPaths, modelId });
+        }
     }
 }

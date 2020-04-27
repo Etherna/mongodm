@@ -7,12 +7,6 @@ namespace Digicando.ExecContext
 {
     public class ExecutionContextSelectorTests
     {
-        [Fact]
-        public void NullContextsException()
-        {
-            Assert.Throws<ArgumentNullException>(() => new ExecutionContextSelector(null));
-        }
-
         [Theory]
         [InlineData(false, false, null)]
         [InlineData(false, true, "1")]
