@@ -1,5 +1,4 @@
-﻿using Digicando.MongODM.Migration;
-using Digicando.MongODM.Models;
+﻿using Digicando.MongODM.Models;
 using MongoDB.Driver;
 using MongoDB.Driver.Linq;
 using System;
@@ -27,7 +26,6 @@ namespace Digicando.MongODM.Repositories
         where TModel : class, IEntityModel<TKey>
     {
         IMongoCollection<TModel> Collection { get; }
-        MongoMigrationBase<TModel> MigrationInfo { get; }
 
         Task<IAsyncCursor<TProjection>> FindAsync<TProjection>(
             FilterDefinition<TModel> filter,

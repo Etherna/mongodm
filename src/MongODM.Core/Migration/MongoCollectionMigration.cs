@@ -1,4 +1,6 @@
-﻿using MongoDB.Driver;
+﻿using Digicando.MongODM.Models;
+using Digicando.MongODM.Repositories;
+using MongoDB.Driver;
 using System;
 using System.Threading;
 using System.Threading.Tasks;
@@ -8,35 +10,37 @@ namespace Digicando.MongODM.Migration
     /// <summary>
     /// Migrate a collection to another
     /// </summary>
-    /// <typeparam name="TSource">Type of source model</typeparam>
-    /// <typeparam name="TDest">Type of destination model</typeparam>
-    public class MongoCollectionMigration<TSource, TDest> : MongoMigrationBase<TSource>
+    /// <typeparam name="TModelSource">Type of source model</typeparam>
+    /// <typeparam name="TKeySource">Type of source key</typeparam>
+    /// <typeparam name="TModelDest">Type of destination model</typeparam>
+    /// <typeparam name="TKeyDest">Type of destination key</typeparam>
+    public class MongoCollectionMigration<TModelSource, TKeySource, TModelDest, TKeyDest> : MongoMigrationBase
+        where TModelSource : class, IEntityModel<TKeySource>
+        where TModelDest : class, IEntityModel<TKeyDest>
     {
-        private readonly Func<TSource, TDest> converter;
-        private readonly IMongoCollection<TDest> destinationCollection;
-        private readonly Func<TSource, bool> discriminator;
+        private readonly Func<TModelSource, TModelDest> converter;
+        private readonly Func<TModelSource, bool> discriminator;
+        private readonly IMongoCollection<TModelDest> destinationCollection;
+        private readonly IMongoCollection<TModelSource> sourceCollection;
 
         public MongoCollectionMigration(
-            Func<TSource, bool> discriminator,
-            Func<TSource, TDest> converter,
-            IMongoCollection<TDest> destinationCollection,
-            int priorityIndex)
-            : base(priorityIndex)
+            ICollectionRepository<TModelSource, TKeySource> sourceCollection,
+            ICollectionRepository<TModelDest, TKeyDest> destinationCollection,
+            Func<TModelSource, TModelDest> converter,
+            Func<TModelSource, bool> discriminator)
         {
+            this.sourceCollection = sourceCollection.Collection;
+            this.destinationCollection = destinationCollection.Collection;
             this.converter = converter;
-            this.destinationCollection = destinationCollection;
             this.discriminator = discriminator;
         }
 
-        public override async Task MigrateAsync(IMongoCollection<TSource> sourceCollection, CancellationToken cancellationToken = default)
-        {
-            // Migrate documents.
-            await sourceCollection.Find(Builders<TSource>.Filter.Empty, new FindOptions { NoCursorTimeout = true })
+        public override Task MigrateAsync(CancellationToken cancellationToken = default) =>
+            sourceCollection.Find(Builders<TModelSource>.Filter.Empty, new FindOptions { NoCursorTimeout = true })
                 .ForEachAsync(obj =>
                 {
                     if (discriminator(obj))
                         destinationCollection.InsertOneAsync(converter(obj));
                 }, cancellationToken);
-        }
     }
 }

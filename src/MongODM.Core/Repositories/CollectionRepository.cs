@@ -43,12 +43,10 @@ namespace Digicando.MongODM.Repositories
             Collection = dbContext.Database.GetCollection<TModel>(options.Name);
             dbMaintainer = dbContext.DBMaintainer;
             documentSchemaRegister = dbContext.DocumentSchemaRegister;
-            MigrationInfo = options.MigrationInfo;
         }
 
         // Properties.
         public IMongoCollection<TModel> Collection { get; }
-        public MongoMigrationBase<TModel> MigrationInfo { get; }
 
         // Public methods.
         public override async Task BuildIndexesAsync(IDocumentSchemaRegister schemaRegister, CancellationToken cancellationToken = default)

@@ -1,5 +1,4 @@
-﻿using Digicando.MongODM.Migration;
-using MongoDB.Driver;
+﻿using MongoDB.Driver;
 using System;
 using System.Collections.Generic;
 
@@ -14,6 +13,5 @@ namespace Digicando.MongODM.Repositories
         }
 
         public IEnumerable<(IndexKeysDefinition<TModel> keys, CreateIndexOptions<TModel> options)> IndexBuilders { get; set; }
-        public MongoMigrationBase<TModel> MigrationInfo { get; set; }
     }
 }
