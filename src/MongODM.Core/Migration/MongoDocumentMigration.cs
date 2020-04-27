@@ -1,4 +1,5 @@
 ﻿using Digicando.MongODM.Models;
+using Digicando.MongODM.Repositories;
 using Digicando.MongODM.Serialization;
 using MongoDB.Bson;
 using MongoDB.Driver;
@@ -15,19 +16,16 @@ namespace Digicando.MongODM.Migration
     public class MongoDocumentMigration<TModel, TKey> : MongoMigrationBase
         where TModel : class, IEntityModel<TKey>
     {
-        private readonly IMongoCollection<TModel> collection;
+        private readonly DocumentVersion minimumDocumentVersion;
+        private readonly IMongoCollection<TModel> sourceCollection;
 
         public MongoDocumentMigration(
-            IMongoCollection<TModel> collection,
-            DocumentVersion minimumDocumentVersion,
-            int priorityIndex = 0)
-            : base(priorityIndex)
+            ICollectionRepository<TModel, TKey> sourceCollection,
+            DocumentVersion minimumDocumentVersion)
         {
-            this.collection = collection;
-            MinimumDocumentVersion = minimumDocumentVersion;
+            this.sourceCollection = sourceCollection.Collection;
+            this.minimumDocumentVersion = minimumDocumentVersion;
         }
-
-        public DocumentVersion MinimumDocumentVersion { get; }
 
         /// <summary>
         /// Fix all documents prev of MinimumDocumentVersion
@@ -45,22 +43,22 @@ namespace Digicando.MongODM.Migration
 
                 // Version is an array with values ("0.12.0" <= doc.Version).
                 //doc.Major < min.Major
-                filterBuilder.Lt($"{DbContext.DocumentVersionElementName}.0", MinimumDocumentVersion.MajorRelease),
+                filterBuilder.Lt($"{DbContext.DocumentVersionElementName}.0", minimumDocumentVersion.MajorRelease),
 
                 //doc.Major == min.Major && doc.Minor < min.Minor
                 filterBuilder.And(
-                    filterBuilder.Eq($"{DbContext.DocumentVersionElementName}.0", MinimumDocumentVersion.MajorRelease),
-                    filterBuilder.Lt($"{DbContext.DocumentVersionElementName}.1", MinimumDocumentVersion.MinorRelease)),
+                    filterBuilder.Eq($"{DbContext.DocumentVersionElementName}.0", minimumDocumentVersion.MajorRelease),
+                    filterBuilder.Lt($"{DbContext.DocumentVersionElementName}.1", minimumDocumentVersion.MinorRelease)),
 
                 //doc.Major == min.Major && doc.Minor == min.Minor && doc.Patch < min.Patch
                 filterBuilder.And(
-                    filterBuilder.Eq($"{DbContext.DocumentVersionElementName}.0", MinimumDocumentVersion.MajorRelease),
-                    filterBuilder.Eq($"{DbContext.DocumentVersionElementName}.1", MinimumDocumentVersion.MinorRelease),
-                    filterBuilder.Lt($"{DbContext.DocumentVersionElementName}.2", MinimumDocumentVersion.PatchRelease)));
+                    filterBuilder.Eq($"{DbContext.DocumentVersionElementName}.0", minimumDocumentVersion.MajorRelease),
+                    filterBuilder.Eq($"{DbContext.DocumentVersionElementName}.1", minimumDocumentVersion.MinorRelease),
+                    filterBuilder.Lt($"{DbContext.DocumentVersionElementName}.2", minimumDocumentVersion.PatchRelease)));
 
             // Replace documents.
-            await collection.Find(filter, new FindOptions { NoCursorTimeout = true })
-                .ForEachAsync(obj => collection.ReplaceOneAsync(Builders<TModel>.Filter.Eq(m => m.Id, obj.Id), obj), cancellationToken);
+            await sourceCollection.Find(filter, new FindOptions { NoCursorTimeout = true })
+                .ForEachAsync(obj => sourceCollection.ReplaceOneAsync(Builders<TModel>.Filter.Eq(m => m.Id, obj.Id), obj), cancellationToken);
         }
     }
 }

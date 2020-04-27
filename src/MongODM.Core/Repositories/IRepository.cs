@@ -1,5 +1,4 @@
-﻿using Digicando.MongODM.Migration;
-using Digicando.MongODM.Models;
+﻿using Digicando.MongODM.Models;
 using Digicando.MongODM.Serialization;
 using System.Collections.Generic;
 using System.Threading;
@@ -9,8 +8,6 @@ namespace Digicando.MongODM.Repositories
 {
     public interface IRepository
     {
-        MongoMigrationBase MigrationInfo { get; }
-
         Task BuildIndexesAsync(
             IDocumentSchemaRegister schemaRegister,
             CancellationToken cancellationToken = default);

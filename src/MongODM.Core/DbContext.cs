@@ -1,4 +1,5 @@
-﻿using Digicando.MongODM.Models;
+﻿using Digicando.MongODM.Migration;
+using Digicando.MongODM.Models;
 using Digicando.MongODM.ProxyModels;
 using Digicando.MongODM.Repositories;
 using Digicando.MongODM.Serialization;
@@ -81,17 +82,16 @@ namespace Digicando.MongODM
         public ISerializerModifierAccessor SerializerModifierAccessor { get; }
 
         // Protected properties.
+        protected virtual IEnumerable<MongoMigrationBase> MigrationTaskList { get; } = Array.Empty<MongoMigrationBase>();
         protected abstract IEnumerable<IModelSerializerCollector> SerializerCollectors { get; }
 
         // Methods.
         public async Task MigrateRepositoriesAsync(CancellationToken cancellationToken = default)
         {
-            // Migrate documents.
             IsMigrating = true;
-            foreach (var migration in from repository in ModelCollectionRepositoryMap.Values
-                                      where repository.MigrationInfo != null
-                                      orderby repository.MigrationInfo.PriorityIndex
-                                      select repository.MigrationInfo)
+
+            // Migrate collections.
+            foreach (var migration in MigrationTaskList)
                 await migration.MigrateAsync(cancellationToken);
 
             // Build indexes.
