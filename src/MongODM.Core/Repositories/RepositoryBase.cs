@@ -11,22 +11,28 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 
+#nullable enable
 namespace Digicando.MongODM.Repositories
 {
     public abstract class RepositoryBase<TModel, TKey> :
         IRepository<TModel, TKey>
         where TModel : class, IEntityModel<TKey>
     {
-        // Constructors.
-        public RepositoryBase(IDbContext dbContext)
+        // Initializer.
+        public virtual void Initialize(IDbContext dbContext)
         {
-            this.DbContext = dbContext;
+            if (IsInitialized)
+                throw new InvalidOperationException("Instance already initialized");
+            DbContext = dbContext;
+
+            IsInitialized = true;
         }
 
-        // Protected properties.
-        protected IDbContext DbContext { get; }
+        // Properties.
+        public IDbContext DbContext { get; private set; } = default!;
+        public bool IsInitialized { get; private set; }
 
-        // Public methods.
+        // Methods.
         public abstract Task BuildIndexesAsync(IDocumentSchemaRegister schemaRegister, CancellationToken cancellationToken = default);
 
         public virtual async Task CreateAsync(IEnumerable<TModel> models, CancellationToken cancellationToken = default)
@@ -86,13 +92,13 @@ namespace Digicando.MongODM.Repositories
             {
                 var cachedModel = DbContext.DBCache.LoadedModels[id] as TModel;
                 if ((cachedModel as IReferenceable)?.IsSummary == false)
-                    return cachedModel;
+                    return cachedModel!;
             }
 
             return await FindOneOnDBAsync(id, cancellationToken);
         }
 
-        public async Task<TModel> TryFindOneAsync(
+        public async Task<TModel?> TryFindOneAsync(
             TKey id,
             CancellationToken cancellationToken = default)
         {
@@ -111,7 +117,7 @@ namespace Digicando.MongODM.Repositories
             }
         }
 
-        // Protected methods.
+        // Protected abstract methods.
         protected abstract Task CreateOnDBAsync(IEnumerable<TModel> models, CancellationToken cancellationToken);
 
         protected abstract Task CreateOnDBAsync(TModel model, CancellationToken cancellationToken);
@@ -133,7 +139,7 @@ namespace Digicando.MongODM.Repositories
             {
                 //cascade delete model
                 var repository = DbContext.ModelRepositoryMap[currentModel.GetType().BaseType];
-                try { await repository.DeleteAsync(currentModel as IEntityModel); }
+                try { await repository.DeleteAsync((IEntityModel)currentModel); }
                 catch { }
             }
             else

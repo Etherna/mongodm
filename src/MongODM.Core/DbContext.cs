@@ -14,6 +14,7 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 
+#nullable enable
 namespace Digicando.MongODM
 {
     public abstract class DbContext : IDbContext
@@ -41,9 +42,16 @@ namespace Digicando.MongODM
             Client = new MongoClient(options.ConnectionString);
             Database = Client.GetDatabase(options.DBName);
 
-            // Init IoC dependencies.
+            // Initialize internal dependencies.
             DocumentSchemaRegister.Initialize(this);
             DBMaintainer.Initialize(this);
+
+            // Find repositories.
+            //todo
+
+            // Initialize repositories.
+            foreach (var repository in ModelRepositoryMap.Values)
+                repository.Initialize(this);
 
             // Customize conventions.
             ConventionRegistry.Register("Enum string", new ConventionPack
@@ -62,7 +70,7 @@ namespace Digicando.MongODM
         // Public properties.
         public IReadOnlyCollection<IEntityModel> ChangedModelsList =>
             DBCache.LoadedModels.Values
-                .Where(model => (model as IAuditable).IsChanged)
+                .Where(model => (model as IAuditable)?.IsChanged == true)
                 .ToList();
         public IMongoClient Client { get; }
         public IMongoDatabase Database { get; }

@@ -1,7 +1,6 @@
 ﻿using Digicando.DomainHelper;
 using Digicando.MongODM.Exceptions;
 using Digicando.MongODM.Models;
-using Digicando.MongODM.ProxyModels;
 using Digicando.MongODM.Serialization;
 using MongoDB.Bson;
 using MongoDB.Driver;
@@ -12,6 +11,7 @@ using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
 
+#nullable enable
 namespace Digicando.MongODM.Repositories
 {
     public class GridFSRepository<TModel> :
@@ -21,31 +21,21 @@ namespace Digicando.MongODM.Repositories
     {
         // Fields.
         private readonly GridFSRepositoryOptions<TModel> options;
+        private GridFSBucket _gridFSBucket = default!;
 
         // Constructors.
-        public GridFSRepository(
-            IDbContext dbContext,
-            string name)
-            : this(dbContext, new GridFSRepositoryOptions<TModel>(name))
+        public GridFSRepository(string name)
+            : this(new GridFSRepositoryOptions<TModel>(name))
         { }
 
-        public GridFSRepository(
-            IDbContext dbContext,
-            GridFSRepositoryOptions<TModel> options)
-            : base(dbContext)
+        public GridFSRepository(GridFSRepositoryOptions<TModel> options)
         {
             this.options = options ?? throw new ArgumentNullException(nameof(options));
-
-            GridFSBucket = new GridFSBucket(dbContext.Database, new GridFSBucketOptions
-            {
-                BucketName = options.Name
-            });
-            ProxyGenerator = dbContext.ProxyGenerator;
         }
 
         // Properties.
-        protected IGridFSBucket GridFSBucket { get; }
-        protected IProxyGenerator ProxyGenerator { get; }
+        public IGridFSBucket GridFSBucket => _gridFSBucket ??
+            (_gridFSBucket = new GridFSBucket(DbContext.Database, new GridFSBucketOptions { BucketName = options.Name }));
 
         // Methods.
         public override Task BuildIndexesAsync(IDocumentSchemaRegister schemaRegister, CancellationToken cancellationToken = default) => Task.CompletedTask;
@@ -90,7 +80,7 @@ namespace Digicando.MongODM.Repositories
             if (mongoFile == null)
                 throw new EntityNotFoundException($"Can't find key {id}");
 
-            var file = ProxyGenerator.CreateInstance<TModel>(DbContext);
+            var file = DbContext.ProxyGenerator.CreateInstance<TModel>(DbContext);
             ReflectionHelper.SetValue(file, m => m.Id, mongoFile.Id.ToString());
             ReflectionHelper.SetValue(file, m => m.Length, mongoFile.Length);
             ReflectionHelper.SetValue(file, m => m.Name, mongoFile.Filename);
