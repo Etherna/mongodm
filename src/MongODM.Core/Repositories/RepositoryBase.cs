@@ -30,6 +30,8 @@ namespace Digicando.MongODM.Repositories
 
         // Properties.
         public IDbContext DbContext { get; private set; } = default!;
+        public Type GetKeyType => typeof(TKey);
+        public Type GetModelType => typeof(TModel);
         public bool IsInitialized { get; private set; }
 
         // Methods.
@@ -138,7 +140,7 @@ namespace Digicando.MongODM.Repositories
             if (currentMember.IsId)
             {
                 //cascade delete model
-                var repository = DbContext.ModelRepositoryMap[currentModel.GetType().BaseType];
+                var repository = DbContext.RepositoryRegister.ModelRepositoryMap[currentModel.GetType().BaseType];
                 try { await repository.DeleteAsync((IEntityModel)currentModel); }
                 catch { }
             }

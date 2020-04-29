@@ -1,5 +1,6 @@
 ﻿using Digicando.MongODM.Models;
 using Digicando.MongODM.Serialization;
+using System;
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
@@ -10,6 +11,8 @@ namespace Digicando.MongODM.Repositories
     public interface IRepository : IDbContextInitializable
     {
         IDbContext DbContext { get; }
+        Type GetKeyType { get; }
+        Type GetModelType { get; }
 
         Task BuildIndexesAsync(
             IDocumentSchemaRegister schemaRegister,

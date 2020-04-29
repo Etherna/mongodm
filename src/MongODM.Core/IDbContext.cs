@@ -4,11 +4,10 @@ using Digicando.MongODM.Serialization;
 using Digicando.MongODM.Serialization.Modifiers;
 using Digicando.MongODM.Utility;
 using MongoDB.Driver;
-using System;
-using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 
+#nullable enable
 namespace Digicando.MongODM
 {
     /// <summary>
@@ -53,24 +52,14 @@ namespace Digicando.MongODM
         bool IsMigrating { get; }
         
         /// <summary>
-        /// Model-Repository map for collection types.
-        /// </summary>
-        IReadOnlyDictionary<Type, ICollectionRepository> ModelCollectionRepositoryMap { get; }
-
-        /// <summary>
-        /// Model-Repository map for gridfs types.
-        /// </summary>
-        IReadOnlyDictionary<Type, IGridFSRepository> ModelGridFSRepositoryMap { get; }
-
-        /// <summary>
-        /// Model-Repository map for both collection and gridfs types.
-        /// </summary>
-        IReadOnlyDictionary<Type, IRepository> ModelRepositoryMap { get; }
-        
-        /// <summary>
         /// Current model proxy generator.
         /// </summary>
         IProxyGenerator ProxyGenerator { get; }
+
+        /// <summary>
+        /// Register of available repositories.
+        /// </summary>
+        IRepositoryRegister RepositoryRegister { get; }
 
         /// <summary>
         /// Serializer modifier accessor.

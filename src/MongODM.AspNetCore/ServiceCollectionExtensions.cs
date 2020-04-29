@@ -3,6 +3,7 @@ using Digicando.ExecContext.AsyncLocal;
 using Digicando.MongODM;
 using Digicando.MongODM.AspNetCore;
 using Digicando.MongODM.ProxyModels;
+using Digicando.MongODM.Repositories;
 using Digicando.MongODM.Serialization;
 using Digicando.MongODM.Serialization.Modifiers;
 using Digicando.MongODM.Tasks;
@@ -56,6 +57,7 @@ namespace Microsoft.Extensions.DependencyInjection
             services.TryAddTransient<IDBCache, DBCache>();
             services.TryAddTransient<IDBMaintainer, DBMaintainer>();
             services.TryAddTransient<IDocumentSchemaRegister, DocumentSchemaRegister>();
+            services.TryAddTransient<IRepositoryRegister, RepositoryRegister>();
             services.TryAddSingleton<ISerializerModifierAccessor, SerializerModifierAccessor>();
 
             //tasks

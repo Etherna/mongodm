@@ -10,6 +10,7 @@ using System.Linq;
 using System.Reflection;
 using System.Threading.Tasks;
 
+#nullable enable
 namespace Digicando.MongODM.ProxyModels
 {
     public class ReferenceableInterceptor<TModel, TKey> : ModelInterceptorBase<TModel>
@@ -26,10 +27,7 @@ namespace Digicando.MongODM.ProxyModels
             IDbContext dbContext)
             : base(additionalInterfaces)
         {
-            if (typeof(TModel).GetInterfaces().Contains(typeof(IFileModel)))
-                repository = dbContext.ModelGridFSRepositoryMap[typeof(TModel)] as IRepository<TModel, TKey>;
-            else
-                repository = dbContext.ModelCollectionRepositoryMap[typeof(TModel)] as IRepository<TModel, TKey>;
+            repository = (IRepository<TModel, TKey>)dbContext.RepositoryRegister.ModelRepositoryMap[typeof(TModel)];
         }
 
         // Protected methods.
@@ -52,7 +50,7 @@ namespace Digicando.MongODM.ProxyModels
                 }
                 else if (invocation.Method.Name == nameof(IReferenceable.MergeFullModel))
                 {
-                    MergeFullModel(invocation.Proxy as TModel, invocation.GetArgumentValue(0) as TModel);
+                    MergeFullModel((TModel)invocation.Proxy, invocation.GetArgumentValue(0) as TModel);
                 }
                 else if (invocation.Method.Name == nameof(IReferenceable.SetAsSummary))
                 {
@@ -82,7 +80,7 @@ namespace Digicando.MongODM.ProxyModels
                 // If member is not loaded, load the full object.
                 if (!settedMemberNames.ContainsKey(propertyName))
                 {
-                    var task = FullLoadAsync(invocation.Proxy as TModel);
+                    var task = FullLoadAsync((TModel)invocation.Proxy);
                     task.Wait();
                 }
             }
@@ -108,7 +106,7 @@ namespace Digicando.MongODM.ProxyModels
                         // If member is not setted and is summary, load the full object.
                         if (!settedMemberNames.ContainsKey(propertyName))
                         {
-                            var task = FullLoadAsync(invocation.Proxy as TModel);
+                            var task = FullLoadAsync((TModel)invocation.Proxy);
                             task.Wait();
 
                             break;
@@ -136,7 +134,7 @@ namespace Digicando.MongODM.ProxyModels
             }
         }
 
-        private void MergeFullModel(TModel model, TModel fullModel)
+        private void MergeFullModel(TModel model, TModel? fullModel)
         {
             if (fullModel != null)
             {

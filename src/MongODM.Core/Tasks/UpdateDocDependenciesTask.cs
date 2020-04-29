@@ -6,6 +6,7 @@ using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 
+#nullable enable
 namespace Digicando.MongODM.Tasks
 {
     public class UpdateDocDependenciesTask : IUpdateDocDependenciesTask
@@ -30,12 +31,12 @@ namespace Digicando.MongODM.Tasks
             where TModel : class, IEntityModel<TKey>
             where TDbContext : class, IDbContext
         {
-            var dbContext = serviceProvider.GetService(typeof(TDbContext)) as TDbContext;
+            var dbContext = (TDbContext)serviceProvider.GetService(typeof(TDbContext));
 
             // Get repository.
-            if (!dbContext.ModelCollectionRepositoryMap.ContainsKey(typeof(TModel)))
+            if (!dbContext.RepositoryRegister.ModelCollectionRepositoryMap.ContainsKey(typeof(TModel)))
                 return;
-            var repository = dbContext.ModelCollectionRepositoryMap[typeof(TModel)] as ICollectionRepository<TModel, TKey>;
+            var repository = (ICollectionRepository<TModel, TKey>)dbContext.RepositoryRegister.ModelCollectionRepositoryMap[typeof(TModel)];
 
             HashSet<TKey> upgradedDocumentsId = new HashSet<TKey>();
             using (serializerModifierAccessor.EnableReferenceSerializerModifier(true))

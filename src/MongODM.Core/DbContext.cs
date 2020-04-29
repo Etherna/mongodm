@@ -29,6 +29,7 @@ namespace Digicando.MongODM
             IDocumentSchemaRegister documentSchemaRegister,
             DbContextOptions options,
             IProxyGenerator proxyGenerator,
+            IRepositoryRegister repositoryRegister,
             ISerializerModifierAccessor serializerModifierAccessor)
         {
             DBCache = dbCache;
@@ -36,6 +37,7 @@ namespace Digicando.MongODM
             DocumentSchemaRegister = documentSchemaRegister;
             DocumentVersion = options.DocumentVersion;
             ProxyGenerator = proxyGenerator;
+            RepositoryRegister = repositoryRegister;
             SerializerModifierAccessor = serializerModifierAccessor;
 
             // Initialize MongoDB driver.
@@ -45,12 +47,10 @@ namespace Digicando.MongODM
             // Initialize internal dependencies.
             DocumentSchemaRegister.Initialize(this);
             DBMaintainer.Initialize(this);
-
-            // Find repositories.
-            //todo
+            RepositoryRegister.Initialize(this);
 
             // Initialize repositories.
-            foreach (var repository in ModelRepositoryMap.Values)
+            foreach (var repository in RepositoryRegister.ModelRepositoryMap.Values)
                 repository.Initialize(this);
 
             // Customize conventions.
@@ -79,14 +79,8 @@ namespace Digicando.MongODM
         public IDocumentSchemaRegister DocumentSchemaRegister { get; }
         public DocumentVersion DocumentVersion { get; }
         public bool IsMigrating { get; private set; }
-        public abstract IReadOnlyDictionary<Type, ICollectionRepository> ModelCollectionRepositoryMap { get; }
-        public abstract IReadOnlyDictionary<Type, IGridFSRepository> ModelGridFSRepositoryMap { get; }
-        public IReadOnlyDictionary<Type, IRepository> ModelRepositoryMap =>
-            Enumerable.Union<(Type ModelType, IRepository Repository)>(
-                ModelCollectionRepositoryMap.Select(pair => (pair.Key, pair.Value as IRepository)),
-                ModelGridFSRepositoryMap.Select(pair => (pair.Key, pair.Value as IRepository)))
-            .ToDictionary(pair => pair.ModelType, pair => pair.Repository);
         public IProxyGenerator ProxyGenerator { get; }
+        public IRepositoryRegister RepositoryRegister { get; }
         public ISerializerModifierAccessor SerializerModifierAccessor { get; }
 
         // Protected properties.
@@ -103,7 +97,7 @@ namespace Digicando.MongODM
                 await migration.MigrateAsync(cancellationToken);
 
             // Build indexes.
-            foreach (var repository in ModelCollectionRepositoryMap.Values)
+            foreach (var repository in RepositoryRegister.ModelCollectionRepositoryMap.Values)
                 await repository.BuildIndexesAsync(DocumentSchemaRegister, cancellationToken);
 
             IsMigrating = false;
@@ -145,9 +139,9 @@ namespace Digicando.MongODM
             foreach (var model in ChangedModelsList)
             {
                 var modelType = model.GetType().BaseType;
-                if (ModelCollectionRepositoryMap.ContainsKey(modelType)) //can't replace if is a file
+                if (RepositoryRegister.ModelCollectionRepositoryMap.ContainsKey(modelType)) //can't replace if is a file
                 {
-                    var repository = ModelCollectionRepositoryMap[modelType];
+                    var repository = RepositoryRegister.ModelCollectionRepositoryMap[modelType];
                     await repository.ReplaceAsync(model);
                 }
             }
