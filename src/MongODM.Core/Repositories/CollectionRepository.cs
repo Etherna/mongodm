@@ -2,7 +2,6 @@
 using Digicando.MongODM.Models;
 using Digicando.MongODM.ProxyModels;
 using Digicando.MongODM.Serialization;
-using Digicando.MongODM.Utility;
 using MongoDB.Bson;
 using MongoDB.Driver;
 using MongoDB.Driver.Linq;
@@ -13,6 +12,7 @@ using System.Linq.Expressions;
 using System.Threading;
 using System.Threading.Tasks;
 
+#nullable enable
 namespace Digicando.MongODM.Repositories
 {
     public class CollectionRepository<TModel, TKey> :
@@ -21,31 +21,21 @@ namespace Digicando.MongODM.Repositories
         where TModel : class, IEntityModel<TKey>
     {
         // Fields.
-        private readonly IDBMaintainer dbMaintainer;
-        private readonly IDocumentSchemaRegister documentSchemaRegister;
         private readonly CollectionRepositoryOptions<TModel> options;
+        private IMongoCollection<TModel> _collection = default!;
 
         // Constructors.
-        public CollectionRepository(
-            IDbContext dbContext,
-            string name)
-            : this(dbContext, new CollectionRepositoryOptions<TModel>(name))
+        public CollectionRepository(string name)
+            : this(new CollectionRepositoryOptions<TModel>(name))
         { }
 
-        public CollectionRepository(
-            IDbContext dbContext,
-            CollectionRepositoryOptions<TModel> options)
-            : base(dbContext)
+        public CollectionRepository(CollectionRepositoryOptions<TModel> options)
         {
             this.options = options ?? throw new ArgumentNullException(nameof(options));
-
-            Collection = dbContext.Database.GetCollection<TModel>(options.Name);
-            dbMaintainer = dbContext.DBMaintainer;
-            documentSchemaRegister = dbContext.DocumentSchemaRegister;
         }
 
         // Properties.
-        public IMongoCollection<TModel> Collection { get; }
+        public IMongoCollection<TModel> Collection => _collection ?? (_collection = DbContext.Database.GetCollection<TModel>(options.Name));
 
         // Public methods.
         public override async Task BuildIndexesAsync(IDocumentSchemaRegister schemaRegister, CancellationToken cancellationToken = default)
@@ -74,7 +64,7 @@ namespace Digicando.MongODM.Repositories
                     new CreateIndexOptions { Name = "ver" })));
 
             //referenced documents
-            var dependencies = documentSchemaRegister.GetModelEntityReferencesIds(typeof(TModel));
+            var dependencies = DbContext.DocumentSchemaRegister.GetModelEntityReferencesIds(typeof(TModel));
 
             var idPaths = dependencies
                 .Select(dependency => dependency.MemberPathToString())
@@ -112,7 +102,7 @@ namespace Digicando.MongODM.Repositories
 
         public virtual Task<IAsyncCursor<TProjection>> FindAsync<TProjection>(
             FilterDefinition<TModel> filter,
-            FindOptions<TModel, TProjection> options = null,
+            FindOptions<TModel, TProjection>? options = null,
             CancellationToken cancellationToken = default) =>
             Collection.FindAsync(filter, options, cancellationToken);
 
@@ -123,21 +113,21 @@ namespace Digicando.MongODM.Repositories
 
         public virtual Task<TResult> QueryElementsAsync<TResult>(
             Func<IMongoQueryable<TModel>, Task<TResult>> query,
-            AggregateOptions aggregateOptions = null) =>
+            AggregateOptions? aggregateOptions = null) =>
             query(Collection.AsQueryable(aggregateOptions));
 
         public virtual Task ReplaceAsync(
             object model,
             bool updateDependentDocuments = true,
             CancellationToken cancellationToken = default) =>
-            ReplaceAsync(model as TModel, updateDependentDocuments, cancellationToken);
+            ReplaceAsync((TModel)model, updateDependentDocuments, cancellationToken);
 
         public virtual Task ReplaceAsync(
             object model,
             IClientSessionHandle session,
             bool updateDependentDocuments = true,
             CancellationToken cancellationToken = default) =>
-            ReplaceAsync(model as TModel, session, updateDependentDocuments, cancellationToken);
+            ReplaceAsync((TModel)model, session, updateDependentDocuments, cancellationToken);
 
         public virtual Task ReplaceAsync(
             TModel model,
@@ -171,7 +161,7 @@ namespace Digicando.MongODM.Repositories
 
             try
             {
-                return await FindOneOnDBAsync(m => m.Id.Equals(id), cancellationToken: cancellationToken);
+                return await FindOneOnDBAsync(m => m.Id!.Equals(id), cancellationToken: cancellationToken);
             }
             catch (EntityNotFoundException)
             {
@@ -198,7 +188,7 @@ namespace Digicando.MongODM.Repositories
 
         private async Task ReplaceHelperAsync(
             TModel model,
-            IClientSessionHandle session,
+            IClientSessionHandle? session,
             bool updateDependentDocuments,
             CancellationToken cancellationToken)
         {
@@ -224,10 +214,10 @@ namespace Digicando.MongODM.Repositories
 
             // Update dependent documents.
             if (updateDependentDocuments)
-                dbMaintainer.OnUpdatedModel(model as IAuditable, model.Id);
+                DbContext.DBMaintainer.OnUpdatedModel((IAuditable)model, model.Id);
 
             // Reset changed members.
-            (model as IAuditable).ResetChangedMembers();
+            (model as IAuditable)?.ResetChangedMembers();
         }
     }
 }

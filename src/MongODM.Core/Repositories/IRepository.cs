@@ -1,13 +1,19 @@
 ﻿using Digicando.MongODM.Models;
 using Digicando.MongODM.Serialization;
+using System;
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 
+#nullable enable
 namespace Digicando.MongODM.Repositories
 {
-    public interface IRepository
+    public interface IRepository : IDbContextInitializable
     {
+        IDbContext DbContext { get; }
+        Type GetKeyType { get; }
+        Type GetModelType { get; }
+
         Task BuildIndexesAsync(
             IDocumentSchemaRegister schemaRegister,
             CancellationToken cancellationToken = default);
@@ -46,7 +52,7 @@ namespace Digicando.MongODM.Repositories
         /// <param name="id">Model's Id</param>
         /// <param name="cancellationToken">The cancellation token</param>
         /// <returns>The model, null if it doesn't exist</returns>
-        Task<TModel> TryFindOneAsync(
+        Task<TModel?> TryFindOneAsync(
             TKey id,
             CancellationToken cancellationToken = default);
     }

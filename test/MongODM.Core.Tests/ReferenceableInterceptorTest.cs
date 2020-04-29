@@ -24,7 +24,7 @@ namespace Digicando.MongODM
             repositoryMock = new Mock<ICollectionRepository<FakeModel, string>>();
 
             dbContextMock = new Mock<IDbContext>();
-            dbContextMock.Setup(r => r.ModelCollectionRepositoryMap[typeof(FakeModel)])
+            dbContextMock.Setup(c => c.RepositoryRegister.ModelRepositoryMap[typeof(FakeModel)])
                 .Returns(() => repositoryMock.Object);
             
             interceptor = new ReferenceableInterceptor<FakeModel, string>(
@@ -123,7 +123,7 @@ namespace Digicando.MongODM
             };
 
             repositoryMock.Setup(r => r.TryFindOneAsync(modelId, It.IsAny<CancellationToken>()))
-                .Returns(Task.FromResult(new FakeModel
+                .Returns(Task.FromResult<FakeModel?>(new FakeModel
                 {
                     Id = modelId,
                     IntegerProp = 7,

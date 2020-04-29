@@ -14,6 +14,7 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 
+#nullable enable
 namespace Digicando.MongODM
 {
     public abstract class DbContext : IDbContext
@@ -28,6 +29,7 @@ namespace Digicando.MongODM
             IDocumentSchemaRegister documentSchemaRegister,
             DbContextOptions options,
             IProxyGenerator proxyGenerator,
+            IRepositoryRegister repositoryRegister,
             ISerializerModifierAccessor serializerModifierAccessor)
         {
             DBCache = dbCache;
@@ -35,15 +37,21 @@ namespace Digicando.MongODM
             DocumentSchemaRegister = documentSchemaRegister;
             DocumentVersion = options.DocumentVersion;
             ProxyGenerator = proxyGenerator;
+            RepositoryRegister = repositoryRegister;
             SerializerModifierAccessor = serializerModifierAccessor;
 
             // Initialize MongoDB driver.
             Client = new MongoClient(options.ConnectionString);
             Database = Client.GetDatabase(options.DBName);
 
-            // Init IoC dependencies.
+            // Initialize internal dependencies.
             DocumentSchemaRegister.Initialize(this);
             DBMaintainer.Initialize(this);
+            RepositoryRegister.Initialize(this);
+
+            // Initialize repositories.
+            foreach (var repository in RepositoryRegister.ModelRepositoryMap.Values)
+                repository.Initialize(this);
 
             // Customize conventions.
             ConventionRegistry.Register("Enum string", new ConventionPack
@@ -62,7 +70,7 @@ namespace Digicando.MongODM
         // Public properties.
         public IReadOnlyCollection<IEntityModel> ChangedModelsList =>
             DBCache.LoadedModels.Values
-                .Where(model => (model as IAuditable).IsChanged)
+                .Where(model => (model as IAuditable)?.IsChanged == true)
                 .ToList();
         public IMongoClient Client { get; }
         public IMongoDatabase Database { get; }
@@ -71,14 +79,8 @@ namespace Digicando.MongODM
         public IDocumentSchemaRegister DocumentSchemaRegister { get; }
         public DocumentVersion DocumentVersion { get; }
         public bool IsMigrating { get; private set; }
-        public abstract IReadOnlyDictionary<Type, ICollectionRepository> ModelCollectionRepositoryMap { get; }
-        public abstract IReadOnlyDictionary<Type, IGridFSRepository> ModelGridFSRepositoryMap { get; }
-        public IReadOnlyDictionary<Type, IRepository> ModelRepositoryMap =>
-            Enumerable.Union<(Type ModelType, IRepository Repository)>(
-                ModelCollectionRepositoryMap.Select(pair => (pair.Key, pair.Value as IRepository)),
-                ModelGridFSRepositoryMap.Select(pair => (pair.Key, pair.Value as IRepository)))
-            .ToDictionary(pair => pair.ModelType, pair => pair.Repository);
         public IProxyGenerator ProxyGenerator { get; }
+        public IRepositoryRegister RepositoryRegister { get; }
         public ISerializerModifierAccessor SerializerModifierAccessor { get; }
 
         // Protected properties.
@@ -95,7 +97,7 @@ namespace Digicando.MongODM
                 await migration.MigrateAsync(cancellationToken);
 
             // Build indexes.
-            foreach (var repository in ModelCollectionRepositoryMap.Values)
+            foreach (var repository in RepositoryRegister.ModelCollectionRepositoryMap.Values)
                 await repository.BuildIndexesAsync(DocumentSchemaRegister, cancellationToken);
 
             IsMigrating = false;
@@ -137,9 +139,9 @@ namespace Digicando.MongODM
             foreach (var model in ChangedModelsList)
             {
                 var modelType = model.GetType().BaseType;
-                if (ModelCollectionRepositoryMap.ContainsKey(modelType)) //can't replace if is a file
+                if (RepositoryRegister.ModelCollectionRepositoryMap.ContainsKey(modelType)) //can't replace if is a file
                 {
-                    var repository = ModelCollectionRepositoryMap[modelType];
+                    var repository = RepositoryRegister.ModelCollectionRepositoryMap[modelType];
                     await repository.ReplaceAsync(model);
                 }
             }

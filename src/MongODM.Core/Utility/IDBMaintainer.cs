@@ -1,18 +1,14 @@
 ﻿using Digicando.MongODM.ProxyModels;
 
+#nullable enable
 namespace Digicando.MongODM.Utility
 {
     /// <summary>
     /// Interface for <see cref="DBMaintainer"/> implementation.
     /// </summary>
-    public interface IDBMaintainer
+    public interface IDBMaintainer : IDbContextInitializable
     {
-        // Properties.
-        bool IsInitialized { get; }
-
         // Methods.
-        void Initialize(IDbContext dbContext);
-
         /// <summary>
         /// Method to invoke when an auditable model is changed.
         /// </summary>
