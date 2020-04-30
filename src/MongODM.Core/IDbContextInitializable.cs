@@ -1,5 +1,4 @@
-﻿#nullable enable
-namespace Digicando.MongODM
+﻿namespace Digicando.MongODM
 {
     public interface IDbContextInitializable
     {

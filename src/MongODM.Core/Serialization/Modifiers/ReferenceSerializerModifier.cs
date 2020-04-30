@@ -1,4 +1,5 @@
 ﻿using Digicando.ExecContext;
+using Digicando.ExecContext.Exceptions;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -17,13 +18,15 @@ namespace Digicando.MongODM.Serialization.Modifiers
         // Constructors and dispose.
         public ReferenceSerializerModifier(IExecutionContext context)
         {
-            if (context == null)
+            if (context is null)
                 throw new ArgumentNullException(nameof(context));
+            if (context.Items is null)
+                throw new ExecutionContextNotFoundException();
 
             if (!context.Items.ContainsKey(ModifierKey))
                 context.Items.Add(ModifierKey, new List<ReferenceSerializerModifier>());
 
-            requestes = context.Items[ModifierKey] as ICollection<ReferenceSerializerModifier>;
+            requestes = (ICollection<ReferenceSerializerModifier>)context.Items[ModifierKey];
 
             lock (((ICollection)requestes).SyncRoot)
                 requestes.Add(this);
@@ -41,9 +44,14 @@ namespace Digicando.MongODM.Serialization.Modifiers
         // Static methods.
         public static bool IsReadOnlyIdEnabled(IExecutionContext context)
         {
+            if (context is null)
+                throw new ArgumentNullException(nameof(context));
+            if (context.Items is null)
+                throw new ExecutionContextNotFoundException();
+
             if (!context.Items.ContainsKey(ModifierKey))
                 return false;
-            var requestes = context.Items[ModifierKey] as ICollection<ReferenceSerializerModifier>;
+            var requestes = (ICollection<ReferenceSerializerModifier>)context.Items[ModifierKey];
 
             lock (((ICollection)requestes).SyncRoot)
                 return requestes.Any(r => r.ReadOnlyId);

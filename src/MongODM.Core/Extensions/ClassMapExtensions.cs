@@ -28,7 +28,7 @@ namespace Digicando.MongODM.Extensions
         where TSerializer : class, IEntityModel<TKey>
         {
             if (typeof(TMember) == typeof(TSerializer))
-                return classMap.SetMemberSerializer(memberLambda, serializer as IBsonSerializer<TMember>);
+                return classMap.SetMemberSerializer(memberLambda, (IBsonSerializer<TMember>)serializer);
             else
                 return classMap.SetMemberSerializer(memberLambda, serializer.GetAdapter<TMember>());
         }

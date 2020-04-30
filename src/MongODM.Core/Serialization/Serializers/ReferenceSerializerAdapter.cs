@@ -27,7 +27,7 @@ namespace Digicando.MongODM.Serialization.Serializers
         // Methods.
         public override TOutModel Deserialize(BsonDeserializationContext context, BsonDeserializationArgs args)
         {
-            return serializerBase.Deserialize(context, args) as TOutModel;
+            return (TOutModel)serializerBase.Deserialize(context, args);
         }
 
         public bool GetDocumentId(object document, out object id, out Type idNominalType, out IIdGenerator idGenerator)

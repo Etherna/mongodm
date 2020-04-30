@@ -8,6 +8,7 @@
     <Authors>Digicando Srl</Authors>
     <Description>ODM framework for MongoDB</Description>
     <LangVersion>8.0</LangVersion>
+    <Nullable>enable</Nullable>
   </PropertyGroup>
 
   <PropertyGroup>

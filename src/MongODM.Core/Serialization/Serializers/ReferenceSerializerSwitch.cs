@@ -13,7 +13,7 @@ namespace Digicando.MongODM.Serialization.Serializers
         // Nested classes.
         public class CaseContext
         {
-            public DocumentVersion DocumentVersion { get; set; }
+            public DocumentVersion? DocumentVersion { get; set; }
         }
 
         // Fields.

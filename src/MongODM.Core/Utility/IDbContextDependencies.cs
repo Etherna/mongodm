@@ -3,7 +3,6 @@ using Digicando.MongODM.Repositories;
 using Digicando.MongODM.Serialization;
 using Digicando.MongODM.Serialization.Modifiers;
 
-#nullable enable
 namespace Digicando.MongODM.Utility
 {
     public interface IDbContextDependencies

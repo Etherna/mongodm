@@ -9,6 +9,6 @@ namespace Digicando.MongODM.Serialization
             : base(document)
         { }
 
-        public DocumentVersion DocumentVersion { get; set; }
+        public DocumentVersion? DocumentVersion { get; set; }
     }
 }

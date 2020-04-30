@@ -22,7 +22,7 @@ namespace Digicando.MongODM.Serialization
         }
 
         // Properties.
-        public IEnumerable<BsonClassMap> EntityClassMapPath => MemberPath.Select(m => m.EntityClassMap)
+        public IEnumerable<BsonClassMap> EntityClassMapPath => MemberPath.Select(m => m.EntityClassMap!)
                                                                          .Where(cm => cm != null)
                                                                          .Distinct();
         public bool IsIdMember => MemberPath.Last().IsId;
@@ -32,7 +32,7 @@ namespace Digicando.MongODM.Serialization
         {
             get
             {
-                var lastEntityNestedMembers = MemberPath.Aggregate<EntityMember, (int counter, BsonClassMap lastEntityClassMap), int>(
+                var lastEntityNestedMembers = MemberPath.Aggregate<EntityMember, (int counter, BsonClassMap? lastEntityClassMap), int>(
                     (1, null),
                     (acc, member) => member.EntityClassMap == acc.lastEntityClassMap ?
                         (acc.counter++, acc.lastEntityClassMap) :
@@ -51,6 +51,9 @@ namespace Digicando.MongODM.Serialization
                     return MemberPath;
 
                 var lastEntityClassMap = MemberPath.Last().EntityClassMap;
+                if (lastEntityClassMap is null)
+                    throw new InvalidOperationException("This model is not related to a an entity model with an Id");
+
                 return MemberPathToEntity.Append(new EntityMember(lastEntityClassMap, lastEntityClassMap.IdMemberMap));
             }
         }

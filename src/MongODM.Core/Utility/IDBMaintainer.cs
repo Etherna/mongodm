@@ -1,6 +1,5 @@
 ﻿using Digicando.MongODM.ProxyModels;
 
-#nullable enable
 namespace Digicando.MongODM.Utility
 {
     /// <summary>

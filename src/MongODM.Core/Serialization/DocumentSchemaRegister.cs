@@ -24,7 +24,7 @@ namespace Digicando.MongODM.Serialization
         private readonly Dictionary<Type, List<DocumentSchemaMemberMap>> modelEntityReferencesIdsMap =
             new Dictionary<Type, List<DocumentSchemaMemberMap>>();
 
-        private IDbContext dbContext;
+        private IDbContext dbContext = default!;
         private readonly ISerializerModifierAccessor serializerModifierAccessor;
         private readonly List<DocumentSchema> schemas = new List<DocumentSchema>();
 
@@ -130,8 +130,8 @@ namespace Digicando.MongODM.Serialization
 
         public void RegisterModelSchema<TModel>(
             DocumentVersion fromVersion,
-            Func<IBsonSerializer<TModel>> initCustomSerializer = null,
-            Func<TModel, DocumentVersion, Task<TModel>> modelMigrationAsync = null)
+            Func<IBsonSerializer<TModel>>? initCustomSerializer = null,
+            Func<TModel, DocumentVersion?, Task<TModel>>? modelMigrationAsync = null)
             where TModel : class =>
             RegisterModelSchema(
                 fromVersion,
@@ -142,8 +142,8 @@ namespace Digicando.MongODM.Serialization
         public void RegisterModelSchema<TModel>(
             DocumentVersion fromVersion,
             Action<BsonClassMap<TModel>> classMapInitializer,
-            Func<IBsonSerializer<TModel>> initCustomSerializer = null,
-            Func<TModel, DocumentVersion, Task<TModel>> modelMigrationAsync = null)
+            Func<IBsonSerializer<TModel>>? initCustomSerializer = null,
+            Func<TModel, DocumentVersion?, Task<TModel>>? modelMigrationAsync = null)
             where TModel : class =>
             RegisterModelSchema(
                 fromVersion,
@@ -154,8 +154,8 @@ namespace Digicando.MongODM.Serialization
         public void RegisterModelSchema<TModel>(
             DocumentVersion fromVersion,
             BsonClassMap<TModel> classMap,
-            Func<IBsonSerializer<TModel>> initCustomSerializer = null,
-            Func<TModel, DocumentVersion, Task<TModel>> modelMigrationAsync = null)
+            Func<IBsonSerializer<TModel>>? initCustomSerializer = null,
+            Func<TModel, DocumentVersion?, Task<TModel>>? modelMigrationAsync = null)
             where TModel : class
         {
             configLock.EnterWriteLock();
@@ -165,7 +165,7 @@ namespace Digicando.MongODM.Serialization
                     throw new InvalidOperationException("Register is frozen");
 
                 // Generate model serializer.
-                IBsonSerializer<TModel> serializer = null;
+                IBsonSerializer<TModel>? serializer = null;
 
                 if (initCustomSerializer != null) //if custom is setted, keep it
                     serializer = initCustomSerializer();

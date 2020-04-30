@@ -29,7 +29,7 @@ namespace Digicando.MongODM.Repositories
 
         Task<IAsyncCursor<TProjection>> FindAsync<TProjection>(
             FilterDefinition<TModel> filter,
-            FindOptions<TModel, TProjection> options = null,
+            FindOptions<TModel, TProjection>? options = null,
             CancellationToken cancellationToken = default);
 
         Task<TModel> FindOneAsync(
@@ -38,7 +38,7 @@ namespace Digicando.MongODM.Repositories
 
         Task<TResult> QueryElementsAsync<TResult>(
             Func<IMongoQueryable<TModel>, Task<TResult>> query,
-            AggregateOptions aggregateOptions = null);
+            AggregateOptions? aggregateOptions = null);
 
         Task ReplaceAsync(
             TModel model,

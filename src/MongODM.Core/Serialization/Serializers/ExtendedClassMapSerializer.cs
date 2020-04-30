@@ -12,7 +12,6 @@ using System.Linq;
 using System.Reflection;
 using System.Threading.Tasks;
 
-#nullable enable
 namespace Digicando.MongODM.Serialization.Serializers
 {
     public class ExtendedClassMapSerializer<TModel> :

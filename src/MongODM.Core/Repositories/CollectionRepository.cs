@@ -12,7 +12,6 @@ using System.Linq.Expressions;
 using System.Threading;
 using System.Threading.Tasks;
 
-#nullable enable
 namespace Digicando.MongODM.Repositories
 {
     public class CollectionRepository<TModel, TKey> :

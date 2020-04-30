@@ -4,6 +4,6 @@ namespace Digicando.MongODM.Models
 {
     public interface IModel
     {
-        IDictionary<string, object> ExtraElements { get; }
+        IDictionary<string, object>? ExtraElements { get; }
     }
 }

@@ -11,7 +11,6 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 
-#nullable enable
 namespace Digicando.MongODM.Repositories
 {
     public abstract class RepositoryBase<TModel, TKey> :

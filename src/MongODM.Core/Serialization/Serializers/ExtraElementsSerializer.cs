@@ -15,7 +15,7 @@ namespace Digicando.MongODM.Serialization.Serializers
             if (value is IDictionary<string, object>)
             {
                 context.Writer.WriteStartDocument();
-                foreach (var pair in value as IDictionary<string, object>)
+                foreach (var pair in (IDictionary<string, object>)value)
                 {
                     context.Writer.WriteName(pair.Key);
                     Serialize(context, args, pair.Value);
@@ -25,7 +25,7 @@ namespace Digicando.MongODM.Serialization.Serializers
             else if (value is IList<object>)
             {
                 context.Writer.WriteStartArray();
-                foreach (var element in value as IList<object>)
+                foreach (var element in (IList<object>)value)
                 {
                     Serialize(context, args, element);
                 }
@@ -41,7 +41,7 @@ namespace Digicando.MongODM.Serialization.Serializers
 
         public static TValue DeserializeValue<TValue>(
             object extraElements,
-            IBsonSerializer<TValue> serializer = null)
+            IBsonSerializer<TValue>? serializer = null)
         {
             /* 
              * Must create a context container because arrays

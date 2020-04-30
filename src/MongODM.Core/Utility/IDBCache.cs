@@ -1,7 +1,6 @@
 ﻿using Digicando.MongODM.Models;
 using System.Collections.Generic;
 
-#nullable enable
 namespace Digicando.MongODM.Utility
 {
     /// <summary>

@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 
-#nullable enable
 namespace Digicando.MongODM.Repositories
 {
     public class RepositoryRegister : IRepositoryRegister

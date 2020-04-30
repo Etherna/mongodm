@@ -48,7 +48,7 @@ namespace Digicando.MongODM.Serialization
             int major,
             int minor,
             int patch,
-            string label)
+            string? label)
         {
             MajorRelease = major;
             MinorRelease = minor;
@@ -57,16 +57,16 @@ namespace Digicando.MongODM.Serialization
         }
 
         // Properties.
-        public string LabelRelease { get; private set; }
         public int MajorRelease { get; private set; }
         public int MinorRelease { get; private set; }
         public int PatchRelease { get; private set; }
+        public string? LabelRelease { get; private set; }
 
         // Overrides.
-        public int CompareTo(DocumentVersion other)
+        public int CompareTo(DocumentVersion? other)
         {
             // If other is not a valid object reference, this instance is greater.
-            if (other == null) return 1;
+            if (other is null) return 1;
 
             if (this > other) return 1;
             if (this == other) return 0;
@@ -98,7 +98,7 @@ namespace Digicando.MongODM.Serialization
         }
 
         // Operators.
-        public static bool operator < (DocumentVersion x, DocumentVersion y)
+        public static bool operator < (DocumentVersion? x, DocumentVersion? y)
         {
             // Check if null.
             if (y == null)
@@ -121,9 +121,9 @@ namespace Digicando.MongODM.Serialization
             return false;
         }
 
-        public static bool operator > (DocumentVersion x, DocumentVersion y) => y < x;
+        public static bool operator > (DocumentVersion? x, DocumentVersion? y) => y < x;
 
-        public static bool operator == (DocumentVersion x, DocumentVersion y)
+        public static bool operator == (DocumentVersion? x, DocumentVersion? y)
         {
             if (ReferenceEquals(x, y)) return true;
             if (x is null || y is null) return false;

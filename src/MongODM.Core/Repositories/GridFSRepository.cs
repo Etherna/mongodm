@@ -11,7 +11,6 @@ using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
 
-#nullable enable
 namespace Digicando.MongODM.Repositories
 {
     public class GridFSRepository<TModel> :

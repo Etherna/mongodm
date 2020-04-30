@@ -61,7 +61,7 @@ namespace Digicando.MongODM.Serialization.Serializers
 
         // Protected methods.
         protected override void AddItem(object accumulator, TItem item) =>
-            (accumulator as List<TItem>).Add(item);
+            ((List<TItem>)accumulator).Add(item);
 
         protected override object CreateAccumulator() =>
             new List<TItem>();

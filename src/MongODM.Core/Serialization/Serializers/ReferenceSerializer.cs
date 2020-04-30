@@ -13,7 +13,6 @@ using System.Linq;
 using System.Reflection;
 using System.Threading;
 
-#nullable enable
 namespace Digicando.MongODM.Serialization.Serializers
 {
     public class ReferenceSerializer<TModelBase, TKey> :
@@ -251,9 +250,8 @@ namespace Digicando.MongODM.Serialization.Serializers
                 value = newModel;
             }
 
-            // Remove extra elements.
-            if ((value as IModel)?.ExtraElements != null)
-                (value as IModel).ExtraElements.Clear();
+            // Clear extra elements.
+            (value as IModel)?.ExtraElements?.Clear();
 
             // Serialize object.
             var serializer = GetSerializer(valueType);

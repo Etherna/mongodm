@@ -6,7 +6,7 @@ namespace Digicando.MongODM.Serialization
     {
         // Constructors.
         public EntityMember(
-            BsonClassMap entityClassMap,
+            BsonClassMap? entityClassMap,
             BsonMemberMap memberMap)
         {
             EntityClassMap = entityClassMap;
@@ -14,7 +14,7 @@ namespace Digicando.MongODM.Serialization
         }
 
         // Properties.
-        public BsonClassMap EntityClassMap { get; }
+        public BsonClassMap? EntityClassMap { get; }
         public bool IsId => MemberMap == EntityClassMap?.IdMemberMap;
         public BsonMemberMap MemberMap { get; }
     }

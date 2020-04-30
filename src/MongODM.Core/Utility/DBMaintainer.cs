@@ -4,7 +4,6 @@ using MongoDB.Driver;
 using System;
 using System.Linq;
 
-#nullable enable
 namespace Digicando.MongODM.Utility
 {
     public class DbMaintainer : IDbMaintainer
@@ -35,6 +34,11 @@ namespace Digicando.MongODM.Utility
         // Methods.
         public void OnUpdatedModel<TKey>(IAuditable updatedModel, TKey modelId)
         {
+            if (updatedModel is null)
+                throw new ArgumentNullException(nameof(updatedModel));
+            if (modelId is null)
+                throw new ArgumentNullException(nameof(modelId));
+
             var updatedMembers = updatedModel.ChangedMembers;
             var dependencies = updatedMembers.SelectMany(member => dbContext.DocumentSchemaRegister.GetMemberDependencies(member))
                                              .Where(d => d.IsEntityReferenceMember);

@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 
-#nullable enable
 namespace Digicando.MongODM.Repositories
 {
     public interface IRepositoryRegister : IDbContextInitializable

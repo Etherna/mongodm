@@ -6,7 +6,6 @@ using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 
-#nullable enable
 namespace Digicando.MongODM.Tasks
 {
     public class UpdateDocDependenciesTask : IUpdateDocDependenciesTask

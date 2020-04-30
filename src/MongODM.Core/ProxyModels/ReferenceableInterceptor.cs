@@ -10,7 +10,6 @@ using System.Linq;
 using System.Reflection;
 using System.Threading.Tasks;
 
-#nullable enable
 namespace Digicando.MongODM.ProxyModels
 {
     public class ReferenceableInterceptor<TModel, TKey> : ModelInterceptorBase<TModel>

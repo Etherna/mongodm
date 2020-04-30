@@ -4,7 +4,6 @@ using System.Collections.Generic;
 using System.Reflection;
 using System.Threading.Tasks;
 
-#nullable enable
 namespace Digicando.MongODM.Serialization
 {
     /// <summary>
@@ -37,7 +36,7 @@ namespace Digicando.MongODM.Serialization
         void RegisterModelSchema<TModel>(
             DocumentVersion fromVersion,
             Func<IBsonSerializer<TModel>>? initCustomSerializer = null,
-            Func<TModel, DocumentVersion, Task<TModel>>? modelMigrationAsync = null)
+            Func<TModel, DocumentVersion?, Task<TModel>>? modelMigrationAsync = null)
             where TModel : class;
 
         /// <summary>
@@ -52,7 +51,7 @@ namespace Digicando.MongODM.Serialization
             DocumentVersion fromVersion,
             Action<BsonClassMap<TModel>> classMapInitializer,
             Func<IBsonSerializer<TModel>>? initCustomSerializer = null,
-            Func<TModel, DocumentVersion, Task<TModel>>? modelMigrationAsync = null)
+            Func<TModel, DocumentVersion?, Task<TModel>>? modelMigrationAsync = null)
             where TModel : class;
 
         /// <summary>
@@ -67,7 +66,7 @@ namespace Digicando.MongODM.Serialization
             DocumentVersion fromVersion,
             BsonClassMap<TModel> classMap,
             Func<IBsonSerializer<TModel>>? initCustomSerializer = null,
-            Func<TModel, DocumentVersion, Task<TModel>>? modelMigrationAsync = null)
+            Func<TModel, DocumentVersion?, Task<TModel>>? modelMigrationAsync = null)
             where TModel : class;
     }
 }

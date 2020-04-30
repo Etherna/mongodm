@@ -9,7 +9,7 @@ namespace Digicando.MongODM.Repositories
             : base(name)
         { }
 
-        public Action<BsonDocument, TModel> MetadataDeserializer { get; set; }
-        public Func<TModel, BsonDocument> MetadataSerializer { get; set; }
+        public Action<BsonDocument, TModel>? MetadataDeserializer { get; set; }
+        public Func<TModel, BsonDocument>? MetadataSerializer { get; set; }
     }
 }

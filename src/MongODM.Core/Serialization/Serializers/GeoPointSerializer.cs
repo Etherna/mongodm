@@ -40,7 +40,7 @@ namespace Digicando.MongODM.Serialization.Serializers
             var point = pointSerializer.Deserialize(context, args);
             if (point == null)
             {
-                return null;
+                return null!;
             }
 
             // Create model instance.

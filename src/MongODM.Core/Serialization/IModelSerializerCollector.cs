@@ -1,5 +1,4 @@
-﻿#nullable enable
-namespace Digicando.MongODM.Serialization
+﻿namespace Digicando.MongODM.Serialization
 {
     public interface IModelSerializerCollector
     {

@@ -34,7 +34,7 @@ namespace Digicando.MongODM.ProxyModels
             params object[] constructorArguments)
         {
             // Get configuration.
-            (Type[] AdditionalInterfaces, Func<IDbContext, IInterceptor[]> InterceptorInstancerSelector) configuration = (null, null);
+            (Type[] AdditionalInterfaces, Func<IDbContext, IInterceptor[]> InterceptorInstancerSelector) configuration = (null!, null!);
             modelConfigurationDictionaryLock.EnterReadLock();
             bool configurationFound = false;
             try
@@ -169,15 +169,15 @@ namespace Digicando.MongODM.ProxyModels
                 var entityModelKeyType = entityModelType.GetGenericArguments().Single();
 
                 //auditableInterceptor
-                interceptorInstancers.Add(dbContext => Activator.CreateInstance(
+                interceptorInstancers.Add(dbContext => (IInterceptor)Activator.CreateInstance(
                     typeof(AuditableInterceptor<>).MakeGenericType(modelType),
-                    additionalInterfaces) as IInterceptor);
+                    additionalInterfaces));
 
                 //summarizableInterceptor
-                interceptorInstancers.Add(dbContext => Activator.CreateInstance(
+                interceptorInstancers.Add(dbContext => (IInterceptor)Activator.CreateInstance(
                     typeof(ReferenceableInterceptor<,>).MakeGenericType(modelType, entityModelKeyType),
                     additionalInterfaces,
-                    dbContext) as IInterceptor);
+                    dbContext));
             }
 
             return dbContext => (from instancer in interceptorInstancers

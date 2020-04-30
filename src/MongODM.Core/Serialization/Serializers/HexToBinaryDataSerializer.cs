@@ -17,7 +17,7 @@ namespace Digicando.MongODM.Serialization.Serializers
                     break;
                 case BsonType.Null:
                     bsonReader.ReadNull();
-                    return null;
+                    return null!;
                 default:
                     var message = $"Expected a value of type Binary, but found a value of type {bsonType} instead.";
                     throw new InvalidOperationException(message);
