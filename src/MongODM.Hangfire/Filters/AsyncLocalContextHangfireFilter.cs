@@ -1,5 +1,6 @@
 ﻿using Digicando.ExecContext.AsyncLocal;
 using Hangfire.Server;
+using System;
 using System.Collections.Generic;
 
 namespace Digicando.MongODM.HF.Filters
@@ -19,6 +20,9 @@ namespace Digicando.MongODM.HF.Filters
         // Properties.
         public void OnPerforming(PerformingContext filterContext)
         {
+            if (filterContext is null)
+                throw new ArgumentNullException(nameof(filterContext));
+
             lock (contextHandlers)
             {
                 contextHandlers.Add(filterContext.BackgroundJob.Id, asyncLocalContext.InitAsyncLocalContext());
@@ -27,6 +31,9 @@ namespace Digicando.MongODM.HF.Filters
 
         public void OnPerformed(PerformedContext filterContext)
         {
+            if (filterContext is null)
+                throw new ArgumentNullException(nameof(filterContext));
+
             lock (contextHandlers)
             {
                 var jobId = filterContext.BackgroundJob.Id;
