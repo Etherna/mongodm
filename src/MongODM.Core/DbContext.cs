@@ -24,21 +24,16 @@ namespace Digicando.MongODM
 
         // Constructors and initialization.
         public DbContext(
-            IDBCache dbCache,
-            IDBMaintainer dbMaintainer,
-            IDocumentSchemaRegister documentSchemaRegister,
-            DbContextOptions options,
-            IProxyGenerator proxyGenerator,
-            IRepositoryRegister repositoryRegister,
-            ISerializerModifierAccessor serializerModifierAccessor)
+            IDbContextDependencies dependencies,
+            DbContextOptions options)
         {
-            DBCache = dbCache;
-            DBMaintainer = dbMaintainer;
-            DocumentSchemaRegister = documentSchemaRegister;
+            DBCache = dependencies.DbCache;
+            DBMaintainer = dependencies.DbMaintainer;
+            DocumentSchemaRegister = dependencies.DocumentSchemaRegister;
             DocumentVersion = options.DocumentVersion;
-            ProxyGenerator = proxyGenerator;
-            RepositoryRegister = repositoryRegister;
-            SerializerModifierAccessor = serializerModifierAccessor;
+            ProxyGenerator = dependencies.ProxyGenerator;
+            RepositoryRegister = dependencies.RepositoryRegister;
+            SerializerModifierAccessor = dependencies.SerializerModifierAccessor;
 
             // Initialize MongoDB driver.
             Client = new MongoClient(options.ConnectionString);
@@ -74,8 +69,8 @@ namespace Digicando.MongODM
                 .ToList();
         public IMongoClient Client { get; }
         public IMongoDatabase Database { get; }
-        public IDBCache DBCache { get; }
-        public IDBMaintainer DBMaintainer { get; }
+        public IDbCache DBCache { get; }
+        public IDbMaintainer DBMaintainer { get; }
         public IDocumentSchemaRegister DocumentSchemaRegister { get; }
         public DocumentVersion DocumentVersion { get; }
         public bool IsMigrating { get; private set; }

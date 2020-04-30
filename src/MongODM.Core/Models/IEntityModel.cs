@@ -1,5 +1,6 @@
 ﻿using System;
 
+#nullable enable
 namespace Digicando.MongODM.Models
 {
     public interface IEntityModel : IModel

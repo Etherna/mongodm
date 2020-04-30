@@ -12,6 +12,7 @@ using System.Linq;
 using System.Reflection;
 using System.Threading.Tasks;
 
+#nullable enable
 namespace Digicando.MongODM.Serialization.Serializers
 {
     public class ExtendedClassMapSerializer<TModel> :
@@ -21,32 +22,26 @@ namespace Digicando.MongODM.Serialization.Serializers
         // Nested struct.
         private struct ExtraElementCondition
         {
-            Func<BsonSerializationContext, bool> _condition;
-
             public BsonElement Element { get; set; }
-            public Func<BsonSerializationContext, bool> Condition
-            {
-                get { return _condition ?? (_ => true); }
-                set { _condition = value; }
-            }
+            public Func<BsonSerializationContext, bool> Condition { get; set; }
         }
 
         // Static readonly fields.
         private readonly BsonElement documentVersionElement;
 
         // Fields.
-        private BsonClassMapSerializer<TModel> _serializer;
-        private readonly IDBCache dbCache;
+        private readonly IDbCache dbCache;
         private readonly ISerializerModifierAccessor serializerModifierAccessor;
         private readonly ICollection<ExtraElementCondition> extraElements;
-        private readonly Func<TModel, DocumentVersion, Task<TModel>> fixDeserializedModelAsync;
+        private readonly Func<TModel, DocumentVersion?, Task<TModel>> fixDeserializedModelAsync;
+        private BsonClassMapSerializer<TModel> _serializer = default!;
 
         // Constructor.
         public ExtendedClassMapSerializer(
-            IDBCache dbCache,
+            IDbCache dbCache,
             DocumentVersion documentVersion,
             ISerializerModifierAccessor serializerModifierAccessor,
-            Func<TModel, DocumentVersion, Task<TModel>> fixDeserializedModelAsync = null)
+            Func<TModel, DocumentVersion?, Task<TModel>>? fixDeserializedModelAsync = null)
         {
             this.dbCache = dbCache;
             this.serializerModifierAccessor = serializerModifierAccessor;
@@ -60,16 +55,28 @@ namespace Digicando.MongODM.Serialization.Serializers
         // Properties.
         public bool AddVersion { get; set; }
         public IEnumerable<BsonClassMap> ContainedClassMaps => new[] { BsonClassMap.LookupClassMap(typeof(TModel)) };
+        public BsonClassMapSerializer<TModel> Serializer
+        {
+            get
+            {
+                if (_serializer == null)
+                {
+                    var classMap = BsonClassMap.LookupClassMap(typeof(TModel));
+                    _serializer = new BsonClassMapSerializer<TModel>(classMap);
+                }
+                return _serializer;
+            }
+        }
 
         // Methods.
         public ExtendedClassMapSerializer<TModel> AddExtraElement(
             BsonElement element,
-            Func<BsonSerializationContext, bool> condition = null)
+            Func<BsonSerializationContext, bool>? condition = null)
         {
             extraElements.Add(new ExtraElementCondition
             {
                 Element = element,
-                Condition = condition
+                Condition = condition ?? (_ => true)
             });
             return this;
         }
@@ -80,14 +87,14 @@ namespace Digicando.MongODM.Serialization.Serializers
             if (context.Reader.CurrentBsonType == BsonType.Null)
             {
                 context.Reader.ReadNull();
-                return null;
+                return null!;
             }
 
             // Deserialize on document.
             var bsonDocument = BsonDocumentSerializer.Instance.Deserialize(context, args);
 
             // Get version.
-            DocumentVersion documentVersion = null;
+            DocumentVersion? documentVersion = null;
             if (bsonDocument.TryGetElement(DbContext.DocumentVersionElementName, out BsonElement versionElement))
                 documentVersion = BsonValueToDocumentVersion(versionElement.Value);
 
@@ -104,8 +111,7 @@ namespace Digicando.MongODM.Serialization.Serializers
             });
 
             // Deserialize.
-            var serializer = GetSerializer();
-            var model = serializer.Deserialize(localContext, args);
+            var model = Serializer.Deserialize(localContext, args);
 
             // Add model to cache.
             if (!serializerModifierAccessor.IsNoCacheEnabled &&
@@ -114,14 +120,14 @@ namespace Digicando.MongODM.Serialization.Serializers
                 if (dbCache.LoadedModels.ContainsKey(id))
                 {
                     var fullModel = model;
-                    model = dbCache.LoadedModels[id] as TModel;
+                    model = (TModel)dbCache.LoadedModels[id];
 
-                    if ((model as IReferenceable).IsSummary)
-                        (model as IReferenceable).MergeFullModel(fullModel);
+                    if (((IReferenceable)model).IsSummary)
+                        ((IReferenceable)model).MergeFullModel(fullModel);
                 }
                 else
                 {
-                    dbCache.AddModel(id, model as IEntityModel);
+                    dbCache.AddModel(id, (IEntityModel)model);
                 }
             }
 
@@ -136,11 +142,8 @@ namespace Digicando.MongODM.Serialization.Serializers
             return model;
         }
 
-        public bool GetDocumentId(object document, out object id, out Type idNominalType, out IIdGenerator idGenerator)
-        {
-            var serializer = GetSerializer();
-            return serializer.GetDocumentId(document, out id, out idNominalType, out idGenerator);
-        }
+        public bool GetDocumentId(object document, out object id, out Type idNominalType, out IIdGenerator idGenerator) =>
+            Serializer.GetDocumentId(document, out id, out idNominalType, out idGenerator);
 
         public override void Serialize(BsonSerializationContext context, BsonSerializationArgs args, TModel value)
         {
@@ -172,8 +175,7 @@ namespace Digicando.MongODM.Serialization.Serializers
             }
 
             // Serialize.
-            var serializer = GetSerializer();
-            serializer.Serialize(localContext, args, value);
+            Serializer.Serialize(localContext, args, value);
 
             // Add version.
             if (AddVersion && bsonWriter.IsRootDocument)
@@ -197,20 +199,14 @@ namespace Digicando.MongODM.Serialization.Serializers
             BsonDocumentSerializer.Instance.Serialize(context, args, bsonDocument);
         }
 
-        public void SetDocumentId(object document, object id)
-        {
-            var serializer = GetSerializer();
-            serializer.SetDocumentId(document, id);
-        }
+        public void SetDocumentId(object document, object id) =>
+            Serializer.SetDocumentId(document, id);
 
-        public bool TryGetMemberSerializationInfo(string memberName, out BsonSerializationInfo serializationInfo)
-        {
-            var serializer = GetSerializer();
-            return serializer.TryGetMemberSerializationInfo(memberName, out serializationInfo);
-        }
+        public bool TryGetMemberSerializationInfo(string memberName, out BsonSerializationInfo serializationInfo) =>
+            Serializer.TryGetMemberSerializationInfo(memberName, out serializationInfo);
 
         // Helpers.
-        private static DocumentVersion BsonValueToDocumentVersion(BsonValue bsonValue) =>
+        private static DocumentVersion? BsonValueToDocumentVersion(BsonValue bsonValue) =>
             bsonValue switch
             {
                 BsonNull _ => null,
@@ -237,16 +233,6 @@ namespace Digicando.MongODM.Serialization.Serializers
             }
 
             return bsonArray;
-        }
-
-        private BsonClassMapSerializer<TModel> GetSerializer()
-        {
-            if (_serializer == null)
-            {
-                var classMap = BsonClassMap.LookupClassMap(typeof(TModel));
-                _serializer = new BsonClassMapSerializer<TModel>(classMap);
-            }
-            return _serializer;
         }
     }
 }

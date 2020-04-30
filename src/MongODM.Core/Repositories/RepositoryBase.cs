@@ -75,8 +75,8 @@ namespace Digicando.MongODM.Repositories
             await DeleteOnDBAsync(model, cancellationToken);
 
             // Remove from cache.
-            if (DbContext.DBCache.LoadedModels.ContainsKey(model.Id))
-                DbContext.DBCache.RemoveModel(model.Id);
+            if (DbContext.DBCache.LoadedModels.ContainsKey(model.Id!))
+                DbContext.DBCache.RemoveModel(model.Id!);
         }
 
         public async Task DeleteAsync(IEntityModel model, CancellationToken cancellationToken = default)
@@ -90,9 +90,9 @@ namespace Digicando.MongODM.Repositories
             TKey id,
             CancellationToken cancellationToken = default)
         {
-            if (DbContext.DBCache.LoadedModels.ContainsKey(id))
+            if (DbContext.DBCache.LoadedModels.ContainsKey(id!))
             {
-                var cachedModel = DbContext.DBCache.LoadedModels[id] as TModel;
+                var cachedModel = DbContext.DBCache.LoadedModels[id!] as TModel;
                 if ((cachedModel as IReferenceable)?.IsSummary == false)
                     return cachedModel!;
             }

@@ -13,6 +13,7 @@ using System.Linq;
 using System.Reflection;
 using System.Threading;
 
+#nullable enable
 namespace Digicando.MongODM.Serialization.Serializers
 {
     public class ReferenceSerializer<TModelBase, TKey> :
@@ -20,12 +21,12 @@ namespace Digicando.MongODM.Serialization.Serializers
         where TModelBase : class, IEntityModel<TKey>
     {
         // Fields.
-        private IDiscriminatorConvention _discriminatorConvention;
+        private IDiscriminatorConvention _discriminatorConvention = default!;
 
         private readonly ReaderWriterLockSlim configLockAdapters = new ReaderWriterLockSlim(LockRecursionPolicy.SupportsRecursion);
         private readonly ReaderWriterLockSlim configLockClassMaps = new ReaderWriterLockSlim(LockRecursionPolicy.SupportsRecursion);
         private readonly ReaderWriterLockSlim configLockSerializers = new ReaderWriterLockSlim(LockRecursionPolicy.SupportsRecursion);
-        private readonly IDBCache dbCache;
+        private readonly IDbCache dbCache;
         private readonly IDbContext dbContext;
         private readonly IProxyGenerator proxyGenerator;
         private readonly ISerializerModifierAccessor serializerModifierAccessor;
@@ -48,6 +49,15 @@ namespace Digicando.MongODM.Serialization.Serializers
 
         // Properties.
         public IEnumerable<BsonClassMap> ContainedClassMaps => registeredClassMaps.Values;
+        public IDiscriminatorConvention DiscriminatorConvention
+        {
+            get
+            {
+                if (_discriminatorConvention == null)
+                    _discriminatorConvention = BsonSerializer.LookupDiscriminatorConvention(typeof(TModelBase));
+                return _discriminatorConvention;
+            }
+        }
         public bool? UseCascadeDelete { get; }
 
         // Methods.
@@ -62,15 +72,14 @@ namespace Digicando.MongODM.Serialization.Serializers
                     break;
                 case BsonType.Null:
                     bsonReader.ReadNull();
-                    return null;
+                    return null!;
                 default:
                     var message = $"Expected a nested document representing the serialized form of a {nameof(TModelBase)} value, but found a value of type {bsonType} instead.";
                     throw new InvalidOperationException(message);
             }
 
             // Get actual type.
-            var discriminatorConvention = GetDiscriminatorConvention();
-            var actualType = discriminatorConvention.GetActualType(bsonReader, args.NominalType);
+            var actualType = DiscriminatorConvention.GetActualType(bsonReader, args.NominalType);
 
             // Deserialize object.
             var serializer = GetSerializer(actualType);
@@ -81,24 +90,24 @@ namespace Digicando.MongODM.Serialization.Serializers
             {
                 var id = model.Id;
                 if (id == null) //ignore refered instances without id
-                    return null;
+                    return null!;
 
                 // Check if model as been loaded in cache.
                 if (dbCache.LoadedModels.ContainsKey(id) &&
                     !serializerModifierAccessor.IsNoCacheEnabled)
                 {
-                    var cachedModel = dbCache.LoadedModels[id] as TModelBase;
+                    var cachedModel = (TModelBase)dbCache.LoadedModels[id];
 
-                    if ((cachedModel as IReferenceable).IsSummary)
+                    if (((IReferenceable)cachedModel).IsSummary)
                     {
                         // Execute merging between summary models.
-                        var sourceMembers = (model as IReferenceable).SettedMemberNames
-                            .Except((cachedModel as IReferenceable).SettedMemberNames)
+                        var sourceMembers = ((IReferenceable)model).SettedMemberNames
+                            .Except(((IReferenceable)cachedModel).SettedMemberNames)
                             .Select(memberName => cachedModel.GetType().GetMember(memberName).Single())
                             .ToArray();
 
                         //temporary disable auditing
-                        (cachedModel as IAuditable).DisableAuditing();
+                        ((IAuditable)cachedModel).DisableAuditing();
 
                         foreach (var member in sourceMembers)
                         {
@@ -107,9 +116,9 @@ namespace Digicando.MongODM.Serialization.Serializers
                         }
 
                         //reenable auditing
-                        (cachedModel as IAuditable).EnableAuditing();
+                        ((IAuditable)cachedModel).EnableAuditing();
 
-                        (cachedModel as IReferenceable).SetAsSummary(sourceMembers.Select(m => m.Name));
+                        ((IReferenceable)cachedModel).SetAsSummary(sourceMembers.Select(m => m.Name));
                     }
 
                     // Return the cached model.
@@ -120,24 +129,24 @@ namespace Digicando.MongODM.Serialization.Serializers
                     // Set model as summarizable.
                     if (serializerModifierAccessor.IsReadOnlyReferencedIdEnabled)
                     {
-                        (model as IReferenceable).ClearSettedMembers();
-                        (model as IReferenceable).SetAsSummary(new[] { nameof(model.Id) });
+                        ((IReferenceable)model).ClearSettedMembers();
+                        ((IReferenceable)model).SetAsSummary(new[] { nameof(model.Id) });
                     }
                     else
                     {
-                        (model as IReferenceable).SetAsSummary((model as IReferenceable).SettedMemberNames);
+                        ((IReferenceable)model).SetAsSummary(((IReferenceable)model).SettedMemberNames);
                     }
 
                     // Enable auditing.
-                    (model as IAuditable).EnableAuditing();
+                    ((IAuditable)model).EnableAuditing();
 
                     // Add in cache.
                     if (!serializerModifierAccessor.IsNoCacheEnabled)
-                        dbCache.AddModel(model.Id, model);
+                        dbCache.AddModel(model.Id!, model);
                 }
             }
 
-            return model;
+            return model!;
         }
 
         public IBsonSerializer<TModel> GetAdapter<TModel>()
@@ -148,7 +157,7 @@ namespace Digicando.MongODM.Serialization.Serializers
             {
                 if (registeredAdapters.ContainsKey(typeof(TModel)))
                 {
-                    return registeredAdapters[typeof(TModel)] as IBsonSerializer<TModel>;
+                    return (IBsonSerializer<TModel>)registeredAdapters[typeof(TModel)];
                 }
             }
             finally
@@ -163,7 +172,7 @@ namespace Digicando.MongODM.Serialization.Serializers
                 {
                     registeredAdapters.Add(typeof(TModel), new ReferenceSerializerAdapter<TModelBase, TModel, TKey>(this));
                 }
-                return registeredAdapters[typeof(TModel)] as IBsonSerializer<TModel>;
+                return (IBsonSerializer<TModel>)registeredAdapters[typeof(TModel)];
             }
             finally
             {
@@ -174,11 +183,11 @@ namespace Digicando.MongODM.Serialization.Serializers
         public bool GetDocumentId(object document, out object id, out Type idNominalType, out IIdGenerator idGenerator)
         {
             IsProxyClassType(document, out Type documentType);
-            var serializer = GetSerializer(documentType) as IBsonIdProvider;
+            var serializer = (IBsonIdProvider)GetSerializer(documentType);
             return serializer.GetDocumentId(document, out id, out idNominalType, out idGenerator);
         }
         
-        public ReferenceSerializer<TModelBase, TKey> RegisterType<TModel>(Action<BsonClassMap<TModel>> classMapInitializer = null)
+        public ReferenceSerializer<TModelBase, TKey> RegisterType<TModel>(Action<BsonClassMap<TModel>>? classMapInitializer = null)
             where TModel : class
         {
             // Initialize class map.
@@ -254,7 +263,7 @@ namespace Digicando.MongODM.Serialization.Serializers
         public void SetDocumentId(object document, object id)
         {
             IsProxyClassType(document, out Type documentType);
-            var serializer = GetSerializer(documentType) as IBsonIdProvider;
+            var serializer = (IBsonIdProvider)GetSerializer(documentType);
             serializer.SetDocumentId(document, id);
         }
 
@@ -267,7 +276,7 @@ namespace Digicando.MongODM.Serialization.Serializers
                 var modelType = (from pair in registeredClassMaps
                                  where pair.Value.GetMemberMap(memberName) != null
                                  select pair.Key).FirstOrDefault();
-                var serializer = GetSerializer(modelType) as IBsonDocumentSerializer;
+                var serializer = (IBsonDocumentSerializer)GetSerializer(modelType);
                 return serializer.TryGetMemberSerializationInfo(memberName, out serializationInfo);
             }
             finally
@@ -298,13 +307,6 @@ namespace Digicando.MongODM.Serialization.Serializers
 
             classMap.Freeze();
             return classMap;
-        }
-
-        private IDiscriminatorConvention GetDiscriminatorConvention()
-        {
-            if(_discriminatorConvention == null)
-                _discriminatorConvention = BsonSerializer.LookupDiscriminatorConvention(typeof(TModelBase));
-            return _discriminatorConvention;
         }
 
         private IBsonSerializer GetSerializer(Type actualType)
@@ -343,7 +345,7 @@ namespace Digicando.MongODM.Serialization.Serializers
                     }
                     var classMapSerializerDefinition = typeof(BsonClassMapSerializer<>);
                     var classMapSerializerType = classMapSerializerDefinition.MakeGenericType(actualType);
-                    var serializer = Activator.CreateInstance(classMapSerializerType, classMap) as IBsonSerializer;
+                    var serializer = (IBsonSerializer)Activator.CreateInstance(classMapSerializerType, classMap);
                     registeredSerializers.Add(actualType, serializer);
                 }
                 return registeredSerializers[actualType];
@@ -356,7 +358,7 @@ namespace Digicando.MongODM.Serialization.Serializers
 
         private bool IsProxyClassType<TModel>(TModel value, out Type modelType)
         {
-            modelType = value.GetType();
+            modelType = value!.GetType();
             if (proxyGenerator.IsProxyType(modelType))
             {
                 modelType = modelType.BaseType;

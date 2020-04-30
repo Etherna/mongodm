@@ -4,9 +4,9 @@
 namespace Digicando.MongODM.Utility
 {
     /// <summary>
-    /// Interface for <see cref="DBMaintainer"/> implementation.
+    /// Interface for <see cref="DbMaintainer"/> implementation.
     /// </summary>
-    public interface IDBMaintainer : IDbContextInitializable
+    public interface IDbMaintainer : IDbContextInitializable
     {
         // Methods.
         /// <summary>

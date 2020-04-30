@@ -66,14 +66,14 @@ namespace Digicando.MongODM
         }
 
         // Fields.
-        private readonly Mock<IDBCache> dbCacheMock;
+        private readonly Mock<IDbCache> dbCacheMock;
         private readonly DocumentVersion documentVersion = new DocumentVersion("1.0.0");
         private readonly Mock<ISerializerModifierAccessor> serializerModifierAccessorMock;
 
         // Constructor.
         public ExtendedClassMapSerializerTest()
         {
-            dbCacheMock = new Mock<IDBCache>();
+            dbCacheMock = new Mock<IDbCache>();
             dbCacheMock.Setup(c => c.LoadedModels.ContainsKey(It.IsAny<object>()))
                 .Returns(() => false);
 

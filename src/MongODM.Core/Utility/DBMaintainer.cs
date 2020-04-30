@@ -4,16 +4,17 @@ using MongoDB.Driver;
 using System;
 using System.Linq;
 
+#nullable enable
 namespace Digicando.MongODM.Utility
 {
-    public class DBMaintainer : IDBMaintainer
+    public class DbMaintainer : IDbMaintainer
     {
         // Fields.
-        private IDbContext dbContext;
+        private IDbContext dbContext = default!;
         private readonly ITaskRunner taskRunner;
 
         // Constructors and initialization.
-        public DBMaintainer(ITaskRunner taskRunner)
+        public DbMaintainer(ITaskRunner taskRunner)
         {
             this.taskRunner = taskRunner;
         }

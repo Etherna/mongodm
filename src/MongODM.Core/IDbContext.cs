@@ -29,12 +29,12 @@ namespace Digicando.MongODM
         /// <summary>
         /// Database cache container.
         /// </summary>
-        IDBCache DBCache { get; }
+        IDbCache DBCache { get; }
 
         /// <summary>
         /// Database operator interested into maintenance tasks.
         /// </summary>
-        IDBMaintainer DBMaintainer { get; }
+        IDbMaintainer DBMaintainer { get; }
         
         /// <summary>
         /// Container for model serialization and document schema information.

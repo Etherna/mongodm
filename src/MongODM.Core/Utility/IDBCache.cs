@@ -1,12 +1,13 @@
 ﻿using Digicando.MongODM.Models;
 using System.Collections.Generic;
 
+#nullable enable
 namespace Digicando.MongODM.Utility
 {
     /// <summary>
-    /// Interface for <see cref="DBCache"/> implementation.
+    /// Interface for <see cref="DbCache"/> implementation.
     /// </summary>
-    public interface IDBCache
+    public interface IDbCache
     {
         // Properties.
         /// <summary>
