@@ -1,4 +1,6 @@
-﻿using Digicando.MongODM.Tasks;
+﻿using Digicando.ExecContext.AsyncLocal;
+using Digicando.MongODM.HF.Filters;
+using Digicando.MongODM.Tasks;
 using Hangfire;
 using System;
 using System.Collections.Generic;
@@ -15,6 +17,10 @@ namespace Digicando.MongODM.HF.Tasks
             IBackgroundJobClient backgroundJobClient)
         {
             this.backgroundJobClient = backgroundJobClient;
+
+            // Add a default execution context running with any Hangfire task.
+            // Added because with asyncronous task, unrelated to requestes, there is no an alternative context to use with MongODM.
+            GlobalJobFilters.Filters.Add(new AsyncLocalContextHangfireFilter(AsyncLocalContext.Instance));
         }
 
         // Methods.

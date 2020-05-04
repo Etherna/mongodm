@@ -8,4 +8,8 @@ namespace Digicando.MongODM
         public string DBName { get; set; } = "localDb";
         public DocumentVersion DocumentVersion { get; set; } = "1.0.0";
     }
+
+    public class DbContextOptions<TDbContext> : DbContextOptions
+        where TDbContext : class, IDbContext
+    { }
 }

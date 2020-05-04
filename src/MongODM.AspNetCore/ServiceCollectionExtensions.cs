@@ -10,6 +10,7 @@ using Digicando.MongODM.Tasks;
 using Digicando.MongODM.Utility;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.DependencyInjection.Extensions;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 
@@ -17,13 +18,13 @@ namespace Microsoft.Extensions.DependencyInjection
 {
     public static class ServiceCollectionExtensions
     {
-        public static void UseMongODM<TTaskRunner>(
+        public static MongODMConfiguration UseMongODM<TTaskRunner>(
             this IServiceCollection services,
             IEnumerable<IExecutionContext>? executionContexts = null)
             where TTaskRunner : class, ITaskRunner =>
             UseMongODM<ProxyGenerator, TTaskRunner>(services, executionContexts);
 
-        public static void UseMongODM<TProxyGenerator, TTaskRunner>(
+        public static MongODMConfiguration UseMongODM<TProxyGenerator, TTaskRunner>(
             this IServiceCollection services,
             IEnumerable<IExecutionContext>? executionContexts = null)
             where TProxyGenerator: class, IProxyGenerator
@@ -66,22 +67,48 @@ namespace Microsoft.Extensions.DependencyInjection
 
             //castle proxy generator.
             services.TryAddSingleton<Castle.DynamicProxy.IProxyGenerator>(new Castle.DynamicProxy.ProxyGenerator());
+
+            return new MongODMConfiguration(services);
         }
 
-        public static void UseMongODMDbContext<TDbContext>(
-            this IServiceCollection services)
+        public static MongODMConfiguration AddDbContext<TDbContext>(
+            this MongODMConfiguration config,
+            Action<DbContextOptions<TDbContext>>? dbContextConfig = null)
             where TDbContext : class, IDbContext
         {
-            services.AddSingleton<TDbContext>();
+            if (config is null)
+                throw new ArgumentNullException(nameof(config));
+
+            // Register dbContext.
+            config.Services.AddSingleton<TDbContext>();
+
+            // Register options.
+            var contextOptions = new DbContextOptions<TDbContext>();
+            dbContextConfig?.Invoke(contextOptions);
+            config.Services.AddSingleton(contextOptions);
+
+            return config;
         }
 
-        public static void UseMongODMDbContext<TDbContext, TDbContextImpl>(
-            this IServiceCollection services)
+        public static MongODMConfiguration AddDbContext<TDbContext, TDbContextImpl>(
+            this MongODMConfiguration config,
+            Action<DbContextOptions<TDbContext>>? dbContextConfig = null)
             where TDbContext : class, IDbContext
             where TDbContextImpl : class, TDbContext
         {
-            services.AddSingleton<TDbContext, TDbContextImpl>();
-            services.AddSingleton(sp => sp.GetService<TDbContext>() as TDbContextImpl);
+            if (config is null)
+                throw new ArgumentNullException(nameof(config));
+
+            // Register dbContext.
+            config.Services.AddSingleton<TDbContext, TDbContextImpl>();
+            config.Services.AddSingleton(sp => sp.GetService<TDbContext>() as TDbContextImpl);
+
+            // Register options.
+            var contextOptions = new DbContextOptions<TDbContext>();
+            dbContextConfig?.Invoke(contextOptions);
+            config.Services.AddSingleton(contextOptions);
+
+            return config;
         }
     }
 }
