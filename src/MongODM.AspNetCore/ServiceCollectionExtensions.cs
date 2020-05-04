@@ -92,7 +92,7 @@ namespace Microsoft.Extensions.DependencyInjection
 
         public static MongODMConfiguration AddDbContext<TDbContext, TDbContextImpl>(
             this MongODMConfiguration config,
-            Action<DbContextOptions<TDbContext>>? dbContextConfig = null)
+            Action<DbContextOptions<TDbContextImpl>>? dbContextConfig = null)
             where TDbContext : class, IDbContext
             where TDbContextImpl : class, TDbContext
         {
@@ -104,7 +104,7 @@ namespace Microsoft.Extensions.DependencyInjection
             config.Services.AddSingleton(sp => sp.GetService<TDbContext>() as TDbContextImpl);
 
             // Register options.
-            var contextOptions = new DbContextOptions<TDbContext>();
+            var contextOptions = new DbContextOptions<TDbContextImpl>();
             dbContextConfig?.Invoke(contextOptions);
             config.Services.AddSingleton(contextOptions);
 
