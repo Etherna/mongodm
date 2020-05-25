@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace Digicando.MongODM.Serialization.Modifiers
+namespace Etherna.MongODM.Serialization.Modifiers
 {
     public interface ISerializerModifierAccessor
     {

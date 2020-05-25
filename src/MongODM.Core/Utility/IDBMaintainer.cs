@@ -1,6 +1,6 @@
-﻿using Digicando.MongODM.ProxyModels;
+﻿using Etherna.MongODM.ProxyModels;
 
-namespace Digicando.MongODM.Utility
+namespace Etherna.MongODM.Utility
 {
     /// <summary>
     /// Interface for <see cref="DbMaintainer"/> implementation.

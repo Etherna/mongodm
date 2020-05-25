@@ -2,15 +2,15 @@
 using Digicando.DomainHelper;
 using Digicando.DomainHelper.Attributes;
 using Digicando.DomainHelper.ProxyModel;
-using Digicando.MongODM.Models;
-using Digicando.MongODM.Repositories;
+using Etherna.MongODM.Models;
+using Etherna.MongODM.Repositories;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using System.Threading.Tasks;
 
-namespace Digicando.MongODM.ProxyModels
+namespace Etherna.MongODM.ProxyModels
 {
     public class ReferenceableInterceptor<TModel, TKey> : ModelInterceptorBase<TModel>
         where TModel : class, IEntityModel<TKey>

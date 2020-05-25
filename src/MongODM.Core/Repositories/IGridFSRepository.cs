@@ -1,10 +1,10 @@
-﻿using Digicando.MongODM.Models;
+﻿using Etherna.MongODM.Models;
 using MongoDB.Driver.GridFS;
 using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace Digicando.MongODM.Repositories
+namespace Etherna.MongODM.Repositories
 {
     public interface IGridFSRepository : IRepository
     {

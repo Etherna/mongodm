@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace Digicando.MongODM.Models
+namespace Etherna.MongODM.Models
 {
     public interface IEntityModel : IModel
     {

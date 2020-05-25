@@ -4,7 +4,7 @@ using System.Collections.Generic;
 using System.Reflection;
 using System.Threading.Tasks;
 
-namespace Digicando.MongODM.Serialization
+namespace Etherna.MongODM.Serialization
 {
     /// <summary>
     /// Interface for <see cref="DocumentSchemaRegister"/> implementation.

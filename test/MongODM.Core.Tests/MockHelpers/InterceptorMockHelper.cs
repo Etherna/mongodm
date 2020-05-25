@@ -3,7 +3,7 @@ using Moq;
 using System;
 using System.Linq.Expressions;
 
-namespace Digicando.MongODM.MockHelpers
+namespace Etherna.MongODM.MockHelpers
 {
     public static class InterceptorMockHelper
     {

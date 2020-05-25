@@ -1,12 +1,12 @@
-﻿using Digicando.MongODM.Models;
-using Digicando.MongODM.Repositories;
-using Digicando.MongODM.Serialization.Modifiers;
+﻿using Etherna.MongODM.Models;
+using Etherna.MongODM.Repositories;
+using Etherna.MongODM.Serialization.Modifiers;
 using MongoDB.Driver;
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 
-namespace Digicando.MongODM.Tasks
+namespace Etherna.MongODM.Tasks
 {
     public class UpdateDocDependenciesTask : IUpdateDocDependenciesTask
     {

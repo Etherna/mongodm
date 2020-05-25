@@ -1,7 +1,7 @@
 ﻿using Moq;
 using Xunit;
 
-namespace Digicando.ExecContext.AsyncLocal
+namespace Etherna.ExecContext.AsyncLocal
 {
     public class AsyncLocalContextHandlerTests
     {

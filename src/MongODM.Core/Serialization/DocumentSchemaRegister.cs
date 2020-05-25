@@ -1,6 +1,6 @@
-﻿using Digicando.MongODM.Models;
-using Digicando.MongODM.Serialization.Modifiers;
-using Digicando.MongODM.Serialization.Serializers;
+﻿using Etherna.MongODM.Models;
+using Etherna.MongODM.Serialization.Modifiers;
+using Etherna.MongODM.Serialization.Serializers;
 using MongoDB.Bson.Serialization;
 using MongoDB.Bson.Serialization.Serializers;
 using System;
@@ -11,7 +11,7 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace Digicando.MongODM.Serialization
+namespace Etherna.MongODM.Serialization
 {
     public class DocumentSchemaRegister : IDocumentSchemaRegister
     {

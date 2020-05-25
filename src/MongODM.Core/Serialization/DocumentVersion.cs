@@ -2,7 +2,7 @@
 using System.Text;
 using System.Text.RegularExpressions;
 
-namespace Digicando.MongODM.Serialization
+namespace Etherna.MongODM.Serialization
 {
     public class DocumentVersion : IComparable<DocumentVersion>
     {

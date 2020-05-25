@@ -1,10 +1,10 @@
-﻿using Digicando.MongODM.Migration;
-using Digicando.MongODM.Models;
-using Digicando.MongODM.ProxyModels;
-using Digicando.MongODM.Repositories;
-using Digicando.MongODM.Serialization;
-using Digicando.MongODM.Serialization.Modifiers;
-using Digicando.MongODM.Utility;
+﻿using Etherna.MongODM.Migration;
+using Etherna.MongODM.Models;
+using Etherna.MongODM.ProxyModels;
+using Etherna.MongODM.Repositories;
+using Etherna.MongODM.Serialization;
+using Etherna.MongODM.Serialization.Modifiers;
+using Etherna.MongODM.Utility;
 using MongoDB.Bson;
 using MongoDB.Bson.Serialization.Conventions;
 using MongoDB.Driver;
@@ -14,7 +14,7 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace Digicando.MongODM
+namespace Etherna.MongODM
 {
     public abstract class DbContext : IDbContext
     {

@@ -1,4 +1,4 @@
-﻿using Digicando.MongODM.Tasks;
+﻿using Etherna.MongODM.Tasks;
 using Hangfire;
 using System;
 using System.Collections.Generic;
@@ -6,7 +6,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using System.Threading.Tasks;
 
-namespace Digicando.MongODM.HF.Tasks
+namespace Etherna.MongODM.HF.Tasks
 {
     [SuppressMessage("Performance", "CA1812:Avoid uninstantiated internal classes", Justification = "It is instantiated by Hangfire")]
     class UpdateDocDependenciesTaskFacade

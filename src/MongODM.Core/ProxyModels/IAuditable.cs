@@ -1,7 +1,7 @@
 ﻿using System.Collections.Generic;
 using System.Reflection;
 
-namespace Digicando.MongODM.ProxyModels
+namespace Etherna.MongODM.ProxyModels
 {
     public interface IAuditable
     {

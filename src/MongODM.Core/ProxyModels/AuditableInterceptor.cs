@@ -6,7 +6,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 
-namespace Digicando.MongODM.ProxyModels
+namespace Etherna.MongODM.ProxyModels
 {
     public class AuditableInterceptor<TModel> : ModelInterceptorBase<TModel>
     {

@@ -1,9 +1,9 @@
-﻿using Digicando.ExecContext;
-using Digicando.MongODM.Models;
+﻿using Etherna.ExecContext;
+using Etherna.MongODM.Models;
 using System;
 using System.Collections.Generic;
 
-namespace Digicando.MongODM.Utility
+namespace Etherna.MongODM.Utility
 {
     public class DbCache : IDbCache
     {

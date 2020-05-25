@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace Digicando.MongODM.ProxyModels
+namespace Etherna.MongODM.ProxyModels
 {
     public interface IProxyGenerator
     {

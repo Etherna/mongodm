@@ -3,9 +3,9 @@
   <PropertyGroup>
     <TargetFramework>netstandard2.0</TargetFramework>
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
-    <RootNamespace>Digicando.MongODM.HF</RootNamespace>
+    <RootNamespace>Etherna.MongODM.HF</RootNamespace>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
-    <Authors>Digicando Srl</Authors>
+    <Authors>Etherna Sagl</Authors>
     <Description>Linker for use MongoDB with Hangfire</Description>
     <LangVersion>8.0</LangVersion>
     <Nullable>enable</Nullable>

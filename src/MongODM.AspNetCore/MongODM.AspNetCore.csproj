@@ -3,9 +3,9 @@
   <PropertyGroup>
     <TargetFrameworks>netstandard2.0;netcoreapp3.0</TargetFrameworks>
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
-    <RootNamespace>Digicando.MongODM.AspNetCore</RootNamespace>
+    <RootNamespace>Etherna.MongODM.AspNetCore</RootNamespace>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
-    <Authors>Digicando Srl</Authors>
+    <Authors>Etherna Sagl</Authors>
     <Description>Asp.Net Core adapter for MongODM</Description>
     <LangVersion>8.0</LangVersion>
     <Nullable>enable</Nullable>

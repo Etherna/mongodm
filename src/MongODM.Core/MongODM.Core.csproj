@@ -3,9 +3,9 @@
   <PropertyGroup>
     <TargetFramework>netstandard2.0</TargetFramework>
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
-    <RootNamespace>Digicando.MongODM</RootNamespace>
+    <RootNamespace>Etherna.MongODM</RootNamespace>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
-    <Authors>Digicando Srl</Authors>
+    <Authors>Etherna Sagl</Authors>
     <Description>ODM framework for MongoDB</Description>
     <LangVersion>8.0</LangVersion>
     <Nullable>enable</Nullable>

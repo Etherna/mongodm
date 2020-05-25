@@ -1,6 +1,6 @@
 ﻿using MongoDB.Bson.Serialization;
 
-namespace Digicando.MongODM.Serialization
+namespace Etherna.MongODM.Serialization
 {
     public class EntityMember
     {

@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace Digicando.MongODM.Exceptions
+namespace Etherna.MongODM.Exceptions
 {
     public class InvalidEntityTypeException : Exception
     {

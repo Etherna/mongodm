@@ -5,4 +5,4 @@
 
 using System.Diagnostics.CodeAnalysis;
 
-[assembly: SuppressMessage("Globalization", "CA1303:Do not pass literals as localized parameters", Justification = "This library will be not localized", Scope = "NamespaceAndDescendants", Target = "Digicando.ExecContext")]
+[assembly: SuppressMessage("Globalization", "CA1303:Do not pass literals as localized parameters", Justification = "This library will be not localized", Scope = "NamespaceAndDescendants", Target = "Etherna.ExecContext")]

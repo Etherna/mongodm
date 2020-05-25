@@ -1,11 +1,11 @@
-﻿using Digicando.ExecContext;
-using Digicando.ExecContext.Exceptions;
+﻿using Etherna.ExecContext;
+using Etherna.ExecContext.Exceptions;
 using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 
-namespace Digicando.MongODM.Serialization.Modifiers
+namespace Etherna.MongODM.Serialization.Modifiers
 {
     class CacheSerializerModifier : IDisposable
     {

@@ -1,12 +1,12 @@
-﻿using Digicando.MongODM.Models;
-using Digicando.MongODM.Repositories;
-using Digicando.MongODM.Serialization;
+﻿using Etherna.MongODM.Models;
+using Etherna.MongODM.Repositories;
+using Etherna.MongODM.Serialization;
 using MongoDB.Bson;
 using MongoDB.Driver;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace Digicando.MongODM.Migration
+namespace Etherna.MongODM.Migration
 {
     /// <summary>
     /// Migrate documents of a collection from an older version to a newer

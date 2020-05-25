@@ -1,7 +1,7 @@
-﻿using Digicando.MongODM.Models;
+﻿using Etherna.MongODM.Models;
 using System.Collections.Generic;
 
-namespace Digicando.MongODM.Utility
+namespace Etherna.MongODM.Utility
 {
     /// <summary>
     /// Interface for <see cref="DbCache"/> implementation.

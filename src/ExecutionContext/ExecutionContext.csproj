@@ -3,9 +3,9 @@
   <PropertyGroup>
     <TargetFramework>netstandard2.0</TargetFramework>
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
-    <RootNamespace>Digicando.ExecContext</RootNamespace>
+    <RootNamespace>Etherna.ExecContext</RootNamespace>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
-    <Authors>Digicando Srl</Authors>
+    <Authors>Etherna Sagl</Authors>
     <Description>Execution context provider</Description>
     <LangVersion>8.0</LangVersion>
     <Nullable>enable</Nullable>

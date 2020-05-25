@@ -1,9 +1,9 @@
-﻿using Digicando.ExecContext.AsyncLocal;
+﻿using Etherna.ExecContext.AsyncLocal;
 using Hangfire.Server;
 using System;
 using System.Collections.Generic;
 
-namespace Digicando.MongODM.HF.Filters
+namespace Etherna.MongODM.HF.Filters
 {
     public class AsyncLocalContextHangfireFilter : IServerFilter
     {

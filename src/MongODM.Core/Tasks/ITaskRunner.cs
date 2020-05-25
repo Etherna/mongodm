@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 
-namespace Digicando.MongODM.Tasks
+namespace Etherna.MongODM.Tasks
 {
     public interface ITaskRunner
     {

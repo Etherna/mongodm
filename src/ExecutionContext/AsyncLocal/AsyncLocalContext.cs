@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Threading;
 
-namespace Digicando.ExecContext.AsyncLocal
+namespace Etherna.ExecContext.AsyncLocal
 {
     /// <summary>
     ///     Async local context implementation. This can be used as singleton or with multiple instances.

@@ -1,4 +1,4 @@
-﻿namespace Digicando.MongODM
+﻿namespace Etherna.MongODM
 {
     public interface IDbContextInitializable
     {

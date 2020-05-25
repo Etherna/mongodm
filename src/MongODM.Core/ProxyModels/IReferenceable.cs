@@ -1,6 +1,6 @@
 ﻿using System.Collections.Generic;
 
-namespace Digicando.MongODM.ProxyModels
+namespace Etherna.MongODM.ProxyModels
 {
     public interface IReferenceable
 	{

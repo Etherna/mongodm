@@ -1,11 +1,11 @@
-﻿using Digicando.MongODM.Models;
-using Digicando.MongODM.Serialization;
+﻿using Etherna.MongODM.Models;
+using Etherna.MongODM.Serialization;
 using System;
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace Digicando.MongODM.Repositories
+namespace Etherna.MongODM.Repositories
 {
     public interface IRepository : IDbContextInitializable
     {

@@ -1,11 +1,11 @@
-﻿using Digicando.ExecContext.AsyncLocal;
-using Digicando.MongODM.HF.Filters;
-using Digicando.MongODM.Tasks;
+﻿using Etherna.ExecContext.AsyncLocal;
+using Etherna.MongODM.HF.Filters;
+using Etherna.MongODM.Tasks;
 using Hangfire;
 using System;
 using System.Collections.Generic;
 
-namespace Digicando.MongODM.HF.Tasks
+namespace Etherna.MongODM.HF.Tasks
 {
     public class HangfireTaskRunner : ITaskRunner
     {

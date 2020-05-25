@@ -1,11 +1,11 @@
-﻿using Digicando.MongODM.Models;
-using Digicando.MongODM.Repositories;
+﻿using Etherna.MongODM.Models;
+using Etherna.MongODM.Repositories;
 using MongoDB.Driver;
 using System;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace Digicando.MongODM.Migration
+namespace Etherna.MongODM.Migration
 {
     /// <summary>
     /// Migrate a collection to another

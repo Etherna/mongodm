@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace Digicando.MongODM.Models
+namespace Etherna.MongODM.Models
 {
     public abstract class FakeEntityModelBase<TKey> : ModelBase, IEntityModel<TKey>
     {

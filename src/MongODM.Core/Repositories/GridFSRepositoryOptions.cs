@@ -1,7 +1,7 @@
 ﻿using MongoDB.Bson;
 using System;
 
-namespace Digicando.MongODM.Repositories
+namespace Etherna.MongODM.Repositories
 {
     public class GridFSRepositoryOptions<TModel> : RepositoryOptionsBase
     {

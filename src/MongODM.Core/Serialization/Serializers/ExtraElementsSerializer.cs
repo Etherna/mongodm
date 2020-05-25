@@ -4,7 +4,7 @@ using MongoDB.Bson.Serialization;
 using MongoDB.Bson.Serialization.Serializers;
 using System.Collections.Generic;
 
-namespace Digicando.MongODM.Serialization.Serializers
+namespace Etherna.MongODM.Serialization.Serializers
 {
     public class ExtraElementsSerializer : SerializerBase<object>
     {
@@ -12,20 +12,20 @@ namespace Digicando.MongODM.Serialization.Serializers
 
         public override void Serialize(BsonSerializationContext context, BsonSerializationArgs args, object value)
         {
-            if (value is IDictionary<string, object>)
+            if (value is IDictionary<string, object> dictionary)
             {
                 context.Writer.WriteStartDocument();
-                foreach (var pair in (IDictionary<string, object>)value)
+                foreach (var pair in dictionary)
                 {
                     context.Writer.WriteName(pair.Key);
                     Serialize(context, args, pair.Value);
                 }
                 context.Writer.WriteEndDocument();
             }
-            else if (value is IList<object>)
+            else if (value is IList<object> list)
             {
                 context.Writer.WriteStartArray();
-                foreach (var element in (IList<object>)value)
+                foreach (var element in list)
                 {
                     Serialize(context, args, element);
                 }

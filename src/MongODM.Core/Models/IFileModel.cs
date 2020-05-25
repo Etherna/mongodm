@@ -1,6 +1,6 @@
 ﻿using System.IO;
 
-namespace Digicando.MongODM.Models
+namespace Etherna.MongODM.Models
 {
     public interface IFileModel : IEntityModel<string>
     {

@@ -1,8 +1,8 @@
-﻿using Digicando.MongODM.Models;
+﻿using Etherna.MongODM.Models;
 using System.Collections.Generic;
 using System.Linq;
 
-namespace Digicando.MongODM.Comparers
+namespace Etherna.MongODM.Comparers
 {
     public class FakeModelComparer : EqualityComparer<FakeModel?>
     {

@@ -2,7 +2,7 @@
 using System;
 using System.Collections.Generic;
 
-namespace Digicando.MongODM.Repositories
+namespace Etherna.MongODM.Repositories
 {
     public class CollectionRepositoryOptions<TModel> : RepositoryOptionsBase
     {

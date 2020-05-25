@@ -1,10 +1,10 @@
 ﻿using Digicando.DomainHelper;
-using Digicando.MongODM.Comparers;
-using Digicando.MongODM.Models;
-using Digicando.MongODM.Serialization;
-using Digicando.MongODM.Serialization.Modifiers;
-using Digicando.MongODM.Serialization.Serializers;
-using Digicando.MongODM.Utility;
+using Etherna.MongODM.Comparers;
+using Etherna.MongODM.Models;
+using Etherna.MongODM.Serialization;
+using Etherna.MongODM.Serialization.Modifiers;
+using Etherna.MongODM.Serialization.Serializers;
+using Etherna.MongODM.Utility;
 using MongoDB.Bson;
 using MongoDB.Bson.IO;
 using MongoDB.Bson.Serialization;
@@ -15,7 +15,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using Xunit;
 
-namespace Digicando.MongODM
+namespace Etherna.MongODM
 {
     public class ExtendedClassMapSerializerTest
     {

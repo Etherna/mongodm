@@ -1,7 +1,7 @@
 ﻿using MongoDB.Bson.Serialization;
 using System;
 
-namespace Digicando.MongODM.Serialization
+namespace Etherna.MongODM.Serialization
 {
     public class DocumentSchema
     {

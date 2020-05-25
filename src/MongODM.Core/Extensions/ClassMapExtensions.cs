@@ -1,10 +1,10 @@
-﻿using Digicando.MongODM.Models;
-using Digicando.MongODM.Serialization.Serializers;
+﻿using Etherna.MongODM.Models;
+using Etherna.MongODM.Serialization.Serializers;
 using MongoDB.Bson.Serialization;
 using System;
 using System.Linq.Expressions;
 
-namespace Digicando.MongODM.Extensions
+namespace Etherna.MongODM.Extensions
 {
     public static class ClassMapExtensions
     {

@@ -3,7 +3,7 @@ using MongoDB.Bson.Serialization;
 using MongoDB.Bson.Serialization.Serializers;
 using System;
 
-namespace Digicando.MongODM.Serialization.Serializers
+namespace Etherna.MongODM.Serialization.Serializers
 {
     public class HexToBinaryDataSerializer : SerializerBase<string>
     {

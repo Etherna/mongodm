@@ -1,7 +1,7 @@
 ﻿using Digicando.DomainHelper;
-using Digicando.MongODM.Exceptions;
-using Digicando.MongODM.Models;
-using Digicando.MongODM.Serialization;
+using Etherna.MongODM.Exceptions;
+using Etherna.MongODM.Models;
+using Etherna.MongODM.Serialization;
 using MongoDB.Bson;
 using MongoDB.Driver;
 using MongoDB.Driver.GridFS;
@@ -11,7 +11,7 @@ using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace Digicando.MongODM.Repositories
+namespace Etherna.MongODM.Repositories
 {
     public class GridFSRepository<TModel> :
         RepositoryBase<TModel, string>,
@@ -33,8 +33,8 @@ namespace Digicando.MongODM.Repositories
         }
 
         // Properties.
-        public IGridFSBucket GridFSBucket => _gridFSBucket ??
-            (_gridFSBucket = new GridFSBucket(DbContext.Database, new GridFSBucketOptions { BucketName = options.Name }));
+        public IGridFSBucket GridFSBucket =>
+            _gridFSBucket ??= new GridFSBucket(DbContext.Database, new GridFSBucketOptions { BucketName = options.Name });
 
         // Methods.
         public override Task BuildIndexesAsync(IDocumentSchemaRegister schemaRegister, CancellationToken cancellationToken = default) => Task.CompletedTask;

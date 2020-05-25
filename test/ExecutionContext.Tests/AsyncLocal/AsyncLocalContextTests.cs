@@ -1,7 +1,7 @@
 ﻿using System.Threading.Tasks;
 using Xunit;
 
-namespace Digicando.ExecContext.AsyncLocal
+namespace Etherna.ExecContext.AsyncLocal
 {
     public class AsyncLocalContextTests
     {

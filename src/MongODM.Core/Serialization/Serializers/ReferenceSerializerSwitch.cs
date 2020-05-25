@@ -1,10 +1,10 @@
-﻿using Digicando.MongODM.Models;
+﻿using Etherna.MongODM.Models;
 using MongoDB.Bson.Serialization;
 using MongoDB.Bson.Serialization.Serializers;
 using System;
 using System.Collections.Generic;
 
-namespace Digicando.MongODM.Serialization.Serializers
+namespace Etherna.MongODM.Serialization.Serializers
 {
     public class ReferenceSerializerSwitch<TModel, TKey> :
         SerializerBase<TModel>, IBsonSerializer<TModel>, IBsonDocumentSerializer, IBsonIdProvider, IReferenceContainerSerializer

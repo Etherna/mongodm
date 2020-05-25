@@ -1,8 +1,8 @@
 ﻿using Digicando.DomainHelper;
-using Digicando.MongODM.Models;
-using Digicando.MongODM.ProxyModels;
-using Digicando.MongODM.Serialization.Modifiers;
-using Digicando.MongODM.Utility;
+using Etherna.MongODM.Models;
+using Etherna.MongODM.ProxyModels;
+using Etherna.MongODM.Serialization.Modifiers;
+using Etherna.MongODM.Utility;
 using MongoDB.Bson;
 using MongoDB.Bson.Serialization;
 using MongoDB.Bson.Serialization.Conventions;
@@ -13,7 +13,7 @@ using System.Linq;
 using System.Reflection;
 using System.Threading;
 
-namespace Digicando.MongODM.Serialization.Serializers
+namespace Etherna.MongODM.Serialization.Serializers
 {
     public class ReferenceSerializer<TModelBase, TKey> :
         SerializerBase<TModelBase>, IBsonSerializer<TModelBase>, IBsonDocumentSerializer, IBsonIdProvider, IReferenceContainerSerializer

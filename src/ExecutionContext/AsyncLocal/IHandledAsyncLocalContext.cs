@@ -1,4 +1,4 @@
-﻿namespace Digicando.ExecContext.AsyncLocal
+﻿namespace Etherna.ExecContext.AsyncLocal
 {
     /// <summary>
     ///     Interface used by <see cref="AsyncLocalContextHandler"/> for comunicate with its

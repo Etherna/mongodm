@@ -1,6 +1,6 @@
 ﻿using System.Collections.Generic;
 
-namespace Digicando.ExecContext
+namespace Etherna.ExecContext
 {
     /// <summary>
     /// Represents an execution context, where information can be put and retrieve alongside

@@ -1,4 +1,4 @@
-﻿using Digicando.MongODM.Models;
+﻿using Etherna.MongODM.Models;
 using MongoDB.Driver;
 using MongoDB.Driver.Linq;
 using System;
@@ -6,7 +6,7 @@ using System.Linq.Expressions;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace Digicando.MongODM.Repositories
+namespace Etherna.MongODM.Repositories
 {
     public interface ICollectionRepository : IRepository
     {

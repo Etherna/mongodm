@@ -1,7 +1,7 @@
-﻿using Digicando.ExecContext;
+﻿using Etherna.ExecContext;
 using System;
 
-namespace Digicando.MongODM.Serialization.Modifiers
+namespace Etherna.MongODM.Serialization.Modifiers
 {
     public class SerializerModifierAccessor : ISerializerModifierAccessor
     {

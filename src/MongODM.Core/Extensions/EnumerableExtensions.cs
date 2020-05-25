@@ -4,7 +4,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
 
-namespace Digicando.MongODM.Extensions
+namespace Etherna.MongODM.Extensions
 {
     public static class EnumerableExtensions
     {

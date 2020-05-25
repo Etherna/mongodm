@@ -1,4 +1,4 @@
-﻿namespace Digicando.MongODM.Tasks
+﻿namespace Etherna.MongODM.Tasks
 {
     public class Queues
     {

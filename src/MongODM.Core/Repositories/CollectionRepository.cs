@@ -1,7 +1,7 @@
-﻿using Digicando.MongODM.Exceptions;
-using Digicando.MongODM.Models;
-using Digicando.MongODM.ProxyModels;
-using Digicando.MongODM.Serialization;
+﻿using Etherna.MongODM.Exceptions;
+using Etherna.MongODM.Models;
+using Etherna.MongODM.ProxyModels;
+using Etherna.MongODM.Serialization;
 using MongoDB.Bson;
 using MongoDB.Driver;
 using MongoDB.Driver.Linq;
@@ -12,7 +12,7 @@ using System.Linq.Expressions;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace Digicando.MongODM.Repositories
+namespace Etherna.MongODM.Repositories
 {
     public class CollectionRepository<TModel, TKey> :
         RepositoryBase<TModel, TKey>,
@@ -34,7 +34,7 @@ namespace Digicando.MongODM.Repositories
         }
 
         // Properties.
-        public IMongoCollection<TModel> Collection => _collection ?? (_collection = DbContext.Database.GetCollection<TModel>(options.Name));
+        public IMongoCollection<TModel> Collection => _collection ??= DbContext.Database.GetCollection<TModel>(options.Name);
 
         // Public methods.
         public override async Task BuildIndexesAsync(IDocumentSchemaRegister schemaRegister, CancellationToken cancellationToken = default)

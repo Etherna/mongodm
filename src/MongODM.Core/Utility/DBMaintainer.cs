@@ -1,10 +1,10 @@
-﻿using Digicando.MongODM.ProxyModels;
-using Digicando.MongODM.Tasks;
+﻿using Etherna.MongODM.ProxyModels;
+using Etherna.MongODM.Tasks;
 using MongoDB.Driver;
 using System;
 using System.Linq;
 
-namespace Digicando.MongODM.Utility
+namespace Etherna.MongODM.Utility
 {
     public class DbMaintainer : IDbMaintainer
     {

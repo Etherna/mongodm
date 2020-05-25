@@ -3,7 +3,7 @@ using System;
 using System.Collections.Generic;
 using Xunit;
 
-namespace Digicando.ExecContext
+namespace Etherna.ExecContext
 {
     public class ExecutionContextSelectorTests
     {

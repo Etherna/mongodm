@@ -1,8 +1,8 @@
-﻿using Digicando.MongODM.Models;
+﻿using Etherna.MongODM.Models;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 
-namespace Digicando.MongODM.Tasks
+namespace Etherna.MongODM.Tasks
 {
     public interface IUpdateDocDependenciesTask
     {

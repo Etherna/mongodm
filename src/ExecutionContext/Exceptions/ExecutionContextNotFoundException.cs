@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace Digicando.ExecContext.Exceptions
+namespace Etherna.ExecContext.Exceptions
 {
     public class ExecutionContextNotFoundException : Exception
     {

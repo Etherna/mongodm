@@ -1,6 +1,6 @@
 ﻿using System.Collections.Generic;
 
-namespace Digicando.MongODM.Models
+namespace Etherna.MongODM.Models
 {
     public abstract class ModelBase : IModel
     {

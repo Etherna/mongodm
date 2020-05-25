@@ -1,14 +1,14 @@
-﻿using Digicando.MongODM.MockHelpers;
-using Digicando.MongODM.Models;
-using Digicando.MongODM.ProxyModels;
-using Digicando.MongODM.Repositories;
+﻿using Etherna.MongODM.MockHelpers;
+using Etherna.MongODM.Models;
+using Etherna.MongODM.ProxyModels;
+using Etherna.MongODM.Repositories;
 using Moq;
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
 
-namespace Digicando.MongODM
+namespace Etherna.MongODM
 {
     public class ReferenceableInterceptorTest
     {

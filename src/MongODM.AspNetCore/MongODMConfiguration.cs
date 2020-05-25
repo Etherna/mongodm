@@ -1,6 +1,6 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
 
-namespace Digicando.MongODM.AspNetCore
+namespace Etherna.MongODM.AspNetCore
 {
     public class MongODMConfiguration
     {

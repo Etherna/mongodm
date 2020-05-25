@@ -1,11 +1,11 @@
 ﻿using Castle.DynamicProxy;
-using Digicando.MongODM.Models;
+using Etherna.MongODM.Models;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 
-namespace Digicando.MongODM.ProxyModels
+namespace Etherna.MongODM.ProxyModels
 {
     public class ProxyGenerator : IProxyGenerator
     {

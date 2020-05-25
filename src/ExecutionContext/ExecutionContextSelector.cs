@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 
-namespace Digicando.ExecContext
+namespace Etherna.ExecContext
 {
     /// <summary>
     ///     A multi context selector that take different contexts, and select the first available.

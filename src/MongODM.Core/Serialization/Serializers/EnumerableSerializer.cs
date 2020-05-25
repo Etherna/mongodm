@@ -2,7 +2,7 @@
 using MongoDB.Bson.Serialization.Serializers;
 using System.Collections.Generic;
 
-namespace Digicando.MongODM.Serialization.Serializers
+namespace Etherna.MongODM.Serialization.Serializers
 {
     public class EnumerableSerializer<TItem> :
         EnumerableSerializerBase<IEnumerable<TItem>, TItem>,

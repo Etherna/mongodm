@@ -1,8 +1,8 @@
-﻿using Digicando.ExecContext;
+﻿using Etherna.ExecContext;
 using Microsoft.AspNetCore.Http;
 using System.Collections.Generic;
 
-namespace Digicando.MongODM.AspNetCore
+namespace Etherna.MongODM.AspNetCore
 {
     public class HttpContextExecutionContext : IExecutionContext
     {

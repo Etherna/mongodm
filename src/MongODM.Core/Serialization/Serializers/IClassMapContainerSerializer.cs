@@ -1,9 +1,7 @@
 ﻿using MongoDB.Bson.Serialization;
-using System;
 using System.Collections.Generic;
-using System.Text;
 
-namespace Digicando.MongODM.Serialization.Serializers
+namespace Etherna.MongODM.Serialization.Serializers
 {
     public interface IClassMapContainerSerializer
     {

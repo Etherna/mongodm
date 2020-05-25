@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace Digicando.ExecContext.AsyncLocal
+namespace Etherna.ExecContext.AsyncLocal
 {
     /// <summary>
     ///     The <see cref="AsyncLocalContext"/> interface.

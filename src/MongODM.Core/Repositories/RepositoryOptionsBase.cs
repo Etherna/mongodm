@@ -1,4 +1,4 @@
-﻿namespace Digicando.MongODM.Repositories
+﻿namespace Etherna.MongODM.Repositories
 {
     public abstract class RepositoryOptionsBase
     {

@@ -1,4 +1,4 @@
-﻿namespace Digicando.MongODM.Serialization.Serializers
+﻿namespace Etherna.MongODM.Serialization.Serializers
 {
     public interface IReferenceContainerSerializer : IClassMapContainerSerializer
     {

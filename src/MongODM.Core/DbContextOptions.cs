@@ -1,7 +1,7 @@
-﻿using Digicando.MongODM.Serialization;
+﻿using Etherna.MongODM.Serialization;
 using System.Linq;
 
-namespace Digicando.MongODM
+namespace Etherna.MongODM
 {
     public class DbContextOptions
     {

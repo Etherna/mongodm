@@ -1,8 +1,8 @@
 ﻿using Digicando.DomainHelper;
-using Digicando.MongODM.Exceptions;
-using Digicando.MongODM.Models;
-using Digicando.MongODM.ProxyModels;
-using Digicando.MongODM.Serialization;
+using Etherna.MongODM.Exceptions;
+using Etherna.MongODM.Models;
+using Etherna.MongODM.ProxyModels;
+using Etherna.MongODM.Serialization;
 using MoreLinq;
 using System;
 using System.Collections;
@@ -11,7 +11,7 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace Digicando.MongODM.Repositories
+namespace Etherna.MongODM.Repositories
 {
     public abstract class RepositoryBase<TModel, TKey> :
         IRepository<TModel, TKey>

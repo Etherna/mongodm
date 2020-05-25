@@ -1,4 +1,4 @@
-﻿namespace Digicando.MongODM.Serialization
+﻿namespace Etherna.MongODM.Serialization
 {
     public interface IModelSerializerCollector
     {

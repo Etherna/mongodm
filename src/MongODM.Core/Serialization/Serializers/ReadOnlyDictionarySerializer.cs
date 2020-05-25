@@ -3,7 +3,7 @@ using MongoDB.Bson.Serialization.Options;
 using MongoDB.Bson.Serialization.Serializers;
 using System.Collections.Generic;
 
-namespace Digicando.MongODM.Serialization.Serializers
+namespace Etherna.MongODM.Serialization.Serializers
 {
     public class ReadOnlyDictionarySerializer<TKey, TValue> :
         DictionarySerializerBase<IReadOnlyDictionary<TKey, TValue>, TKey, TValue>,

@@ -1,13 +1,13 @@
-﻿using Digicando.MongODM.ProxyModels;
-using Digicando.MongODM.Repositories;
-using Digicando.MongODM.Serialization;
-using Digicando.MongODM.Serialization.Modifiers;
-using Digicando.MongODM.Utility;
+﻿using Etherna.MongODM.ProxyModels;
+using Etherna.MongODM.Repositories;
+using Etherna.MongODM.Serialization;
+using Etherna.MongODM.Serialization.Modifiers;
+using Etherna.MongODM.Utility;
 using MongoDB.Driver;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace Digicando.MongODM
+namespace Etherna.MongODM
 {
     /// <summary>
     /// Interface of <see cref="DbContext"/> implementation.
