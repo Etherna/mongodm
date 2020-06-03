@@ -50,5 +50,15 @@ namespace Etherna.MongODM.Repositories
             IClientSessionHandle session,
             bool updateDependentDocuments = true,
             CancellationToken cancellationToken = default);
+
+        /// <summary>
+        /// Try to find a model and don't throw exception if it is not found
+        /// </summary>
+        /// <param name="predicate">Model find predicate</param>
+        /// <param name="cancellationToken">The cancellation token</param>
+        /// <returns>The model, null if it doesn't exist</returns>
+        Task<TModel?> TryFindOneAsync(
+            Expression<Func<TModel, bool>> predicate,
+            CancellationToken cancellationToken = default);
     }
 }

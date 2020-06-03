@@ -46,7 +46,7 @@ namespace Etherna.MongODM.Repositories
             CancellationToken cancellationToken = default);
 
         /// <summary>
-        /// Find a model and don't throw exception if Id is not found
+        /// Try to find a model and don't throw exception if it is not found
         /// </summary>
         /// <param name="id">Model's Id</param>
         /// <param name="cancellationToken">The cancellation token</param>

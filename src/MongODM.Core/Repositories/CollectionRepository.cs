@@ -141,6 +141,21 @@ namespace Etherna.MongODM.Repositories
             CancellationToken cancellationToken = default) =>
             ReplaceHelperAsync(model, session, updateDependentDocuments, cancellationToken);
 
+        public async Task<TModel?> TryFindOneAsync(Expression<Func<TModel, bool>> predicate, CancellationToken cancellationToken = default)
+        {
+            if (predicate is null)
+                throw new ArgumentNullException(nameof(predicate));
+
+            try
+            {
+                return await FindOneAsync(predicate, cancellationToken);
+            }
+            catch (EntityNotFoundException)
+            {
+                return null;
+            }
+        }
+
         // Protected methods.
         protected override Task CreateOnDBAsync(IEnumerable<TModel> models, CancellationToken cancellationToken) =>
             Collection.InsertManyAsync(models, null, cancellationToken);
@@ -179,10 +194,10 @@ namespace Etherna.MongODM.Repositories
             var element = await Collection.AsQueryable()
                                           .Where(predicate)
                                           .SingleOrDefaultAsync(cancellationToken);
-            if (element as TModel == default(TModel))
+            if (element == default(TModel))
                 throw new EntityNotFoundException("Can't find element");
 
-            return element as TModel;
+            return element;
         }
 
         private async Task ReplaceHelperAsync(
