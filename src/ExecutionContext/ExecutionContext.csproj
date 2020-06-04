@@ -4,11 +4,11 @@
     <TargetFramework>netstandard2.0</TargetFramework>
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
     <RootNamespace>Etherna.ExecContext</RootNamespace>
-    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
     <Authors>Etherna Sagl</Authors>
     <Description>Execution context provider</Description>
     <LangVersion>8.0</LangVersion>
     <Nullable>enable</Nullable>
+    <RepositoryUrl>https://github.com/Etherna/mongodm</RepositoryUrl>
   </PropertyGroup>
 
   <PropertyGroup>
