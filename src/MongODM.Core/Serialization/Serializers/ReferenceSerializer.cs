@@ -1,5 +1,4 @@
-﻿using Digicando.DomainHelper;
-using Etherna.MongODM.Models;
+﻿using Etherna.MongODM.Models;
 using Etherna.MongODM.ProxyModels;
 using Etherna.MongODM.Serialization.Modifiers;
 using Etherna.MongODM.Utility;

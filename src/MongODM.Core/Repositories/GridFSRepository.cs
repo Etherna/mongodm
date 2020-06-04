@@ -1,5 +1,4 @@
-﻿using Digicando.DomainHelper;
-using Etherna.MongODM.Exceptions;
+﻿using Etherna.MongODM.Exceptions;
 using Etherna.MongODM.Models;
 using Etherna.MongODM.Serialization;
 using MongoDB.Bson;

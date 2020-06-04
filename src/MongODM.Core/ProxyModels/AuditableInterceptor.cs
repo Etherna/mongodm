@@ -1,6 +1,5 @@
 ﻿using Castle.DynamicProxy;
-using Digicando.DomainHelper.Attributes;
-using Digicando.DomainHelper.ProxyModel;
+using Etherna.MongODM.Attributes;
 using System;
 using System.Collections.Generic;
 using System.Linq;

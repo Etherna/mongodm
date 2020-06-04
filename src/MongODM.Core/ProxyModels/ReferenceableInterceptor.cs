@@ -1,7 +1,5 @@
 ﻿using Castle.DynamicProxy;
-using Digicando.DomainHelper;
-using Digicando.DomainHelper.Attributes;
-using Digicando.DomainHelper.ProxyModel;
+using Etherna.MongODM.Attributes;
 using Etherna.MongODM.Models;
 using Etherna.MongODM.Repositories;
 using System;

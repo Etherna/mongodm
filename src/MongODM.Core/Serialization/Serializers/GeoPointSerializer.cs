@@ -1,5 +1,4 @@
-﻿using Digicando.DomainHelper;
-using Etherna.MongODM.ProxyModels;
+﻿using Etherna.MongODM.ProxyModels;
 using MongoDB.Bson.Serialization;
 using MongoDB.Bson.Serialization.Serializers;
 using MongoDB.Driver.GeoJsonObjectModel;
@@ -64,8 +63,8 @@ namespace Etherna.MongODM.Serialization.Serializers
 
             // Create point.
             var coordinate = new GeoJson2DGeographicCoordinates(
-                (double)ReflectionHelper.GetValue(value, longitudeMemberInfo),
-                (double)ReflectionHelper.GetValue(value, latitudeMemberInfo));
+                (double)ReflectionHelper.GetValue(value, longitudeMemberInfo)!,
+                (double)ReflectionHelper.GetValue(value, latitudeMemberInfo)!);
             var point = new GeoJsonPoint<GeoJson2DGeographicCoordinates>(coordinate);
 
             // Serialize point.
