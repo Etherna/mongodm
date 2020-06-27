@@ -17,9 +17,6 @@ jobs:
       uses: actions/setup-dotnet@master
       with:
         dotnet-version: '3.1.x'
-        source-url: https://nuget.pkg.github.com/Etherna/index.json
-      env:
-        NUGET_AUTH_TOKEN: ${{secrets.GITHUB_TOKEN}}
 
     - name: Build with dotnet
       run: dotnet build --configuration Release
@@ -31,4 +28,4 @@ jobs:
       run: dotnet pack --configuration Release -o nupkg
 
     - name: Push packages
-      run: dotnet nuget push './nupkg/*.nupkg'
+      run: dotnet nuget push './nupkg/*.nupkg' --api-key ${{secrets.MYGET_APIKEY}} --source https://www.myget.org/F/etherna/api/v3/index.json
