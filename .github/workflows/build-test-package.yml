@@ -1,0 +1,31 @@
+name: Build test and package .Net Core library - MongODM
+
+on:
+  push:
+    branches: [ master, dev ]
+
+jobs:
+  build-test-package:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@master
+      with:
+        fetch-depth: 0
+
+    - name: Setup .NET Core SDK
+      uses: actions/setup-dotnet@master
+      with:
+        dotnet-version: '3.1.x'
+
+    - name: Build with dotnet
+      run: dotnet build --configuration Release
+
+    - name: Run unit tests
+      run: dotnet test --configuration Release
+      
+    - name: Generate nuget package
+      run: dotnet pack --configuration Release -o nupkg
+
+    - name: Push packages
+      run: dotnet nuget push './nupkg/*.nupkg' --api-key ${{secrets.MYGET_APIKEY}} --source https://www.myget.org/F/etherna/api/v3/index.json
