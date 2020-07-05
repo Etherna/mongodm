@@ -10,14 +10,11 @@ namespace Etherna.MongODM.Operations.ModelMaps
     {
         public void Register(IDbContext dbContext)
         {
-            dbContext.DocumentSchemaRegister.RegisterModelSchema<OperationBase>(
+            dbContext.DocumentSchemaRegister.RegisterModelSchema(
                 "0.20.0", //mongodm library's version
                 cm =>
                 {
                     cm.AutoMap();
-
-                    // Set creator.
-                    cm.SetCreator(() => dbContext.ProxyGenerator.CreateInstance<OperationBase>(dbContext));
 
                     // Set Id representation.
                     cm.IdMemberMap.SetSerializer(new StringSerializer(BsonType.ObjectId))
