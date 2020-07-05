@@ -28,12 +28,12 @@ namespace Etherna.MongODM
         /// <summary>
         /// Database cache container.
         /// </summary>
-        IDbCache DBCache { get; }
+        IDbCache DbCache { get; }
 
         /// <summary>
         /// Database operator interested into maintenance tasks.
         /// </summary>
-        IDbMaintainer DBMaintainer { get; }
+        IDbMaintainer DbMaintainer { get; }
         
         /// <summary>
         /// Container for model serialization and document schema information.
@@ -43,7 +43,7 @@ namespace Etherna.MongODM
         /// <summary>
         /// Current operating document version.
         /// </summary>
-        DocumentVersion DocumentVersion { get; }
+        SemanticVersion DocumentVersion { get; }
         
         /// <summary>
         /// Flag reporting eventual current migration operation.

@@ -6,9 +6,9 @@ namespace Etherna.MongODM
     public class DbContextOptions
     {
         public string ConnectionString { get; set; } = "mongodb://localhost/localDb";
-        public string DBName => ConnectionString.Split('?')[0]
+        public string DbName => ConnectionString.Split('?')[0]
                                                 .Split('/').Last();
-        public DocumentVersion DocumentVersion { get; set; } = "1.0.0";
+        public SemanticVersion DocumentVersion { get; set; } = "1.0.0";
     }
 
     public class DbContextOptions<TDbContext> : DbContextOptions

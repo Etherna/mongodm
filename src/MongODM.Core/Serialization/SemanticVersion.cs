@@ -4,14 +4,14 @@ using System.Text.RegularExpressions;
 
 namespace Etherna.MongODM.Serialization
 {
-    public class DocumentVersion : IComparable<DocumentVersion>
+    public class SemanticVersion : IComparable<SemanticVersion>
     {
         // Constructors.
         /// <summary>
         /// Construct from string version
         /// </summary>
         /// <param name="version">The version as string (ex. 3.1.4-alpha1)</param>
-        public DocumentVersion(string version)
+        public SemanticVersion(string version)
         {
             // Accepted formats for version:
             // * 3
@@ -44,7 +44,7 @@ namespace Etherna.MongODM.Serialization
         /// <param name="minor">Minor version</param>
         /// <param name="patch">Patch version</param>
         /// <param name="label">Additional label</param>
-        public DocumentVersion(
+        public SemanticVersion(
             int major,
             int minor,
             int patch,
@@ -63,7 +63,7 @@ namespace Etherna.MongODM.Serialization
         public string? LabelRelease { get; private set; }
 
         // Overrides.
-        public int CompareTo(DocumentVersion? other)
+        public int CompareTo(SemanticVersion? other)
         {
             // If other is not a valid object reference, this instance is greater.
             if (other is null) return 1;
@@ -73,7 +73,7 @@ namespace Etherna.MongODM.Serialization
             else return -1;
         }
 
-        public override bool Equals(object obj) => this == (obj as DocumentVersion);
+        public override bool Equals(object obj) => this == (obj as SemanticVersion);
 
         public override int GetHashCode()
         {
@@ -98,7 +98,7 @@ namespace Etherna.MongODM.Serialization
         }
 
         // Operators.
-        public static bool operator < (DocumentVersion? x, DocumentVersion? y)
+        public static bool operator < (SemanticVersion? x, SemanticVersion? y)
         {
             // Check if null.
             if (y == null)
@@ -121,9 +121,9 @@ namespace Etherna.MongODM.Serialization
             return false;
         }
 
-        public static bool operator > (DocumentVersion? x, DocumentVersion? y) => y < x;
+        public static bool operator > (SemanticVersion? x, SemanticVersion? y) => y < x;
 
-        public static bool operator == (DocumentVersion? x, DocumentVersion? y)
+        public static bool operator == (SemanticVersion? x, SemanticVersion? y)
         {
             if (ReferenceEquals(x, y)) return true;
             if (x is null || y is null) return false;
@@ -134,8 +134,8 @@ namespace Etherna.MongODM.Serialization
                 x.LabelRelease == y.LabelRelease;
         }
 
-        public static bool operator != (DocumentVersion x, DocumentVersion y) => !(x == y);
+        public static bool operator != (SemanticVersion x, SemanticVersion y) => !(x == y);
 
-        public static implicit operator DocumentVersion(string version) => new DocumentVersion(version);
+        public static implicit operator SemanticVersion(string version) => new SemanticVersion(version);
     }
 }

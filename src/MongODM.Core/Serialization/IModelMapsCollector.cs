@@ -1,6 +1,6 @@
 ﻿namespace Etherna.MongODM.Serialization
 {
-    public interface IModelSerializerCollector
+    public interface IModelMapsCollector
     {
         // Methods.
         void Register(IDbContext dbContext);

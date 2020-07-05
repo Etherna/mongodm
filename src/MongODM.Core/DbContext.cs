@@ -26,8 +26,8 @@ namespace Etherna.MongODM
             IDbContextDependencies dependencies,
             DbContextOptions options)
         {
-            DBCache = dependencies.DbCache;
-            DBMaintainer = dependencies.DbMaintainer;
+            DbCache = dependencies.DbCache;
+            DbMaintainer = dependencies.DbMaintainer;
             DocumentSchemaRegister = dependencies.DocumentSchemaRegister;
             DocumentVersion = options.DocumentVersion;
             ProxyGenerator = dependencies.ProxyGenerator;
@@ -36,11 +36,11 @@ namespace Etherna.MongODM
 
             // Initialize MongoDB driver.
             Client = new MongoClient(options.ConnectionString);
-            Database = Client.GetDatabase(options.DBName);
+            Database = Client.GetDatabase(options.DbName);
 
             // Initialize internal dependencies.
             DocumentSchemaRegister.Initialize(this);
-            DBMaintainer.Initialize(this);
+            DbMaintainer.Initialize(this);
             RepositoryRegister.Initialize(this);
 
             // Initialize repositories.
@@ -54,7 +54,7 @@ namespace Etherna.MongODM
             }, c => true);
 
             // Register serializers.
-            foreach (var serializerCollector in SerializerCollectors)
+            foreach (var serializerCollector in ModelMapsCollectors)
                 serializerCollector.Register(this);
 
             // Build and freeze document schema register.
@@ -63,15 +63,15 @@ namespace Etherna.MongODM
 
         // Public properties.
         public IReadOnlyCollection<IEntityModel> ChangedModelsList =>
-            DBCache.LoadedModels.Values
+            DbCache.LoadedModels.Values
                 .Where(model => (model as IAuditable)?.IsChanged == true)
                 .ToList();
         public IMongoClient Client { get; }
         public IMongoDatabase Database { get; }
-        public IDbCache DBCache { get; }
-        public IDbMaintainer DBMaintainer { get; }
+        public IDbCache DbCache { get; }
+        public IDbMaintainer DbMaintainer { get; }
         public IDocumentSchemaRegister DocumentSchemaRegister { get; }
-        public DocumentVersion DocumentVersion { get; }
+        public SemanticVersion DocumentVersion { get; }
         public bool IsMigrating { get; private set; }
         public IProxyGenerator ProxyGenerator { get; }
         public IRepositoryRegister RepositoryRegister { get; }
@@ -79,7 +79,7 @@ namespace Etherna.MongODM
 
         // Protected properties.
         protected virtual IEnumerable<MongoMigrationBase> MigrationTaskList { get; } = Array.Empty<MongoMigrationBase>();
-        protected abstract IEnumerable<IModelSerializerCollector> SerializerCollectors { get; }
+        protected abstract IEnumerable<IModelMapsCollector> ModelMapsCollectors { get; }
 
         // Methods.
         public async Task MigrateRepositoriesAsync(CancellationToken cancellationToken = default)

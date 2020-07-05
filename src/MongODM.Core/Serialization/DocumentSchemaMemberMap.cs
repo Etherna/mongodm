@@ -12,7 +12,7 @@ namespace Etherna.MongODM.Serialization
         public DocumentSchemaMemberMap(
             Type rootModelType,
             IEnumerable<EntityMember> memberPath,
-            DocumentVersion version,
+            SemanticVersion version,
             bool? useCascadeDelete)
         {
             MemberPath = memberPath;
@@ -59,7 +59,7 @@ namespace Etherna.MongODM.Serialization
         }
         public Type RootModelType { get; }
         public bool? UseCascadeDelete { get; }
-        public DocumentVersion Version { get; }
+        public SemanticVersion Version { get; }
 
         // Methods.
         public string MemberPathToString() =>

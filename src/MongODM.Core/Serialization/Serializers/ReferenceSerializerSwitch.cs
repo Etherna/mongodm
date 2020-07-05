@@ -13,7 +13,7 @@ namespace Etherna.MongODM.Serialization.Serializers
         // Nested classes.
         public class CaseContext
         {
-            public DocumentVersion? DocumentVersion { get; set; }
+            public SemanticVersion? DocumentVersion { get; set; }
         }
 
         // Fields.

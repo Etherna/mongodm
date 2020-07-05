@@ -228,7 +228,7 @@ namespace Etherna.MongODM.Repositories
 
             // Update dependent documents.
             if (updateDependentDocuments)
-                DbContext.DBMaintainer.OnUpdatedModel((IAuditable)model, model.Id);
+                DbContext.DbMaintainer.OnUpdatedModel((IAuditable)model, model.Id);
 
             // Reset changed members.
             (model as IAuditable)?.ResetChangedMembers();

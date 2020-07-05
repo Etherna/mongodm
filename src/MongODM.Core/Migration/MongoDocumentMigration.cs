@@ -16,12 +16,12 @@ namespace Etherna.MongODM.Migration
     public class MongoDocumentMigration<TModel, TKey> : MongoMigrationBase
         where TModel : class, IEntityModel<TKey>
     {
-        private readonly DocumentVersion minimumDocumentVersion;
+        private readonly SemanticVersion minimumDocumentVersion;
         private readonly IMongoCollection<TModel> sourceCollection;
 
         public MongoDocumentMigration(
             ICollectionRepository<TModel, TKey> sourceCollection,
-            DocumentVersion minimumDocumentVersion)
+            SemanticVersion minimumDocumentVersion)
         {
             this.sourceCollection = sourceCollection.Collection;
             this.minimumDocumentVersion = minimumDocumentVersion;

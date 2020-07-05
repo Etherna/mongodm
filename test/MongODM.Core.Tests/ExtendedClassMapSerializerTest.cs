@@ -66,7 +66,7 @@ namespace Etherna.MongODM
 
         // Fields.
         private readonly Mock<IDbCache> dbCacheMock;
-        private readonly DocumentVersion documentVersion = new DocumentVersion("1.0.0");
+        private readonly SemanticVersion documentVersion = new SemanticVersion("1.0.0");
         private readonly Mock<ISerializerModifierAccessor> serializerModifierAccessorMock;
 
         // Constructor.

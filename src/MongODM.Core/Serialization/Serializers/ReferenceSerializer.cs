@@ -38,7 +38,7 @@ namespace Etherna.MongODM.Serialization.Serializers
             IDbContext dbContext,
             bool useCascadeDelete)
         {
-            this.dbCache = dbContext.DBCache;
+            this.dbCache = dbContext.DbCache;
             this.proxyGenerator = dbContext.ProxyGenerator;
             this.serializerModifierAccessor = dbContext.SerializerModifierAccessor;
             this.dbContext = dbContext;

@@ -6,7 +6,7 @@ namespace Etherna.MongODM.Serialization
     public class DocumentSchema
     {
         // Constructors.
-        public DocumentSchema(BsonClassMap classMap, Type modelType, IBsonSerializer? serializer, DocumentVersion version)
+        public DocumentSchema(BsonClassMap classMap, Type modelType, IBsonSerializer? serializer, SemanticVersion version)
         {
             ClassMap = classMap;
             ModelType = modelType;
@@ -18,6 +18,6 @@ namespace Etherna.MongODM.Serialization
         public BsonClassMap ClassMap { get; }
         public Type ModelType { get; }
         public IBsonSerializer? Serializer { get; }
-        public DocumentVersion Version { get; }
+        public SemanticVersion Version { get; }
     }
 }

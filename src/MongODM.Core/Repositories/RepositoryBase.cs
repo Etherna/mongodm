@@ -73,8 +73,8 @@ namespace Etherna.MongODM.Repositories
             await DeleteOnDBAsync(model, cancellationToken);
 
             // Remove from cache.
-            if (DbContext.DBCache.LoadedModels.ContainsKey(model.Id!))
-                DbContext.DBCache.RemoveModel(model.Id!);
+            if (DbContext.DbCache.LoadedModels.ContainsKey(model.Id!))
+                DbContext.DbCache.RemoveModel(model.Id!);
         }
 
         public async Task DeleteAsync(IEntityModel model, CancellationToken cancellationToken = default)
@@ -88,9 +88,9 @@ namespace Etherna.MongODM.Repositories
             TKey id,
             CancellationToken cancellationToken = default)
         {
-            if (DbContext.DBCache.LoadedModels.ContainsKey(id!))
+            if (DbContext.DbCache.LoadedModels.ContainsKey(id!))
             {
-                var cachedModel = DbContext.DBCache.LoadedModels[id!] as TModel;
+                var cachedModel = DbContext.DbCache.LoadedModels[id!] as TModel;
                 if ((cachedModel as IReferenceable)?.IsSummary == false)
                     return cachedModel!;
             }
