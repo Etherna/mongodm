@@ -1,10 +1,10 @@
-name: Build test and package dev and master branch. Deploy to MyGet
+name: Unstable release deploy to MyGet
 
 on:
   push:
     branches:
-    - master
     - dev
+    - 'release/**'
 
 jobs:
   build-test-package:

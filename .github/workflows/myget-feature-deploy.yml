@@ -1,8 +1,8 @@
-name: Build and package feature branch. Deploy to MyGet
+name: Feature deploy to MyGet
 
 on:
   push:
-    branches:    
+    branches:
     - 'feature/**'
 
 jobs:

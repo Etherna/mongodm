@@ -1,4 +1,4 @@
-name: Build test and package master branch. Deploy to NuGet
+name: Stable release deploy to NuGet
 
 on:
   push:
