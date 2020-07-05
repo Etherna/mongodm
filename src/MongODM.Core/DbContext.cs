@@ -1,5 +1,7 @@
 ﻿using Etherna.MongODM.Migration;
 using Etherna.MongODM.Models;
+using Etherna.MongODM.Operations;
+using Etherna.MongODM.Operations.ModelMaps;
 using Etherna.MongODM.ProxyModels;
 using Etherna.MongODM.Repositories;
 using Etherna.MongODM.Serialization;
@@ -11,6 +13,7 @@ using MongoDB.Driver;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -28,8 +31,15 @@ namespace Etherna.MongODM
         {
             DbCache = dependencies.DbCache;
             DbMaintainer = dependencies.DbMaintainer;
+            DbOperations = new CollectionRepository<OperationBase, string>(options.DbOperationsCollectionName);
             DocumentSchemaRegister = dependencies.DocumentSchemaRegister;
             DocumentVersion = options.DocumentVersion;
+            LibraryVersion = GetType()
+                .GetTypeInfo()
+                .Assembly
+                .GetCustomAttribute<AssemblyInformationalVersionAttribute>()
+                ?.InformationalVersion
+                ?.Split('+')[0] ?? "1.0.0";
             ProxyGenerator = dependencies.ProxyGenerator;
             RepositoryRegister = dependencies.RepositoryRegister;
             SerializerModifierAccessor = dependencies.SerializerModifierAccessor;
@@ -53,9 +63,13 @@ namespace Etherna.MongODM
                 new EnumRepresentationConvention(BsonType.String)
             }, c => true);
 
-            // Register serializers.
-            foreach (var serializerCollector in ModelMapsCollectors)
-                serializerCollector.Register(this);
+            // Register model maps.
+            //system maps
+            new OperationBaseMap().Register(this);
+
+            //user maps
+            foreach (var maps in ModelMapsCollectors)
+                maps.Register(this);
 
             // Build and freeze document schema register.
             DocumentSchemaRegister.Freeze();
@@ -70,9 +84,11 @@ namespace Etherna.MongODM
         public IMongoDatabase Database { get; }
         public IDbCache DbCache { get; }
         public IDbMaintainer DbMaintainer { get; }
+        public ICollectionRepository<OperationBase, string> DbOperations { get; }
         public IDocumentSchemaRegister DocumentSchemaRegister { get; }
         public SemanticVersion DocumentVersion { get; }
         public bool IsMigrating { get; private set; }
+        public SemanticVersion LibraryVersion { get; }
         public IProxyGenerator ProxyGenerator { get; }
         public IRepositoryRegister RepositoryRegister { get; }
         public ISerializerModifierAccessor SerializerModifierAccessor { get; }

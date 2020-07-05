@@ -1,8 +1,6 @@
 name: Build test and package .Net Core library - MongODM
 
-on:
-  push:
-    branches: [ master, dev ]
+on: push
 
 jobs:
   build-test-package:

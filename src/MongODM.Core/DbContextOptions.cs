@@ -8,6 +8,7 @@ namespace Etherna.MongODM
         public string ConnectionString { get; set; } = "mongodb://localhost/localDb";
         public string DbName => ConnectionString.Split('?')[0]
                                                 .Split('/').Last();
+        public string DbOperationsCollectionName { get; set; } = "_dbOperations";
         public SemanticVersion DocumentVersion { get; set; } = "1.0.0";
     }
 
