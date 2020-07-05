@@ -6,7 +6,7 @@ on:
     - 'feature/**'
 
 jobs:
-  build-test-package:
+  build-package:
     runs-on: ubuntu-latest
 
     steps:
