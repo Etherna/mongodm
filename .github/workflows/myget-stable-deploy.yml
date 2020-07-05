@@ -1,4 +1,4 @@
-name: Build test and package .Net Core library - MongODM
+name: Build test and package dev and master branch. Deploy to MyGet
 
 on:
   push:
