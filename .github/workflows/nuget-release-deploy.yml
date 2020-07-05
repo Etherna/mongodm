@@ -1,6 +1,9 @@
-name: Build test and package .Net Core library - MongODM
+name: Build test and package master branch. Deploy to NuGet
 
-on: push
+on:
+  push:
+    branches:
+    - master
 
 jobs:
   build-test-package:
@@ -26,4 +29,4 @@ jobs:
       run: dotnet pack --configuration Release -o nupkg
 
     - name: Push packages
-      run: dotnet nuget push './nupkg/*.nupkg' --api-key ${{secrets.MYGET_APIKEY}} --source https://www.myget.org/F/etherna/api/v3/index.json
+      run: dotnet nuget push './nupkg/*.nupkg' --api-key ${{secrets.NUGET_KEY}} --source https://api.nuget.org/v3/index.json

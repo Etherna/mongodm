@@ -11,10 +11,6 @@
     <RepositoryUrl>https://github.com/Etherna/mongodm</RepositoryUrl>
   </PropertyGroup>
 
-  <PropertyGroup>
-    <NoWarn>$(NoWarn);NU5105</NoWarn>
-  </PropertyGroup>
-
   <ItemGroup>
     <PackageReference Include="GitVersionTask" Version="5.3.7">
       <PrivateAssets>all</PrivateAssets>

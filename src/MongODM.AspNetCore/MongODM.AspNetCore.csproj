@@ -11,10 +11,6 @@
     <RepositoryUrl>https://github.com/Etherna/mongodm</RepositoryUrl>
   </PropertyGroup>
 
-  <PropertyGroup>
-    <NoWarn>$(NoWarn);NU5105</NoWarn>
-  </PropertyGroup>
-
   <ItemGroup Condition="'$(TargetFramework)'=='netstandard2.0'">
     <PackageReference Include="Microsoft.AspNetCore.Http" Version="2.0.0" />
     <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="2.0.0" />
