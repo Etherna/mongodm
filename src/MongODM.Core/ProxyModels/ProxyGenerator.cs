@@ -127,6 +127,11 @@ namespace Etherna.MongODM.ProxyModels
             }
         }
 
+        public Type PurgeProxyType(Type type) =>
+            IsProxyType(type) ?
+            type.BaseType :
+            type;
+
         // Protected virtual methods.
         protected virtual IEnumerable<Type> GetCustomAdditionalInterfaces(Type modelType) =>
             Array.Empty<Type>();

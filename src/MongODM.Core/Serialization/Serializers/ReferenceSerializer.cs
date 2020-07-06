@@ -220,7 +220,7 @@ namespace Etherna.MongODM.Serialization.Serializers
             }
 
             // Identify class map.
-            bool useProxyClass = IsProxyClassType(value, out Type valueType);
+            IsProxyClassType(value, out Type valueType);
 
             BsonClassMap classMap;
             configLockClassMaps.EnterReadLock();
@@ -235,18 +235,6 @@ namespace Etherna.MongODM.Serialization.Serializers
             finally
             {
                 configLockClassMaps.ExitReadLock();
-            }
-
-            // Remove proxy class.
-            if (useProxyClass)
-            {
-                var constructor = valueType.GetConstructor(BindingFlags.Public | BindingFlags.Instance, null, new Type[0], null) ??
-                    valueType.GetConstructor(BindingFlags.NonPublic | BindingFlags.Instance, null, new Type[0], null);
-                var newModel = (TModelBase)constructor.Invoke(new object[0]);
-                ReflectionHelper.CloneModel(value, newModel, from mMap in classMap.AllMemberMaps
-                                                             where mMap != classMap.ExtraElementsMemberMap
-                                                             select mMap.MemberInfo as PropertyInfo);
-                value = newModel;
             }
 
             // Clear extra elements.

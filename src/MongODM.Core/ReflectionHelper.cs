@@ -12,49 +12,6 @@ namespace Etherna.MongODM
         private static readonly Dictionary<Type, IEnumerable<PropertyInfo>> propertyRegister = new Dictionary<Type, IEnumerable<PropertyInfo>>();
         private static readonly ReaderWriterLockSlim propertyRegisterLock = new ReaderWriterLockSlim();
 
-        public static TClass CloneModel<TClass>(TClass srcObj, params Expression<Func<TClass, object>>[] memberLambdas)
-            where TClass : new()
-        {
-            var destObj = new TClass();
-            CloneModel(srcObj, destObj, memberLambdas);
-            return destObj;
-        }
-
-        public static void CloneModel<TClass>(TClass srcObj, TClass destObj, params Expression<Func<TClass, object>>[] memberLambdas)
-        {
-            if (srcObj is null)
-                throw new ArgumentNullException(nameof(srcObj));
-            if (destObj is null)
-                throw new ArgumentNullException(nameof(destObj));
-
-            IEnumerable<MemberInfo> membersToClone;
-
-            if (memberLambdas.Any())
-            {
-                membersToClone = memberLambdas.Select(l => GetMemberInfoFromLambda(l, typeof(TClass)));
-            }
-            else // clone full object
-            {
-                membersToClone = GetWritableInstanceProperties(typeof(TClass));
-            }
-
-            foreach (var member in membersToClone)
-            {
-                SetValue(destObj, member, GetValue(srcObj, member));
-            }
-        }
-
-        public static void CloneModel(object srcObj, object destObj, Type actualType) =>
-            CloneModel(srcObj, destObj, GetWritableInstanceProperties(actualType));
-
-        public static void CloneModel(object srcObj, object destObj, IEnumerable<PropertyInfo> members)
-        {
-            foreach (var member in members)
-            {
-                SetValue(destObj, member, GetValue(srcObj, member));
-            }
-        }
-
         public static MemberInfo FindProperty(LambdaExpression lambdaExpression)
         {
             Expression expressionToCheck = lambdaExpression;
@@ -121,15 +78,6 @@ namespace Etherna.MongODM
                     var propertyAccessors = propertyInfo.GetAccessors(true);
                     return actualPropertyAccessors.All(x => propertyAccessors.Contains(x));
                 });
-        }
-
-        public static object? GetDefaultValue(Type type)
-        {
-            if (type.IsValueType)
-            {
-                return Activator.CreateInstance(type);
-            }
-            return null;
         }
 
         public static MemberInfo GetMemberInfoFromLambda<TModel, TMember>(
