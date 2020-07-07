@@ -164,6 +164,13 @@ namespace Etherna.MongODM.Serialization
                 if (IsFrozen)
                     throw new InvalidOperationException("Register is frozen");
 
+                // If not abstract, adjustments for use proxygenerator.
+                if (!typeof(TModel).IsAbstract)
+                {
+                    //set creator
+                    classMap.SetCreator(() => dbContext.ProxyGenerator.CreateInstance<TModel>(dbContext));
+                }
+
                 // Generate model serializer.
                 IBsonSerializer<TModel>? serializer = null;
 
