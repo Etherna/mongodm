@@ -3,6 +3,7 @@ using Etherna.ExecContext.AsyncLocal;
 using Etherna.MongODM;
 using Etherna.MongODM.AspNetCore;
 using Etherna.MongODM.Conventions;
+using Etherna.MongODM.Models;
 using Etherna.MongODM.ProxyModels;
 using Etherna.MongODM.Repositories;
 using Etherna.MongODM.Serialization;
@@ -20,20 +21,22 @@ namespace Microsoft.Extensions.DependencyInjection
 {
     public static class ServiceCollectionExtensions
     {
-        public static MongODMConfiguration UseMongODM<TTaskRunner>(
+        public static MongODMConfiguration UseMongODM<TTaskRunner, TModelBase>(
             this IServiceCollection services,
             IEnumerable<IExecutionContext>? executionContexts = null)
-            where TTaskRunner : class, ITaskRunner =>
-            UseMongODM<TTaskRunner>(
+            where TTaskRunner : class, ITaskRunner
+            where TModelBase : class, IModel => //needed because of this https://jira.mongodb.org/browse/CSHARP-3154
+            UseMongODM<TTaskRunner, TModelBase>(
                 services,
                 new ProxyGenerator(new Castle.DynamicProxy.ProxyGenerator()),
                 executionContexts);
 
-        public static MongODMConfiguration UseMongODM<TTaskRunner>(
+        public static MongODMConfiguration UseMongODM<TTaskRunner, TModelBase>(
             this IServiceCollection services,
             IProxyGenerator proxyGenerator,
             IEnumerable<IExecutionContext>? executionContexts = null)
             where TTaskRunner: class, ITaskRunner
+            where TModelBase: class, IModel //needed because of this https://jira.mongodb.org/browse/CSHARP-3154
         {
             services.TryAddSingleton<IHttpContextAccessor, HttpContextAccessor>();
 
@@ -71,7 +74,7 @@ namespace Microsoft.Extensions.DependencyInjection
             services.TryAddTransient<IUpdateDocDependenciesTask, UpdateDocDependenciesTask>();
 
             // Register conventions.
-            BsonSerializer.RegisterDiscriminatorConvention(typeof(object),
+            BsonSerializer.RegisterDiscriminatorConvention(typeof(TModelBase),
                 new HierarchicalProxyTolerantDiscriminatorConvention("_t", proxyGenerator));
 
             return new MongODMConfiguration(services);
