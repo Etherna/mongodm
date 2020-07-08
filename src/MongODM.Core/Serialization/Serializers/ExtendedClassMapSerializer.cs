@@ -162,16 +162,6 @@ namespace Etherna.MongODM.Serialization.Serializers
                 bsonWriter,
                 builder => builder.IsDynamicType = context.IsDynamicType);
 
-            // Purify model from proxy class.
-            if (value.GetType() != typeof(TModel))
-            {
-                var constructor = typeof(TModel).GetConstructor(BindingFlags.Public | BindingFlags.Instance, null, new Type[0], null) ??
-                    typeof(TModel).GetConstructor(BindingFlags.NonPublic | BindingFlags.Instance, null, new Type[0], null);
-                var newModel = (TModel)constructor.Invoke(new object[0]);
-                ReflectionHelper.CloneModel(value, newModel);
-                value = newModel;
-            }
-
             // Serialize.
             Serializer.Serialize(localContext, args, value);
 

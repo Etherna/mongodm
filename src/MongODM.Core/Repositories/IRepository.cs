@@ -20,6 +20,20 @@ namespace Etherna.MongODM.Repositories
         Task DeleteAsync(
             IEntityModel model,
             CancellationToken cancellationToken = default);
+
+        Task<object> FindOneAsync(
+            object id,
+            CancellationToken cancellationToken = default);
+
+        /// <summary>
+        /// Try to find a model and don't throw exception if it is not found
+        /// </summary>
+        /// <param name="id">Model's Id</param>
+        /// <param name="cancellationToken">The cancellation token</param>
+        /// <returns>The model, null if it doesn't exist</returns>
+        Task<object?> TryFindOneAsync(
+            object id,
+            CancellationToken cancellationToken = default);
     }
 
     public interface IRepository<TModel, TKey> : IRepository
