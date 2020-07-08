@@ -16,7 +16,7 @@ namespace Etherna.MongODM.ProxyModels
         // Fields.
         private bool isSummary;
         private readonly Dictionary<string, bool> settedMemberNames = new Dictionary<string, bool>(); //<memberName, isFromSummary>
-        private readonly IRepository<TModel, TKey> repository;
+        private readonly IRepository repository;
 
         // Constructors.
         public ReferenceableInterceptor(
@@ -24,7 +24,15 @@ namespace Etherna.MongODM.ProxyModels
             IDbContext dbContext)
             : base(additionalInterfaces)
         {
-            repository = (IRepository<TModel, TKey>)dbContext.RepositoryRegister.ModelRepositoryMap[typeof(TModel)];
+            var repositoryModelType = typeof(TModel);
+            while (!dbContext.RepositoryRegister.ModelRepositoryMap.ContainsKey(repositoryModelType))
+            {
+                if (repositoryModelType == typeof(object))
+                    throw new InvalidOperationException($"Cant find valid repository for model type {typeof(TModel)}");
+                repositoryModelType = repositoryModelType.BaseType;
+            }
+
+            repository = dbContext.RepositoryRegister.ModelRepositoryMap[repositoryModelType];
         }
 
         // Protected methods.
@@ -123,10 +131,13 @@ namespace Etherna.MongODM.ProxyModels
         // Helpers.
         private async Task FullLoadAsync(TModel model)
         {
+            if (model.Id is null)
+                throw new InvalidOperationException("model or id can't be null");
+
             if (isSummary)
             {
                 // Merge full object to current.
-                var fullModel = await repository.TryFindOneAsync(model.Id);
+                var fullModel = (await repository.TryFindOneAsync(model.Id)) as TModel;
                 MergeFullModel(model, fullModel);
             }
         }

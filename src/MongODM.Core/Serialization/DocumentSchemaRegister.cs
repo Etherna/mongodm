@@ -71,12 +71,18 @@ namespace Etherna.MongODM.Serialization
                     foreach (var schemaGroup in schemas.GroupBy(s => s.ModelType)
                                                        .Select(group => group.OrderByDescending(s => s.Version).First()))
                     {
-                        // Register class map.
+                        // Register regular model.
+                        //register class map
                         BsonClassMap.RegisterClassMap(schemaGroup.ClassMap);
 
-                        // Register serializer.
+                        //register serializer
                         if (schemaGroup.Serializer != null)
                             BsonSerializer.RegisterSerializer(schemaGroup.ModelType, schemaGroup.Serializer);
+
+                        // Register proxy model.
+                        //register proxy class map
+                        if (schemaGroup.ProxyClassMap != null)
+                            BsonClassMap.RegisterClassMap(schemaGroup.ProxyClassMap);
                     }
 
                     // Compile dependency registers.
@@ -164,6 +170,18 @@ namespace Etherna.MongODM.Serialization
                 if (IsFrozen)
                     throw new InvalidOperationException("Register is frozen");
 
+                // If not abstract, adjustments for use proxygenerator.
+                BsonClassMap? proxyClassMap = null;
+                if (!typeof(TModel).IsAbstract)
+                {
+                    //set creator
+                    classMap.SetCreator(() => dbContext.ProxyGenerator.CreateInstance<TModel>(dbContext));
+
+                    //generate proxy classmap
+                    proxyClassMap = new BsonClassMap(
+                        dbContext.ProxyGenerator.CreateInstance<TModel>(dbContext).GetType());
+                }
+
                 // Generate model serializer.
                 IBsonSerializer<TModel>? serializer = null;
 
@@ -180,7 +198,7 @@ namespace Etherna.MongODM.Serialization
                         { AddVersion = typeof(IEntityModel).IsAssignableFrom(typeof(TModel)) }; //true only for entity models
 
                 // Register schema.
-                schemas.Add(new DocumentSchema(classMap, typeof(TModel), serializer, fromVersion));
+                schemas.Add(new DocumentSchema(classMap, typeof(TModel), proxyClassMap, serializer, fromVersion));
             }
             finally
             {

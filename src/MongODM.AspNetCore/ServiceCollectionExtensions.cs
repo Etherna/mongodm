@@ -2,6 +2,8 @@
 using Etherna.ExecContext.AsyncLocal;
 using Etherna.MongODM;
 using Etherna.MongODM.AspNetCore;
+using Etherna.MongODM.Conventions;
+using Etherna.MongODM.Models;
 using Etherna.MongODM.ProxyModels;
 using Etherna.MongODM.Repositories;
 using Etherna.MongODM.Serialization;
@@ -10,6 +12,7 @@ using Etherna.MongODM.Tasks;
 using Etherna.MongODM.Utility;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.DependencyInjection.Extensions;
+using MongoDB.Bson.Serialization;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -18,17 +21,22 @@ namespace Microsoft.Extensions.DependencyInjection
 {
     public static class ServiceCollectionExtensions
     {
-        public static MongODMConfiguration UseMongODM<TTaskRunner>(
+        public static MongODMConfiguration UseMongODM<TTaskRunner, TModelBase>(
             this IServiceCollection services,
             IEnumerable<IExecutionContext>? executionContexts = null)
-            where TTaskRunner : class, ITaskRunner =>
-            UseMongODM<ProxyGenerator, TTaskRunner>(services, executionContexts);
+            where TTaskRunner : class, ITaskRunner
+            where TModelBase : class, IModel => //needed because of this https://jira.mongodb.org/browse/CSHARP-3154
+            UseMongODM<TTaskRunner, TModelBase>(
+                services,
+                new ProxyGenerator(new Castle.DynamicProxy.ProxyGenerator()),
+                executionContexts);
 
-        public static MongODMConfiguration UseMongODM<TProxyGenerator, TTaskRunner>(
+        public static MongODMConfiguration UseMongODM<TTaskRunner, TModelBase>(
             this IServiceCollection services,
+            IProxyGenerator proxyGenerator,
             IEnumerable<IExecutionContext>? executionContexts = null)
-            where TProxyGenerator: class, IProxyGenerator
             where TTaskRunner: class, ITaskRunner
+            where TModelBase: class, IModel //needed because of this https://jira.mongodb.org/browse/CSHARP-3154
         {
             services.TryAddSingleton<IHttpContextAccessor, HttpContextAccessor>();
 
@@ -45,7 +53,7 @@ namespace Microsoft.Extensions.DependencyInjection
                     executionContexts.First() :
                     new ExecutionContextSelector(executionContexts);
             });
-            services.TryAddSingleton<IProxyGenerator, TProxyGenerator>();
+            services.TryAddSingleton(proxyGenerator);
             services.TryAddSingleton<ITaskRunner, TTaskRunner>();
 
             // DbContext internal.
@@ -65,8 +73,9 @@ namespace Microsoft.Extensions.DependencyInjection
             //tasks
             services.TryAddTransient<IUpdateDocDependenciesTask, UpdateDocDependenciesTask>();
 
-            //castle proxy generator.
-            services.TryAddSingleton<Castle.DynamicProxy.IProxyGenerator>(new Castle.DynamicProxy.ProxyGenerator());
+            // Register conventions.
+            BsonSerializer.RegisterDiscriminatorConvention(typeof(TModelBase),
+                new HierarchicalProxyTolerantDiscriminatorConvention("_t", proxyGenerator));
 
             return new MongODMConfiguration(services);
         }

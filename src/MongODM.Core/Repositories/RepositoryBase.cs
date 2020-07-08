@@ -84,6 +84,9 @@ namespace Etherna.MongODM.Repositories
             await DeleteAsync(castedModel, cancellationToken);
         }
 
+        public async Task<object> FindOneAsync(object id, CancellationToken cancellationToken = default) =>
+            await FindOneAsync((TKey)id, cancellationToken);
+
         public virtual async Task<TModel> FindOneAsync(
             TKey id,
             CancellationToken cancellationToken = default)
@@ -97,6 +100,9 @@ namespace Etherna.MongODM.Repositories
 
             return await FindOneOnDBAsync(id, cancellationToken);
         }
+
+        public async Task<object?> TryFindOneAsync(object id, CancellationToken cancellationToken = default) =>
+            await TryFindOneAsync((TKey)id, cancellationToken);
 
         public async Task<TModel?> TryFindOneAsync(
             TKey id,

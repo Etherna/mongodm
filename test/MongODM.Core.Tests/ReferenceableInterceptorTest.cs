@@ -3,6 +3,7 @@ using Etherna.MongODM.Models;
 using Etherna.MongODM.ProxyModels;
 using Etherna.MongODM.Repositories;
 using Moq;
+using System;
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
@@ -24,8 +25,11 @@ namespace Etherna.MongODM
             repositoryMock = new Mock<ICollectionRepository<FakeModel, string>>();
 
             dbContextMock = new Mock<IDbContext>();
-            dbContextMock.Setup(c => c.RepositoryRegister.ModelRepositoryMap[typeof(FakeModel)])
-                .Returns(() => repositoryMock.Object);
+            dbContextMock.Setup(c => c.RepositoryRegister.ModelRepositoryMap)
+                .Returns(() => new Dictionary<Type, IRepository>
+                {
+                    [typeof(FakeModel)] = repositoryMock.Object
+                });
             
             interceptor = new ReferenceableInterceptor<FakeModel, string>(
                 new[] { typeof(IReferenceable) },
@@ -122,8 +126,8 @@ namespace Etherna.MongODM
                 IntegerProp = 42
             };
 
-            repositoryMock.Setup(r => r.TryFindOneAsync(modelId, It.IsAny<CancellationToken>()))
-                .Returns(Task.FromResult<FakeModel?>(new FakeModel
+            repositoryMock.Setup(r => r.TryFindOneAsync((object)modelId, It.IsAny<CancellationToken>()))
+                .Returns(Task.FromResult<object?>(new FakeModel
                 {
                     Id = modelId,
                     IntegerProp = 7,
@@ -148,7 +152,7 @@ namespace Etherna.MongODM
 
             // Assert.
             getPropertyInvocationMock.Verify(i => i.Proceed(), Times.Once());
-            repositoryMock.Verify(r => r.TryFindOneAsync(modelId, It.IsAny<CancellationToken>()), Times.Once);
+            repositoryMock.Verify(r => r.TryFindOneAsync((object)modelId, It.IsAny<CancellationToken>()), Times.Once);
 
             interceptor.Intercept(getIsSummaryInvocationMock.Object);
             interceptor.Intercept(getLoadedMembersInvocationMock.Object);
