@@ -180,7 +180,7 @@ namespace Etherna.MongODM.Serialization.Serializers
 
         public bool GetDocumentId(object document, out object id, out Type idNominalType, out IIdGenerator idGenerator)
         {
-            IsProxyClassType(document, out Type documentType);
+            var documentType = proxyGenerator.PurgeProxyType(document.GetType());
             var serializer = (IBsonIdProvider)GetSerializer(documentType);
             return serializer.GetDocumentId(document, out id, out idNominalType, out idGenerator);
         }
@@ -220,7 +220,7 @@ namespace Etherna.MongODM.Serialization.Serializers
             }
 
             // Identify class map.
-            IsProxyClassType(value, out Type valueType);
+            var valueType = proxyGenerator.PurgeProxyType(value.GetType());
 
             BsonClassMap classMap;
             configLockClassMaps.EnterReadLock();
@@ -247,7 +247,7 @@ namespace Etherna.MongODM.Serialization.Serializers
 
         public void SetDocumentId(object document, object id)
         {
-            IsProxyClassType(document, out Type documentType);
+            var documentType = proxyGenerator.PurgeProxyType(document.GetType());
             var serializer = (IBsonIdProvider)GetSerializer(documentType);
             serializer.SetDocumentId(document, id);
         }
@@ -339,17 +339,6 @@ namespace Etherna.MongODM.Serialization.Serializers
             {
                 configLockSerializers.ExitWriteLock();
             }
-        }
-
-        private bool IsProxyClassType<TModel>(TModel value, out Type modelType)
-        {
-            modelType = value!.GetType();
-            if (proxyGenerator.IsProxyType(modelType))
-            {
-                modelType = modelType.BaseType;
-                return true;
-            }
-            return false;
         }
     }
 }
