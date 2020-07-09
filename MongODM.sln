@@ -26,7 +26,8 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution 
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "workflows", "workflows", "{D4BB5972-5F7B-43ED-81C1-69ECF0E62D1E}"
 	ProjectSection(SolutionItems) = preProject
-		.github\workflows\build-test-package.yml = .github\workflows\build-test-package.yml
+		.github\workflows\myget-unstable-deploy.yml = .github\workflows\myget-unstable-deploy.yml
+		.github\workflows\nuget-stable-deploy.yml = .github\workflows\nuget-stable-deploy.yml
 	EndProjectSection
 EndProject
 Global

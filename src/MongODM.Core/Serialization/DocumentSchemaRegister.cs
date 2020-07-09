@@ -192,7 +192,7 @@ namespace Etherna.MongODM.Serialization
                     serializer =
                         new ExtendedClassMapSerializer<TModel>(
                             dbContext.DbCache,
-                            dbContext.DocumentVersion,
+                            dbContext.ApplicationVersion,
                             serializerModifierAccessor,
                             (m, v) => modelMigrationAsync?.Invoke(m, v) ?? Task.FromResult(m))
                         { AddVersion = typeof(IEntityModel).IsAssignableFrom(typeof(TModel)) }; //true only for entity models

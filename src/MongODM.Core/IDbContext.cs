@@ -14,6 +14,11 @@ namespace Etherna.MongODM
     /// </summary>
     public interface IDbContext
     {
+        /// <summary>
+        /// Current application version.
+        /// </summary>
+        SemanticVersion ApplicationVersion { get; }
+
         // Properties.
         /// <summary>
         /// Current MongoDB client.
@@ -41,15 +46,15 @@ namespace Etherna.MongODM
         IDocumentSchemaRegister DocumentSchemaRegister { get; }
         
         /// <summary>
-        /// Current operating document version.
-        /// </summary>
-        SemanticVersion DocumentVersion { get; }
-        
-        /// <summary>
         /// Flag reporting eventual current migration operation.
         /// </summary>
         bool IsMigrating { get; }
-        
+
+        /// <summary>
+        /// Current MongODM library version
+        /// </summary>
+        SemanticVersion LibraryVersion { get; }
+
         /// <summary>
         /// Current model proxy generator.
         /// </summary>

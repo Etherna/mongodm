@@ -4,6 +4,7 @@ using Etherna.MongODM;
 using Etherna.MongODM.AspNetCore;
 using Etherna.MongODM.Conventions;
 using Etherna.MongODM.Models;
+using Etherna.MongODM.Operations;
 using Etherna.MongODM.ProxyModels;
 using Etherna.MongODM.Repositories;
 using Etherna.MongODM.Serialization;
@@ -12,7 +13,9 @@ using Etherna.MongODM.Tasks;
 using Etherna.MongODM.Utility;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.DependencyInjection.Extensions;
+using MongoDB.Bson;
 using MongoDB.Bson.Serialization;
+using MongoDB.Bson.Serialization.Conventions;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -74,7 +77,13 @@ namespace Microsoft.Extensions.DependencyInjection
             services.TryAddTransient<IUpdateDocDependenciesTask, UpdateDocDependenciesTask>();
 
             // Register conventions.
+            ConventionRegistry.Register("Enum string", new ConventionPack
+            {
+                new EnumRepresentationConvention(BsonType.String)
+            }, c => true);
             BsonSerializer.RegisterDiscriminatorConvention(typeof(TModelBase),
+                new HierarchicalProxyTolerantDiscriminatorConvention("_t", proxyGenerator));
+            BsonSerializer.RegisterDiscriminatorConvention(typeof(OperationBase),
                 new HierarchicalProxyTolerantDiscriminatorConvention("_t", proxyGenerator));
 
             return new MongODMConfiguration(services);
