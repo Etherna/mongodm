@@ -33,7 +33,7 @@ namespace Etherna.MongODM
             DbMaintainer = dependencies.DbMaintainer;
             DbOperations = new CollectionRepository<OperationBase, string>(options.DbOperationsCollectionName);
             DocumentSchemaRegister = dependencies.DocumentSchemaRegister;
-            DocumentVersion = options.DocumentVersion;
+            ApplicationVersion = options.ApplicationVersion;
             LibraryVersion = GetType()
                 .GetTypeInfo()
                 .Assembly
@@ -57,17 +57,11 @@ namespace Etherna.MongODM
             foreach (var repository in RepositoryRegister.ModelRepositoryMap.Values)
                 repository.Initialize(this);
 
-            // Customize conventions.
-            ConventionRegistry.Register("Enum string", new ConventionPack
-            {
-                new EnumRepresentationConvention(BsonType.String)
-            }, c => true);
-
             // Register model maps.
-            //system maps
+            //internal maps
             new OperationBaseMap().Register(this);
 
-            //user maps
+            //application maps
             foreach (var maps in ModelMapsCollectors)
                 maps.Register(this);
 
@@ -86,7 +80,7 @@ namespace Etherna.MongODM
         public IDbMaintainer DbMaintainer { get; }
         public ICollectionRepository<OperationBase, string> DbOperations { get; }
         public IDocumentSchemaRegister DocumentSchemaRegister { get; }
-        public SemanticVersion DocumentVersion { get; }
+        public SemanticVersion ApplicationVersion { get; }
         public bool IsMigrating { get; private set; }
         public SemanticVersion LibraryVersion { get; }
         public IProxyGenerator ProxyGenerator { get; }
