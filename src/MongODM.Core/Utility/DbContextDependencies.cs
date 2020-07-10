@@ -13,7 +13,10 @@ namespace Etherna.MongODM.Utility
             IDocumentSchemaRegister documentSchemaRegister,
             IProxyGenerator proxyGenerator,
             IRepositoryRegister repositoryRegister,
-            ISerializerModifierAccessor serializerModifierAccessor)
+            ISerializerModifierAccessor serializerModifierAccessor,
+#pragma warning disable IDE0060 // Remove unused parameter. It's needed for run static configurations
+            IStaticConfigurationBuilder staticConfigurationBuilder)
+#pragma warning restore IDE0060 // Remove unused parameter
         {
             DbCache = dbCache;
             DbMaintainer = dbMaintainer;
