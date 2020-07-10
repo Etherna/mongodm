@@ -184,7 +184,32 @@ namespace Etherna.MongODM.Serialization.Serializers
             var serializer = (IBsonIdProvider)GetSerializer(documentType);
             return serializer.GetDocumentId(document, out id, out idNominalType, out idGenerator);
         }
-        
+
+        public ReferenceSerializer<TModelBase, TKey> RegisterProxyType<TModel>()
+        {
+            var proxyType = proxyGenerator.CreateInstance<TModel>(dbContext)!.GetType();
+
+            // Initialize class map.
+            var createBsonClassMapInfo = GetType().GetMethod(nameof(CreateBsonClassMap), BindingFlags.Instance | BindingFlags.NonPublic);
+            var createBsonClassMap = createBsonClassMapInfo.MakeGenericMethod(proxyType);
+
+            var classMap = (BsonClassMap)createBsonClassMap.Invoke(this, new object[] { null! });
+
+            // Add info to dictionary of registered types.
+            configLockClassMaps.EnterWriteLock();
+            try
+            {
+                registeredClassMaps.Add(proxyType, classMap);
+            }
+            finally
+            {
+                configLockClassMaps.ExitWriteLock();
+            }
+
+            // Return this for cascade use.
+            return this;
+        }
+
         public ReferenceSerializer<TModelBase, TKey> RegisterType<TModel>(Action<BsonClassMap<TModel>>? classMapInitializer = null)
             where TModel : class
         {
@@ -219,29 +244,11 @@ namespace Etherna.MongODM.Serialization.Serializers
                 return;
             }
 
-            // Identify class map.
-            var valueType = proxyGenerator.PurgeProxyType(value.GetType());
-
-            BsonClassMap classMap;
-            configLockClassMaps.EnterReadLock();
-            try
-            {
-                if (!registeredClassMaps.ContainsKey(valueType))
-                {
-                    throw new InvalidOperationException("Can't identify right class map");
-                }
-                classMap = registeredClassMaps[valueType];
-            }
-            finally
-            {
-                configLockClassMaps.ExitReadLock();
-            }
-
             // Clear extra elements.
-            (value as IModel)?.ExtraElements?.Clear();
+            value.ExtraElements?.Clear();
 
             // Serialize object.
-            var serializer = GetSerializer(valueType);
+            var serializer = GetSerializer(value.GetType());
             serializer.Serialize(context, args, value);
         }
 
@@ -271,8 +278,16 @@ namespace Etherna.MongODM.Serialization.Serializers
         }
 
         // Helpers.
-        private BsonClassMap<TModel> CreateBsonClassMap<TModel>(Action<BsonClassMap<TModel>> classMapInitializer)
+        /// <summary>
+        /// Create a new BsonClassMap for type TModel, and link its baseClassMap if already registered
+        /// </summary>
+        /// <typeparam name="TModel">The destination model type of class map</typeparam>
+        /// <param name="classMapInitializer">The class map inizializer. Empty initilization if null</param>
+        /// <returns>The new created class map</returns>
+        private BsonClassMap<TModel> CreateBsonClassMap<TModel>(Action<BsonClassMap<TModel>>? classMapInitializer = null)
         {
+            classMapInitializer ??= cm => { };
+
             BsonClassMap<TModel> classMap = new BsonClassMap<TModel>(classMapInitializer);
             var baseType = typeof(TModel).BaseType;
             configLockClassMaps.EnterReadLock();
