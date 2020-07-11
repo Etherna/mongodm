@@ -21,6 +21,9 @@ namespace Etherna.MongODM.ProxyModels
         // Protected methods.
         protected override bool InterceptInterface(IInvocation invocation)
         {
+            if (invocation is null)
+                throw new ArgumentNullException(nameof(invocation));
+
             // Intercept ISummarizable invocations
             if (invocation.Method.DeclaringType == typeof(IAuditable))
             {
@@ -47,10 +50,13 @@ namespace Etherna.MongODM.ProxyModels
 
         protected override void InterceptModel(IInvocation invocation)
         {
+            if (invocation is null)
+                throw new ArgumentNullException(nameof(invocation));
+
             // Filter sets.
             if (isAuditingEnabled)
             {
-                if (invocation.Method.Name.StartsWith("set_"))
+                if (invocation.Method.Name.StartsWith("set_", StringComparison.InvariantCulture))
                 {
                     var propertyName = invocation.Method.Name.Substring(4);
                     var propertyInfo = typeof(TModel).GetMember(propertyName).Single();
@@ -58,7 +64,7 @@ namespace Etherna.MongODM.ProxyModels
                     // Add property to edited set.
                     changedMembers.Add(propertyInfo);
                 }
-                else if (invocation.Method.Name.StartsWith("get_"))
+                else if (invocation.Method.Name.StartsWith("get_", StringComparison.InvariantCulture))
                 {
                     //ignore get
                 }

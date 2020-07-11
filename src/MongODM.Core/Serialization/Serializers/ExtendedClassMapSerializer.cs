@@ -41,6 +41,9 @@ namespace Etherna.MongODM.Serialization.Serializers
             ISerializerModifierAccessor serializerModifierAccessor,
             Func<TModel, SemanticVersion?, Task<TModel>>? fixDeserializedModelAsync = null)
         {
+            if (documentVersion is null)
+                throw new ArgumentNullException(nameof(documentVersion));
+
             this.dbCache = dbCache;
             this.serializerModifierAccessor = serializerModifierAccessor;
             extraElements = new List<ExtraElementCondition>();
@@ -81,6 +84,9 @@ namespace Etherna.MongODM.Serialization.Serializers
 
         public override TModel Deserialize(BsonDeserializationContext context, BsonDeserializationArgs args)
         {
+            if (context is null)
+                throw new ArgumentNullException(nameof(context));
+
             // Check if null.
             if (context.Reader.CurrentBsonType == BsonType.Null)
             {
@@ -97,7 +103,7 @@ namespace Etherna.MongODM.Serialization.Serializers
                 documentVersion = BsonValueToDocumentVersion(versionElement.Value);
 
             // Initialize localContext and bsonReader
-            var bsonReader = new ExtendedBsonDocumentReader(bsonDocument)
+            using var bsonReader = new ExtendedBsonDocumentReader(bsonDocument)
             {
                 DocumentVersion = documentVersion
             };
@@ -145,6 +151,9 @@ namespace Etherna.MongODM.Serialization.Serializers
 
         public override void Serialize(BsonSerializationContext context, BsonSerializationArgs args, TModel value)
         {
+            if (context is null)
+                throw new ArgumentNullException(nameof(context));
+
             // Serialize null object.
             if (value == null)
             {
@@ -154,7 +163,7 @@ namespace Etherna.MongODM.Serialization.Serializers
 
             // Initialize localContext, bsonDocument and bsonWriter.
             var bsonDocument = new BsonDocument();
-            var bsonWriter = new ExtendedBsonDocumentWriter(bsonDocument)
+            using var bsonWriter = new ExtendedBsonDocumentWriter(bsonDocument)
             {
                 IsRootDocument = !(context.Writer is ExtendedBsonDocumentWriter)
             };

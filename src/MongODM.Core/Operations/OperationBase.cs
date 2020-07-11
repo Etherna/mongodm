@@ -10,6 +10,9 @@ namespace Etherna.MongODM.Operations
         // Constructors and dispose.
         public OperationBase(IDbContext owner)
         {
+            if (owner is null)
+                throw new ArgumentNullException(nameof(owner));
+
             CreationDateTime = DateTime.Now;
             DbContextName = owner.Identifier;
         }

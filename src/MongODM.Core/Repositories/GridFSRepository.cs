@@ -42,13 +42,16 @@ namespace Etherna.MongODM.Repositories
             GridFSBucket.DownloadAsBytesAsync(ObjectId.Parse(id), null, cancellationToken);
 
         public virtual async Task<Stream> DownloadAsStreamAsync(string id, CancellationToken cancellationToken = default) =>
-            await GridFSBucket.OpenDownloadStreamAsync(ObjectId.Parse(id), null, cancellationToken);
+            await GridFSBucket.OpenDownloadStreamAsync(ObjectId.Parse(id), null, cancellationToken).ConfigureAwait(false);
 
         // Protected methods.
         protected override async Task CreateOnDBAsync(IEnumerable<TModel> models, CancellationToken cancellationToken)
         {
+            if (models is null)
+                throw new ArgumentNullException(nameof(models));
+
             foreach (var model in models)
-                await CreateOnDBAsync(model, cancellationToken);
+                await CreateOnDBAsync(model, cancellationToken).ConfigureAwait(false);
         }
 
         protected override async Task CreateOnDBAsync(TModel model, CancellationToken cancellationToken)
@@ -61,12 +64,17 @@ namespace Etherna.MongODM.Repositories
             var id = await GridFSBucket.UploadFromStreamAsync(model.Name, model.Stream, new GridFSUploadOptions
             {
                 Metadata = options.MetadataSerializer?.Invoke(model)
-            });
+            }).ConfigureAwait(false);
             ReflectionHelper.SetValue(model, m => m.Id, id.ToString());
         }
 
-        protected override Task DeleteOnDBAsync(TModel model, CancellationToken cancellationToken) =>
-            GridFSBucket.DeleteAsync(ObjectId.Parse(model.Id), cancellationToken);
+        protected override Task DeleteOnDBAsync(TModel model, CancellationToken cancellationToken)
+        {
+            if (model is null)
+                throw new ArgumentNullException(nameof(model));
+
+            return GridFSBucket.DeleteAsync(ObjectId.Parse(model.Id), cancellationToken);
+        }
 
         protected override async Task<TModel> FindOneOnDBAsync(string id, CancellationToken cancellationToken = default)
         {
@@ -74,7 +82,7 @@ namespace Etherna.MongODM.Repositories
                 throw new ArgumentNullException(nameof(id));
 
             var filter = Builders<GridFSFileInfo>.Filter.Eq("_id", ObjectId.Parse(id));
-            var mongoFile = await GridFSBucket.Find(filter).SingleOrDefaultAsync(cancellationToken);
+            var mongoFile = await GridFSBucket.Find(filter).SingleOrDefaultAsync(cancellationToken).ConfigureAwait(false);
             if (mongoFile == null)
                 throw new EntityNotFoundException($"Can't find key {id}");
 

@@ -13,7 +13,7 @@ using System.Threading.Tasks;
 
 namespace Etherna.MongODM.Serialization
 {
-    public class DocumentSchemaRegister : IDocumentSchemaRegister
+    public class DocumentSchemaRegister : IDocumentSchemaRegister, IDisposable
     {
         // Fields.
         private readonly ReaderWriterLockSlim configLock = new ReaderWriterLockSlim(LockRecursionPolicy.SupportsRecursion);
@@ -50,6 +50,11 @@ namespace Etherna.MongODM.Serialization
         public IEnumerable<DocumentSchema> Schemas => schemas;
 
         // Methods.
+        public void Dispose()
+        {
+            configLock.Dispose();
+        }
+
         public void Freeze()
         {
             configLock.EnterReadLock();
@@ -92,7 +97,7 @@ namespace Etherna.MongODM.Serialization
 
                         CompileDependencyRegisters(
                             schema.ModelType,
-                            new EntityMember[0],
+                            Array.Empty<EntityMember>(),
                             schema.ClassMap,
                             schema.Version);
                     }
@@ -113,7 +118,7 @@ namespace Etherna.MongODM.Serialization
 
             if (memberDependenciesMap.TryGetValue(memberInfo, out List<DocumentSchemaMemberMap> dependencies))
                 return dependencies;
-            return new DocumentSchemaMemberMap[0];
+            return Array.Empty<DocumentSchemaMemberMap>();
         }
 
         public IEnumerable<DocumentSchemaMemberMap> GetModelDependencies(Type modelType)
@@ -122,7 +127,7 @@ namespace Etherna.MongODM.Serialization
 
             if (modelDependenciesMap.TryGetValue(modelType, out List<DocumentSchemaMemberMap> dependencies))
                 return dependencies;
-            return new DocumentSchemaMemberMap[0];
+            return Array.Empty<DocumentSchemaMemberMap>();
         }
 
         public IEnumerable<DocumentSchemaMemberMap> GetModelEntityReferencesIds(Type modelType)
@@ -131,7 +136,7 @@ namespace Etherna.MongODM.Serialization
 
             if (modelEntityReferencesIdsMap.TryGetValue(modelType, out List<DocumentSchemaMemberMap> dependencies))
                 return dependencies;
-            return new DocumentSchemaMemberMap[0];
+            return Array.Empty<DocumentSchemaMemberMap>();
         }
 
         public void RegisterModelSchema<TModel>(
@@ -164,6 +169,9 @@ namespace Etherna.MongODM.Serialization
             Func<TModel, SemanticVersion?, Task<TModel>>? modelMigrationAsync = null)
             where TModel : class
         {
+            if (classMap is null)
+                throw new ArgumentNullException(nameof(classMap));
+
             configLock.EnterWriteLock();
             try
             {

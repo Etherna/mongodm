@@ -1,5 +1,6 @@
 ﻿using MongoDB.Bson.Serialization;
 using MongoDB.Bson.Serialization.Serializers;
+using System;
 using System.Collections.Generic;
 
 namespace Etherna.MongODM.Serialization.Serializers
@@ -33,9 +34,11 @@ namespace Etherna.MongODM.Serialization.Serializers
         { }
 
         // Properties.
+        public IBsonSerializer ChildSerializer => ItemSerializer;
+
         public IEnumerable<BsonClassMap> ContainedClassMaps =>
             ItemSerializer is IClassMapContainerSerializer classMapContainer ?
-            classMapContainer.ContainedClassMaps : new BsonClassMap[0];
+            classMapContainer.ContainedClassMaps : Array.Empty<BsonClassMap>();
 
         public bool? UseCascadeDelete =>
             (ItemSerializer as IReferenceContainerSerializer)?.UseCascadeDelete;
@@ -43,11 +46,17 @@ namespace Etherna.MongODM.Serialization.Serializers
         // Public methods.
         public override void Serialize(BsonSerializationContext context, BsonSerializationArgs args, IEnumerable<TItem> value)
         {
+            if (value is null)
+                throw new ArgumentNullException(nameof(value));
+
             // Force to exclude enumerable actual type from serialization.
             args = new BsonSerializationArgs(value.GetType(), true, args.SerializeIdFirst);
 
             base.Serialize(context, args, value);
         }
+
+        public IBsonSerializer WithChildSerializer(IBsonSerializer childSerializer) =>
+            WithItemSerializer((IBsonSerializer<TItem>)childSerializer);
 
         /// <summary>
         /// Returns a serializer that has been reconfigured with the specified item serializer.
@@ -60,8 +69,13 @@ namespace Etherna.MongODM.Serialization.Serializers
         }
 
         // Protected methods.
-        protected override void AddItem(object accumulator, TItem item) =>
+        protected override void AddItem(object accumulator, TItem item)
+        {
+            if (accumulator is null)
+                throw new ArgumentNullException(nameof(accumulator));
+
             ((List<TItem>)accumulator).Add(item);
+        }
 
         protected override object CreateAccumulator() =>
             new List<TItem>();
@@ -71,11 +85,5 @@ namespace Etherna.MongODM.Serialization.Serializers
 
         protected override IEnumerable<TItem> FinalizeResult(object accumulator) =>
             (IEnumerable<TItem>)accumulator;
-
-        // Explicit interface implementations.
-        IBsonSerializer IChildSerializerConfigurable.ChildSerializer => ItemSerializer;
-
-        IBsonSerializer IChildSerializerConfigurable.WithChildSerializer(IBsonSerializer childSerializer) =>
-            WithItemSerializer((IBsonSerializer<TItem>)childSerializer);
     }
 }

@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Globalization;
 using System.Text;
 using System.Text.RegularExpressions;
 
@@ -28,11 +29,11 @@ namespace Etherna.MongODM.Serialization
             var patchGroup = match.Groups["patch"];
             var labelGroup = match.Groups["label"];
 
-            MajorRelease = int.Parse(majorGroup.Value);
+            MajorRelease = int.Parse(majorGroup.Value, CultureInfo.InvariantCulture);
             if (minorGroup.Success)
-                MinorRelease = int.Parse(minorGroup.Value);
+                MinorRelease = int.Parse(minorGroup.Value, CultureInfo.InvariantCulture);
             if (patchGroup.Success)
-                PatchRelease = int.Parse(patchGroup.Value);
+                PatchRelease = int.Parse(patchGroup.Value, CultureInfo.InvariantCulture);
             if (labelGroup.Success)
                 LabelRelease = labelGroup.Value;
         }
@@ -68,9 +69,9 @@ namespace Etherna.MongODM.Serialization
             // If other is not a valid object reference, this instance is greater.
             if (other is null) return 1;
 
-            if (this > other) return 1;
+            if (this < other) return -1;
             if (this == other) return 0;
-            else return -1;
+            else return 1;
         }
 
         public override bool Equals(object obj) => this == (obj as SemanticVersion);
@@ -101,9 +102,9 @@ namespace Etherna.MongODM.Serialization
         public static bool operator < (SemanticVersion? x, SemanticVersion? y)
         {
             // Check if null.
-            if (y == null)
+            if (y is null)
                 return false;
-            else if (x == null) //y != null
+            else if (x is null) //y != null
                 return true;
 
             // Check major release.
@@ -135,6 +136,10 @@ namespace Etherna.MongODM.Serialization
         }
 
         public static bool operator != (SemanticVersion x, SemanticVersion y) => !(x == y);
+
+        public static bool operator <= (SemanticVersion x, SemanticVersion y) => x < y || x == y;
+
+        public static bool operator >=(SemanticVersion x, SemanticVersion y) => y <= x;
 
         public static implicit operator SemanticVersion(string version) => new SemanticVersion(version);
     }

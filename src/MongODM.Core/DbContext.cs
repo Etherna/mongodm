@@ -28,6 +28,11 @@ namespace Etherna.MongODM
             IDbContextDependencies dependencies,
             DbContextOptions options)
         {
+            if (dependencies is null)
+                throw new ArgumentNullException(nameof(dependencies));
+            if (options is null)
+                throw new ArgumentNullException(nameof(options));
+
             ApplicationVersion = options.ApplicationVersion;
             DbCache = dependencies.DbCache;
             DbMaintainer = dependencies.DbMaintainer;
@@ -102,11 +107,11 @@ namespace Etherna.MongODM
 
             // Migrate collections.
             foreach (var migration in MigrationTaskList)
-                await migration.MigrateAsync(cancellationToken);
+                await migration.MigrateAsync(cancellationToken).ConfigureAwait(false);
 
             // Build indexes.
             foreach (var repository in RepositoryRegister.ModelCollectionRepositoryMap.Values)
-                await repository.BuildIndexesAsync(DocumentSchemaRegister, cancellationToken);
+                await repository.BuildIndexesAsync(DocumentSchemaRegister, cancellationToken).ConfigureAwait(false);
 
             IsMigrating = false;
         }
@@ -150,7 +155,7 @@ namespace Etherna.MongODM
                 if (RepositoryRegister.ModelCollectionRepositoryMap.ContainsKey(modelType)) //can't replace if is a file
                 {
                     var repository = RepositoryRegister.ModelCollectionRepositoryMap[modelType];
-                    await repository.ReplaceAsync(model);
+                    await repository.ReplaceAsync(model).ConfigureAwait(false);
                 }
             }
         }

@@ -29,6 +29,11 @@ namespace Etherna.MongODM.Migration
             Func<TModelSource, TModelDest> converter,
             Func<TModelSource, bool> discriminator)
         {
+            if (sourceCollection is null)
+                throw new ArgumentNullException(nameof(sourceCollection));
+            if (destinationCollection is null)
+                throw new ArgumentNullException(nameof(destinationCollection));
+
             this.sourceCollection = sourceCollection.Collection;
             this.destinationCollection = destinationCollection.Collection;
             this.converter = converter;
