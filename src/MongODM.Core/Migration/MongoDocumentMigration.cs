@@ -3,6 +3,7 @@ using Etherna.MongODM.Repositories;
 using Etherna.MongODM.Serialization;
 using MongoDB.Bson;
 using MongoDB.Driver;
+using System;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -23,6 +24,9 @@ namespace Etherna.MongODM.Migration
             ICollectionRepository<TModel, TKey> sourceCollection,
             SemanticVersion minimumDocumentVersion)
         {
+            if (sourceCollection is null)
+                throw new ArgumentNullException(nameof(sourceCollection));
+
             this.sourceCollection = sourceCollection.Collection;
             this.minimumDocumentVersion = minimumDocumentVersion;
         }
@@ -58,7 +62,7 @@ namespace Etherna.MongODM.Migration
 
             // Replace documents.
             await sourceCollection.Find(filter, new FindOptions { NoCursorTimeout = true })
-                .ForEachAsync(obj => sourceCollection.ReplaceOneAsync(Builders<TModel>.Filter.Eq(m => m.Id, obj.Id), obj), cancellationToken);
+                .ForEachAsync(obj => sourceCollection.ReplaceOneAsync(Builders<TModel>.Filter.Eq(m => m.Id, obj.Id), obj), cancellationToken).ConfigureAwait(false);
         }
     }
 }

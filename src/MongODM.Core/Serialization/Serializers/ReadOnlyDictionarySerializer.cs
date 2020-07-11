@@ -1,6 +1,7 @@
 ﻿using MongoDB.Bson.Serialization;
 using MongoDB.Bson.Serialization.Options;
 using MongoDB.Bson.Serialization.Serializers;
+using System;
 using System.Collections.Generic;
 
 namespace Etherna.MongODM.Serialization.Serializers
@@ -28,9 +29,11 @@ namespace Etherna.MongODM.Serialization.Serializers
         { }
 
         // Properties.
+        public IBsonSerializer ChildSerializer => ValueSerializer;
+
         public IEnumerable<BsonClassMap> ContainedClassMaps =>
             ValueSerializer is IClassMapContainerSerializer classMapContainer ?
-            classMapContainer.ContainedClassMaps : new BsonClassMap[0];
+            classMapContainer.ContainedClassMaps : Array.Empty<BsonClassMap>();
         
         public bool? UseCascadeDelete =>
             (ValueSerializer as IReferenceContainerSerializer)?.UseCascadeDelete;
@@ -38,11 +41,17 @@ namespace Etherna.MongODM.Serialization.Serializers
         // Public methods.
         public override void Serialize(BsonSerializationContext context, BsonSerializationArgs args, IReadOnlyDictionary<TKey, TValue> value)
         {
+            if (value is null)
+                throw new ArgumentNullException(nameof(value));
+
             // Force to exclude enumerable actual type from serialization.
             args = new BsonSerializationArgs(value.GetType(), true, args.SerializeIdFirst);
 
             base.Serialize(context, args, value);
         }
+
+        public IBsonSerializer WithChildSerializer(IBsonSerializer childSerializer) =>
+            WithValueSerializer((IBsonSerializer<TValue>)childSerializer);
 
         /// <summary>
         /// Returns a serializer that has been reconfigured with the specified dictionary representation.
@@ -94,11 +103,6 @@ namespace Etherna.MongODM.Serialization.Serializers
             new Dictionary<TKey, TValue>();
         
         // Explicit interface implementations.
-        IBsonSerializer IChildSerializerConfigurable.ChildSerializer => ValueSerializer;
-
-        IBsonSerializer IChildSerializerConfigurable.WithChildSerializer(IBsonSerializer childSerializer) =>
-            WithValueSerializer((IBsonSerializer<TValue>)childSerializer);
-
         IBsonSerializer IDictionaryRepresentationConfigurable.WithDictionaryRepresentation(DictionaryRepresentation dictionaryRepresentation) =>
             WithDictionaryRepresentation(dictionaryRepresentation);
     }

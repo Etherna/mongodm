@@ -14,13 +14,18 @@ namespace Etherna.MongODM
 
         public static MemberInfo FindProperty(LambdaExpression lambdaExpression)
         {
+            if (lambdaExpression is null)
+                throw new ArgumentNullException(nameof(lambdaExpression));
+
             Expression expressionToCheck = lambdaExpression;
 
             bool done = false;
 
             while (!done)
             {
+#pragma warning disable CA1062 // Validate arguments of public methods. Suppressing for an issue in Microsoft.CodeAnalysis.FxCopAnalyzers v3.0.0
                 switch (expressionToCheck.NodeType)
+#pragma warning restore CA1062 // Validate arguments of public methods
                 {
                     case ExpressionType.Convert:
                         expressionToCheck = ((UnaryExpression)expressionToCheck).Operand;
@@ -29,7 +34,7 @@ namespace Etherna.MongODM
                         expressionToCheck = ((LambdaExpression)expressionToCheck).Body;
                         break;
                     case ExpressionType.MemberAccess:
-                        var memberExpression = ((MemberExpression)expressionToCheck);
+                        var memberExpression = (MemberExpression)expressionToCheck;
 
                         if (memberExpression.Expression.NodeType != ExpressionType.Parameter &&
                             memberExpression.Expression.NodeType != ExpressionType.Convert)
@@ -53,6 +58,11 @@ namespace Etherna.MongODM
 
         public static PropertyInfo FindPropertyImplementation(PropertyInfo interfacePropertyInfo, Type actualType)
         {
+            if (interfacePropertyInfo is null)
+                throw new ArgumentNullException(nameof(interfacePropertyInfo));
+            if (actualType is null)
+                throw new ArgumentNullException(nameof(actualType));
+
             var interfaceType = interfacePropertyInfo.DeclaringType;
 
             // An interface map must be used because because there is no
@@ -84,6 +94,9 @@ namespace Etherna.MongODM
             Expression<Func<TModel, TMember>> memberLambda,
             Type? actualType = null)
         {
+            if (memberLambda is null)
+                throw new ArgumentNullException(nameof(memberLambda));
+
             var body = memberLambda.Body;
             MemberExpression memberExpression;
             switch (body.NodeType)
@@ -148,6 +161,9 @@ namespace Etherna.MongODM
         /// <returns>The list of properties</returns>
         public static IEnumerable<PropertyInfo> GetWritableInstanceProperties(Type objectType)
         {
+            if (objectType is null)
+                throw new ArgumentNullException(nameof(objectType));
+
             propertyRegisterLock.EnterReadLock();
             try
             {

@@ -9,5 +9,8 @@ namespace Etherna.MongODM.Exceptions
 
         public InvalidEntityTypeException(string message) : base(message)
         { }
+
+        public InvalidEntityTypeException(string message, Exception innerException) : base(message, innerException)
+        { }
     }
 }

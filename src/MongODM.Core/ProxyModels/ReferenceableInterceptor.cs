@@ -24,6 +24,9 @@ namespace Etherna.MongODM.ProxyModels
             IDbContext dbContext)
             : base(additionalInterfaces)
         {
+            if (dbContext is null)
+                throw new ArgumentNullException(nameof(dbContext));
+
             var repositoryModelType = typeof(TModel);
             while (!dbContext.RepositoryRegister.ModelRepositoryMap.ContainsKey(repositoryModelType))
             {
@@ -38,6 +41,9 @@ namespace Etherna.MongODM.ProxyModels
         // Protected methods.
         protected override bool InterceptInterface(IInvocation invocation)
         {
+            if (invocation is null)
+                throw new ArgumentNullException(nameof(invocation));
+
             // Intercept ISummarizable invocations
             if (invocation.Method.DeclaringType == typeof(IReferenceable))
             {
@@ -77,8 +83,11 @@ namespace Etherna.MongODM.ProxyModels
 
         protected override void InterceptModel(IInvocation invocation)
         {
+            if (invocation is null)
+                throw new ArgumentNullException(nameof(invocation));
+
             // Filter gets.
-            if (invocation.Method.Name.StartsWith("get_") && isSummary)
+            if (invocation.Method.Name.StartsWith("get_", StringComparison.InvariantCulture) && isSummary)
             {
                 var propertyName = invocation.Method.Name.Substring(4);
 
@@ -91,7 +100,7 @@ namespace Etherna.MongODM.ProxyModels
             }
 
             // Filter sets.
-            else if (invocation.Method.Name.StartsWith("set_"))
+            else if (invocation.Method.Name.StartsWith("set_", StringComparison.InvariantCulture))
             {
                 var propertyName = invocation.Method.Name.Substring(4);
 
@@ -102,7 +111,7 @@ namespace Etherna.MongODM.ProxyModels
             // Filter normal methods.
             else
             {
-                var attributes = invocation.Method.GetCustomAttributes<PropertyAltererAttribute>(true) ?? new PropertyAltererAttribute[0];
+                var attributes = invocation.Method.GetCustomAttributes<PropertyAltererAttribute>(true) ?? Array.Empty<PropertyAltererAttribute>();
                 foreach (var propertyName in from attribute in attributes
                                              select attribute.PropertyName)
                 {
@@ -137,7 +146,7 @@ namespace Etherna.MongODM.ProxyModels
             if (isSummary)
             {
                 // Merge full object to current.
-                var fullModel = (await repository.TryFindOneAsync(model.Id)) as TModel;
+                var fullModel = (await repository.TryFindOneAsync(model.Id).ConfigureAwait(false)) as TModel;
                 MergeFullModel(model, fullModel);
             }
         }
