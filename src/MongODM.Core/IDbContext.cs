@@ -44,7 +44,12 @@ namespace Etherna.MongODM
         /// Container for model serialization and document schema information.
         /// </summary>
         IDocumentSchemaRegister DocumentSchemaRegister { get; }
-        
+
+        /// <summary>
+        /// DbContext unique identifier.
+        /// </summary>
+        string Identifier { get; }
+
         /// <summary>
         /// Flag reporting eventual current migration operation.
         /// </summary>

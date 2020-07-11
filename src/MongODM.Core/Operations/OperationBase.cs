@@ -8,20 +8,16 @@ namespace Etherna.MongODM.Operations
     public abstract class OperationBase : IEntityModel<string>
     {
         // Constructors and dispose.
-        public OperationBase(
-            string? authorIdentifier,
-            IDbContext owner)
+        public OperationBase(IDbContext owner)
         {
-            AuthorIdentifier = authorIdentifier;
             CreationDateTime = DateTime.Now;
-            DbContextName = owner.GetType().Name;
+            DbContextName = owner.Identifier;
         }
         protected OperationBase() { }
         public void DisposeForDelete() { }
 
         // Properties.
         public virtual string Id { get; protected set; } = default!;
-        public virtual string? AuthorIdentifier { get; protected set; }
         public virtual DateTime CreationDateTime { get; protected set; }
         public virtual string DbContextName { get; protected set; } = default!;
 
