@@ -7,9 +7,8 @@ using Etherna.MongODM.Repositories;
 using Etherna.MongODM.Serialization;
 using Etherna.MongODM.Serialization.Modifiers;
 using Etherna.MongODM.Utility;
-using MongoDB.Bson;
-using MongoDB.Bson.Serialization.Conventions;
 using MongoDB.Driver;
+using MongoDB.Driver.Linq;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -29,11 +28,12 @@ namespace Etherna.MongODM
             IDbContextDependencies dependencies,
             DbContextOptions options)
         {
+            ApplicationVersion = options.ApplicationVersion;
             DbCache = dependencies.DbCache;
             DbMaintainer = dependencies.DbMaintainer;
             DbOperations = new CollectionRepository<OperationBase, string>(options.DbOperationsCollectionName);
             DocumentSchemaRegister = dependencies.DocumentSchemaRegister;
-            ApplicationVersion = options.ApplicationVersion;
+            Identifier = options.Identifier ?? GetType().Name;
             LibraryVersion = GetType()
                 .GetTypeInfo()
                 .Assembly
@@ -67,9 +67,13 @@ namespace Etherna.MongODM
 
             // Build and freeze document schema register.
             DocumentSchemaRegister.Freeze();
+
+            // Check for seeding.
+            SeedIfNeeded();
         }
 
         // Public properties.
+        public SemanticVersion ApplicationVersion { get; }
         public IReadOnlyCollection<IEntityModel> ChangedModelsList =>
             DbCache.LoadedModels.Values
                 .Where(model => (model as IAuditable)?.IsChanged == true)
@@ -80,7 +84,7 @@ namespace Etherna.MongODM
         public IDbMaintainer DbMaintainer { get; }
         public ICollectionRepository<OperationBase, string> DbOperations { get; }
         public IDocumentSchemaRegister DocumentSchemaRegister { get; }
-        public SemanticVersion ApplicationVersion { get; }
+        public string Identifier { get; }
         public bool IsMigrating { get; private set; }
         public SemanticVersion LibraryVersion { get; }
         public IProxyGenerator ProxyGenerator { get; }
@@ -153,5 +157,34 @@ namespace Etherna.MongODM
 
         public Task<IClientSessionHandle> StartSessionAsync(CancellationToken cancellationToken = default) =>
             Client.StartSessionAsync(cancellationToken: cancellationToken);
+
+        // Protected methods.
+        protected virtual Task Seed() =>
+            Task.CompletedTask;
+
+        // Helpers.
+        private void SeedIfNeeded()
+        {
+            // Check if already seeded.
+            var queryTask = DbOperations.QueryElementsAsync(elements =>
+                elements.OfType<SeedOperation>().AnyAsync(sop => sop.DbContextName == Identifier));
+            queryTask.ConfigureAwait(false);
+            queryTask.Wait();
+
+            //skip if already seeded
+            if (queryTask.Result)
+                return;
+
+            // Seed.
+            var seedTask = Seed();
+            seedTask.ConfigureAwait(false);
+            seedTask.Wait();
+
+            // Report operation.
+            var seedOperation = new SeedOperation(this);
+            var createTask = DbOperations.CreateAsync(seedOperation);
+            createTask.ConfigureAwait(false);
+            createTask.Wait();
+        }
     }
 }

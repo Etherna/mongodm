@@ -10,6 +10,7 @@ namespace Etherna.MongODM
         public string DbName => ConnectionString.Split('?')[0]
                                                 .Split('/').Last();
         public string DbOperationsCollectionName { get; set; } = "_db_ops";
+        public string? Identifier { get; set; }
     }
 
     public class DbContextOptions<TDbContext> : DbContextOptions
