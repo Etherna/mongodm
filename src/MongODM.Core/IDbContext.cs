@@ -1,9 +1,12 @@
-﻿using Etherna.MongODM.ProxyModels;
+﻿using Etherna.MongODM.Migration;
+using Etherna.MongODM.Operations;
+using Etherna.MongODM.ProxyModels;
 using Etherna.MongODM.Repositories;
 using Etherna.MongODM.Serialization;
 using Etherna.MongODM.Serialization.Modifiers;
 using Etherna.MongODM.Utility;
 using MongoDB.Driver;
+using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -39,7 +42,12 @@ namespace Etherna.MongODM
         /// Database operator interested into maintenance tasks.
         /// </summary>
         IDbMaintainer DbMaintainer { get; }
-        
+
+        /// <summary>
+        /// Internal collection for keep db operations execution log
+        /// </summary>
+        ICollectionRepository<OperationBase, string> DbOperations { get; }
+
         /// <summary>
         /// Container for model serialization and document schema information.
         /// </summary>
@@ -51,14 +59,14 @@ namespace Etherna.MongODM
         string Identifier { get; }
 
         /// <summary>
-        /// Flag reporting eventual current migration operation.
-        /// </summary>
-        bool IsMigrating { get; }
-
-        /// <summary>
         /// Current MongODM library version
         /// </summary>
         SemanticVersion LibraryVersion { get; }
+
+        /// <summary>
+        /// List of registered migration tasks
+        /// </summary>
+        IEnumerable<MongoMigrationBase> MigrationTaskList { get; }
 
         /// <summary>
         /// Current model proxy generator.
@@ -76,12 +84,6 @@ namespace Etherna.MongODM
         ISerializerModifierAccessor SerializerModifierAccessor { get; }
 
         // Methods.
-        /// <summary>
-        /// Start a database migration process.
-        /// </summary>
-        /// <param name="cancellationToken">Cancellation token</param>
-        Task MigrateRepositoriesAsync(CancellationToken cancellationToken = default);
-
         /// <summary>
         /// Save current model changes on db.
         /// </summary>

@@ -90,32 +90,16 @@ namespace Etherna.MongODM
         public ICollectionRepository<OperationBase, string> DbOperations { get; }
         public IDocumentSchemaRegister DocumentSchemaRegister { get; }
         public string Identifier { get; }
-        public bool IsMigrating { get; private set; }
         public SemanticVersion LibraryVersion { get; }
+        public virtual IEnumerable<MongoMigrationBase> MigrationTaskList { get; } = Array.Empty<MongoMigrationBase>();
         public IProxyGenerator ProxyGenerator { get; }
         public IRepositoryRegister RepositoryRegister { get; }
         public ISerializerModifierAccessor SerializerModifierAccessor { get; }
 
         // Protected properties.
-        protected virtual IEnumerable<MongoMigrationBase> MigrationTaskList { get; } = Array.Empty<MongoMigrationBase>();
         protected abstract IEnumerable<IModelMapsCollector> ModelMapsCollectors { get; }
 
         // Methods.
-        public async Task MigrateRepositoriesAsync(CancellationToken cancellationToken = default)
-        {
-            IsMigrating = true;
-
-            // Migrate collections.
-            foreach (var migration in MigrationTaskList)
-                await migration.MigrateAsync(cancellationToken).ConfigureAwait(false);
-
-            // Build indexes.
-            foreach (var repository in RepositoryRegister.ModelCollectionRepositoryMap.Values)
-                await repository.BuildIndexesAsync(DocumentSchemaRegister, cancellationToken).ConfigureAwait(false);
-
-            IsMigrating = false;
-        }
-
         public virtual async Task SaveChangesAsync(CancellationToken cancellationToken = default)
         {
             /*
