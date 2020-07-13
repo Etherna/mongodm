@@ -65,14 +65,14 @@ namespace Etherna.MongODM
         }
 
         // Fields.
-        private readonly Mock<IDbCache> dbCacheMock;
+        private readonly Mock<IDbContextCache> dbCacheMock;
         private readonly SemanticVersion documentVersion = new SemanticVersion("1.0.0");
         private readonly Mock<ISerializerModifierAccessor> serializerModifierAccessorMock;
 
         // Constructor.
         public ExtendedClassMapSerializerTest()
         {
-            dbCacheMock = new Mock<IDbCache>();
+            dbCacheMock = new Mock<IDbContextCache>();
             dbCacheMock.Setup(c => c.LoadedModels.ContainsKey(It.IsAny<object>()))
                 .Returns(() => false);
 

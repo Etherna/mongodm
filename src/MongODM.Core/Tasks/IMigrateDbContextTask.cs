@@ -2,9 +2,9 @@
 
 namespace Etherna.MongODM.Tasks
 {
-    public interface IMigrateDbTask
+    public interface IMigrateDbContextTask
     {
-        Task RunAsync<TDbContext>()
+        Task RunAsync<TDbContext>(string authorId)
             where TDbContext : class, IDbContext;
     }
 }

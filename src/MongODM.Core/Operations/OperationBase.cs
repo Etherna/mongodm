@@ -8,13 +8,13 @@ namespace Etherna.MongODM.Operations
     public abstract class OperationBase : IEntityModel<string>
     {
         // Constructors and dispose.
-        public OperationBase(IDbContext owner)
+        public OperationBase(IDbContext dbContext)
         {
-            if (owner is null)
-                throw new ArgumentNullException(nameof(owner));
+            if (dbContext is null)
+                throw new ArgumentNullException(nameof(dbContext));
 
             CreationDateTime = DateTime.Now;
-            DbContextName = owner.Identifier;
+            DbContextName = dbContext.Identifier;
         }
         protected OperationBase() { }
         public void DisposeForDelete() { }

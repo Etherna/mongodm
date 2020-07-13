@@ -1,20 +1,25 @@
 ﻿using Etherna.MongODM.Extensions;
 using Etherna.MongODM.Operations;
+using Etherna.MongODM.Tasks;
 using MongoDB.Driver;
 using MongoDB.Driver.Linq;
 using System;
 using System.Collections.Generic;
-using System.Threading;
 using System.Threading.Tasks;
 
-namespace Etherna.MongODM.Migration
+namespace Etherna.MongODM.Utility
 {
-    public class MigrationManager : IMigrationManager, IDbContextInitializable
+    public class DbContextMigrationManager : IDbContextMigrationManager, IDbContextInitializable
     {
         // Fields.
         private IDbContext dbContext = default!;
-        
+        private readonly ITaskRunner taskRunner;
+
         // Constructor and initialization.
+        public DbContextMigrationManager(ITaskRunner taskRunner)
+        {
+            this.taskRunner = taskRunner;
+        }
         public void Initialize(IDbContext dbContext)
         {
             if (IsInitialized)
@@ -59,10 +64,12 @@ namespace Etherna.MongODM.Migration
             return migrateOp;
         }
 
-        public Task MigrateRepositoriesAsync(CancellationToken cancellationToken = default)
+        public async Task StartDbContextMigrationAsync(string authorId)
         {
-            // Run task.
-            throw new NotImplementedException();
+            var migrateOp = new MigrateOperation(dbContext, authorId);
+            await dbContext.DbOperations.CreateAsync(migrateOp).ConfigureAwait(false);
+
+            taskRunner.RunMigrateDbContextTask(dbContext.GetType(), migrateOp.Id);
         }
     }
 }

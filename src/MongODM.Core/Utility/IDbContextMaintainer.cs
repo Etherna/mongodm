@@ -3,9 +3,9 @@
 namespace Etherna.MongODM.Utility
 {
     /// <summary>
-    /// Interface for <see cref="DbMaintainer"/> implementation.
+    /// Interface for <see cref="DbContextMaintainer"/> implementation.
     /// </summary>
-    public interface IDbMaintainer : IDbContextInitializable
+    public interface IDbContextMaintainer : IDbContextInitializable
     {
         // Methods.
         /// <summary>

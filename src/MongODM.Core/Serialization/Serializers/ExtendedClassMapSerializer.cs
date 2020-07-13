@@ -28,7 +28,7 @@ namespace Etherna.MongODM.Serialization.Serializers
         private readonly BsonElement documentVersionElement;
 
         // Fields.
-        private readonly IDbCache dbCache;
+        private readonly IDbContextCache dbCache;
         private readonly ISerializerModifierAccessor serializerModifierAccessor;
         private readonly ICollection<ExtraElementCondition> extraElements;
         private readonly Func<TModel, SemanticVersion?, Task<TModel>> fixDeserializedModelAsync;
@@ -36,7 +36,7 @@ namespace Etherna.MongODM.Serialization.Serializers
 
         // Constructor.
         public ExtendedClassMapSerializer(
-            IDbCache dbCache,
+            IDbContextCache dbCache,
             SemanticVersion documentVersion,
             ISerializerModifierAccessor serializerModifierAccessor,
             Func<TModel, SemanticVersion?, Task<TModel>>? fixDeserializedModelAsync = null)

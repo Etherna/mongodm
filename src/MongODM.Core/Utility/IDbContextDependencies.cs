@@ -7,8 +7,9 @@ namespace Etherna.MongODM.Utility
 {
     public interface IDbContextDependencies
     {
-        IDbCache DbCache { get; }
-        IDbMaintainer DbMaintainer { get; }
+        IDbContextCache DbContextCache { get; }
+        IDbContextMaintainer DbContextMaintainer { get; }
+        IDbContextMigrationManager DbContextMigrationManager { get; }
         IDocumentSchemaRegister DocumentSchemaRegister { get; }
         IProxyGenerator ProxyGenerator { get; }
         IRepositoryRegister RepositoryRegister { get; }

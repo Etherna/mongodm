@@ -60,9 +60,10 @@ namespace Microsoft.Extensions.DependencyInjection
              * and passed to other with Initialize() method. This because otherwise inside
              * the same dbContext different components could have different instances of the same component.
              */
-            services.TryAddTransient<IDbCache, DbCache>();
+            services.TryAddTransient<IDbContextCache, DbContextCache>();
             services.TryAddTransient<IDbContextDependencies, DbContextDependencies>();
-            services.TryAddTransient<IDbMaintainer, DbMaintainer>();
+            services.TryAddTransient<IDbContextMaintainer, DbContextMaintainer>();
+            services.TryAddTransient<IDbContextMigrationManager, DbContextMigrationManager>();
             services.TryAddTransient<IDocumentSchemaRegister, DocumentSchemaRegister>();
             services.TryAddTransient<IRepositoryRegister, RepositoryRegister>();
             services.TryAddSingleton<ISerializerModifierAccessor, SerializerModifierAccessor>();

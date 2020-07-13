@@ -34,8 +34,9 @@ namespace Etherna.MongODM
                 throw new ArgumentNullException(nameof(options));
 
             ApplicationVersion = options.ApplicationVersion;
-            DbCache = dependencies.DbCache;
-            DbMaintainer = dependencies.DbMaintainer;
+            DbCache = dependencies.DbContextCache;
+            DbMaintainer = dependencies.DbContextMaintainer;
+            DbContextMigrationManager = dependencies.DbContextMigrationManager;
             DbOperations = new CollectionRepository<OperationBase, string>(options.DbOperationsCollectionName);
             DocumentSchemaRegister = dependencies.DocumentSchemaRegister;
             Identifier = options.Identifier ?? GetType().Name;
@@ -85,8 +86,9 @@ namespace Etherna.MongODM
                 .ToList();
         public IMongoClient Client { get; }
         public IMongoDatabase Database { get; }
-        public IDbCache DbCache { get; }
-        public IDbMaintainer DbMaintainer { get; }
+        public IDbContextCache DbCache { get; }
+        public IDbContextMaintainer DbMaintainer { get; }
+        public IDbContextMigrationManager DbContextMigrationManager { get; }
         public ICollectionRepository<OperationBase, string> DbOperations { get; }
         public IDocumentSchemaRegister DocumentSchemaRegister { get; }
         public string Identifier { get; }

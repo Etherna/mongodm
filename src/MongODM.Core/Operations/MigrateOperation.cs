@@ -15,10 +15,11 @@ namespace Etherna.MongODM.Operations
         }
 
         // Constructors.
-        public MigrateOperation(IDbContext owner, string? author)
-            : base(owner)
+        public MigrateOperation(IDbContext dbContext, string? author)
+            : base(dbContext)
         {
             Author = author;
+            CurrentStatus = Status.New;
         }
 
         // Properties.

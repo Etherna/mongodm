@@ -1,25 +1,31 @@
-﻿using System;
+﻿using Etherna.MongODM.Operations;
+using System;
 using System.Threading.Tasks;
 
 namespace Etherna.MongODM.Tasks
 {
-    public class MigrateDbTask : IMigrateDbTask
+    public class MigrateDbContextTask : IMigrateDbContextTask
     {
         // Fields.
         private readonly IServiceProvider serviceProvider;
 
         // Constructors.
-        public MigrateDbTask(
+        public MigrateDbContextTask(
             IServiceProvider serviceProvider)
         {
             this.serviceProvider = serviceProvider;
         }
 
         // Methods.
-        public async Task RunAsync<TDbContext>()
+        public async Task RunAsync<TDbContext>(string migrateOpId)
             where TDbContext : class, IDbContext
         {
             var dbContext = (TDbContext)serviceProvider.GetService(typeof(TDbContext));
+            var migrateOp = (MigrateOperation)await dbContext.DbOperations.FindOneAsync(migrateOpId).ConfigureAwait(false);
+
+            // Start migrate operation.
+            migrateOp.TaskStarted();
+            await dbContext.SaveChangesAsync().ConfigureAwait(false);
 
             // Migrate collections.
             foreach (var migration in dbContext.MigrationTaskList)

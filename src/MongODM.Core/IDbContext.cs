@@ -36,12 +36,17 @@ namespace Etherna.MongODM
         /// <summary>
         /// Database cache container.
         /// </summary>
-        IDbCache DbCache { get; }
+        IDbContextCache DbCache { get; }
 
         /// <summary>
         /// Database operator interested into maintenance tasks.
         /// </summary>
-        IDbMaintainer DbMaintainer { get; }
+        IDbContextMaintainer DbMaintainer { get; }
+
+        /// <summary>
+        /// Manage migrations over database context
+        /// </summary>
+        IDbContextMigrationManager DbContextMigrationManager { get; }
 
         /// <summary>
         /// Internal collection for keep db operations execution log

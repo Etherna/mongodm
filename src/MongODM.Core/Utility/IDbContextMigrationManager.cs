@@ -1,11 +1,10 @@
 ﻿using Etherna.MongODM.Operations;
 using System.Collections.Generic;
-using System.Threading;
 using System.Threading.Tasks;
 
-namespace Etherna.MongODM.Migration
+namespace Etherna.MongODM.Utility
 {
-    internal interface IMigrationManager
+    public interface IDbContextMigrationManager
     {
         Task<MigrateOperation?> IsMigrationRunningAsync();
 
@@ -14,9 +13,9 @@ namespace Etherna.MongODM.Migration
         Task<MigrateOperation> GetMigrationAsync(string migrateOperationId);
 
         /// <summary>
-        /// Start a database migration process.
+        /// Start a db context migration process.
         /// </summary>
-        /// <param name="cancellationToken">Cancellation token</param>
-        Task MigrateRepositoriesAsync(CancellationToken cancellationToken = default);
+        /// <param name="authorId">Id of user requiring the migration</param>
+        Task StartDbContextMigrationAsync(string authorId);
     }
 }

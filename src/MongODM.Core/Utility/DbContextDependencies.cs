@@ -8,8 +8,9 @@ namespace Etherna.MongODM.Utility
     public class DbContextDependencies : IDbContextDependencies
     {
         public DbContextDependencies(
-            IDbCache dbCache,
-            IDbMaintainer dbMaintainer,
+            IDbContextCache dbCache,
+            IDbContextMaintainer dbMaintainer,
+            IDbContextMigrationManager dbContextMigrationManager,
             IDocumentSchemaRegister documentSchemaRegister,
             IProxyGenerator proxyGenerator,
             IRepositoryRegister repositoryRegister,
@@ -20,16 +21,18 @@ namespace Etherna.MongODM.Utility
 #pragma warning restore CA1801 // Review unused parameters
 #pragma warning restore IDE0060 // Remove unused parameter
         {
-            DbCache = dbCache;
-            DbMaintainer = dbMaintainer;
+            DbContextCache = dbCache;
+            DbContextMaintainer = dbMaintainer;
+            DbContextMigrationManager = dbContextMigrationManager;
             DocumentSchemaRegister = documentSchemaRegister;
             ProxyGenerator = proxyGenerator;
             RepositoryRegister = repositoryRegister;
             SerializerModifierAccessor = serializerModifierAccessor;
         }
 
-        public IDbCache DbCache { get; }
-        public IDbMaintainer DbMaintainer { get; }
+        public IDbContextCache DbContextCache { get; }
+        public IDbContextMaintainer DbContextMaintainer { get; }
+        public IDbContextMigrationManager DbContextMigrationManager { get; }
         public IDocumentSchemaRegister DocumentSchemaRegister { get; }
         public IProxyGenerator ProxyGenerator { get; }
         public IRepositoryRegister RepositoryRegister { get; }

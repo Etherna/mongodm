@@ -4,9 +4,9 @@ using System.Collections.Generic;
 namespace Etherna.MongODM.Utility
 {
     /// <summary>
-    /// Interface for <see cref="DbCache"/> implementation.
+    /// Interface for <see cref="DbContextCache"/> implementation.
     /// </summary>
-    public interface IDbCache
+    public interface IDbContextCache
     {
         // Properties.
         /// <summary>
