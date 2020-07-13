@@ -1,4 +1,4 @@
-﻿namespace Etherna.MongODM.Operations
+﻿namespace Etherna.MongODM.Models.Internal
 {
     public class SeedOperation : OperationBase
     {

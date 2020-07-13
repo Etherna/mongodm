@@ -18,16 +18,20 @@ namespace Etherna.MongODM.Migration
         where TModelSource : class, IEntityModel<TKeySource>
         where TModelDest : class, IEntityModel<TKeyDest>
     {
+        // Fields.
         private readonly Func<TModelSource, TModelDest> converter;
         private readonly Func<TModelSource, bool> discriminator;
         private readonly IMongoCollection<TModelDest> destinationCollection;
         private readonly IMongoCollection<TModelSource> sourceCollection;
 
+        // Constructor.
         public MongoCollectionMigration(
             ICollectionRepository<TModelSource, TKeySource> sourceCollection,
             ICollectionRepository<TModelDest, TKeyDest> destinationCollection,
             Func<TModelSource, TModelDest> converter,
-            Func<TModelSource, bool> discriminator)
+            Func<TModelSource, bool> discriminator,
+            string id)
+            : base(id)
         {
             if (sourceCollection is null)
                 throw new ArgumentNullException(nameof(sourceCollection));
@@ -40,7 +44,11 @@ namespace Etherna.MongODM.Migration
             this.discriminator = discriminator;
         }
 
-        public override Task MigrateAsync(CancellationToken cancellationToken = default) =>
+        // Methods.
+        public override Task<MigrationResult> MigrateAsync(
+            int callbackEveryDocuments = 0,
+            Func<long, Task>? callbackAsync = null,
+            CancellationToken cancellationToken = default) =>
             sourceCollection.Find(Builders<TModelSource>.Filter.Empty, new FindOptions { NoCursorTimeout = true })
                 .ForEachAsync(obj =>
                 {

@@ -1,4 +1,4 @@
-﻿using Etherna.MongODM.Operations;
+﻿using Etherna.MongODM.Models.Internal;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 

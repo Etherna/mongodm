@@ -1,5 +1,5 @@
 ﻿using Etherna.MongODM.Conventions;
-using Etherna.MongODM.Operations;
+using Etherna.MongODM.Models.Internal;
 using Etherna.MongODM.ProxyModels;
 using Etherna.MongODM.Utility;
 using MongoDB.Bson;
@@ -20,7 +20,7 @@ namespace Etherna.MongODM.AspNetCore
 
             BsonSerializer.RegisterDiscriminatorConvention(typeof(TModelBase),
                 new HierarchicalProxyTolerantDiscriminatorConvention("_t", proxyGenerator));
-            BsonSerializer.RegisterDiscriminatorConvention(typeof(OperationBase),
+            BsonSerializer.RegisterDiscriminatorConvention(typeof(EntityModelBase),
                 new HierarchicalProxyTolerantDiscriminatorConvention("_t", proxyGenerator));
         }
     }

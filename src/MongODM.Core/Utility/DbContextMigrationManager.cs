@@ -1,5 +1,5 @@
 ﻿using Etherna.MongODM.Extensions;
-using Etherna.MongODM.Operations;
+using Etherna.MongODM.Models.Internal;
 using Etherna.MongODM.Tasks;
 using MongoDB.Driver;
 using MongoDB.Driver.Linq;

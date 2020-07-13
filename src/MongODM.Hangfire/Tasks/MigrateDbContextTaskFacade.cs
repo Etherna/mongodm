@@ -1,5 +1,6 @@
 ﻿using Etherna.MongODM.Tasks;
 using Hangfire;
+using Hangfire.Server;
 using System;
 using System.Reflection;
 using System.Threading.Tasks;
@@ -19,13 +20,13 @@ namespace Etherna.MongODM.HF.Tasks
 
         // Methods.
         [Queue(Queues.DB_MAINTENANCE)]
-        public Task RunAsync(Type dbContextType, string migrateOpId)
+        public Task RunAsync(Type dbContextType, string migrateOpId, PerformingContext context)
         {
             var method = typeof(MigrateDbContextTask).GetMethod(
                 nameof(MigrateDbContextTask.RunAsync), BindingFlags.Public | BindingFlags.Instance)
                 .MakeGenericMethod(dbContextType);
 
-            return (Task)method.Invoke(task, new object[] { migrateOpId });
+            return (Task)method.Invoke(task, new object[] { migrateOpId, context.BackgroundJob.Id });
         }
     }
 }

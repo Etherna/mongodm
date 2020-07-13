@@ -1,7 +1,9 @@
 ﻿using Etherna.MongODM.Attributes;
+using Etherna.MongODM.Models.Internal.MigrateOpAgg;
 using System;
+using System.Collections.Generic;
 
-namespace Etherna.MongODM.Operations
+namespace Etherna.MongODM.Models.Internal
 {
     public class MigrateOperation : OperationBase
     {
@@ -14,6 +16,9 @@ namespace Etherna.MongODM.Operations
             Cancelled
         }
 
+        // Fields.
+        private List<MigrateExecutionLog> _logs = new List<MigrateExecutionLog>();
+
         // Constructors.
         public MigrateOperation(IDbContext dbContext, string? author)
             : base(dbContext)
@@ -21,16 +26,31 @@ namespace Etherna.MongODM.Operations
             Author = author;
             CurrentStatus = Status.New;
         }
+        protected MigrateOperation() { }
 
         // Properties.
         public virtual string? Author { get; protected set; }
         public virtual DateTime CompletedDateTime { get; protected set; }
         public virtual Status CurrentStatus { get; protected set; }
+        public virtual IEnumerable<MigrateExecutionLog> Logs
+        {
+            get => _logs;
+            protected set => _logs = new List<MigrateExecutionLog>(value ?? Array.Empty<MigrateExecutionLog>());
+        }
         public virtual string? TaskId { get; protected set; }
 
         // Methods.
+        [PropertyAlterer(nameof(Logs))]
+        public virtual void AddLog(MigrateExecutionLog log)
+        {
+            if (log is null)
+                throw new ArgumentNullException(nameof(log));
+
+            _logs.Add(log);
+        }
+
         [PropertyAlterer(nameof(CurrentStatus))]
-        public void TaskCancelled()
+        public virtual void TaskCancelled()
         {
             if (CurrentStatus == Status.Completed)
                 throw new InvalidOperationException();
@@ -40,7 +60,7 @@ namespace Etherna.MongODM.Operations
 
         [PropertyAlterer(nameof(CompletedDateTime))]
         [PropertyAlterer(nameof(CurrentStatus))]
-        public void TaskCompleted()
+        public virtual void TaskCompleted()
         {
             if (CurrentStatus != Status.Running)
                 throw new InvalidOperationException();
@@ -51,7 +71,7 @@ namespace Etherna.MongODM.Operations
 
         [PropertyAlterer(nameof(CurrentStatus))]
         [PropertyAlterer(nameof(TaskId))]
-        public void TaskStarted(string taskId)
+        public virtual void TaskStarted(string taskId)
         {
             if (taskId is null)
                 throw new ArgumentNullException(nameof(taskId));

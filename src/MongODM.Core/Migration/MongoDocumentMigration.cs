@@ -17,12 +17,16 @@ namespace Etherna.MongODM.Migration
     public class MongoDocumentMigration<TModel, TKey> : MongoMigrationBase
         where TModel : class, IEntityModel<TKey>
     {
+        // Fields.
         private readonly SemanticVersion minimumDocumentVersion;
         private readonly IMongoCollection<TModel> sourceCollection;
 
+        // Constructors.
         public MongoDocumentMigration(
             ICollectionRepository<TModel, TKey> sourceCollection,
-            SemanticVersion minimumDocumentVersion)
+            SemanticVersion minimumDocumentVersion,
+            string id)
+            : base(id)
         {
             if (sourceCollection is null)
                 throw new ArgumentNullException(nameof(sourceCollection));
@@ -31,10 +35,11 @@ namespace Etherna.MongODM.Migration
             this.minimumDocumentVersion = minimumDocumentVersion;
         }
 
-        /// <summary>
-        /// Fix all documents prev of MinimumDocumentVersion
-        /// </summary>
-        public override async Task MigrateAsync(CancellationToken cancellationToken = default)
+        // Methods.
+        public override async Task<MigrationResult> MigrateAsync(
+            int callbackEveryDocuments = 0,
+            Func<long, Task>? callbackAsync = null,
+            CancellationToken cancellationToken = default)
         {
             var filterBuilder = Builders<TModel>.Filter;
             var filter = filterBuilder.Or(

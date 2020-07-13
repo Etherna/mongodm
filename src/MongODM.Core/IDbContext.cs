@@ -1,5 +1,5 @@
 ﻿using Etherna.MongODM.Migration;
-using Etherna.MongODM.Operations;
+using Etherna.MongODM.Models.Internal;
 using Etherna.MongODM.ProxyModels;
 using Etherna.MongODM.Repositories;
 using Etherna.MongODM.Serialization;

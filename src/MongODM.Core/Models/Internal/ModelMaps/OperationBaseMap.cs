@@ -4,7 +4,7 @@ using MongoDB.Bson;
 using MongoDB.Bson.Serialization.IdGenerators;
 using MongoDB.Bson.Serialization.Serializers;
 
-namespace Etherna.MongODM.Operations.ModelMaps
+namespace Etherna.MongODM.Models.Internal.ModelMaps
 {
     class OperationBaseMap : IModelMapsCollector
     {
