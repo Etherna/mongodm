@@ -25,7 +25,7 @@ namespace Etherna.MongODM
 
         // Constructors and initialization.
         public DbContext(
-            IDbContextDependencies dependencies,
+            IDbDependencies dependencies,
             DbContextOptions options)
         {
             if (dependencies is null)
@@ -34,9 +34,9 @@ namespace Etherna.MongODM
                 throw new ArgumentNullException(nameof(options));
 
             ApplicationVersion = options.ApplicationVersion;
-            DbCache = dependencies.DbContextCache;
-            DbMaintainer = dependencies.DbContextMaintainer;
-            DbContextMigrationManager = dependencies.DbContextMigrationManager;
+            DbCache = dependencies.DbCache;
+            DbMaintainer = dependencies.DbMaintainer;
+            DbMigrationManager = dependencies.DbMigrationManager;
             DbOperations = new CollectionRepository<OperationBase, string>(options.DbOperationsCollectionName);
             DocumentSchemaRegister = dependencies.DocumentSchemaRegister;
             Identifier = options.Identifier ?? GetType().Name;
@@ -65,7 +65,10 @@ namespace Etherna.MongODM
 
             // Register model maps.
             //internal maps
+            new DbMigrationOperationMap().Register(this);
+            new ModelBaseMap().Register(this);
             new OperationBaseMap().Register(this);
+            new SeedOperationMap().Register(this);
 
             //application maps
             foreach (var maps in ModelMapsCollectors)
@@ -86,14 +89,14 @@ namespace Etherna.MongODM
                 .ToList();
         public IMongoClient Client { get; }
         public IMongoDatabase Database { get; }
-        public IDbContextCache DbCache { get; }
-        public IDbContextMaintainer DbMaintainer { get; }
-        public IDbContextMigrationManager DbContextMigrationManager { get; }
+        public IDbCache DbCache { get; }
+        public IDbMaintainer DbMaintainer { get; }
+        public IDbMigrationManager DbMigrationManager { get; }
         public ICollectionRepository<OperationBase, string> DbOperations { get; }
+        public virtual IEnumerable<MongoMigrationBase> DocumentMigrationList { get; } = Array.Empty<MongoMigrationBase>();
         public IDocumentSchemaRegister DocumentSchemaRegister { get; }
         public string Identifier { get; }
         public SemanticVersion LibraryVersion { get; }
-        public virtual IEnumerable<MongoMigrationBase> MigrationTaskList { get; } = Array.Empty<MongoMigrationBase>();
         public IProxyGenerator ProxyGenerator { get; }
         public IRepositoryRegister RepositoryRegister { get; }
         public ISerializerModifierAccessor SerializerModifierAccessor { get; }

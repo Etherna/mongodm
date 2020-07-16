@@ -45,15 +45,31 @@ namespace Etherna.MongODM.Migration
         }
 
         // Methods.
-        public override Task<MigrationResult> MigrateAsync(
+        public override async Task<MigrationResult> MigrateAsync(
             int callbackEveryDocuments = 0,
             Func<long, Task>? callbackAsync = null,
-            CancellationToken cancellationToken = default) =>
-            sourceCollection.Find(Builders<TModelSource>.Filter.Empty, new FindOptions { NoCursorTimeout = true })
-                .ForEachAsync(obj =>
+            CancellationToken cancellationToken = default)
+        {
+            if (callbackEveryDocuments < 0)
+                throw new ArgumentOutOfRangeException(nameof(callbackEveryDocuments), "Value can't be negative");
+
+            // Migrate documents.
+            var totMigratedDocuments = 0L;
+            await sourceCollection.Find(Builders<TModelSource>.Filter.Empty, new FindOptions { NoCursorTimeout = true })
+                .ForEachAsync(async model =>
                 {
-                    if (discriminator(obj))
-                        destinationCollection.InsertOneAsync(converter(obj));
-                }, cancellationToken);
+                    if (callbackEveryDocuments > 0 &&
+                        totMigratedDocuments % callbackEveryDocuments == 0 &&
+                        callbackAsync != null)
+                        await callbackAsync.Invoke(totMigratedDocuments).ConfigureAwait(false);
+
+                    if (discriminator(model))
+                        await destinationCollection.InsertOneAsync(converter(model)).ConfigureAwait(false);
+
+                    totMigratedDocuments++;
+                }, cancellationToken).ConfigureAwait(false);
+
+            return MigrationResult.Succeeded(totMigratedDocuments);
+        }
     }
 }

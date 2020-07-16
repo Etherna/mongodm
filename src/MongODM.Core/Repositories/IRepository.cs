@@ -12,6 +12,7 @@ namespace Etherna.MongODM.Repositories
         IDbContext DbContext { get; }
         Type GetKeyType { get; }
         Type GetModelType { get; }
+        string Name { get; }
 
         Task BuildIndexesAsync(
             IDocumentSchemaRegister schemaRegister,

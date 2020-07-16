@@ -36,22 +36,27 @@ namespace Etherna.MongODM
         /// <summary>
         /// Database cache container.
         /// </summary>
-        IDbContextCache DbCache { get; }
+        IDbCache DbCache { get; }
 
         /// <summary>
         /// Database operator interested into maintenance tasks.
         /// </summary>
-        IDbContextMaintainer DbMaintainer { get; }
+        IDbMaintainer DbMaintainer { get; }
 
         /// <summary>
         /// Manage migrations over database context
         /// </summary>
-        IDbContextMigrationManager DbContextMigrationManager { get; }
+        IDbMigrationManager DbMigrationManager { get; }
 
         /// <summary>
         /// Internal collection for keep db operations execution log
         /// </summary>
         ICollectionRepository<OperationBase, string> DbOperations { get; }
+
+        /// <summary>
+        /// List of registered migration tasks
+        /// </summary>
+        IEnumerable<MongoMigrationBase> DocumentMigrationList { get; }
 
         /// <summary>
         /// Container for model serialization and document schema information.
@@ -67,11 +72,6 @@ namespace Etherna.MongODM
         /// Current MongODM library version
         /// </summary>
         SemanticVersion LibraryVersion { get; }
-
-        /// <summary>
-        /// List of registered migration tasks
-        /// </summary>
-        IEnumerable<MongoMigrationBase> MigrationTaskList { get; }
 
         /// <summary>
         /// Current model proxy generator.

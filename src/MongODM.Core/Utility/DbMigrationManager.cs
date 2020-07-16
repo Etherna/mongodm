@@ -9,14 +9,14 @@ using System.Threading.Tasks;
 
 namespace Etherna.MongODM.Utility
 {
-    public class DbContextMigrationManager : IDbContextMigrationManager, IDbContextInitializable
+    public class DbMigrationManager : IDbMigrationManager, IDbContextInitializable
     {
         // Fields.
         private IDbContext dbContext = default!;
         private readonly ITaskRunner taskRunner;
 
         // Constructor and initialization.
-        public DbContextMigrationManager(ITaskRunner taskRunner)
+        public DbMigrationManager(ITaskRunner taskRunner)
         {
             this.taskRunner = taskRunner;
         }
@@ -34,31 +34,31 @@ namespace Etherna.MongODM.Utility
         public bool IsInitialized { get; private set; }
 
         // Methods.
-        public async Task<List<MigrateOperation>> GetLastMigrationsAsync(int page, int take) =>
+        public async Task<List<DbMigrationOperation>> GetLastMigrationsAsync(int page, int take) =>
             await dbContext.DbOperations.QueryElementsAsync(elements =>
-                elements.OfType<MigrateOperation>()
+                elements.OfType<DbMigrationOperation>()
                         .PaginateDescending(r => r.CreationDateTime, page, take)
                         .ToListAsync()).ConfigureAwait(false);
 
-        public async Task<MigrateOperation> GetMigrationAsync(string migrateOperationId)
+        public async Task<DbMigrationOperation> GetMigrationAsync(string migrateOperationId)
         {
             if (migrateOperationId is null)
                 throw new ArgumentNullException(nameof(migrateOperationId));
 
             var migrateOp = await dbContext.DbOperations.QueryElementsAsync(elements =>
-                elements.OfType<MigrateOperation>()
+                elements.OfType<DbMigrationOperation>()
                         .Where(op => op.Id == migrateOperationId)
                         .FirstAsync()).ConfigureAwait(false);
 
             return migrateOp;
         }
 
-        public async Task<MigrateOperation?> IsMigrationRunningAsync()
+        public async Task<DbMigrationOperation?> IsMigrationRunningAsync()
         {
             var migrateOp = await dbContext.DbOperations.QueryElementsAsync(elements =>
-                elements.OfType<MigrateOperation>()
+                elements.OfType<DbMigrationOperation>()
                         .Where(op => op.DbContextName == dbContext.Identifier)
-                        .Where(op => op.CurrentStatus == MigrateOperation.Status.Running)
+                        .Where(op => op.CurrentStatus == DbMigrationOperation.Status.Running)
                         .FirstOrDefaultAsync()).ConfigureAwait(false);
 
             return migrateOp;
@@ -66,10 +66,10 @@ namespace Etherna.MongODM.Utility
 
         public async Task StartDbContextMigrationAsync(string authorId)
         {
-            var migrateOp = new MigrateOperation(dbContext, authorId);
+            var migrateOp = new DbMigrationOperation(dbContext, authorId);
             await dbContext.DbOperations.CreateAsync(migrateOp).ConfigureAwait(false);
 
-            taskRunner.RunMigrateDbContextTask(dbContext.GetType(), migrateOp.Id);
+            taskRunner.RunMigrateDbTask(dbContext.GetType(), migrateOp.Id);
         }
     }
 }

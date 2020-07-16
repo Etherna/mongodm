@@ -5,7 +5,7 @@ using System.Collections.Generic;
 
 namespace Etherna.MongODM.Utility
 {
-    public class DbContextCache : IDbContextCache
+    public class DbCache : IDbCache
     {
         // Consts.
         private const string CacheKey = "DBCache";
@@ -14,7 +14,7 @@ namespace Etherna.MongODM.Utility
         private readonly IExecutionContext executionContext;
 
         // Constructors.
-        public DbContextCache(IExecutionContext executionContext)
+        public DbCache(IExecutionContext executionContext)
         {
             this.executionContext = executionContext ?? throw new ArgumentNullException(nameof(executionContext));
         }

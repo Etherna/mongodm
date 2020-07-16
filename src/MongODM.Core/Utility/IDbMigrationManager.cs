@@ -4,13 +4,13 @@ using System.Threading.Tasks;
 
 namespace Etherna.MongODM.Utility
 {
-    public interface IDbContextMigrationManager
+    public interface IDbMigrationManager
     {
-        Task<MigrateOperation?> IsMigrationRunningAsync();
+        Task<DbMigrationOperation?> IsMigrationRunningAsync();
 
-        Task<List<MigrateOperation>> GetLastMigrationsAsync(int page, int take);
+        Task<List<DbMigrationOperation>> GetLastMigrationsAsync(int page, int take);
 
-        Task<MigrateOperation> GetMigrationAsync(string migrateOperationId);
+        Task<DbMigrationOperation> GetMigrationAsync(string migrateOperationId);
 
         /// <summary>
         /// Start a db context migration process.

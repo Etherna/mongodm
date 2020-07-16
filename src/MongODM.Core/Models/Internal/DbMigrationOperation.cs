@@ -1,11 +1,11 @@
 ﻿using Etherna.MongODM.Attributes;
-using Etherna.MongODM.Models.Internal.MigrateOpAgg;
+using Etherna.MongODM.Models.Internal.DbMigrationOpAgg;
 using System;
 using System.Collections.Generic;
 
 namespace Etherna.MongODM.Models.Internal
 {
-    public class MigrateOperation : OperationBase
+    public class DbMigrationOperation : OperationBase
     {
         // Enums.
         public enum Status
@@ -17,31 +17,31 @@ namespace Etherna.MongODM.Models.Internal
         }
 
         // Fields.
-        private List<MigrateExecutionLog> _logs = new List<MigrateExecutionLog>();
+        private List<MigrationLogBase> _logs = new List<MigrationLogBase>();
 
         // Constructors.
-        public MigrateOperation(IDbContext dbContext, string? author)
+        public DbMigrationOperation(IDbContext dbContext, string? author)
             : base(dbContext)
         {
             Author = author;
             CurrentStatus = Status.New;
         }
-        protected MigrateOperation() { }
+        protected DbMigrationOperation() { }
 
         // Properties.
         public virtual string? Author { get; protected set; }
         public virtual DateTime CompletedDateTime { get; protected set; }
         public virtual Status CurrentStatus { get; protected set; }
-        public virtual IEnumerable<MigrateExecutionLog> Logs
+        public virtual IEnumerable<MigrationLogBase> Logs
         {
             get => _logs;
-            protected set => _logs = new List<MigrateExecutionLog>(value ?? Array.Empty<MigrateExecutionLog>());
+            protected set => _logs = new List<MigrationLogBase>(value ?? Array.Empty<MigrationLogBase>());
         }
         public virtual string? TaskId { get; protected set; }
 
         // Methods.
         [PropertyAlterer(nameof(Logs))]
-        public virtual void AddLog(MigrateExecutionLog log)
+        public virtual void AddLog(MigrationLogBase log)
         {
             if (log is null)
                 throw new ArgumentNullException(nameof(log));

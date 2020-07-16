@@ -34,6 +34,7 @@ namespace Etherna.MongODM.Repositories
         // Properties.
         public IGridFSBucket GridFSBucket =>
             _gridFSBucket ??= new GridFSBucket(DbContext.Database, new GridFSBucketOptions { BucketName = options.Name });
+        public override string Name => options.Name;
 
         // Methods.
         public override Task BuildIndexesAsync(IDocumentSchemaRegister schemaRegister, CancellationToken cancellationToken = default) => Task.CompletedTask;

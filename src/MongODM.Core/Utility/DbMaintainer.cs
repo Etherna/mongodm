@@ -6,14 +6,14 @@ using System.Linq;
 
 namespace Etherna.MongODM.Utility
 {
-    public class DbContextMaintainer : IDbContextMaintainer
+    public class DbMaintainer : IDbMaintainer
     {
         // Fields.
         private IDbContext dbContext = default!;
         private readonly ITaskRunner taskRunner;
 
         // Constructors and initialization.
-        public DbContextMaintainer(ITaskRunner taskRunner)
+        public DbMaintainer(ITaskRunner taskRunner)
         {
             this.taskRunner = taskRunner;
         }

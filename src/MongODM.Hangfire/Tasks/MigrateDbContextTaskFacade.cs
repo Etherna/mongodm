@@ -20,13 +20,13 @@ namespace Etherna.MongODM.HF.Tasks
 
         // Methods.
         [Queue(Queues.DB_MAINTENANCE)]
-        public Task RunAsync(Type dbContextType, string migrateOpId, PerformingContext context)
+        public Task RunAsync(Type dbContextType, string dbMigrationOpId, PerformingContext context)
         {
             var method = typeof(MigrateDbContextTask).GetMethod(
                 nameof(MigrateDbContextTask.RunAsync), BindingFlags.Public | BindingFlags.Instance)
                 .MakeGenericMethod(dbContextType);
 
-            return (Task)method.Invoke(task, new object[] { migrateOpId, context.BackgroundJob.Id });
+            return (Task)method.Invoke(task, new object[] { dbMigrationOpId, context.BackgroundJob.Id });
         }
     }
 }

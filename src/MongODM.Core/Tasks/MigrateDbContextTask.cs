@@ -1,5 +1,5 @@
 ﻿using Etherna.MongODM.Models.Internal;
-using Etherna.MongODM.Models.Internal.MigrateOpAgg;
+using Etherna.MongODM.Models.Internal.DbMigrationOpAgg;
 using System;
 using System.Threading.Tasks;
 
@@ -18,41 +18,37 @@ namespace Etherna.MongODM.Tasks
         }
 
         // Methods.
-        public async Task RunAsync<TDbContext>(string migrateOpId, string taskId)
+        public async Task RunAsync<TDbContext>(string dbMigrationOpId, string taskId)
             where TDbContext : class, IDbContext
         {
             var dbContext = (TDbContext)serviceProvider.GetService(typeof(TDbContext));
-            var migrateOp = (MigrateOperation)await dbContext.DbOperations.FindOneAsync(migrateOpId).ConfigureAwait(false);
+            var dbMigrationOp = (DbMigrationOperation)await dbContext.DbOperations.FindOneAsync(dbMigrationOpId).ConfigureAwait(false);
 
             // Start migrate operation.
-            migrateOp.TaskStarted(taskId);
+            dbMigrationOp.TaskStarted(taskId);
             await dbContext.SaveChangesAsync().ConfigureAwait(false);
 
-            // Migrate collections.
-            foreach (var migration in dbContext.MigrationTaskList)
+            // Migrate documents.
+            foreach (var docMigration in dbContext.DocumentMigrationList)
             {
-                var migrationType = migration.GetType().Name;
-
-                //running migration
-                var result = await migration.MigrateAsync(500,
+                //running document migration
+                var result = await docMigration.MigrateAsync(500,
                     async procDocs =>
                     {
-                        migrateOp.AddLog(new MigrateExecutionLog(
-                            MigrateExecutionLog.ExecutionState.Executing,
-                            migration.Id,
-                            migrationType,
+                        dbMigrationOp.AddLog(new DocumentMigrationLog(
+                            docMigration.Id,
+                            MigrationLogBase.ExecutionState.Executing,
                             procDocs));
 
                         await dbContext.SaveChangesAsync().ConfigureAwait(false);
                     }).ConfigureAwait(false);
 
-                //ended migration log
-                migrateOp.AddLog(new MigrateExecutionLog(
+                //ended document migration log
+                dbMigrationOp.AddLog(new DocumentMigrationLog(
+                    docMigration.Id,
                     result.Succeded ?
-                        MigrateExecutionLog.ExecutionState.Succeded :
-                        MigrateExecutionLog.ExecutionState.Failed,
-                    migration.Id,
-                    migrationType,
+                        MigrationLogBase.ExecutionState.Succeded :
+                        MigrationLogBase.ExecutionState.Failed,
                     result.MigratedDocuments));
 
                 await dbContext.SaveChangesAsync().ConfigureAwait(false);
@@ -60,7 +56,23 @@ namespace Etherna.MongODM.Tasks
 
             // Build indexes.
             foreach (var repository in dbContext.RepositoryRegister.ModelCollectionRepositoryMap.Values)
-                await repository.BuildIndexesAsync(dbContext.DocumentSchemaRegister, cancellationToken).ConfigureAwait(false);
+            {
+                dbMigrationOp.AddLog(new IndexMigrationLog(
+                    repository.Name,
+                    MigrationLogBase.ExecutionState.Executing));
+                await dbContext.SaveChangesAsync().ConfigureAwait(false);
+
+                await repository.BuildIndexesAsync(dbContext.DocumentSchemaRegister).ConfigureAwait(false);
+
+                dbMigrationOp.AddLog(new IndexMigrationLog(
+                    repository.Name,
+                    MigrationLogBase.ExecutionState.Succeded));
+                await dbContext.SaveChangesAsync().ConfigureAwait(false);
+            }
+
+            // Complete task.
+            dbMigrationOp.TaskCompleted();
+            await dbContext.SaveChangesAsync().ConfigureAwait(false);
         }
     }
 }

@@ -5,11 +5,11 @@ using Etherna.MongODM.Serialization.Modifiers;
 
 namespace Etherna.MongODM.Utility
 {
-    public interface IDbContextDependencies
+    public interface IDbDependencies
     {
-        IDbContextCache DbContextCache { get; }
-        IDbContextMaintainer DbContextMaintainer { get; }
-        IDbContextMigrationManager DbContextMigrationManager { get; }
+        IDbCache DbCache { get; }
+        IDbMaintainer DbMaintainer { get; }
+        IDbMigrationManager DbMigrationManager { get; }
         IDocumentSchemaRegister DocumentSchemaRegister { get; }
         IProxyGenerator ProxyGenerator { get; }
         IRepositoryRegister RepositoryRegister { get; }

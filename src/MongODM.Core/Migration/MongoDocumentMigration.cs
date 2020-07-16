@@ -41,6 +41,10 @@ namespace Etherna.MongODM.Migration
             Func<long, Task>? callbackAsync = null,
             CancellationToken cancellationToken = default)
         {
+            if (callbackEveryDocuments < 0)
+                throw new ArgumentOutOfRangeException(nameof(callbackEveryDocuments), "Value can't be negative");
+
+            // Building filter.
             var filterBuilder = Builders<TModel>.Filter;
             var filter = filterBuilder.Or(
                 // No version in document (very old).
@@ -65,9 +69,22 @@ namespace Etherna.MongODM.Migration
                     filterBuilder.Eq($"{DbContext.DocumentVersionElementName}.1", minimumDocumentVersion.MinorRelease),
                     filterBuilder.Lt($"{DbContext.DocumentVersionElementName}.2", minimumDocumentVersion.PatchRelease)));
 
-            // Replace documents.
+            // Migrate documents.
+            var totMigratedDocuments = 0L;
             await sourceCollection.Find(filter, new FindOptions { NoCursorTimeout = true })
-                .ForEachAsync(obj => sourceCollection.ReplaceOneAsync(Builders<TModel>.Filter.Eq(m => m.Id, obj.Id), obj), cancellationToken).ConfigureAwait(false);
+                .ForEachAsync(async model =>
+                {
+                    if (callbackEveryDocuments > 0 &&
+                        totMigratedDocuments % callbackEveryDocuments == 0 &&
+                        callbackAsync != null)
+                        await callbackAsync.Invoke(totMigratedDocuments).ConfigureAwait(false);
+
+                    await sourceCollection.ReplaceOneAsync(Builders<TModel>.Filter.Eq(m => m.Id, model.Id), model).ConfigureAwait(false);
+
+                    totMigratedDocuments++;
+                }, cancellationToken).ConfigureAwait(false);
+
+            return MigrationResult.Succeeded(totMigratedDocuments);
         }
     }
 }
