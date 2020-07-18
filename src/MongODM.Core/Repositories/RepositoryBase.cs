@@ -45,6 +45,7 @@ namespace Etherna.MongODM.Repositories
         public Type GetKeyType => typeof(TKey);
         public Type GetModelType => typeof(TModel);
         public bool IsInitialized { get; private set; }
+        public abstract string Name { get; }
 
         // Methods.
         public abstract Task BuildIndexesAsync(IDocumentSchemaRegister schemaRegister, CancellationToken cancellationToken = default);

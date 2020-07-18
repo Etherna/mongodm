@@ -49,6 +49,7 @@ namespace Etherna.MongODM.Repositories
 
         // Properties.
         public IMongoCollection<TModel> Collection => _collection ??= DbContext.Database.GetCollection<TModel>(options.Name);
+        public override string Name => options.Name;
 
         // Public methods.
         public override async Task BuildIndexesAsync(IDocumentSchemaRegister schemaRegister, CancellationToken cancellationToken = default)

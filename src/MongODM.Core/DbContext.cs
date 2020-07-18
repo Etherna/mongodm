@@ -14,8 +14,8 @@
 
 using Etherna.MongODM.Migration;
 using Etherna.MongODM.Models;
-using Etherna.MongODM.Operations;
-using Etherna.MongODM.Operations.ModelMaps;
+using Etherna.MongODM.Models.Internal;
+using Etherna.MongODM.Models.Internal.ModelMaps;
 using Etherna.MongODM.ProxyModels;
 using Etherna.MongODM.Repositories;
 using Etherna.MongODM.Serialization;
@@ -39,7 +39,7 @@ namespace Etherna.MongODM
 
         // Constructors and initialization.
         public DbContext(
-            IDbContextDependencies dependencies,
+            IDbDependencies dependencies,
             DbContextOptions options)
         {
             if (dependencies is null)
@@ -50,6 +50,7 @@ namespace Etherna.MongODM
             ApplicationVersion = options.ApplicationVersion;
             DbCache = dependencies.DbCache;
             DbMaintainer = dependencies.DbMaintainer;
+            DbMigrationManager = dependencies.DbMigrationManager;
             DbOperations = new CollectionRepository<OperationBase, string>(options.DbOperationsCollectionName);
             DocumentSchemaRegister = dependencies.DocumentSchemaRegister;
             Identifier = options.Identifier ?? GetType().Name;
@@ -68,8 +69,9 @@ namespace Etherna.MongODM
             Database = Client.GetDatabase(options.DbName);
 
             // Initialize internal dependencies.
-            DocumentSchemaRegister.Initialize(this);
             DbMaintainer.Initialize(this);
+            DbMigrationManager.Initialize(this);
+            DocumentSchemaRegister.Initialize(this);
             RepositoryRegister.Initialize(this);
 
             // Initialize repositories.
@@ -78,7 +80,10 @@ namespace Etherna.MongODM
 
             // Register model maps.
             //internal maps
+            new DbMigrationOperationMap().Register(this);
+            new ModelBaseMap().Register(this);
             new OperationBaseMap().Register(this);
+            new SeedOperationMap().Register(this);
 
             //application maps
             foreach (var maps in ModelMapsCollectors)
@@ -86,9 +91,6 @@ namespace Etherna.MongODM
 
             // Build and freeze document schema register.
             DocumentSchemaRegister.Freeze();
-
-            // Check for seeding.
-            SeedIfNeeded();
         }
 
         // Public properties.
@@ -101,35 +103,20 @@ namespace Etherna.MongODM
         public IMongoDatabase Database { get; }
         public IDbCache DbCache { get; }
         public IDbMaintainer DbMaintainer { get; }
+        public IDbMigrationManager DbMigrationManager { get; }
         public ICollectionRepository<OperationBase, string> DbOperations { get; }
+        public virtual IEnumerable<MongoMigrationBase> DocumentMigrationList { get; } = Array.Empty<MongoMigrationBase>();
         public IDocumentSchemaRegister DocumentSchemaRegister { get; }
         public string Identifier { get; }
-        public bool IsMigrating { get; private set; }
         public SemanticVersion LibraryVersion { get; }
         public IProxyGenerator ProxyGenerator { get; }
         public IRepositoryRegister RepositoryRegister { get; }
         public ISerializerModifierAccessor SerializerModifierAccessor { get; }
 
         // Protected properties.
-        protected virtual IEnumerable<MongoMigrationBase> MigrationTaskList { get; } = Array.Empty<MongoMigrationBase>();
         protected abstract IEnumerable<IModelMapsCollector> ModelMapsCollectors { get; }
 
         // Methods.
-        public async Task MigrateRepositoriesAsync(CancellationToken cancellationToken = default)
-        {
-            IsMigrating = true;
-
-            // Migrate collections.
-            foreach (var migration in MigrationTaskList)
-                await migration.MigrateAsync(cancellationToken).ConfigureAwait(false);
-
-            // Build indexes.
-            foreach (var repository in RepositoryRegister.ModelCollectionRepositoryMap.Values)
-                await repository.BuildIndexesAsync(DocumentSchemaRegister, cancellationToken).ConfigureAwait(false);
-
-            IsMigrating = false;
-        }
-
         public virtual async Task SaveChangesAsync(CancellationToken cancellationToken = default)
         {
             /*
@@ -165,45 +152,46 @@ namespace Etherna.MongODM
             // Commit updated models replacement.
             foreach (var model in ChangedModelsList)
             {
-                var modelType = model.GetType().BaseType;
-                if (RepositoryRegister.ModelCollectionRepositoryMap.ContainsKey(modelType)) //can't replace if is a file
+                var modelType = ProxyGenerator.PurgeProxyType(model.GetType());
+                while (modelType != typeof(object)) //try to find right collection. Can't replace model if it is stored on gridfs
                 {
-                    var repository = RepositoryRegister.ModelCollectionRepositoryMap[modelType];
-                    await repository.ReplaceAsync(model).ConfigureAwait(false);
+                    if (RepositoryRegister.ModelCollectionRepositoryMap.ContainsKey(modelType))
+                    {
+                        var repository = RepositoryRegister.ModelCollectionRepositoryMap[modelType];
+                        await repository.ReplaceAsync(model).ConfigureAwait(false);
+                        break;
+                    }
+                    else
+                    {
+                        modelType = modelType.BaseType;
+                    }
                 }
             }
+        }
+
+        public async Task<bool> SeedIfNeededAsync()
+        {
+            // Check if already seeded.
+            if (await DbOperations.QueryElementsAsync(elements =>
+                    elements.OfType<SeedOperation>()
+                            .AnyAsync(sop => sop.DbContextName == Identifier)).ConfigureAwait(false))
+                return false;
+
+            // Seed.
+            await SeedAsync().ConfigureAwait(false);
+
+            // Report operation.
+            var seedOperation = new SeedOperation(this);
+            await DbOperations.CreateAsync(seedOperation).ConfigureAwait(false);
+
+            return true;
         }
 
         public Task<IClientSessionHandle> StartSessionAsync(CancellationToken cancellationToken = default) =>
             Client.StartSessionAsync(cancellationToken: cancellationToken);
 
         // Protected methods.
-        protected virtual Task Seed() =>
+        protected virtual Task SeedAsync() =>
             Task.CompletedTask;
-
-        // Helpers.
-        private void SeedIfNeeded()
-        {
-            // Check if already seeded.
-            var queryTask = DbOperations.QueryElementsAsync(elements =>
-                elements.OfType<SeedOperation>().AnyAsync(sop => sop.DbContextName == Identifier));
-            queryTask.ConfigureAwait(false);
-            queryTask.Wait();
-
-            //skip if already seeded
-            if (queryTask.Result)
-                return;
-
-            // Seed.
-            var seedTask = Seed();
-            seedTask.ConfigureAwait(false);
-            seedTask.Wait();
-
-            // Report operation.
-            var seedOperation = new SeedOperation(this);
-            var createTask = DbOperations.CreateAsync(seedOperation);
-            createTask.ConfigureAwait(false);
-            createTask.Wait();
-        }
     }
 }

@@ -12,14 +12,31 @@
 //   See the License for the specific language governing permissions and
 //   limitations under the License.
 
-namespace Etherna.MongODM.Operations
+using System;
+
+namespace Etherna.MongODM.Models.Internal.DbMigrationOpAgg
 {
-    public class SeedOperation : OperationBase
+    public abstract class MigrationLogBase : ModelBase
     {
+        // Enums.
+        public enum ExecutionState
+        {
+            Executing,
+            Succeded,
+            Skipped,
+            Failed
+        }
+
         // Constructors.
-        public SeedOperation(IDbContext owner)
-            : base(owner)
-        { }
-        protected SeedOperation() { }
+        public MigrationLogBase(ExecutionState state)
+        {
+            CreationDateTime = DateTime.Now;
+            State = state;
+        }
+        protected MigrationLogBase() { }
+
+        // Properties.
+        public virtual ExecutionState State { get; protected set; }
+        public virtual DateTime CreationDateTime { get; protected set; }
     }
 }

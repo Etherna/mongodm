@@ -12,14 +12,16 @@
 //   See the License for the specific language governing permissions and
 //   limitations under the License.
 
-using System;
-using System.Collections.Generic;
+using Etherna.MongODM.Serialization;
 
-namespace Etherna.MongODM.Tasks
+namespace Etherna.MongODM.Models.Internal.ModelMaps
 {
-    public interface ITaskRunner
+    class SeedOperationMap : IModelMapsCollector
     {
-        void RunMigrateDbTask(Type dbContextType, string dbMigrationOpId);
-        void RunUpdateDocDependenciesTask(Type dbContextType, Type modelType, Type keyType, IEnumerable<string> idPaths, object modelId);
+        public void Register(IDbContext dbContext)
+        {
+            dbContext.DocumentSchemaRegister.RegisterModelSchema<SeedOperation>(
+                "0.20.0");
+        }
     }
 }

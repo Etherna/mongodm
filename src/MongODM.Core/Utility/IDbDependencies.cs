@@ -12,14 +12,21 @@
 //   See the License for the specific language governing permissions and
 //   limitations under the License.
 
-using System;
-using System.Collections.Generic;
+using Etherna.MongODM.ProxyModels;
+using Etherna.MongODM.Repositories;
+using Etherna.MongODM.Serialization;
+using Etherna.MongODM.Serialization.Modifiers;
 
-namespace Etherna.MongODM.Tasks
+namespace Etherna.MongODM.Utility
 {
-    public interface ITaskRunner
+    public interface IDbDependencies
     {
-        void RunMigrateDbTask(Type dbContextType, string dbMigrationOpId);
-        void RunUpdateDocDependenciesTask(Type dbContextType, Type modelType, Type keyType, IEnumerable<string> idPaths, object modelId);
+        IDbCache DbCache { get; }
+        IDbMaintainer DbMaintainer { get; }
+        IDbMigrationManager DbMigrationManager { get; }
+        IDocumentSchemaRegister DocumentSchemaRegister { get; }
+        IProxyGenerator ProxyGenerator { get; }
+        IRepositoryRegister RepositoryRegister { get; }
+        ISerializerModifierAccessor SerializerModifierAccessor { get; }
     }
 }

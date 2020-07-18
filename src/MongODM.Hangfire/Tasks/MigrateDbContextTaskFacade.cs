@@ -14,33 +14,33 @@
 
 using Etherna.MongODM.Tasks;
 using Hangfire;
+using Hangfire.Server;
 using System;
-using System.Collections.Generic;
 using System.Reflection;
 using System.Threading.Tasks;
 
 namespace Etherna.MongODM.HF.Tasks
 {
-    class UpdateDocDependenciesTaskFacade
+    class MigrateDbContextTaskFacade
     {
         // Fields.
-        private readonly IUpdateDocDependenciesTask task;
+        private readonly IMigrateDbContextTask task;
 
         // Constructors.
-        public UpdateDocDependenciesTaskFacade(IUpdateDocDependenciesTask task)
+        public MigrateDbContextTaskFacade(IMigrateDbContextTask task)
         {
             this.task = task;
         }
 
         // Methods.
         [Queue(Queues.DB_MAINTENANCE)]
-        public Task RunAsync(Type dbContextType, Type modelType, Type keyType, IEnumerable<string> idPaths, object modelId)
+        public Task RunAsync(Type dbContextType, string dbMigrationOpId, PerformContext context)
         {
-            var method = typeof(UpdateDocDependenciesTask).GetMethod(
-                nameof(UpdateDocDependenciesTask.RunAsync), BindingFlags.Public | BindingFlags.Instance)
-                .MakeGenericMethod(dbContextType, modelType, keyType);
+            var method = typeof(MigrateDbContextTask).GetMethod(
+                nameof(MigrateDbContextTask.RunAsync), BindingFlags.Public | BindingFlags.Instance)
+                .MakeGenericMethod(dbContextType);
 
-            return (Task)method.Invoke(task, new object[] { idPaths, modelId });
+            return (Task)method.Invoke(task, new object[] { dbMigrationOpId, context.BackgroundJob.Id });
         }
     }
 }

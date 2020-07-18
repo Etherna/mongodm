@@ -13,13 +13,23 @@
 //   limitations under the License.
 
 using System;
-using System.Collections.Generic;
 
-namespace Etherna.MongODM.Tasks
+namespace Etherna.MongODM.Models.Internal
 {
-    public interface ITaskRunner
+    public abstract class OperationBase : EntityModelBase<string>
     {
-        void RunMigrateDbTask(Type dbContextType, string dbMigrationOpId);
-        void RunUpdateDocDependenciesTask(Type dbContextType, Type modelType, Type keyType, IEnumerable<string> idPaths, object modelId);
+        // Constructors and dispose.
+        public OperationBase(IDbContext dbContext)
+        {
+            if (dbContext is null)
+                throw new ArgumentNullException(nameof(dbContext));
+
+            CreationDateTime = DateTime.Now;
+            DbContextName = dbContext.Identifier;
+        }
+        protected OperationBase() { }
+
+        // Properties.
+        public virtual string DbContextName { get; protected set; } = default!;
     }
 }

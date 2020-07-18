@@ -12,14 +12,21 @@
 //   See the License for the specific language governing permissions and
 //   limitations under the License.
 
-using System;
-using System.Collections.Generic;
-
-namespace Etherna.MongODM.Tasks
+namespace Etherna.MongODM.Models.Internal.DbMigrationOpAgg
 {
-    public interface ITaskRunner
+    public class IndexMigrationLog : MigrationLogBase
     {
-        void RunMigrateDbTask(Type dbContextType, string dbMigrationOpId);
-        void RunUpdateDocDependenciesTask(Type dbContextType, Type modelType, Type keyType, IEnumerable<string> idPaths, object modelId);
+        // Constructors.
+        public IndexMigrationLog(
+            string repository,
+            ExecutionState state)
+            : base(state)
+        {
+            Repository = repository;
+        }
+        protected IndexMigrationLog() { }
+
+        // Properties.
+        public virtual string Repository { get; protected set; } = default!;
     }
 }

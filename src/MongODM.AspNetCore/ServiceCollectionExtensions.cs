@@ -75,13 +75,15 @@ namespace Microsoft.Extensions.DependencyInjection
              * the same dbContext different components could have different instances of the same component.
              */
             services.TryAddTransient<IDbCache, DbCache>();
-            services.TryAddTransient<IDbContextDependencies, DbContextDependencies>();
+            services.TryAddTransient<IDbDependencies, DbDependencies>();
             services.TryAddTransient<IDbMaintainer, DbMaintainer>();
+            services.TryAddTransient<IDbMigrationManager, DbMigrationManager>();
             services.TryAddTransient<IDocumentSchemaRegister, DocumentSchemaRegister>();
             services.TryAddTransient<IRepositoryRegister, RepositoryRegister>();
             services.TryAddSingleton<ISerializerModifierAccessor, SerializerModifierAccessor>();
 
             //tasks
+            services.TryAddTransient<IMigrateDbContextTask, MigrateDbContextTask>();
             services.TryAddTransient<IUpdateDocDependenciesTask, UpdateDocDependenciesTask>();
 
             //castle proxy generator

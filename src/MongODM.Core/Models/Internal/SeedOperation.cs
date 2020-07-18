@@ -12,14 +12,14 @@
 //   See the License for the specific language governing permissions and
 //   limitations under the License.
 
-using System;
-using System.Collections.Generic;
-
-namespace Etherna.MongODM.Tasks
+namespace Etherna.MongODM.Models.Internal
 {
-    public interface ITaskRunner
+    public class SeedOperation : OperationBase
     {
-        void RunMigrateDbTask(Type dbContextType, string dbMigrationOpId);
-        void RunUpdateDocDependenciesTask(Type dbContextType, Type modelType, Type keyType, IEnumerable<string> idPaths, object modelId);
+        // Constructors.
+        public SeedOperation(IDbContext owner)
+            : base(owner)
+        { }
+        protected SeedOperation() { }
     }
 }

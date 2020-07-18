@@ -12,12 +12,15 @@
 //   See the License for the specific language governing permissions and
 //   limitations under the License.
 
+using Etherna.MongODM.Migration;
+using Etherna.MongODM.Models.Internal;
 using Etherna.MongODM.ProxyModels;
 using Etherna.MongODM.Repositories;
 using Etherna.MongODM.Serialization;
 using Etherna.MongODM.Serialization.Modifiers;
 using Etherna.MongODM.Utility;
 using MongoDB.Driver;
+using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -53,7 +56,22 @@ namespace Etherna.MongODM
         /// Database operator interested into maintenance tasks.
         /// </summary>
         IDbMaintainer DbMaintainer { get; }
-        
+
+        /// <summary>
+        /// Manage migrations over database context
+        /// </summary>
+        IDbMigrationManager DbMigrationManager { get; }
+
+        /// <summary>
+        /// Internal collection for keep db operations execution log
+        /// </summary>
+        ICollectionRepository<OperationBase, string> DbOperations { get; }
+
+        /// <summary>
+        /// List of registered migration tasks
+        /// </summary>
+        IEnumerable<MongoMigrationBase> DocumentMigrationList { get; }
+
         /// <summary>
         /// Container for model serialization and document schema information.
         /// </summary>
@@ -63,11 +81,6 @@ namespace Etherna.MongODM
         /// DbContext unique identifier.
         /// </summary>
         string Identifier { get; }
-
-        /// <summary>
-        /// Flag reporting eventual current migration operation.
-        /// </summary>
-        bool IsMigrating { get; }
 
         /// <summary>
         /// Current MongODM library version
@@ -91,16 +104,16 @@ namespace Etherna.MongODM
 
         // Methods.
         /// <summary>
-        /// Start a database migration process.
-        /// </summary>
-        /// <param name="cancellationToken">Cancellation token</param>
-        Task MigrateRepositoriesAsync(CancellationToken cancellationToken = default);
-
-        /// <summary>
         /// Save current model changes on db.
         /// </summary>
         /// <param name="cancellationToken">Cancellation token</param>
         Task SaveChangesAsync(CancellationToken cancellationToken = default);
+
+        /// <summary>
+        /// Seed database context if still not seeded
+        /// </summary>
+        /// <returns>True if seed has been executed. False otherwise</returns>
+        Task<bool> SeedIfNeededAsync();
 
         /// <summary>
         /// Start a new database transaction session.

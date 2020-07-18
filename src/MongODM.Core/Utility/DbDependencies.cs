@@ -19,11 +19,12 @@ using Etherna.MongODM.Serialization.Modifiers;
 
 namespace Etherna.MongODM.Utility
 {
-    public class DbContextDependencies : IDbContextDependencies
+    public class DbDependencies : IDbDependencies
     {
-        public DbContextDependencies(
+        public DbDependencies(
             IDbCache dbCache,
             IDbMaintainer dbMaintainer,
+            IDbMigrationManager dbContextMigrationManager,
             IDocumentSchemaRegister documentSchemaRegister,
             IProxyGenerator proxyGenerator,
             IRepositoryRegister repositoryRegister,
@@ -36,6 +37,7 @@ namespace Etherna.MongODM.Utility
         {
             DbCache = dbCache;
             DbMaintainer = dbMaintainer;
+            DbMigrationManager = dbContextMigrationManager;
             DocumentSchemaRegister = documentSchemaRegister;
             ProxyGenerator = proxyGenerator;
             RepositoryRegister = repositoryRegister;
@@ -44,6 +46,7 @@ namespace Etherna.MongODM.Utility
 
         public IDbCache DbCache { get; }
         public IDbMaintainer DbMaintainer { get; }
+        public IDbMigrationManager DbMigrationManager { get; }
         public IDocumentSchemaRegister DocumentSchemaRegister { get; }
         public IProxyGenerator ProxyGenerator { get; }
         public IRepositoryRegister RepositoryRegister { get; }

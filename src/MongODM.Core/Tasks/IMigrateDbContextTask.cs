@@ -12,14 +12,13 @@
 //   See the License for the specific language governing permissions and
 //   limitations under the License.
 
-using System;
-using System.Collections.Generic;
+using System.Threading.Tasks;
 
 namespace Etherna.MongODM.Tasks
 {
-    public interface ITaskRunner
+    public interface IMigrateDbContextTask
     {
-        void RunMigrateDbTask(Type dbContextType, string dbMigrationOpId);
-        void RunUpdateDocDependenciesTask(Type dbContextType, Type modelType, Type keyType, IEnumerable<string> idPaths, object modelId);
+        Task RunAsync<TDbContext>(string dbMigrationOpId, string taskId)
+            where TDbContext : class, IDbContext;
     }
 }

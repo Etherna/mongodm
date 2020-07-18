@@ -38,6 +38,10 @@ namespace Etherna.MongODM.HF.Tasks
         }
 
         // Methods.
+        public void RunMigrateDbTask(Type dbContextType, string dbMigrationOpId) =>
+            backgroundJobClient.Enqueue<MigrateDbContextTaskFacade>(
+                task => task.RunAsync(dbContextType, dbMigrationOpId, null!));
+
         public void RunUpdateDocDependenciesTask(Type dbContextType, Type modelType, Type keyType, IEnumerable<string> idPaths, object modelId) =>
             backgroundJobClient.Enqueue<UpdateDocDependenciesTaskFacade>(
                 task => task.RunAsync(dbContextType, modelType, keyType, idPaths, modelId));
