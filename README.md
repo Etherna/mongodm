@@ -3,7 +3,7 @@
 
 ## Overview
 
-MongODM is a **framework ODM** (Object-Documental Mapping) developed for work with **MongoDB** (with its [official drivers](https://github.com/mongodb/mongo-csharp-driver)) and **Asp.NET** applications.
+MongODM is a **ODM framework** (Object-Documental Mapping) developed for work with **MongoDB** and **Asp.NET** applications.
 
 With MongODM you can concentrate on developing your application, without worring on how data is organized in documents. **Documental databases are very efficient**, but very often using them we have to concern about **how data is structured** at the application layer. MongODM creates a document-to-object mapping layer, solving this kind of problems.
 
@@ -17,7 +17,7 @@ For these reasons SQL databases are often still prefered to documentals, because
 
 **MongODM has the scope to solve these problems**, and its objective is to **bring efficiency of denormalized documental data also to complex applications**, without have to worry at all of how data is organized from an application layer!
 
-Moreover, MongODM uses official MongoDB's drivers for C#, thus inheriting all the powerful features developed for example about description of data serialization, and keeping compatibility with any new relase of MongoDB Server or MongoDB Atlas.
+Moreover, MongODM uses official [MongoDB's drivers for C#](https://github.com/mongodb/mongo-csharp-driver), thus inheriting all the powerful features developed for example about description of data serialization, and keeping compatibility with any new relase of MongoDB Server or MongoDB Atlas.
 
 Here is a non exhaustive list of implemented features from MongODM:
 
