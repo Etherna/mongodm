@@ -4,7 +4,7 @@ using System.Threading.Tasks;
 
 namespace Etherna.MongODM.Utility
 {
-    public interface IDbMigrationManager
+    public interface IDbMigrationManager : IDbContextInitializable
     {
         Task<DbMigrationOperation?> IsMigrationRunningAsync();
 

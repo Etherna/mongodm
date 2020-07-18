@@ -20,7 +20,7 @@ namespace Etherna.MongODM.HF.Tasks
 
         // Methods.
         [Queue(Queues.DB_MAINTENANCE)]
-        public Task RunAsync(Type dbContextType, string dbMigrationOpId, PerformingContext context)
+        public Task RunAsync(Type dbContextType, string dbMigrationOpId, PerformContext context)
         {
             var method = typeof(MigrateDbContextTask).GetMethod(
                 nameof(MigrateDbContextTask.RunAsync), BindingFlags.Public | BindingFlags.Instance)

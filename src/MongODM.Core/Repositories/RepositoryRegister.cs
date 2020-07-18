@@ -34,8 +34,8 @@ namespace Etherna.MongODM.Repositories
                 {
                     var dbContextType = dbContext.GetType();
 
-                    //select ICollectionRepository<,> implementing properties
-                    var repos = dbContextType.GetProperties(BindingFlags.Public | BindingFlags.Instance)
+                    // Select ICollectionRepository<,> from dbcontext properties.
+                    var repos = dbContextType.GetProperties(BindingFlags.Public | BindingFlags.Instance | BindingFlags.FlattenHierarchy)
                         .Where(prop =>
                         {
                             var propType = prop.PropertyType;
@@ -53,7 +53,7 @@ namespace Etherna.MongODM.Repositories
                             return false;
                         });
 
-                    //construct register
+                    // Initialize register.
                     _modelCollectionRepositoryMap = repos.ToDictionary(
                         prop => ((ICollectionRepository)prop.GetValue(dbContext)).GetModelType,
                         prop => (ICollectionRepository)prop.GetValue(dbContext));

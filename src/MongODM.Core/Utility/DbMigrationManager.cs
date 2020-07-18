@@ -9,7 +9,7 @@ using System.Threading.Tasks;
 
 namespace Etherna.MongODM.Utility
 {
-    public class DbMigrationManager : IDbMigrationManager, IDbContextInitializable
+    public class DbMigrationManager : IDbMigrationManager
     {
         // Fields.
         private IDbContext dbContext = default!;

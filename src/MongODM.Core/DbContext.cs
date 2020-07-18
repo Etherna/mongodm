@@ -55,8 +55,9 @@ namespace Etherna.MongODM
             Database = Client.GetDatabase(options.DbName);
 
             // Initialize internal dependencies.
-            DocumentSchemaRegister.Initialize(this);
             DbMaintainer.Initialize(this);
+            DbMigrationManager.Initialize(this);
+            DocumentSchemaRegister.Initialize(this);
             RepositoryRegister.Initialize(this);
 
             // Initialize repositories.
@@ -76,9 +77,6 @@ namespace Etherna.MongODM
 
             // Build and freeze document schema register.
             DocumentSchemaRegister.Freeze();
-
-            // Check for seeding.
-            SeedIfNeeded();
         }
 
         // Public properties.
@@ -140,45 +138,46 @@ namespace Etherna.MongODM
             // Commit updated models replacement.
             foreach (var model in ChangedModelsList)
             {
-                var modelType = model.GetType().BaseType;
-                if (RepositoryRegister.ModelCollectionRepositoryMap.ContainsKey(modelType)) //can't replace if is a file
+                var modelType = ProxyGenerator.PurgeProxyType(model.GetType());
+                while (modelType != typeof(object)) //try to find right collection. Can't replace model if it is stored on gridfs
                 {
-                    var repository = RepositoryRegister.ModelCollectionRepositoryMap[modelType];
-                    await repository.ReplaceAsync(model).ConfigureAwait(false);
+                    if (RepositoryRegister.ModelCollectionRepositoryMap.ContainsKey(modelType))
+                    {
+                        var repository = RepositoryRegister.ModelCollectionRepositoryMap[modelType];
+                        await repository.ReplaceAsync(model).ConfigureAwait(false);
+                        break;
+                    }
+                    else
+                    {
+                        modelType = modelType.BaseType;
+                    }
                 }
             }
+        }
+
+        public async Task<bool> SeedIfNeededAsync()
+        {
+            // Check if already seeded.
+            if (await DbOperations.QueryElementsAsync(elements =>
+                    elements.OfType<SeedOperation>()
+                            .AnyAsync(sop => sop.DbContextName == Identifier)).ConfigureAwait(false))
+                return false;
+
+            // Seed.
+            await SeedAsync().ConfigureAwait(false);
+
+            // Report operation.
+            var seedOperation = new SeedOperation(this);
+            await DbOperations.CreateAsync(seedOperation).ConfigureAwait(false);
+
+            return true;
         }
 
         public Task<IClientSessionHandle> StartSessionAsync(CancellationToken cancellationToken = default) =>
             Client.StartSessionAsync(cancellationToken: cancellationToken);
 
         // Protected methods.
-        protected virtual Task Seed() =>
+        protected virtual Task SeedAsync() =>
             Task.CompletedTask;
-
-        // Helpers.
-        private void SeedIfNeeded()
-        {
-            // Check if already seeded.
-            var queryTask = DbOperations.QueryElementsAsync(elements =>
-                elements.OfType<SeedOperation>().AnyAsync(sop => sop.DbContextName == Identifier));
-            queryTask.ConfigureAwait(false);
-            queryTask.Wait();
-
-            //skip if already seeded
-            if (queryTask.Result)
-                return;
-
-            // Seed.
-            var seedTask = Seed();
-            seedTask.ConfigureAwait(false);
-            seedTask.Wait();
-
-            // Report operation.
-            var seedOperation = new SeedOperation(this);
-            var createTask = DbOperations.CreateAsync(seedOperation);
-            createTask.ConfigureAwait(false);
-            createTask.Wait();
-        }
     }
 }

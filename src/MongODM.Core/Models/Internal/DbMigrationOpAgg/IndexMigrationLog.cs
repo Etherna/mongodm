@@ -1,6 +1,6 @@
 ﻿namespace Etherna.MongODM.Models.Internal.DbMigrationOpAgg
 {
-    class IndexMigrationLog : MigrationLogBase
+    public class IndexMigrationLog : MigrationLogBase
     {
         // Constructors.
         public IndexMigrationLog(

@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Etherna.MongODM.Repositories;
+using System;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -14,6 +15,7 @@ namespace Etherna.MongODM.Migration
 
         // Properties.
         public string Id { get; }
+        public abstract ICollectionRepository SourceCollection { get; }
 
         // Methods.
         /// <summary>

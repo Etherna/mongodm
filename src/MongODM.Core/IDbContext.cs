@@ -96,6 +96,12 @@ namespace Etherna.MongODM
         Task SaveChangesAsync(CancellationToken cancellationToken = default);
 
         /// <summary>
+        /// Seed database context if still not seeded
+        /// </summary>
+        /// <returns>True if seed has been executed. False otherwise</returns>
+        Task<bool> SeedIfNeededAsync();
+
+        /// <summary>
         /// Start a new database transaction session.
         /// </summary>
         /// <param name="cancellationToken">Cancellation token</param>

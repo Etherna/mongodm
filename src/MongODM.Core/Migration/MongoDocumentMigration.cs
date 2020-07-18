@@ -19,7 +19,7 @@ namespace Etherna.MongODM.Migration
     {
         // Fields.
         private readonly SemanticVersion minimumDocumentVersion;
-        private readonly IMongoCollection<TModel> sourceCollection;
+        private readonly ICollectionRepository<TModel, TKey> _sourceCollection;
 
         // Constructors.
         public MongoDocumentMigration(
@@ -31,9 +31,12 @@ namespace Etherna.MongODM.Migration
             if (sourceCollection is null)
                 throw new ArgumentNullException(nameof(sourceCollection));
 
-            this.sourceCollection = sourceCollection.Collection;
+            _sourceCollection = sourceCollection;
             this.minimumDocumentVersion = minimumDocumentVersion;
         }
+
+        // Properties.
+        public override ICollectionRepository SourceCollection => _sourceCollection;
 
         // Methods.
         public override async Task<MigrationResult> MigrateAsync(
@@ -71,7 +74,7 @@ namespace Etherna.MongODM.Migration
 
             // Migrate documents.
             var totMigratedDocuments = 0L;
-            await sourceCollection.Find(filter, new FindOptions { NoCursorTimeout = true })
+            await _sourceCollection.Collection.Find(filter, new FindOptions { NoCursorTimeout = true })
                 .ForEachAsync(async model =>
                 {
                     if (callbackEveryDocuments > 0 &&
@@ -79,7 +82,7 @@ namespace Etherna.MongODM.Migration
                         callbackAsync != null)
                         await callbackAsync.Invoke(totMigratedDocuments).ConfigureAwait(false);
 
-                    await sourceCollection.ReplaceOneAsync(Builders<TModel>.Filter.Eq(m => m.Id, model.Id), model).ConfigureAwait(false);
+                    await _sourceCollection.Collection.ReplaceOneAsync(Builders<TModel>.Filter.Eq(m => m.Id, model.Id), model).ConfigureAwait(false);
 
                     totMigratedDocuments++;
                 }, cancellationToken).ConfigureAwait(false);

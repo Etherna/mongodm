@@ -30,7 +30,7 @@ namespace Etherna.MongODM.Models.Internal
 
         // Properties.
         public virtual string? Author { get; protected set; }
-        public virtual DateTime CompletedDateTime { get; protected set; }
+        public virtual DateTime? CompletedDateTime { get; protected set; }
         public virtual Status CurrentStatus { get; protected set; }
         public virtual IEnumerable<MigrationLogBase> Logs
         {

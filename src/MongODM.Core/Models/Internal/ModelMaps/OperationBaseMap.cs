@@ -1,8 +1,5 @@
 ﻿using Etherna.MongODM.Serialization;
 using Etherna.MongODM.Serialization.Serializers;
-using MongoDB.Bson;
-using MongoDB.Bson.Serialization.IdGenerators;
-using MongoDB.Bson.Serialization.Serializers;
 
 namespace Etherna.MongODM.Models.Internal.ModelMaps
 {
@@ -12,14 +9,7 @@ namespace Etherna.MongODM.Models.Internal.ModelMaps
         {
             dbContext.DocumentSchemaRegister.RegisterModelSchema(
                 "0.20.0", //mongodm library's version
-                cm =>
-                {
-                    cm.AutoMap();
-
-                    // Set Id representation.
-                    cm.IdMemberMap.SetSerializer(new StringSerializer(BsonType.ObjectId))
-                                  .SetIdGenerator(new StringObjectIdGenerator());
-                },
+                cm => cm.AutoMap(),
                 initCustomSerializer: () =>
                     new ExtendedClassMapSerializer<OperationBase>(
                         dbContext.DbCache,

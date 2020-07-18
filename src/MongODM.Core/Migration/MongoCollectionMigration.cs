@@ -22,7 +22,7 @@ namespace Etherna.MongODM.Migration
         private readonly Func<TModelSource, TModelDest> converter;
         private readonly Func<TModelSource, bool> discriminator;
         private readonly IMongoCollection<TModelDest> destinationCollection;
-        private readonly IMongoCollection<TModelSource> sourceCollection;
+        private readonly ICollectionRepository<TModelSource, TKeySource> _sourceCollection;
 
         // Constructor.
         public MongoCollectionMigration(
@@ -38,11 +38,14 @@ namespace Etherna.MongODM.Migration
             if (destinationCollection is null)
                 throw new ArgumentNullException(nameof(destinationCollection));
 
-            this.sourceCollection = sourceCollection.Collection;
+            _sourceCollection = sourceCollection;
             this.destinationCollection = destinationCollection.Collection;
             this.converter = converter;
             this.discriminator = discriminator;
         }
+
+        // Properties.
+        public override ICollectionRepository SourceCollection => _sourceCollection;
 
         // Methods.
         public override async Task<MigrationResult> MigrateAsync(
@@ -55,7 +58,7 @@ namespace Etherna.MongODM.Migration
 
             // Migrate documents.
             var totMigratedDocuments = 0L;
-            await sourceCollection.Find(Builders<TModelSource>.Filter.Empty, new FindOptions { NoCursorTimeout = true })
+            await _sourceCollection.Collection.Find(Builders<TModelSource>.Filter.Empty, new FindOptions { NoCursorTimeout = true })
                 .ForEachAsync(async model =>
                 {
                     if (callbackEveryDocuments > 0 &&

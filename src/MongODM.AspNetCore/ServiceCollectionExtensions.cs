@@ -69,6 +69,7 @@ namespace Microsoft.Extensions.DependencyInjection
             services.TryAddSingleton<ISerializerModifierAccessor, SerializerModifierAccessor>();
 
             //tasks
+            services.TryAddTransient<IMigrateDbContextTask, MigrateDbContextTask>();
             services.TryAddTransient<IUpdateDocDependenciesTask, UpdateDocDependenciesTask>();
 
             //castle proxy generator
