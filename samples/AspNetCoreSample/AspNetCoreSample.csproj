@@ -5,4 +5,9 @@
     <RootNamespace>Etherna.MongODM.AspNetCoreSample</RootNamespace>
   </PropertyGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\MongODM.AspNetCore\MongODM.AspNetCore.csproj" />
+    <ProjectReference Include="..\..\src\MongODM.Hangfire\MongODM.Hangfire.csproj" />
+  </ItemGroup>
+
 </Project>
