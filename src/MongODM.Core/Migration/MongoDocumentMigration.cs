@@ -17,6 +17,7 @@ using Etherna.MongODM.Repositories;
 using Etherna.MongODM.Serialization;
 using MongoDB.Bson;
 using MongoDB.Driver;
+using System;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -30,22 +31,37 @@ namespace Etherna.MongODM.Migration
     public class MongoDocumentMigration<TModel, TKey> : MongoMigrationBase
         where TModel : class, IEntityModel<TKey>
     {
-        private readonly DocumentVersion minimumDocumentVersion;
-        private readonly IMongoCollection<TModel> sourceCollection;
+        // Fields.
+        private readonly SemanticVersion minimumDocumentVersion;
+        private readonly ICollectionRepository<TModel, TKey> _sourceCollection;
 
+        // Constructors.
         public MongoDocumentMigration(
             ICollectionRepository<TModel, TKey> sourceCollection,
-            DocumentVersion minimumDocumentVersion)
+            SemanticVersion minimumDocumentVersion,
+            string id)
+            : base(id)
         {
-            this.sourceCollection = sourceCollection.Collection;
+            if (sourceCollection is null)
+                throw new ArgumentNullException(nameof(sourceCollection));
+
+            _sourceCollection = sourceCollection;
             this.minimumDocumentVersion = minimumDocumentVersion;
         }
 
-        /// <summary>
-        /// Fix all documents prev of MinimumDocumentVersion
-        /// </summary>
-        public override async Task MigrateAsync(CancellationToken cancellationToken = default)
+        // Properties.
+        public override ICollectionRepository SourceCollection => _sourceCollection;
+
+        // Methods.
+        public override async Task<MigrationResult> MigrateAsync(
+            int callbackEveryDocuments = 0,
+            Func<long, Task>? callbackAsync = null,
+            CancellationToken cancellationToken = default)
         {
+            if (callbackEveryDocuments < 0)
+                throw new ArgumentOutOfRangeException(nameof(callbackEveryDocuments), "Value can't be negative");
+
+            // Building filter.
             var filterBuilder = Builders<TModel>.Filter;
             var filter = filterBuilder.Or(
                 // No version in document (very old).
@@ -70,9 +86,22 @@ namespace Etherna.MongODM.Migration
                     filterBuilder.Eq($"{DbContext.DocumentVersionElementName}.1", minimumDocumentVersion.MinorRelease),
                     filterBuilder.Lt($"{DbContext.DocumentVersionElementName}.2", minimumDocumentVersion.PatchRelease)));
 
-            // Replace documents.
-            await sourceCollection.Find(filter, new FindOptions { NoCursorTimeout = true })
-                .ForEachAsync(obj => sourceCollection.ReplaceOneAsync(Builders<TModel>.Filter.Eq(m => m.Id, obj.Id), obj), cancellationToken);
+            // Migrate documents.
+            var totMigratedDocuments = 0L;
+            await _sourceCollection.Collection.Find(filter, new FindOptions { NoCursorTimeout = true })
+                .ForEachAsync(async model =>
+                {
+                    if (callbackEveryDocuments > 0 &&
+                        totMigratedDocuments % callbackEveryDocuments == 0 &&
+                        callbackAsync != null)
+                        await callbackAsync.Invoke(totMigratedDocuments).ConfigureAwait(false);
+
+                    await _sourceCollection.Collection.ReplaceOneAsync(Builders<TModel>.Filter.Eq(m => m.Id, model.Id), model).ConfigureAwait(false);
+
+                    totMigratedDocuments++;
+                }, cancellationToken).ConfigureAwait(false);
+
+            return MigrationResult.Succeeded(totMigratedDocuments);
         }
     }
 }

@@ -27,7 +27,7 @@ using System.Threading.Tasks;
 
 namespace Etherna.MongODM.Serialization
 {
-    public class DocumentSchemaRegister : IDocumentSchemaRegister
+    public class DocumentSchemaRegister : IDocumentSchemaRegister, IDisposable
     {
         // Fields.
         private readonly ReaderWriterLockSlim configLock = new ReaderWriterLockSlim(LockRecursionPolicy.SupportsRecursion);
@@ -64,6 +64,11 @@ namespace Etherna.MongODM.Serialization
         public IEnumerable<DocumentSchema> Schemas => schemas;
 
         // Methods.
+        public void Dispose()
+        {
+            configLock.Dispose();
+        }
+
         public void Freeze()
         {
             configLock.EnterReadLock();
@@ -85,12 +90,18 @@ namespace Etherna.MongODM.Serialization
                     foreach (var schemaGroup in schemas.GroupBy(s => s.ModelType)
                                                        .Select(group => group.OrderByDescending(s => s.Version).First()))
                     {
-                        // Register class map.
+                        // Register regular model.
+                        //register class map
                         BsonClassMap.RegisterClassMap(schemaGroup.ClassMap);
 
-                        // Register serializer.
+                        //register serializer
                         if (schemaGroup.Serializer != null)
                             BsonSerializer.RegisterSerializer(schemaGroup.ModelType, schemaGroup.Serializer);
+
+                        // Register proxy model.
+                        //register proxy class map
+                        if (schemaGroup.ProxyClassMap != null)
+                            BsonClassMap.RegisterClassMap(schemaGroup.ProxyClassMap);
                     }
 
                     // Compile dependency registers.
@@ -100,7 +111,7 @@ namespace Etherna.MongODM.Serialization
 
                         CompileDependencyRegisters(
                             schema.ModelType,
-                            new EntityMember[0],
+                            Array.Empty<EntityMember>(),
                             schema.ClassMap,
                             schema.Version);
                     }
@@ -121,7 +132,7 @@ namespace Etherna.MongODM.Serialization
 
             if (memberDependenciesMap.TryGetValue(memberInfo, out List<DocumentSchemaMemberMap> dependencies))
                 return dependencies;
-            return new DocumentSchemaMemberMap[0];
+            return Array.Empty<DocumentSchemaMemberMap>();
         }
 
         public IEnumerable<DocumentSchemaMemberMap> GetModelDependencies(Type modelType)
@@ -130,7 +141,7 @@ namespace Etherna.MongODM.Serialization
 
             if (modelDependenciesMap.TryGetValue(modelType, out List<DocumentSchemaMemberMap> dependencies))
                 return dependencies;
-            return new DocumentSchemaMemberMap[0];
+            return Array.Empty<DocumentSchemaMemberMap>();
         }
 
         public IEnumerable<DocumentSchemaMemberMap> GetModelEntityReferencesIds(Type modelType)
@@ -139,13 +150,13 @@ namespace Etherna.MongODM.Serialization
 
             if (modelEntityReferencesIdsMap.TryGetValue(modelType, out List<DocumentSchemaMemberMap> dependencies))
                 return dependencies;
-            return new DocumentSchemaMemberMap[0];
+            return Array.Empty<DocumentSchemaMemberMap>();
         }
 
         public void RegisterModelSchema<TModel>(
-            DocumentVersion fromVersion,
+            SemanticVersion fromVersion,
             Func<IBsonSerializer<TModel>>? initCustomSerializer = null,
-            Func<TModel, DocumentVersion?, Task<TModel>>? modelMigrationAsync = null)
+            Func<TModel, SemanticVersion?, Task<TModel>>? modelMigrationAsync = null)
             where TModel : class =>
             RegisterModelSchema(
                 fromVersion,
@@ -154,10 +165,10 @@ namespace Etherna.MongODM.Serialization
                 modelMigrationAsync);
 
         public void RegisterModelSchema<TModel>(
-            DocumentVersion fromVersion,
+            SemanticVersion fromVersion,
             Action<BsonClassMap<TModel>> classMapInitializer,
             Func<IBsonSerializer<TModel>>? initCustomSerializer = null,
-            Func<TModel, DocumentVersion?, Task<TModel>>? modelMigrationAsync = null)
+            Func<TModel, SemanticVersion?, Task<TModel>>? modelMigrationAsync = null)
             where TModel : class =>
             RegisterModelSchema(
                 fromVersion,
@@ -166,17 +177,32 @@ namespace Etherna.MongODM.Serialization
                 modelMigrationAsync);
 
         public void RegisterModelSchema<TModel>(
-            DocumentVersion fromVersion,
+            SemanticVersion fromVersion,
             BsonClassMap<TModel> classMap,
             Func<IBsonSerializer<TModel>>? initCustomSerializer = null,
-            Func<TModel, DocumentVersion?, Task<TModel>>? modelMigrationAsync = null)
+            Func<TModel, SemanticVersion?, Task<TModel>>? modelMigrationAsync = null)
             where TModel : class
         {
+            if (classMap is null)
+                throw new ArgumentNullException(nameof(classMap));
+
             configLock.EnterWriteLock();
             try
             {
                 if (IsFrozen)
                     throw new InvalidOperationException("Register is frozen");
+
+                // If not abstract, adjustments for use proxygenerator.
+                BsonClassMap? proxyClassMap = null;
+                if (!typeof(TModel).IsAbstract)
+                {
+                    //set creator
+                    classMap.SetCreator(() => dbContext.ProxyGenerator.CreateInstance<TModel>(dbContext));
+
+                    //generate proxy classmap
+                    proxyClassMap = new BsonClassMap(
+                        dbContext.ProxyGenerator.CreateInstance<TModel>(dbContext).GetType());
+                }
 
                 // Generate model serializer.
                 IBsonSerializer<TModel>? serializer = null;
@@ -187,14 +213,14 @@ namespace Etherna.MongODM.Serialization
                 else if (!typeof(TModel).IsAbstract) //else if can deserialize, set default serializer
                     serializer =
                         new ExtendedClassMapSerializer<TModel>(
-                            dbContext.DBCache,
-                            dbContext.DocumentVersion,
+                            dbContext.DbCache,
+                            dbContext.ApplicationVersion,
                             serializerModifierAccessor,
                             (m, v) => modelMigrationAsync?.Invoke(m, v) ?? Task.FromResult(m))
                         { AddVersion = typeof(IEntityModel).IsAssignableFrom(typeof(TModel)) }; //true only for entity models
 
                 // Register schema.
-                schemas.Add(new DocumentSchema(classMap, typeof(TModel), serializer, fromVersion));
+                schemas.Add(new DocumentSchema(classMap, typeof(TModel), proxyClassMap, serializer, fromVersion));
             }
             finally
             {
@@ -207,7 +233,7 @@ namespace Etherna.MongODM.Serialization
             Type modelType,
             IEnumerable<EntityMember> memberPath,
             BsonClassMap currentClassMap,
-            DocumentVersion version,
+            SemanticVersion version,
             bool? useCascadeDeleteSetting = null)
         {
             // Ignore class maps of abstract types. (child classes will map all their members)

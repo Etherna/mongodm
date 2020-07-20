@@ -1,8 +1,10 @@
-name: Build test and package master branch. Deploy to NuGet
+name: Unstable release deploy to MyGet
 
 on:
   push:
-    branches: master
+    branches:
+    - dev
+    - 'release/**'
 
 jobs:
   build-test-package:
@@ -28,4 +30,4 @@ jobs:
       run: dotnet pack --configuration Release -o nupkg
 
     - name: Push packages
-      run: dotnet nuget push './nupkg/*.nupkg' --api-key ${{secrets.NUGET_KEY}} --source https://api.nuget.org/v3/index.json
+      run: dotnet nuget push './nupkg/*.nupkg' --api-key ${{secrets.MYGET_APIKEY}} --source https://www.myget.org/F/etherna/api/v3/index.json

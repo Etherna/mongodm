@@ -80,7 +80,7 @@ namespace Etherna.MongODM
 
         // Fields.
         private readonly Mock<IDbCache> dbCacheMock;
-        private readonly DocumentVersion documentVersion = new DocumentVersion("1.0.0");
+        private readonly SemanticVersion documentVersion = new SemanticVersion("1.0.0");
         private readonly Mock<ISerializerModifierAccessor> serializerModifierAccessorMock;
 
         // Constructor.
@@ -320,34 +320,6 @@ namespace Etherna.MongODM
                             new BsonElement("StringProp", BsonNull.Value)
                         } as IEnumerable<BsonElement>),
                         condition: _ => false),
-                    
-                    // With a proxy class.
-                    new SerializationTestElement(
-                        new FakeModelProxy()
-                        {
-                            Id = "idVal",
-                            IntegerProp = 42,
-                            ObjectProp = new FakeModel(),
-                            StringProp = "yes"
-                        },
-                        new BsonDocument(new BsonElement[]
-                        {
-                            new BsonElement("_id", new BsonString("idVal")),
-                            new BsonElement("CreationDateTime", new BsonDateTime(new DateTime())),
-                            new BsonElement("EnumerableProp", BsonNull.Value),
-                            new BsonElement("IntegerProp", new BsonInt32(42)),
-                            new BsonElement("ObjectProp", new BsonDocument(new BsonElement[]
-                            {
-                                new BsonElement("_id", BsonNull.Value),
-                                new BsonElement("CreationDateTime", new BsonDateTime(new DateTime())),
-                                new BsonElement("EnumerableProp", BsonNull.Value),
-                                new BsonElement("IntegerProp", new BsonInt32(0)),
-                                new BsonElement("ObjectProp", BsonNull.Value),
-                                new BsonElement("StringProp", BsonNull.Value)
-                            } as IEnumerable<BsonElement>)),
-                            new BsonElement("StringProp", new BsonString("yes"))
-                        } as IEnumerable<BsonElement>),
-                        condition: _ => false)
                 };
 
                 return tests.Select(t => new object[] { t });

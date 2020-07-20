@@ -16,6 +16,7 @@ using MongoDB.Bson;
 using MongoDB.Bson.IO;
 using MongoDB.Bson.Serialization;
 using MongoDB.Bson.Serialization.Serializers;
+using System;
 using System.Collections.Generic;
 
 namespace Etherna.MongODM.Serialization.Serializers
@@ -26,6 +27,9 @@ namespace Etherna.MongODM.Serialization.Serializers
 
         public override void Serialize(BsonSerializationContext context, BsonSerializationArgs args, object value)
         {
+            if (context is null)
+                throw new ArgumentNullException(nameof(context));
+
             if (value is IDictionary<string, object> dictionary)
             {
                 context.Writer.WriteStartDocument();
@@ -62,7 +66,8 @@ namespace Etherna.MongODM.Serialization.Serializers
              * can't be serialized on root of documents.
              */
             var document = new BsonDocument();
-            var serializationContext = BsonSerializationContext.CreateRoot(new BsonDocumentWriter(document));
+            using var documentWriter = new BsonDocumentWriter(document);
+            var serializationContext = BsonSerializationContext.CreateRoot(documentWriter);
 
             serializationContext.Writer.WriteStartDocument();
             serializationContext.Writer.WriteName("container");
@@ -76,7 +81,8 @@ namespace Etherna.MongODM.Serialization.Serializers
             }
 
             // Deserialize.
-            var deserializationContext = BsonDeserializationContext.CreateRoot(new BsonDocumentReader(document));
+            using var documentReader = new BsonDocumentReader(document);
+            var deserializationContext = BsonDeserializationContext.CreateRoot(documentReader);
 
             deserializationContext.Reader.ReadStartDocument();
             deserializationContext.Reader.ReadName();

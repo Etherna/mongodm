@@ -28,6 +28,9 @@ namespace Etherna.MongODM.Extensions
             IBsonSerializer<TMember> serializer)
         where TMember : class
         {
+            if (classMap is null)
+                throw new ArgumentNullException(nameof(classMap));
+
             var member = classMap.GetMemberMap(memberLambda);
             if (member == null)
                 member = classMap.MapMember(memberLambda);
@@ -41,6 +44,9 @@ namespace Etherna.MongODM.Extensions
         where TMember : class, TSerializer
         where TSerializer : class, IEntityModel<TKey>
         {
+            if (serializer is null)
+                throw new ArgumentNullException(nameof(serializer));
+
             if (typeof(TMember) == typeof(TSerializer))
                 return classMap.SetMemberSerializer(memberLambda, (IBsonSerializer<TMember>)serializer);
             else

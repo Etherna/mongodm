@@ -14,8 +14,6 @@
 
 using Etherna.MongODM.Models;
 using Etherna.MongODM.ProxyModels;
-using Etherna.MongODM.Serialization.Modifiers;
-using Etherna.MongODM.Utility;
 using MongoDB.Bson;
 using MongoDB.Bson.Serialization;
 using MongoDB.Bson.Serialization.Conventions;
@@ -29,7 +27,7 @@ using System.Threading;
 namespace Etherna.MongODM.Serialization.Serializers
 {
     public class ReferenceSerializer<TModelBase, TKey> :
-        SerializerBase<TModelBase>, IBsonSerializer<TModelBase>, IBsonDocumentSerializer, IBsonIdProvider, IReferenceContainerSerializer
+        SerializerBase<TModelBase>, IBsonSerializer<TModelBase>, IBsonDocumentSerializer, IBsonIdProvider, IReferenceContainerSerializer, IDisposable
         where TModelBase : class, IEntityModel<TKey>
     {
         // Fields.
@@ -38,10 +36,7 @@ namespace Etherna.MongODM.Serialization.Serializers
         private readonly ReaderWriterLockSlim configLockAdapters = new ReaderWriterLockSlim(LockRecursionPolicy.SupportsRecursion);
         private readonly ReaderWriterLockSlim configLockClassMaps = new ReaderWriterLockSlim(LockRecursionPolicy.SupportsRecursion);
         private readonly ReaderWriterLockSlim configLockSerializers = new ReaderWriterLockSlim(LockRecursionPolicy.SupportsRecursion);
-        private readonly IDbCache dbCache;
         private readonly IDbContext dbContext;
-        private readonly IProxyGenerator proxyGenerator;
-        private readonly ISerializerModifierAccessor serializerModifierAccessor;
 
         private readonly IDictionary<Type, IBsonSerializer> registeredAdapters = new Dictionary<Type, IBsonSerializer>();
         private readonly IDictionary<Type, BsonClassMap> registeredClassMaps = new Dictionary<Type, BsonClassMap>();
@@ -52,10 +47,7 @@ namespace Etherna.MongODM.Serialization.Serializers
             IDbContext dbContext,
             bool useCascadeDelete)
         {
-            this.dbCache = dbContext.DBCache;
-            this.proxyGenerator = dbContext.ProxyGenerator;
-            this.serializerModifierAccessor = dbContext.SerializerModifierAccessor;
-            this.dbContext = dbContext;
+            this.dbContext = dbContext ?? throw new ArgumentNullException(nameof(dbContext));
             UseCascadeDelete = useCascadeDelete;
         }
 
@@ -75,6 +67,9 @@ namespace Etherna.MongODM.Serialization.Serializers
         // Methods.
         public override TModelBase Deserialize(BsonDeserializationContext context, BsonDeserializationArgs args)
         {
+            if (context is null)
+                throw new ArgumentNullException(nameof(context));
+
             // Check bson type.
             var bsonReader = context.Reader;
             var bsonType = bsonReader.GetCurrentBsonType();
@@ -105,10 +100,10 @@ namespace Etherna.MongODM.Serialization.Serializers
                     return null!;
 
                 // Check if model as been loaded in cache.
-                if (dbCache.LoadedModels.ContainsKey(id) &&
-                    !serializerModifierAccessor.IsNoCacheEnabled)
+                if (dbContext.DbCache.LoadedModels.ContainsKey(id) &&
+                    !dbContext.SerializerModifierAccessor.IsNoCacheEnabled)
                 {
-                    var cachedModel = (TModelBase)dbCache.LoadedModels[id];
+                    var cachedModel = (TModelBase)dbContext.DbCache.LoadedModels[id];
 
                     if (((IReferenceable)cachedModel).IsSummary)
                     {
@@ -139,7 +134,7 @@ namespace Etherna.MongODM.Serialization.Serializers
                 else
                 {
                     // Set model as summarizable.
-                    if (serializerModifierAccessor.IsReadOnlyReferencedIdEnabled)
+                    if (dbContext.SerializerModifierAccessor.IsReadOnlyReferencedIdEnabled)
                     {
                         ((IReferenceable)model).ClearSettedMembers();
                         ((IReferenceable)model).SetAsSummary(new[] { nameof(model.Id) });
@@ -153,12 +148,19 @@ namespace Etherna.MongODM.Serialization.Serializers
                     ((IAuditable)model).EnableAuditing();
 
                     // Add in cache.
-                    if (!serializerModifierAccessor.IsNoCacheEnabled)
-                        dbCache.AddModel(model.Id!, model);
+                    if (!dbContext.SerializerModifierAccessor.IsNoCacheEnabled)
+                        dbContext.DbCache.AddModel(model.Id!, model);
                 }
             }
 
             return model!;
+        }
+
+        public void Dispose()
+        {
+            configLockAdapters.Dispose();
+            configLockClassMaps.Dispose();
+            configLockSerializers.Dispose();
         }
 
         public IBsonSerializer<TModel> GetAdapter<TModel>()
@@ -194,11 +196,39 @@ namespace Etherna.MongODM.Serialization.Serializers
 
         public bool GetDocumentId(object document, out object id, out Type idNominalType, out IIdGenerator idGenerator)
         {
-            IsProxyClassType(document, out Type documentType);
+            if (document is null)
+                throw new ArgumentNullException(nameof(document));
+
+            var documentType = dbContext.ProxyGenerator.PurgeProxyType(document.GetType());
             var serializer = (IBsonIdProvider)GetSerializer(documentType);
             return serializer.GetDocumentId(document, out id, out idNominalType, out idGenerator);
         }
-        
+
+        public ReferenceSerializer<TModelBase, TKey> RegisterProxyType<TModel>()
+        {
+            var proxyType = dbContext.ProxyGenerator.CreateInstance<TModel>(dbContext)!.GetType();
+
+            // Initialize class map.
+            var createBsonClassMapInfo = GetType().GetMethod(nameof(CreateBsonClassMap), BindingFlags.Instance | BindingFlags.NonPublic);
+            var createBsonClassMap = createBsonClassMapInfo.MakeGenericMethod(proxyType);
+
+            var classMap = (BsonClassMap)createBsonClassMap.Invoke(this, new object[] { null! });
+
+            // Add info to dictionary of registered types.
+            configLockClassMaps.EnterWriteLock();
+            try
+            {
+                registeredClassMaps.Add(proxyType, classMap);
+            }
+            finally
+            {
+                configLockClassMaps.ExitWriteLock();
+            }
+
+            // Return this for cascade use.
+            return this;
+        }
+
         public ReferenceSerializer<TModelBase, TKey> RegisterType<TModel>(Action<BsonClassMap<TModel>>? classMapInitializer = null)
             where TModel : class
         {
@@ -207,7 +237,7 @@ namespace Etherna.MongODM.Serialization.Serializers
 
             // Set creator.
             if (!typeof(TModel).IsAbstract)
-                classMap.SetCreator(() => proxyGenerator.CreateInstance<TModel>(dbContext));
+                classMap.SetCreator(() => dbContext.ProxyGenerator.CreateInstance<TModel>(dbContext));
 
             // Add info to dictionary of registered types.
             configLockClassMaps.EnterWriteLock();
@@ -226,6 +256,9 @@ namespace Etherna.MongODM.Serialization.Serializers
 
         public override void Serialize(BsonSerializationContext context, BsonSerializationArgs args, TModelBase value)
         {
+            if (context is null)
+                throw new ArgumentNullException(nameof(context));
+
             // Check value type.
             if (value == null)
             {
@@ -233,47 +266,20 @@ namespace Etherna.MongODM.Serialization.Serializers
                 return;
             }
 
-            // Identify class map.
-            bool useProxyClass = IsProxyClassType(value, out Type valueType);
-
-            BsonClassMap classMap;
-            configLockClassMaps.EnterReadLock();
-            try
-            {
-                if (!registeredClassMaps.ContainsKey(valueType))
-                {
-                    throw new InvalidOperationException("Can't identify right class map");
-                }
-                classMap = registeredClassMaps[valueType];
-            }
-            finally
-            {
-                configLockClassMaps.ExitReadLock();
-            }
-
-            // Remove proxy class.
-            if (useProxyClass)
-            {
-                var constructor = valueType.GetConstructor(BindingFlags.Public | BindingFlags.Instance, null, new Type[0], null) ??
-                    valueType.GetConstructor(BindingFlags.NonPublic | BindingFlags.Instance, null, new Type[0], null);
-                var newModel = (TModelBase)constructor.Invoke(new object[0]);
-                ReflectionHelper.CloneModel(value, newModel, from mMap in classMap.AllMemberMaps
-                                                             where mMap != classMap.ExtraElementsMemberMap
-                                                             select mMap.MemberInfo as PropertyInfo);
-                value = newModel;
-            }
-
             // Clear extra elements.
-            (value as IModel)?.ExtraElements?.Clear();
+            value.ExtraElements?.Clear();
 
             // Serialize object.
-            var serializer = GetSerializer(valueType);
+            var serializer = GetSerializer(value.GetType());
             serializer.Serialize(context, args, value);
         }
 
         public void SetDocumentId(object document, object id)
         {
-            IsProxyClassType(document, out Type documentType);
+            if (document is null)
+                throw new ArgumentNullException(nameof(document));
+
+            var documentType = dbContext.ProxyGenerator.PurgeProxyType(document.GetType());
             var serializer = (IBsonIdProvider)GetSerializer(documentType);
             serializer.SetDocumentId(document, id);
         }
@@ -297,8 +303,16 @@ namespace Etherna.MongODM.Serialization.Serializers
         }
 
         // Helpers.
-        private BsonClassMap<TModel> CreateBsonClassMap<TModel>(Action<BsonClassMap<TModel>> classMapInitializer)
+        /// <summary>
+        /// Create a new BsonClassMap for type TModel, and link its baseClassMap if already registered
+        /// </summary>
+        /// <typeparam name="TModel">The destination model type of class map</typeparam>
+        /// <param name="classMapInitializer">The class map inizializer. Empty initilization if null</param>
+        /// <returns>The new created class map</returns>
+        private BsonClassMap<TModel> CreateBsonClassMap<TModel>(Action<BsonClassMap<TModel>>? classMapInitializer = null)
         {
+            classMapInitializer ??= cm => { };
+
             BsonClassMap<TModel> classMap = new BsonClassMap<TModel>(classMapInitializer);
             var baseType = typeof(TModel).BaseType;
             configLockClassMaps.EnterReadLock();
@@ -365,17 +379,6 @@ namespace Etherna.MongODM.Serialization.Serializers
             {
                 configLockSerializers.ExitWriteLock();
             }
-        }
-
-        private bool IsProxyClassType<TModel>(TModel value, out Type modelType)
-        {
-            modelType = value!.GetType();
-            if (proxyGenerator.IsProxyType(modelType))
-            {
-                modelType = modelType.BaseType;
-                return true;
-            }
-            return false;
         }
     }
 }

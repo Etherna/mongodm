@@ -42,7 +42,7 @@ namespace Etherna.MongODM.Serialization.Serializers
             longitudeMemberInfo = ReflectionHelper.GetMemberInfoFromLambda(longitudeMember);
             latitudeMemberInfo = ReflectionHelper.GetMemberInfoFromLambda(latitudeMember);
             pointSerializer = new GeoJsonPointSerializer<GeoJson2DGeographicCoordinates>();
-            this.dbContext = dbContext;
+            this.dbContext = dbContext ?? throw new ArgumentNullException(nameof(dbContext));
             proxyGenerator = dbContext.ProxyGenerator;
         }
 

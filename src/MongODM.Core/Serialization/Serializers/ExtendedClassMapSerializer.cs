@@ -45,16 +45,19 @@ namespace Etherna.MongODM.Serialization.Serializers
         private readonly IDbCache dbCache;
         private readonly ISerializerModifierAccessor serializerModifierAccessor;
         private readonly ICollection<ExtraElementCondition> extraElements;
-        private readonly Func<TModel, DocumentVersion?, Task<TModel>> fixDeserializedModelAsync;
+        private readonly Func<TModel, SemanticVersion?, Task<TModel>> fixDeserializedModelAsync;
         private BsonClassMapSerializer<TModel> _serializer = default!;
 
         // Constructor.
         public ExtendedClassMapSerializer(
             IDbCache dbCache,
-            DocumentVersion documentVersion,
+            SemanticVersion documentVersion,
             ISerializerModifierAccessor serializerModifierAccessor,
-            Func<TModel, DocumentVersion?, Task<TModel>>? fixDeserializedModelAsync = null)
+            Func<TModel, SemanticVersion?, Task<TModel>>? fixDeserializedModelAsync = null)
         {
+            if (documentVersion is null)
+                throw new ArgumentNullException(nameof(documentVersion));
+
             this.dbCache = dbCache;
             this.serializerModifierAccessor = serializerModifierAccessor;
             extraElements = new List<ExtraElementCondition>();
@@ -95,6 +98,9 @@ namespace Etherna.MongODM.Serialization.Serializers
 
         public override TModel Deserialize(BsonDeserializationContext context, BsonDeserializationArgs args)
         {
+            if (context is null)
+                throw new ArgumentNullException(nameof(context));
+
             // Check if null.
             if (context.Reader.CurrentBsonType == BsonType.Null)
             {
@@ -106,12 +112,12 @@ namespace Etherna.MongODM.Serialization.Serializers
             var bsonDocument = BsonDocumentSerializer.Instance.Deserialize(context, args);
 
             // Get version.
-            DocumentVersion? documentVersion = null;
+            SemanticVersion? documentVersion = null;
             if (bsonDocument.TryGetElement(DbContext.DocumentVersionElementName, out BsonElement versionElement))
                 documentVersion = BsonValueToDocumentVersion(versionElement.Value);
 
             // Initialize localContext and bsonReader
-            var bsonReader = new ExtendedBsonDocumentReader(bsonDocument)
+            using var bsonReader = new ExtendedBsonDocumentReader(bsonDocument)
             {
                 DocumentVersion = documentVersion
             };
@@ -159,6 +165,9 @@ namespace Etherna.MongODM.Serialization.Serializers
 
         public override void Serialize(BsonSerializationContext context, BsonSerializationArgs args, TModel value)
         {
+            if (context is null)
+                throw new ArgumentNullException(nameof(context));
+
             // Serialize null object.
             if (value == null)
             {
@@ -168,23 +177,13 @@ namespace Etherna.MongODM.Serialization.Serializers
 
             // Initialize localContext, bsonDocument and bsonWriter.
             var bsonDocument = new BsonDocument();
-            var bsonWriter = new ExtendedBsonDocumentWriter(bsonDocument)
+            using var bsonWriter = new ExtendedBsonDocumentWriter(bsonDocument)
             {
                 IsRootDocument = !(context.Writer is ExtendedBsonDocumentWriter)
             };
             var localContext = BsonSerializationContext.CreateRoot(
                 bsonWriter,
                 builder => builder.IsDynamicType = context.IsDynamicType);
-
-            // Purify model from proxy class.
-            if (value.GetType() != typeof(TModel))
-            {
-                var constructor = typeof(TModel).GetConstructor(BindingFlags.Public | BindingFlags.Instance, null, new Type[0], null) ??
-                    typeof(TModel).GetConstructor(BindingFlags.NonPublic | BindingFlags.Instance, null, new Type[0], null);
-                var newModel = (TModel)constructor.Invoke(new object[0]);
-                ReflectionHelper.CloneModel(value, newModel);
-                value = newModel;
-            }
 
             // Serialize.
             Serializer.Serialize(localContext, args, value);
@@ -218,12 +217,12 @@ namespace Etherna.MongODM.Serialization.Serializers
             Serializer.TryGetMemberSerializationInfo(memberName, out serializationInfo);
 
         // Helpers.
-        private static DocumentVersion? BsonValueToDocumentVersion(BsonValue bsonValue) =>
+        private static SemanticVersion? BsonValueToDocumentVersion(BsonValue bsonValue) =>
             bsonValue switch
             {
                 BsonNull _ => null,
-                BsonString bsonString => new DocumentVersion(bsonString.AsString),
-                BsonArray bsonArray => new DocumentVersion(
+                BsonString bsonString => new SemanticVersion(bsonString.AsString),
+                BsonArray bsonArray => new SemanticVersion(
                     bsonArray[0].AsInt32,
                     bsonArray[1].AsInt32,
                     bsonArray[2].AsInt32,
@@ -231,7 +230,7 @@ namespace Etherna.MongODM.Serialization.Serializers
                 _ => throw new NotSupportedException(),
             };
 
-        private static BsonArray DocumentVersionToBsonArray(DocumentVersion documentVersion)
+        private static BsonArray DocumentVersionToBsonArray(SemanticVersion documentVersion)
         {
             var bsonArray = new BsonArray(new[]
             {

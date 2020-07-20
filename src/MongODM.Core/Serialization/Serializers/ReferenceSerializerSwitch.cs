@@ -27,7 +27,7 @@ namespace Etherna.MongODM.Serialization.Serializers
         // Nested classes.
         public class CaseContext
         {
-            public DocumentVersion? DocumentVersion { get; set; }
+            public SemanticVersion? DocumentVersion { get; set; }
         }
 
         // Fields.
@@ -42,7 +42,7 @@ namespace Etherna.MongODM.Serialization.Serializers
                 Func<BsonDeserializationContext, BsonDeserializationArgs, TModel> deserializer)[] caseDeserializers)
         {
             this.caseDeserializers = caseDeserializers ??
-                new(Func<CaseContext, bool>, Func<BsonDeserializationContext, BsonDeserializationArgs, TModel>)[0];
+                Array.Empty<(Func<CaseContext, bool>, Func<BsonDeserializationContext, BsonDeserializationArgs, TModel>)>();
             this.defaultSerializer = defaultSerializer ?? throw new ArgumentNullException(nameof(defaultSerializer));
         }
 
@@ -53,6 +53,9 @@ namespace Etherna.MongODM.Serialization.Serializers
         // Methods.
         public override TModel Deserialize(BsonDeserializationContext context, BsonDeserializationArgs args)
         {
+            if (context is null)
+                throw new ArgumentNullException(nameof(context));
+
             var extendedReader = context.Reader as ExtendedBsonDocumentReader;
             var switchContext = new CaseContext { DocumentVersion = extendedReader?.DocumentVersion };
 

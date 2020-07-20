@@ -30,6 +30,9 @@ namespace Etherna.MongODM.ProxyModels
 
         public void Intercept(IInvocation invocation)
         {
+            if (invocation is null)
+                throw new ArgumentNullException(nameof(invocation));
+
             if (additionalInterfaces.Contains(invocation.Method.DeclaringType))
             {
                 var handled = InterceptInterface(invocation);
@@ -66,6 +69,9 @@ namespace Etherna.MongODM.ProxyModels
         /// <param name="invocation">Current invocation</param>
         protected virtual void InterceptModel(IInvocation invocation)
         {
+            if (invocation is null)
+                throw new ArgumentNullException(nameof(invocation));
+
             invocation.Proceed();
         }
     }

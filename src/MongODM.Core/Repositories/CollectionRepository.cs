@@ -49,6 +49,7 @@ namespace Etherna.MongODM.Repositories
 
         // Properties.
         public IMongoCollection<TModel> Collection => _collection ??= DbContext.Database.GetCollection<TModel>(options.Name);
+        public override string Name => options.Name;
 
         // Public methods.
         public override async Task BuildIndexesAsync(IDocumentSchemaRegister schemaRegister, CancellationToken cancellationToken = default)
@@ -95,7 +96,7 @@ namespace Etherna.MongODM.Repositories
 
             // Get current indexes.
             var currentIndexes = new List<BsonDocument>();
-            using (var indexList = await Collection.Indexes.ListAsync(cancellationToken))
+            using (var indexList = await Collection.Indexes.ListAsync(cancellationToken).ConfigureAwait(false))
                 while (indexList.MoveNext())
                     currentIndexes.AddRange(indexList.Current);
 
@@ -106,11 +107,11 @@ namespace Etherna.MongODM.Repositories
                                      where !newIndexes.Any(newIndex => newIndex.name == indexName)
                                      select index)
             {
-                await Collection.Indexes.DropOneAsync(oldIndex.GetElement("name").Value.ToString(), cancellationToken);
+                await Collection.Indexes.DropOneAsync(oldIndex.GetElement("name").Value.ToString(), cancellationToken).ConfigureAwait(false);
             }
 
             // Build new indexes.
-            await Collection.Indexes.CreateManyAsync(newIndexes.Select(i => i.createIndex), cancellationToken);
+            await Collection.Indexes.CreateManyAsync(newIndexes.Select(i => i.createIndex), cancellationToken).ConfigureAwait(false);
         }
 
         public virtual Task<IAsyncCursor<TProjection>> FindAsync<TProjection>(
@@ -126,8 +127,13 @@ namespace Etherna.MongODM.Repositories
 
         public virtual Task<TResult> QueryElementsAsync<TResult>(
             Func<IMongoQueryable<TModel>, Task<TResult>> query,
-            AggregateOptions? aggregateOptions = null) =>
-            query(Collection.AsQueryable(aggregateOptions));
+            AggregateOptions? aggregateOptions = null)
+        {
+            if (query is null)
+                throw new ArgumentNullException(nameof(query));
+
+            return query(Collection.AsQueryable(aggregateOptions));
+        }
 
         public virtual Task ReplaceAsync(
             object model,
@@ -162,7 +168,7 @@ namespace Etherna.MongODM.Repositories
 
             try
             {
-                return await FindOneAsync(predicate, cancellationToken);
+                return await FindOneAsync(predicate, cancellationToken).ConfigureAwait(false);
             }
             catch (EntityNotFoundException)
             {
@@ -177,10 +183,15 @@ namespace Etherna.MongODM.Repositories
         protected override Task CreateOnDBAsync(TModel model, CancellationToken cancellationToken) =>
             Collection.InsertOneAsync(model, null, cancellationToken);
 
-        protected override Task DeleteOnDBAsync(TModel model, CancellationToken cancellationToken) =>
-            Collection.DeleteOneAsync(
+        protected override Task DeleteOnDBAsync(TModel model, CancellationToken cancellationToken)
+        {
+            if (model is null)
+                throw new ArgumentNullException(nameof(model));
+
+            return Collection.DeleteOneAsync(
                 Builders<TModel>.Filter.Eq(m => m.Id, model.Id),
                 cancellationToken);
+        }
 
         protected override async Task<TModel> FindOneOnDBAsync(TKey id, CancellationToken cancellationToken = default)
         {
@@ -189,7 +200,7 @@ namespace Etherna.MongODM.Repositories
 
             try
             {
-                return await FindOneOnDBAsync(m => m.Id!.Equals(id), cancellationToken: cancellationToken);
+                return await FindOneOnDBAsync(m => m.Id!.Equals(id), cancellationToken: cancellationToken).ConfigureAwait(false);
             }
             catch (EntityNotFoundException)
             {
@@ -207,7 +218,7 @@ namespace Etherna.MongODM.Repositories
 
             var element = await Collection.AsQueryable()
                                           .Where(predicate)
-                                          .SingleOrDefaultAsync(cancellationToken);
+                                          .SingleOrDefaultAsync(cancellationToken).ConfigureAwait(false);
             if (element == default(TModel))
                 throw new EntityNotFoundException("Can't find element");
 
@@ -229,7 +240,7 @@ namespace Etherna.MongODM.Repositories
                 await Collection.ReplaceOneAsync(
                     Builders<TModel>.Filter.Eq(m => m.Id, model.Id),
                     model,
-                    cancellationToken: cancellationToken);
+                    cancellationToken: cancellationToken).ConfigureAwait(false);
             }
             else
             {
@@ -237,12 +248,12 @@ namespace Etherna.MongODM.Repositories
                     session,
                     Builders<TModel>.Filter.Eq(m => m.Id, model.Id),
                     model,
-                    cancellationToken: cancellationToken);
+                    cancellationToken: cancellationToken).ConfigureAwait(false);
             }
 
             // Update dependent documents.
             if (updateDependentDocuments)
-                DbContext.DBMaintainer.OnUpdatedModel((IAuditable)model, model.Id);
+                DbContext.DbMaintainer.OnUpdatedModel((IAuditable)model, model.Id);
 
             // Reset changed members.
             (model as IAuditable)?.ResetChangedMembers();

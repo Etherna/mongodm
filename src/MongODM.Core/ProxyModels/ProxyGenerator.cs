@@ -21,7 +21,7 @@ using System.Threading;
 
 namespace Etherna.MongODM.ProxyModels
 {
-    public class ProxyGenerator : IProxyGenerator
+    public class ProxyGenerator : IProxyGenerator, IDisposable
     {
         // Fields.
         private readonly Castle.DynamicProxy.IProxyGenerator proxyGeneratorCore;
@@ -47,6 +47,11 @@ namespace Etherna.MongODM.ProxyModels
             Type type,
             params object[] constructorArguments)
         {
+            if (dbContext is null)
+                throw new ArgumentNullException(nameof(dbContext));
+            if (type is null)
+                throw new ArgumentNullException(nameof(type));
+
             // Get configuration.
             (Type[] AdditionalInterfaces, Func<IDbContext, IInterceptor[]> InterceptorInstancerSelector) configuration = (null!, null!);
             modelConfigurationDictionaryLock.EnterReadLock();
@@ -128,6 +133,12 @@ namespace Etherna.MongODM.ProxyModels
         public TModel CreateInstance<TModel>(IDbContext dbContext, params object[] constructorArguments) =>
             (TModel)CreateInstance(dbContext, typeof(TModel), constructorArguments);
 
+        public void Dispose()
+        {
+            modelConfigurationDictionaryLock.Dispose();
+            proxyTypeDictionaryLock.Dispose();
+        }
+
         public bool IsProxyType(Type type)
         {
             proxyTypeDictionaryLock.EnterReadLock();
@@ -139,6 +150,16 @@ namespace Etherna.MongODM.ProxyModels
             {
                 proxyTypeDictionaryLock.ExitReadLock();
             }
+        }
+
+        public Type PurgeProxyType(Type type)
+        {
+            if (type is null)
+                throw new ArgumentNullException(nameof(type));
+
+            return IsProxyType(type) ?
+                type.BaseType :
+                type;
         }
 
         // Protected virtual methods.

@@ -14,7 +14,7 @@
 
 namespace Etherna.MongODM.Tasks
 {
-    public class Queues
+    public static class Queues
     {
         public const string DB_MAINTENANCE = "db_maintenance";
     }

@@ -44,6 +44,9 @@ namespace Etherna.MongODM.Tasks
             where TModel : class, IEntityModel<TKey>
             where TDbContext : class, IDbContext
         {
+            if (idPaths is null)
+                throw new ArgumentNullException(nameof(idPaths));
+
             var dbContext = (TDbContext)serviceProvider.GetService(typeof(TDbContext));
 
             // Get repository.
@@ -59,10 +62,10 @@ namespace Etherna.MongODM.Tasks
                 {
                     using var cursor = await repository.FindAsync(
                         Builders<TModel>.Filter.Eq(idPath, modelId),
-                        new FindOptions<TModel, TModel> { NoCursorTimeout = true });
+                        new FindOptions<TModel, TModel> { NoCursorTimeout = true }).ConfigureAwait(false);
 
                     // Load and replace.
-                    while (await cursor.MoveNextAsync())
+                    while (await cursor.MoveNextAsync().ConfigureAwait(false))
                     {
                         foreach (var model in cursor.Current)
                         {
@@ -71,9 +74,11 @@ namespace Etherna.MongODM.Tasks
                                 try
                                 {
                                     // Replace on db.
-                                    await repository.ReplaceAsync(model, false);
+                                    await repository.ReplaceAsync(model, false).ConfigureAwait(false);
                                 }
+#pragma warning disable CA1031 // Do not catch general exception types. Internal exceptions thrown by MongoDB drivers
                                 catch { }
+#pragma warning restore CA1031 // Do not catch general exception types
 
                                 // Add id to upgraded list.
                                 upgradedDocumentsId.Add(model.Id);

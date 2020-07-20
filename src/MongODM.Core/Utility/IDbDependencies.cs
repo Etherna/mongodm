@@ -12,11 +12,21 @@
 //   See the License for the specific language governing permissions and
 //   limitations under the License.
 
-namespace Etherna.MongODM.Serialization
+using Etherna.MongODM.ProxyModels;
+using Etherna.MongODM.Repositories;
+using Etherna.MongODM.Serialization;
+using Etherna.MongODM.Serialization.Modifiers;
+
+namespace Etherna.MongODM.Utility
 {
-    public interface IModelSerializerCollector
+    public interface IDbDependencies
     {
-        // Methods.
-        void Register(IDbContext dbContext);
+        IDbCache DbCache { get; }
+        IDbMaintainer DbMaintainer { get; }
+        IDbMigrationManager DbMigrationManager { get; }
+        IDocumentSchemaRegister DocumentSchemaRegister { get; }
+        IProxyGenerator ProxyGenerator { get; }
+        IRepositoryRegister RepositoryRegister { get; }
+        ISerializerModifierAccessor SerializerModifierAccessor { get; }
     }
 }

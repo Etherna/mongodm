@@ -26,58 +26,20 @@ namespace Etherna.MongODM
         private static readonly Dictionary<Type, IEnumerable<PropertyInfo>> propertyRegister = new Dictionary<Type, IEnumerable<PropertyInfo>>();
         private static readonly ReaderWriterLockSlim propertyRegisterLock = new ReaderWriterLockSlim();
 
-        public static TClass CloneModel<TClass>(TClass srcObj, params Expression<Func<TClass, object>>[] memberLambdas)
-            where TClass : new()
-        {
-            var destObj = new TClass();
-            CloneModel(srcObj, destObj, memberLambdas);
-            return destObj;
-        }
-
-        public static void CloneModel<TClass>(TClass srcObj, TClass destObj, params Expression<Func<TClass, object>>[] memberLambdas)
-        {
-            if (srcObj is null)
-                throw new ArgumentNullException(nameof(srcObj));
-            if (destObj is null)
-                throw new ArgumentNullException(nameof(destObj));
-
-            IEnumerable<MemberInfo> membersToClone;
-
-            if (memberLambdas.Any())
-            {
-                membersToClone = memberLambdas.Select(l => GetMemberInfoFromLambda(l, typeof(TClass)));
-            }
-            else // clone full object
-            {
-                membersToClone = GetWritableInstanceProperties(typeof(TClass));
-            }
-
-            foreach (var member in membersToClone)
-            {
-                SetValue(destObj, member, GetValue(srcObj, member));
-            }
-        }
-
-        public static void CloneModel(object srcObj, object destObj, Type actualType) =>
-            CloneModel(srcObj, destObj, GetWritableInstanceProperties(actualType));
-
-        public static void CloneModel(object srcObj, object destObj, IEnumerable<PropertyInfo> members)
-        {
-            foreach (var member in members)
-            {
-                SetValue(destObj, member, GetValue(srcObj, member));
-            }
-        }
-
         public static MemberInfo FindProperty(LambdaExpression lambdaExpression)
         {
+            if (lambdaExpression is null)
+                throw new ArgumentNullException(nameof(lambdaExpression));
+
             Expression expressionToCheck = lambdaExpression;
 
             bool done = false;
 
             while (!done)
             {
+#pragma warning disable CA1062 // Validate arguments of public methods. Suppressing for an issue in Microsoft.CodeAnalysis.FxCopAnalyzers v3.0.0
                 switch (expressionToCheck.NodeType)
+#pragma warning restore CA1062 // Validate arguments of public methods
                 {
                     case ExpressionType.Convert:
                         expressionToCheck = ((UnaryExpression)expressionToCheck).Operand;
@@ -86,7 +48,7 @@ namespace Etherna.MongODM
                         expressionToCheck = ((LambdaExpression)expressionToCheck).Body;
                         break;
                     case ExpressionType.MemberAccess:
-                        var memberExpression = ((MemberExpression)expressionToCheck);
+                        var memberExpression = (MemberExpression)expressionToCheck;
 
                         if (memberExpression.Expression.NodeType != ExpressionType.Parameter &&
                             memberExpression.Expression.NodeType != ExpressionType.Convert)
@@ -110,6 +72,11 @@ namespace Etherna.MongODM
 
         public static PropertyInfo FindPropertyImplementation(PropertyInfo interfacePropertyInfo, Type actualType)
         {
+            if (interfacePropertyInfo is null)
+                throw new ArgumentNullException(nameof(interfacePropertyInfo));
+            if (actualType is null)
+                throw new ArgumentNullException(nameof(actualType));
+
             var interfaceType = interfacePropertyInfo.DeclaringType;
 
             // An interface map must be used because because there is no
@@ -137,19 +104,13 @@ namespace Etherna.MongODM
                 });
         }
 
-        public static object? GetDefaultValue(Type type)
-        {
-            if (type.IsValueType)
-            {
-                return Activator.CreateInstance(type);
-            }
-            return null;
-        }
-
         public static MemberInfo GetMemberInfoFromLambda<TModel, TMember>(
             Expression<Func<TModel, TMember>> memberLambda,
             Type? actualType = null)
         {
+            if (memberLambda is null)
+                throw new ArgumentNullException(nameof(memberLambda));
+
             var body = memberLambda.Body;
             MemberExpression memberExpression;
             switch (body.NodeType)
@@ -214,6 +175,9 @@ namespace Etherna.MongODM
         /// <returns>The list of properties</returns>
         public static IEnumerable<PropertyInfo> GetWritableInstanceProperties(Type objectType)
         {
+            if (objectType is null)
+                throw new ArgumentNullException(nameof(objectType));
+
             propertyRegisterLock.EnterReadLock();
             try
             {

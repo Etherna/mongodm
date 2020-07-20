@@ -23,6 +23,6 @@ namespace Etherna.MongODM.Serialization
             : base(document)
         { }
 
-        public DocumentVersion? DocumentVersion { get; set; }
+        public SemanticVersion? DocumentVersion { get; set; }
     }
 }

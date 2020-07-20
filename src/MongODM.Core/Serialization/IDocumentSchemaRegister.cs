@@ -48,9 +48,9 @@ namespace Etherna.MongODM.Serialization
         /// <param name="initCustomSerializer">Custom serializer initializer</param>
         /// <param name="modelMigrationAsync">Model migration method</param>
         void RegisterModelSchema<TModel>(
-            DocumentVersion fromVersion,
+            SemanticVersion fromVersion,
             Func<IBsonSerializer<TModel>>? initCustomSerializer = null,
-            Func<TModel, DocumentVersion?, Task<TModel>>? modelMigrationAsync = null)
+            Func<TModel, SemanticVersion?, Task<TModel>>? modelMigrationAsync = null)
             where TModel : class;
 
         /// <summary>
@@ -62,10 +62,10 @@ namespace Etherna.MongODM.Serialization
         /// <param name="initCustomSerializer">Custom serializer initializer</param>
         /// <param name="modelMigrationAsync">Model migration method</param>
         void RegisterModelSchema<TModel>(
-            DocumentVersion fromVersion,
+            SemanticVersion fromVersion,
             Action<BsonClassMap<TModel>> classMapInitializer,
             Func<IBsonSerializer<TModel>>? initCustomSerializer = null,
-            Func<TModel, DocumentVersion?, Task<TModel>>? modelMigrationAsync = null)
+            Func<TModel, SemanticVersion?, Task<TModel>>? modelMigrationAsync = null)
             where TModel : class;
 
         /// <summary>
@@ -77,10 +77,10 @@ namespace Etherna.MongODM.Serialization
         /// <param name="initCustomSerializer">Custom serializer initializer</param>
         /// <param name="modelMigrationAsync">Model migration method</param>
         void RegisterModelSchema<TModel>(
-            DocumentVersion fromVersion,
+            SemanticVersion fromVersion,
             BsonClassMap<TModel> classMap,
             Func<IBsonSerializer<TModel>>? initCustomSerializer = null,
-            Func<TModel, DocumentVersion?, Task<TModel>>? modelMigrationAsync = null)
+            Func<TModel, SemanticVersion?, Task<TModel>>? modelMigrationAsync = null)
             where TModel : class;
     }
 }

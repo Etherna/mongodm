@@ -12,9 +12,16 @@
 //   See the License for the specific language governing permissions and
 //   limitations under the License.
 
-namespace Etherna.MongODM.Models
+using Etherna.MongODM.Serialization;
+
+namespace Etherna.MongODM.Models.Internal.ModelMaps
 {
-    public class FakeModelProxy : FakeModel
+    class SeedOperationMap : IModelMapsCollector
     {
+        public void Register(IDbContext dbContext)
+        {
+            dbContext.DocumentSchemaRegister.RegisterModelSchema<SeedOperation>(
+                "0.20.0");
+        }
     }
 }

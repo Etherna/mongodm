@@ -16,6 +16,7 @@ using Etherna.ExecContext;
 using Etherna.ExecContext.AsyncLocal;
 using Etherna.MongODM;
 using Etherna.MongODM.AspNetCore;
+using Etherna.MongODM.Models;
 using Etherna.MongODM.ProxyModels;
 using Etherna.MongODM.Repositories;
 using Etherna.MongODM.Serialization;
@@ -32,17 +33,21 @@ namespace Microsoft.Extensions.DependencyInjection
 {
     public static class ServiceCollectionExtensions
     {
-        public static MongODMConfiguration UseMongODM<TTaskRunner>(
+        public static MongODMConfiguration UseMongODM<TTaskRunner, TModelBase>(
             this IServiceCollection services,
             IEnumerable<IExecutionContext>? executionContexts = null)
-            where TTaskRunner : class, ITaskRunner =>
-            UseMongODM<ProxyGenerator, TTaskRunner>(services, executionContexts);
+            where TTaskRunner : class, ITaskRunner
+            where TModelBase : class, IModel => //needed because of this https://jira.mongodb.org/browse/CSHARP-3154
+            UseMongODM<ProxyGenerator, TTaskRunner, TModelBase>(
+                services,
+                executionContexts);
 
-        public static MongODMConfiguration UseMongODM<TProxyGenerator, TTaskRunner>(
+        public static MongODMConfiguration UseMongODM<TProxyGenerator, TTaskRunner, TModelBase>(
             this IServiceCollection services,
             IEnumerable<IExecutionContext>? executionContexts = null)
-            where TProxyGenerator: class, IProxyGenerator
+            where TProxyGenerator : class, IProxyGenerator
             where TTaskRunner: class, ITaskRunner
+            where TModelBase: class, IModel //needed because of this https://jira.mongodb.org/browse/CSHARP-3154
         {
             services.TryAddSingleton<IHttpContextAccessor, HttpContextAccessor>();
 
@@ -70,17 +75,22 @@ namespace Microsoft.Extensions.DependencyInjection
              * the same dbContext different components could have different instances of the same component.
              */
             services.TryAddTransient<IDbCache, DbCache>();
-            services.TryAddTransient<IDbContextDependencies, DbContextDependencies>();
+            services.TryAddTransient<IDbDependencies, DbDependencies>();
             services.TryAddTransient<IDbMaintainer, DbMaintainer>();
+            services.TryAddTransient<IDbMigrationManager, DbMigrationManager>();
             services.TryAddTransient<IDocumentSchemaRegister, DocumentSchemaRegister>();
             services.TryAddTransient<IRepositoryRegister, RepositoryRegister>();
             services.TryAddSingleton<ISerializerModifierAccessor, SerializerModifierAccessor>();
 
             //tasks
+            services.TryAddTransient<IMigrateDbContextTask, MigrateDbContextTask>();
             services.TryAddTransient<IUpdateDocDependenciesTask, UpdateDocDependenciesTask>();
 
-            //castle proxy generator.
+            //castle proxy generator
             services.TryAddSingleton<Castle.DynamicProxy.IProxyGenerator>(new Castle.DynamicProxy.ProxyGenerator());
+
+            //static configurations
+            services.TryAddSingleton<IStaticConfigurationBuilder, StaticConfigurationBuilder<TModelBase>>();
 
             return new MongODMConfiguration(services);
         }
