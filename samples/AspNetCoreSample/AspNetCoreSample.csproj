@@ -1,0 +1,17 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <TargetFramework>netcoreapp3.1</TargetFramework>
+    <RootNamespace>Etherna.MongODM.AspNetCoreSample</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Hangfire.AspNetCore" Version="1.7.12" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\MongODM.AspNetCore\MongODM.AspNetCore.csproj" />
+    <ProjectReference Include="..\..\src\MongODM.Hangfire\MongODM.Hangfire.csproj" />
+  </ItemGroup>
+
+</Project>

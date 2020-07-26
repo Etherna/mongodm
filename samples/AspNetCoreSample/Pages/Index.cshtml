@@ -1,0 +1,45 @@
+﻿@page
+@model IndexModel
+@{
+    ViewData["Title"] = "Home page";
+}
+
+<div class="row">
+    <div class="col-md-4">
+        <form method="post">
+            <div class="form-group">
+                <label asp-for="Input.Name"></label>
+                <input asp-for="Input.Name" class="form-control" />
+                <span asp-validation-for="Input.Name" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <label asp-for="Input.Birthday"></label>
+                <input asp-for="Input.Birthday" class="form-control" />
+                <span asp-validation-for="Input.Birthday" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <button type="submit" class="btn btn-primary">Add cat</button>
+            </div>
+        </form>
+    </div>
+
+    <div class="col-md-6 col-md-offset-2">
+        <section>
+            <h4>List of cats</h4>
+            <form method="post">
+                <div>
+                    @foreach (var cat in Model.Cats)
+                    {
+                        <p>
+                            <label asp-for="@cat.Name"></label>
+                            <input asp-for="@cat.Name" disabled />
+                            <label asp-for="@cat.Birthday"></label>
+                            <input asp-for="@cat.Birthday" type="date" disabled />
+                            <button type="submit" class="btn btn-link" asp-page-handler="Remove" asp-route-id="@cat.Id">X</button>
+                        </p>
+                    }
+                </div>
+            </form>
+        </section>
+    </div>
+</div>
