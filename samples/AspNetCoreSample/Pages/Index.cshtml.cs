@@ -41,13 +41,13 @@ namespace AspNetCoreSample.Pages
         // Methods.
         public async Task<IActionResult> OnGetAsync()
         {
-            await LoadCats();
+            await LoadCatsAsync();
             return Page();
         }
 
         public async Task<IActionResult> OnPostAsync()
         {
-            await LoadCats();
+            await LoadCatsAsync();
 
             if (!ModelState.IsValid)
                 return Page();
@@ -66,7 +66,7 @@ namespace AspNetCoreSample.Pages
         }
 
         // Private helpers.
-        private async Task LoadCats()
+        private async Task LoadCatsAsync()
         {
             var cats = await sampleDbContext.Cats.QueryElementsAsync(elements =>
                 elements.ToListAsync());
