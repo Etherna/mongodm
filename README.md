@@ -5,7 +5,7 @@
 
 MongODM is a **ODM framework** (Object-Documental Mapping) developed for work with **MongoDB** and **Asp.NET** applications.
 
-With MongODM you can concentrate on developing your application, without worring on how data is organized in documents. **Documental databases are very efficient**, but very often using them we have to concern about **how data is structured** at the application layer. MongODM creates a document-to-object mapping layer, solving this kind of problems.
+With MongODM you can concentrate on developing your application, without worrying on how data is organized in documents. **Documental databases are very efficient**, but very often using them we have to concern about **how data is structured** at the application layer. MongODM creates a document-to-object mapping layer, solving this kind of problems.
 
 Infact, the real powerful and different vision of documental DBs against SQL DBs resides into **data denormalization**. With denormalization we can optimize data structure for get all required information with a single document read, without join, but price of this efficiency is often paid with a more difficult to develop application layer. Indeed, often writing applications with documental DBs we can encounter these kind of issues:
 
