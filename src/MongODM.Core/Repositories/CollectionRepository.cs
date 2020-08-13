@@ -216,9 +216,9 @@ namespace Etherna.MongODM.Repositories
             if (predicate is null)
                 throw new ArgumentNullException(nameof(predicate));
 
-            var element = await Collection.AsQueryable()
-                                          .Where(predicate)
-                                          .SingleOrDefaultAsync(cancellationToken).ConfigureAwait(false);
+            using var cursor = await Collection.FindAsync(predicate, cancellationToken: cancellationToken).ConfigureAwait(false);
+            var element = await cursor.FirstOrDefaultAsync(cancellationToken).ConfigureAwait(false);
+
             if (element == default(TModel))
                 throw new EntityNotFoundException("Can't find element");
 
