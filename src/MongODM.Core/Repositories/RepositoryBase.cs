@@ -53,13 +53,13 @@ namespace Etherna.MongODM.Repositories
         public virtual async Task CreateAsync(IEnumerable<TModel> models, CancellationToken cancellationToken = default)
         {
             await CreateOnDBAsync(models, cancellationToken).ConfigureAwait(false);
-            await DbContext.SaveChangesAsync().ConfigureAwait(false);
+            await DbContext.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
         }
 
         public virtual async Task CreateAsync(TModel model, CancellationToken cancellationToken = default)
         {
             await CreateOnDBAsync(model, cancellationToken).ConfigureAwait(false);
-            await DbContext.SaveChangesAsync().ConfigureAwait(false);
+            await DbContext.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
         }
 
         public async Task DeleteAsync(TKey id, CancellationToken cancellationToken = default)
@@ -85,7 +85,7 @@ namespace Etherna.MongODM.Repositories
 
             // Unlink dependent models.
             model.DisposeForDelete();
-            await DbContext.SaveChangesAsync().ConfigureAwait(false);
+            await DbContext.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
 
             // Delete model.
             await DeleteOnDBAsync(model, cancellationToken).ConfigureAwait(false);

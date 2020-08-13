@@ -79,7 +79,7 @@ namespace Etherna.MongODM.Repositories
             var id = await GridFSBucket.UploadFromStreamAsync(model.Name, model.Stream, new GridFSUploadOptions
             {
                 Metadata = options.MetadataSerializer?.Invoke(model)
-            }).ConfigureAwait(false);
+            }, cancellationToken).ConfigureAwait(false);
             ReflectionHelper.SetValue(model, m => m.Id, id.ToString());
         }
 
@@ -97,7 +97,8 @@ namespace Etherna.MongODM.Repositories
                 throw new ArgumentNullException(nameof(id));
 
             var filter = Builders<GridFSFileInfo>.Filter.Eq("_id", ObjectId.Parse(id));
-            var mongoFile = await GridFSBucket.Find(filter).SingleOrDefaultAsync(cancellationToken).ConfigureAwait(false);
+            var mongoFile = await GridFSBucket.Find(filter, cancellationToken: cancellationToken)
+                                              .SingleOrDefaultAsync(cancellationToken).ConfigureAwait(false);
             if (mongoFile == null)
                 throw new EntityNotFoundException($"Can't find key {id}");
 

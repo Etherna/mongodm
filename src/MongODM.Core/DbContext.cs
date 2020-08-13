@@ -158,7 +158,7 @@ namespace Etherna.MongODM
                     if (RepositoryRegister.ModelCollectionRepositoryMap.ContainsKey(modelType))
                     {
                         var repository = RepositoryRegister.ModelCollectionRepositoryMap[modelType];
-                        await repository.ReplaceAsync(model).ConfigureAwait(false);
+                        await repository.ReplaceAsync(model, cancellationToken: cancellationToken).ConfigureAwait(false);
                         break;
                     }
                     else
