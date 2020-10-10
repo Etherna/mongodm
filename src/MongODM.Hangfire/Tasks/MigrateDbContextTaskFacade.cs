@@ -12,7 +12,7 @@
 //   See the License for the specific language governing permissions and
 //   limitations under the License.
 
-using Etherna.MongODM.Tasks;
+using Etherna.MongODM.Core.Tasks;
 using Hangfire;
 using Hangfire.Server;
 using System;

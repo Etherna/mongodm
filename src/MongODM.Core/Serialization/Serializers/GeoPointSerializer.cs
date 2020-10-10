@@ -12,7 +12,7 @@
 //   See the License for the specific language governing permissions and
 //   limitations under the License.
 
-using Etherna.MongODM.ProxyModels;
+using Etherna.MongODM.Core.ProxyModels;
 using MongoDB.Bson.Serialization;
 using MongoDB.Bson.Serialization.Serializers;
 using MongoDB.Driver.GeoJsonObjectModel;
@@ -21,7 +21,7 @@ using System;
 using System.Linq.Expressions;
 using System.Reflection;
 
-namespace Etherna.MongODM.Serialization.Serializers
+namespace Etherna.MongODM.Core.Serialization.Serializers
 {
     public class GeoPointSerializer<TInModel> : SerializerBase<TInModel>
         where TInModel : class

@@ -14,22 +14,22 @@
 
 using Etherna.ExecContext;
 using Etherna.ExecContext.AsyncLocal;
-using Etherna.MongODM;
-using Etherna.MongODM.AspNetCore;
-using Etherna.MongODM.Models;
-using Etherna.MongODM.ProxyModels;
-using Etherna.MongODM.Repositories;
-using Etherna.MongODM.Serialization;
-using Etherna.MongODM.Serialization.Modifiers;
-using Etherna.MongODM.Tasks;
-using Etherna.MongODM.Utility;
+using Etherna.MongODM.Core;
+using Etherna.MongODM.Core.Models;
+using Etherna.MongODM.Core.ProxyModels;
+using Etherna.MongODM.Core.Repositories;
+using Etherna.MongODM.Core.Serialization;
+using Etherna.MongODM.Core.Serialization.Modifiers;
+using Etherna.MongODM.Core.Tasks;
+using Etherna.MongODM.Core.Utility;
 using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 
-namespace Microsoft.Extensions.DependencyInjection
+namespace Etherna.MongODM.AspNetCore
 {
     public static class ServiceCollectionExtensions
     {

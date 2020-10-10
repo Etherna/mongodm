@@ -12,7 +12,7 @@
 //   See the License for the specific language governing permissions and
 //   limitations under the License.
 
-namespace Etherna.MongODM.Tasks
+namespace Etherna.MongODM.Core.Tasks
 {
     public static class Queues
     {

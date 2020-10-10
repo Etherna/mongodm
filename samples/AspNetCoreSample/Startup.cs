@@ -1,3 +1,4 @@
+using Etherna.MongODM.AspNetCore;
 using Etherna.MongODM.AspNetCoreSample.Models;
 using Etherna.MongODM.AspNetCoreSample.Persistence;
 using Etherna.MongODM.HF.Tasks;

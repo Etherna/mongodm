@@ -13,8 +13,8 @@
 //   limitations under the License.
 
 using Etherna.ExecContext.AsyncLocal;
+using Etherna.MongODM.Core.Tasks;
 using Etherna.MongODM.HF.Filters;
-using Etherna.MongODM.Tasks;
 using Hangfire;
 using System;
 using System.Collections.Generic;

@@ -12,11 +12,11 @@
 //   See the License for the specific language governing permissions and
 //   limitations under the License.
 
-using Etherna.MongODM.Models;
-using Etherna.MongODM.Models.DbMigrationOpAgg;
-using Etherna.MongODM.Serialization;
+using Etherna.MongODM.Core.Models;
+using Etherna.MongODM.Core.Models.DbMigrationOpAgg;
+using Etherna.MongODM.Core.Serialization;
 
-namespace Etherna.MongODM.ModelMaps
+namespace Etherna.MongODM.Core.ModelMaps
 {
     class DbMigrationOperationMap : IModelMapsCollector
     {

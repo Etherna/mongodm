@@ -6,12 +6,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Hangfire.AspNetCore" Version="1.7.15" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <ProjectReference Include="..\..\src\MongODM.AspNetCore\MongODM.AspNetCore.csproj" />
-    <ProjectReference Include="..\..\src\MongODM.Hangfire\MongODM.Hangfire.csproj" />
+    <ProjectReference Include="..\..\src\MongODM\MongODM.csproj" />
   </ItemGroup>
 
 </Project>

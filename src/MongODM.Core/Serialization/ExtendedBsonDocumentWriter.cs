@@ -15,7 +15,7 @@
 using MongoDB.Bson;
 using MongoDB.Bson.IO;
 
-namespace Etherna.MongODM.Serialization
+namespace Etherna.MongODM.Core.Serialization
 {
     public class ExtendedBsonDocumentWriter : BsonDocumentWriter
     {

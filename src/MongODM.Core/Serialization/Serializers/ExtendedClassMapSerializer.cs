@@ -12,20 +12,19 @@
 //   See the License for the specific language governing permissions and
 //   limitations under the License.
 
-using Etherna.MongODM.Models;
-using Etherna.MongODM.ProxyModels;
-using Etherna.MongODM.Serialization.Modifiers;
-using Etherna.MongODM.Utility;
+using Etherna.MongODM.Core.Models;
+using Etherna.MongODM.Core.ProxyModels;
+using Etherna.MongODM.Core.Serialization.Modifiers;
+using Etherna.MongODM.Core.Utility;
 using MongoDB.Bson;
 using MongoDB.Bson.Serialization;
 using MongoDB.Bson.Serialization.Serializers;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Reflection;
 using System.Threading.Tasks;
 
-namespace Etherna.MongODM.Serialization.Serializers
+namespace Etherna.MongODM.Core.Serialization.Serializers
 {
     public class ExtendedClassMapSerializer<TModel> :
         SerializerBase<TModel>, IBsonSerializer<TModel>, IBsonDocumentSerializer, IBsonIdProvider, IClassMapContainerSerializer

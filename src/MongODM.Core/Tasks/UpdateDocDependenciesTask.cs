@@ -12,15 +12,15 @@
 //   See the License for the specific language governing permissions and
 //   limitations under the License.
 
-using Etherna.MongODM.Models;
-using Etherna.MongODM.Repositories;
-using Etherna.MongODM.Serialization.Modifiers;
+using Etherna.MongODM.Core.Models;
+using Etherna.MongODM.Core.Repositories;
+using Etherna.MongODM.Core.Serialization.Modifiers;
 using MongoDB.Driver;
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 
-namespace Etherna.MongODM.Tasks
+namespace Etherna.MongODM.Core.Tasks
 {
     public class UpdateDocDependenciesTask : IUpdateDocDependenciesTask
     {

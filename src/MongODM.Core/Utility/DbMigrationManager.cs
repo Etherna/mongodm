@@ -12,16 +12,16 @@
 //   See the License for the specific language governing permissions and
 //   limitations under the License.
 
-using Etherna.MongODM.Extensions;
-using Etherna.MongODM.Models;
-using Etherna.MongODM.Tasks;
+using Etherna.MongODM.Core.Extensions;
+using Etherna.MongODM.Core.Models;
+using Etherna.MongODM.Core.Tasks;
 using MongoDB.Driver;
 using MongoDB.Driver.Linq;
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 
-namespace Etherna.MongODM.Utility
+namespace Etherna.MongODM.Core.Utility
 {
     public class DbMigrationManager : IDbMigrationManager
     {

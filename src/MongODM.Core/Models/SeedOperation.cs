@@ -12,7 +12,7 @@
 //   See the License for the specific language governing permissions and
 //   limitations under the License.
 
-namespace Etherna.MongODM.Models
+namespace Etherna.MongODM.Core.Models
 {
     public class SeedOperation : OperationBase
     {

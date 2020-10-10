@@ -12,13 +12,13 @@
 //   See the License for the specific language governing permissions and
 //   limitations under the License.
 
-using Etherna.MongODM.Models;
-using Etherna.MongODM.Serialization.Serializers;
+using Etherna.MongODM.Core.Models;
+using Etherna.MongODM.Core.Serialization.Serializers;
 using MongoDB.Bson.Serialization;
 using System;
 using System.Linq.Expressions;
 
-namespace Etherna.MongODM.Extensions
+namespace Etherna.MongODM.Core.Extensions
 {
     public static class ClassMapExtensions
     {

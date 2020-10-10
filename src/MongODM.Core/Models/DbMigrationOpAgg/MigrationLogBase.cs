@@ -14,7 +14,7 @@
 
 using System;
 
-namespace Etherna.MongODM.Models.DbMigrationOpAgg
+namespace Etherna.MongODM.Core.Models.DbMigrationOpAgg
 {
     public abstract class MigrationLogBase : ModelBase
     {

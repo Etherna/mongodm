@@ -12,7 +12,7 @@
 //   See the License for the specific language governing permissions and
 //   limitations under the License.
 
-namespace Etherna.MongODM.Models.DbMigrationOpAgg
+namespace Etherna.MongODM.Core.Models.DbMigrationOpAgg
 {
     public class IndexMigrationLog : MigrationLogBase
     {

@@ -15,7 +15,7 @@
 using MongoDB.Bson.Serialization;
 using System.Collections.Generic;
 
-namespace Etherna.MongODM.Serialization.Serializers
+namespace Etherna.MongODM.Core.Serialization.Serializers
 {
     public interface IClassMapContainerSerializer
     {

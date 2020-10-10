@@ -12,10 +12,10 @@
 //   See the License for the specific language governing permissions and
 //   limitations under the License.
 
-using Etherna.MongODM.MockHelpers;
-using Etherna.MongODM.Models;
-using Etherna.MongODM.ProxyModels;
-using Etherna.MongODM.Repositories;
+using Etherna.MongODM.Core.MockHelpers;
+using Etherna.MongODM.Core.Models;
+using Etherna.MongODM.Core.ProxyModels;
+using Etherna.MongODM.Core.Repositories;
 using Moq;
 using System;
 using System.Collections.Generic;
@@ -23,7 +23,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
 
-namespace Etherna.MongODM
+namespace Etherna.MongODM.Core
 {
     public class ReferenceableInterceptorTest
     {

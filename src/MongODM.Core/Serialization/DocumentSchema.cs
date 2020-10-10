@@ -15,7 +15,7 @@
 using MongoDB.Bson.Serialization;
 using System;
 
-namespace Etherna.MongODM.Serialization
+namespace Etherna.MongODM.Core.Serialization
 {
     public class DocumentSchema
     {

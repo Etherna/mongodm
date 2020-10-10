@@ -12,8 +12,8 @@
 //   See the License for the specific language governing permissions and
 //   limitations under the License.
 
-using Etherna.MongODM.Models;
-using Etherna.MongODM.ProxyModels;
+using Etherna.MongODM.Core.Models;
+using Etherna.MongODM.Core.ProxyModels;
 using MongoDB.Bson;
 using MongoDB.Bson.Serialization;
 using MongoDB.Bson.Serialization.Conventions;
@@ -24,7 +24,7 @@ using System.Linq;
 using System.Reflection;
 using System.Threading;
 
-namespace Etherna.MongODM.Serialization.Serializers
+namespace Etherna.MongODM.Core.Serialization.Serializers
 {
     public class ReferenceSerializer<TModelBase, TKey> :
         SerializerBase<TModelBase>, IBsonSerializer<TModelBase>, IBsonDocumentSerializer, IBsonIdProvider, IReferenceContainerSerializer, IDisposable

@@ -12,7 +12,7 @@
 //   See the License for the specific language governing permissions and
 //   limitations under the License.
 
-using Etherna.MongODM.Models;
+using Etherna.MongODM.Core.Models;
 using MongoDB.Driver;
 using MongoDB.Driver.Linq;
 using System;
@@ -20,7 +20,7 @@ using System.Linq.Expressions;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace Etherna.MongODM.Repositories
+namespace Etherna.MongODM.Core.Repositories
 {
     public interface ICollectionRepository : IRepository
     {

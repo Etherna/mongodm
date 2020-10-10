@@ -12,16 +12,16 @@
 //   See the License for the specific language governing permissions and
 //   limitations under the License.
 
-using Etherna.MongODM.Models;
-using Etherna.MongODM.Repositories;
-using Etherna.MongODM.Serialization;
+using Etherna.MongODM.Core.Models;
+using Etherna.MongODM.Core.Repositories;
+using Etherna.MongODM.Core.Serialization;
 using MongoDB.Bson;
 using MongoDB.Driver;
 using System;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace Etherna.MongODM.Migration
+namespace Etherna.MongODM.Core.Migration
 {
     /// <summary>
     /// Migrate documents of a collection from an older version to a newer

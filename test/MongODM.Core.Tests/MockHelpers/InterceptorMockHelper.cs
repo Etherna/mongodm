@@ -16,7 +16,7 @@ using Moq;
 using System;
 using System.Linq.Expressions;
 
-namespace Etherna.MongODM.MockHelpers
+namespace Etherna.MongODM.Core.MockHelpers
 {
     public static class InterceptorMockHelper
     {

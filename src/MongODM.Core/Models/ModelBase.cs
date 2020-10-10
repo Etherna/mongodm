@@ -15,7 +15,7 @@
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 
-namespace Etherna.MongODM.Models
+namespace Etherna.MongODM.Core.Models
 {
     public abstract class ModelBase : IModel
     {

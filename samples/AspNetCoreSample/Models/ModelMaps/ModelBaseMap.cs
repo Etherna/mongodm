@@ -1,4 +1,5 @@
-﻿using Etherna.MongODM.Serialization;
+﻿using Etherna.MongODM.Core;
+using Etherna.MongODM.Core.Serialization;
 using MongoDB.Bson;
 using MongoDB.Bson.Serialization.IdGenerators;
 using MongoDB.Bson.Serialization.Serializers;

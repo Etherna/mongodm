@@ -13,13 +13,13 @@
 //   limitations under the License.
 
 using Castle.DynamicProxy;
-using Etherna.MongODM.Models;
+using Etherna.MongODM.Core.Models;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 
-namespace Etherna.MongODM.ProxyModels
+namespace Etherna.MongODM.Core.ProxyModels
 {
     public class ProxyGenerator : IProxyGenerator, IDisposable
     {

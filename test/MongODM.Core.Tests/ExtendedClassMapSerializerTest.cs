@@ -12,12 +12,12 @@
 //   See the License for the specific language governing permissions and
 //   limitations under the License.
 
-using Etherna.MongODM.Comparers;
-using Etherna.MongODM.Models;
-using Etherna.MongODM.Serialization;
-using Etherna.MongODM.Serialization.Modifiers;
-using Etherna.MongODM.Serialization.Serializers;
-using Etherna.MongODM.Utility;
+using Etherna.MongODM.Core.Comparers;
+using Etherna.MongODM.Core.Models;
+using Etherna.MongODM.Core.Serialization;
+using Etherna.MongODM.Core.Serialization.Modifiers;
+using Etherna.MongODM.Core.Serialization.Serializers;
+using Etherna.MongODM.Core.Utility;
 using MongoDB.Bson;
 using MongoDB.Bson.IO;
 using MongoDB.Bson.Serialization;
@@ -28,7 +28,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using Xunit;
 
-namespace Etherna.MongODM
+namespace Etherna.MongODM.Core
 {
     public class ExtendedClassMapSerializerTest
     {

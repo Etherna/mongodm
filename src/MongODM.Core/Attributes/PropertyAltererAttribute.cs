@@ -14,7 +14,7 @@
 
 using System;
 
-namespace Etherna.MongODM.Attributes
+namespace Etherna.MongODM.Core.Attributes
 {
     [AttributeUsage(AttributeTargets.Method, AllowMultiple = true)]
     public class PropertyAltererAttribute : Attribute

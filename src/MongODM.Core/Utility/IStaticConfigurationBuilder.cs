@@ -12,7 +12,7 @@
 //   See the License for the specific language governing permissions and
 //   limitations under the License.
 
-namespace Etherna.MongODM.Utility
+namespace Etherna.MongODM.Core.Utility
 {
     /// <summary>
     /// This interface has the scope to inizialize only one time static configurations, when IoC system

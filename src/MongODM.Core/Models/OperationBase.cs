@@ -14,7 +14,7 @@
 
 using System;
 
-namespace Etherna.MongODM.Models
+namespace Etherna.MongODM.Core.Models
 {
     public abstract class OperationBase : EntityModelBase<string>
     {

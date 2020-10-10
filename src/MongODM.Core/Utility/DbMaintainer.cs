@@ -12,13 +12,13 @@
 //   See the License for the specific language governing permissions and
 //   limitations under the License.
 
-using Etherna.MongODM.ProxyModels;
-using Etherna.MongODM.Tasks;
+using Etherna.MongODM.Core.ProxyModels;
+using Etherna.MongODM.Core.Tasks;
 using MongoDB.Driver;
 using System;
 using System.Linq;
 
-namespace Etherna.MongODM.Utility
+namespace Etherna.MongODM.Core.Utility
 {
     public class DbMaintainer : IDbMaintainer
     {

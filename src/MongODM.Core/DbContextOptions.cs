@@ -12,10 +12,10 @@
 //   See the License for the specific language governing permissions and
 //   limitations under the License.
 
-using Etherna.MongODM.Serialization;
+using Etherna.MongODM.Core.Serialization;
 using System.Linq;
 
-namespace Etherna.MongODM
+namespace Etherna.MongODM.Core
 {
     public class DbContextOptions
     {

@@ -3,7 +3,7 @@
   <PropertyGroup>
     <TargetFramework>netstandard2.0</TargetFramework>
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
-    <RootNamespace>Etherna.MongODM</RootNamespace>
+    <RootNamespace>Etherna.MongODM.Core</RootNamespace>
     <Authors>Etherna Sagl</Authors>
     <Description>ODM framework for MongoDB</Description>
     <LangVersion>8.0</LangVersion>
@@ -14,7 +14,7 @@
     <PublishRepositoryUrl>true</PublishRepositoryUrl>
     <IncludeSymbols>true</IncludeSymbols>
     <SymbolPackageFormat>snupkg</SymbolPackageFormat>
-    <PackageLicenseFile>LICENSE.txt</PackageLicenseFile>
+    <PackageLicenseFile>LICENSE</PackageLicenseFile>
   </PropertyGroup>
 
   <ItemGroup>
@@ -38,13 +38,6 @@
 
   <ItemGroup>
     <ProjectReference Include="..\ExecutionContext\ExecutionContext.csproj" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <None Include="..\..\LICENSE.txt">
-      <Pack>True</Pack>
-      <PackagePath></PackagePath>
-    </None>
   </ItemGroup>
 
 </Project>

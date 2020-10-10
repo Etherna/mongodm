@@ -17,7 +17,7 @@ using System.Globalization;
 using System.Text;
 using System.Text.RegularExpressions;
 
-namespace Etherna.MongODM.Serialization
+namespace Etherna.MongODM.Core.Serialization
 {
     public class SemanticVersion : IComparable<SemanticVersion>
     {

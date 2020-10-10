@@ -18,7 +18,7 @@ using System.Collections.Generic;
 using System.Reflection;
 using System.Threading.Tasks;
 
-namespace Etherna.MongODM.Serialization
+namespace Etherna.MongODM.Core.Serialization
 {
     /// <summary>
     /// Interface for <see cref="DocumentSchemaRegister"/> implementation.
