@@ -100,7 +100,7 @@ namespace Etherna.MongODM.Repositories
             var mongoFile = await GridFSBucket.Find(filter, cancellationToken: cancellationToken)
                                               .SingleOrDefaultAsync(cancellationToken).ConfigureAwait(false);
             if (mongoFile == null)
-                throw new EntityNotFoundException($"Can't find key {id}");
+                throw new MongodmEntityNotFoundException($"Can't find key {id}");
 
             var file = DbContext.ProxyGenerator.CreateInstance<TModel>(DbContext);
             ReflectionHelper.SetValue(file, m => m.Id, mongoFile.Id.ToString());

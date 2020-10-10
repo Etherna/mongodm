@@ -16,15 +16,15 @@ using System;
 
 namespace Etherna.MongODM.Exceptions
 {
-    public class InvalidEntityTypeException : Exception
+    public class MongodmInvalidEntityTypeException : Exception
     {
-        public InvalidEntityTypeException()
+        public MongodmInvalidEntityTypeException()
         { }
 
-        public InvalidEntityTypeException(string message) : base(message)
+        public MongodmInvalidEntityTypeException(string message) : base(message)
         { }
 
-        public InvalidEntityTypeException(string message, Exception innerException) : base(message, innerException)
+        public MongodmInvalidEntityTypeException(string message, Exception innerException) : base(message, innerException)
         { }
     }
 }
