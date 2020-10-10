@@ -12,21 +12,31 @@
 //   See the License for the specific language governing permissions and
 //   limitations under the License.
 
-namespace Etherna.MongODM.Models.Internal.DbMigrationOpAgg
+using System;
+
+namespace Etherna.MongODM.Models.DbMigrationOpAgg
 {
-    public class IndexMigrationLog : MigrationLogBase
+    public abstract class MigrationLogBase : ModelBase
     {
-        // Constructors.
-        public IndexMigrationLog(
-            string repository,
-            ExecutionState state)
-            : base(state)
+        // Enums.
+        public enum ExecutionState
         {
-            Repository = repository;
+            Executing,
+            Succeded,
+            Skipped,
+            Failed
         }
-        protected IndexMigrationLog() { }
+
+        // Constructors.
+        public MigrationLogBase(ExecutionState state)
+        {
+            CreationDateTime = DateTime.Now;
+            State = state;
+        }
+        protected MigrationLogBase() { }
 
         // Properties.
-        public virtual string Repository { get; protected set; } = default!;
+        public virtual ExecutionState State { get; protected set; }
+        public virtual DateTime CreationDateTime { get; protected set; }
     }
 }

@@ -12,8 +12,8 @@
 //   See the License for the specific language governing permissions and
 //   limitations under the License.
 
-using Etherna.MongODM.Models.Internal;
-using Etherna.MongODM.Models.Internal.DbMigrationOpAgg;
+using Etherna.MongODM.Models;
+using Etherna.MongODM.Models.DbMigrationOpAgg;
 using System;
 using System.Threading.Tasks;
 

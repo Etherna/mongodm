@@ -13,7 +13,7 @@
 //   limitations under the License.
 
 using Etherna.MongODM.Migration;
-using Etherna.MongODM.Models.Internal;
+using Etherna.MongODM.Models;
 using Etherna.MongODM.ProxyModels;
 using Etherna.MongODM.Repositories;
 using Etherna.MongODM.Serialization;

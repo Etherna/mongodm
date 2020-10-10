@@ -12,24 +12,17 @@
 //   See the License for the specific language governing permissions and
 //   limitations under the License.
 
+using Etherna.MongODM.Models;
 using Etherna.MongODM.Serialization;
-using Etherna.MongODM.Serialization.Serializers;
 
-namespace Etherna.MongODM.Models.Internal.ModelMaps
+namespace Etherna.MongODM.ModelMaps
 {
-    class OperationBaseMap : IModelMapsCollector
+    class SeedOperationMap : IModelMapsCollector
     {
         public void Register(IDbContext dbContext)
         {
-            dbContext.DocumentSchemaRegister.RegisterModelSchema(
-                "0.20.0", //mongodm library's version
-                cm => cm.AutoMap(),
-                initCustomSerializer: () =>
-                    new ExtendedClassMapSerializer<OperationBase>(
-                        dbContext.DbCache,
-                        dbContext.LibraryVersion,
-                        dbContext.SerializerModifierAccessor)
-                    { AddVersion = true });
+            dbContext.DocumentSchemaRegister.RegisterModelSchema<SeedOperation>(
+                "0.20.0");
         }
     }
 }

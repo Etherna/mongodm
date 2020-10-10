@@ -12,16 +12,24 @@
 //   See the License for the specific language governing permissions and
 //   limitations under the License.
 
-using Etherna.MongODM.Serialization;
+using System;
 
-namespace Etherna.MongODM.Models.Internal.ModelMaps
+namespace Etherna.MongODM.Models
 {
-    class SeedOperationMap : IModelMapsCollector
+    public abstract class OperationBase : EntityModelBase<string>
     {
-        public void Register(IDbContext dbContext)
+        // Constructors and dispose.
+        public OperationBase(IDbContext dbContext)
         {
-            dbContext.DocumentSchemaRegister.RegisterModelSchema<SeedOperation>(
-                "0.20.0");
+            if (dbContext is null)
+                throw new ArgumentNullException(nameof(dbContext));
+
+            CreationDateTime = DateTime.Now;
+            DbContextName = dbContext.Identifier;
         }
+        protected OperationBase() { }
+
+        // Properties.
+        public virtual string DbContextName { get; protected set; } = default!;
     }
 }

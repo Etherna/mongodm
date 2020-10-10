@@ -13,9 +13,8 @@
 //   limitations under the License.
 
 using Etherna.MongODM.Migration;
+using Etherna.MongODM.ModelMaps;
 using Etherna.MongODM.Models;
-using Etherna.MongODM.Models.Internal;
-using Etherna.MongODM.Models.Internal.ModelMaps;
 using Etherna.MongODM.ProxyModels;
 using Etherna.MongODM.Repositories;
 using Etherna.MongODM.Serialization;
@@ -79,7 +78,6 @@ namespace Etherna.MongODM
                 repository.Initialize(this);
 
             // Register model maps.
-            //internal maps
             new DbMigrationOperationMap().Register(this);
             new ModelBaseMap().Register(this);
             new OperationBaseMap().Register(this);
