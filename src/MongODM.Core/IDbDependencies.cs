@@ -16,8 +16,9 @@ using Etherna.MongODM.ProxyModels;
 using Etherna.MongODM.Repositories;
 using Etherna.MongODM.Serialization;
 using Etherna.MongODM.Serialization.Modifiers;
+using Etherna.MongODM.Utility;
 
-namespace Etherna.MongODM.Utility
+namespace Etherna.MongODM
 {
     public interface IDbDependencies
     {
