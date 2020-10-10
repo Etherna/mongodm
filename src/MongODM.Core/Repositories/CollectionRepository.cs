@@ -170,7 +170,7 @@ namespace Etherna.MongODM.Repositories
             {
                 return await FindOneAsync(predicate, cancellationToken).ConfigureAwait(false);
             }
-            catch (EntityNotFoundException)
+            catch (MongodmEntityNotFoundException)
             {
                 return null;
             }
@@ -202,9 +202,9 @@ namespace Etherna.MongODM.Repositories
             {
                 return await FindOneOnDBAsync(m => m.Id!.Equals(id), cancellationToken: cancellationToken).ConfigureAwait(false);
             }
-            catch (EntityNotFoundException)
+            catch (MongodmEntityNotFoundException)
             {
-                throw new EntityNotFoundException($"Can't find key {id}");
+                throw new MongodmEntityNotFoundException($"Can't find key {id}");
             }
         }
 
@@ -220,7 +220,7 @@ namespace Etherna.MongODM.Repositories
             var element = await cursor.FirstOrDefaultAsync(cancellationToken).ConfigureAwait(false);
 
             if (element == default(TModel))
-                throw new EntityNotFoundException("Can't find element");
+                throw new MongodmEntityNotFoundException("Can't find element");
 
             return element;
         }

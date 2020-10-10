@@ -16,16 +16,16 @@ using System;
 
 namespace Etherna.MongODM.Exceptions
 {
-    public class EntityNotFoundException : Exception
+    public class MongodmEntityNotFoundException : Exception
     {
         // Constructors.
-        public EntityNotFoundException()
+        public MongodmEntityNotFoundException()
         { }
 
-        public EntityNotFoundException(string message) : base(message)
+        public MongodmEntityNotFoundException(string message) : base(message)
         { }
 
-        public EntityNotFoundException(string message, Exception innerException) : base(message, innerException)
+        public MongodmEntityNotFoundException(string message, Exception innerException) : base(message, innerException)
         { }
     }
 }
