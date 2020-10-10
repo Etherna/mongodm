@@ -2,7 +2,6 @@
 using Etherna.MongODM.AspNetCoreSample.Models.ModelMaps;
 using Etherna.MongODM.Repositories;
 using Etherna.MongODM.Serialization;
-using Etherna.MongODM.Utility;
 using System.Collections.Generic;
 
 namespace Etherna.MongODM.AspNetCoreSample.Persistence
