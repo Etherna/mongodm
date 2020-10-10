@@ -13,7 +13,7 @@
 //   limitations under the License.
 
 using Etherna.MongODM.Extensions;
-using Etherna.MongODM.Models.Internal;
+using Etherna.MongODM.Models;
 using Etherna.MongODM.Tasks;
 using MongoDB.Driver;
 using MongoDB.Driver.Linq;

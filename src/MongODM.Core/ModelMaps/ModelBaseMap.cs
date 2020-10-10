@@ -12,12 +12,13 @@
 //   See the License for the specific language governing permissions and
 //   limitations under the License.
 
+using Etherna.MongODM.Models;
 using Etherna.MongODM.Serialization;
 using MongoDB.Bson;
 using MongoDB.Bson.Serialization.IdGenerators;
 using MongoDB.Bson.Serialization.Serializers;
 
-namespace Etherna.MongODM.Models.Internal.ModelMaps
+namespace Etherna.MongODM.ModelMaps
 {
     class ModelBaseMap : IModelMapsCollector
     {

@@ -12,14 +12,14 @@
 //   See the License for the specific language governing permissions and
 //   limitations under the License.
 
-namespace Etherna.MongODM.Models.Internal
+using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
+
+namespace Etherna.MongODM.Models
 {
-    public class SeedOperation : OperationBase
+    public abstract class ModelBase : IModel
     {
-        // Constructors.
-        public SeedOperation(IDbContext owner)
-            : base(owner)
-        { }
-        protected SeedOperation() { }
+        [SuppressMessage("Usage", "CA2227:Collection properties should be read only", Justification = "Setter needed for deserialization scope")]
+        public virtual IDictionary<string, object>? ExtraElements { get; protected set; }
     }
 }

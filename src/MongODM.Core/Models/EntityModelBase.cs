@@ -15,7 +15,7 @@
 using System;
 using System.Collections.Generic;
 
-namespace Etherna.MongODM.Models.Internal
+namespace Etherna.MongODM.Models
 {
     public abstract class EntityModelBase : ModelBase, IEntityModel
     {

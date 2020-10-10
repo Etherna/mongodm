@@ -12,12 +12,21 @@
 //   See the License for the specific language governing permissions and
 //   limitations under the License.
 
-using System.Collections.Generic;
-
-namespace Etherna.MongODM.Models
+namespace Etherna.MongODM.Models.DbMigrationOpAgg
 {
-    public abstract class ModelBase : IModel
+    public class IndexMigrationLog : MigrationLogBase
     {
-        public virtual IDictionary<string, object>? ExtraElements { get; protected set; }
+        // Constructors.
+        public IndexMigrationLog(
+            string repository,
+            ExecutionState state)
+            : base(state)
+        {
+            Repository = repository;
+        }
+        protected IndexMigrationLog() { }
+
+        // Properties.
+        public virtual string Repository { get; protected set; } = default!;
     }
 }
