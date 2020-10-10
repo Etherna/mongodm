@@ -14,7 +14,7 @@
 
 using System.Collections.Generic;
 
-namespace Etherna.MongODM.Models
+namespace Etherna.MongODM.Core.Models
 {
     public interface IModel
     {

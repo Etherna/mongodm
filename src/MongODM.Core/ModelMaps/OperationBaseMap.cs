@@ -12,11 +12,11 @@
 //   See the License for the specific language governing permissions and
 //   limitations under the License.
 
-using Etherna.MongODM.Models;
-using Etherna.MongODM.Serialization;
-using Etherna.MongODM.Serialization.Serializers;
+using Etherna.MongODM.Core.Models;
+using Etherna.MongODM.Core.Serialization;
+using Etherna.MongODM.Core.Serialization.Serializers;
 
-namespace Etherna.MongODM.ModelMaps
+namespace Etherna.MongODM.Core.ModelMaps
 {
     class OperationBaseMap : IModelMapsCollector
     {

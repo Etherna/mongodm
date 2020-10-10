@@ -12,10 +12,10 @@
 //   See the License for the specific language governing permissions and
 //   limitations under the License.
 
-using Etherna.MongODM.Exceptions;
-using Etherna.MongODM.Models;
-using Etherna.MongODM.ProxyModels;
-using Etherna.MongODM.Serialization;
+using Etherna.MongODM.Core.Exceptions;
+using Etherna.MongODM.Core.Models;
+using Etherna.MongODM.Core.ProxyModels;
+using Etherna.MongODM.Core.Serialization;
 using MoreLinq;
 using System;
 using System.Collections;
@@ -24,7 +24,7 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace Etherna.MongODM.Repositories
+namespace Etherna.MongODM.Core.Repositories
 {
     public abstract class RepositoryBase<TModel, TKey> :
         IRepository<TModel, TKey>

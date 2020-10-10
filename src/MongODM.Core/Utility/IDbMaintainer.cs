@@ -12,9 +12,9 @@
 //   See the License for the specific language governing permissions and
 //   limitations under the License.
 
-using Etherna.MongODM.ProxyModels;
+using Etherna.MongODM.Core.ProxyModels;
 
-namespace Etherna.MongODM.Utility
+namespace Etherna.MongODM.Core.Utility
 {
     /// <summary>
     /// Interface for <see cref="DbMaintainer"/> implementation.

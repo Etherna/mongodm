@@ -12,10 +12,10 @@
 //   See the License for the specific language governing permissions and
 //   limitations under the License.
 
-using Etherna.MongODM.Models;
+using Etherna.MongODM.Core.Models;
 using System.Collections.Generic;
 
-namespace Etherna.MongODM.Utility
+namespace Etherna.MongODM.Core.Utility
 {
     /// <summary>
     /// Interface for <see cref="DbCache"/> implementation.

@@ -14,7 +14,7 @@
 
 using System.Threading.Tasks;
 
-namespace Etherna.MongODM.Tasks
+namespace Etherna.MongODM.Core.Tasks
 {
     public interface IMigrateDbContextTask
     {

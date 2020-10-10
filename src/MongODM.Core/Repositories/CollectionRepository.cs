@@ -12,10 +12,10 @@
 //   See the License for the specific language governing permissions and
 //   limitations under the License.
 
-using Etherna.MongODM.Exceptions;
-using Etherna.MongODM.Models;
-using Etherna.MongODM.ProxyModels;
-using Etherna.MongODM.Serialization;
+using Etherna.MongODM.Core.Exceptions;
+using Etherna.MongODM.Core.Models;
+using Etherna.MongODM.Core.ProxyModels;
+using Etherna.MongODM.Core.Serialization;
 using MongoDB.Bson;
 using MongoDB.Driver;
 using MongoDB.Driver.Linq;
@@ -26,7 +26,7 @@ using System.Linq.Expressions;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace Etherna.MongODM.Repositories
+namespace Etherna.MongODM.Core.Repositories
 {
     public class CollectionRepository<TModel, TKey> :
         RepositoryBase<TModel, TKey>,
@@ -74,7 +74,7 @@ namespace Etherna.MongODM.Repositories
             newIndexes.Add(
                 ("ver",
                  new CreateIndexModel<TModel>(
-                    Builders<TModel>.IndexKeys.Ascending(MongODM.DbContext.DocumentVersionElementName),
+                    Builders<TModel>.IndexKeys.Ascending(Core.DbContext.DocumentVersionElementName),
                     new CreateIndexOptions { Name = "ver" })));
 
             //referenced documents

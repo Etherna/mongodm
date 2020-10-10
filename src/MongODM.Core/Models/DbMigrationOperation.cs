@@ -12,12 +12,12 @@
 //   See the License for the specific language governing permissions and
 //   limitations under the License.
 
-using Etherna.MongODM.Attributes;
-using Etherna.MongODM.Models.DbMigrationOpAgg;
+using Etherna.MongODM.Core.Attributes;
+using Etherna.MongODM.Core.Models.DbMigrationOpAgg;
 using System;
 using System.Collections.Generic;
 
-namespace Etherna.MongODM.Models
+namespace Etherna.MongODM.Core.Models
 {
     public class DbMigrationOperation : OperationBase
     {

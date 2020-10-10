@@ -12,7 +12,7 @@
 //   See the License for the specific language governing permissions and
 //   limitations under the License.
 
-namespace Etherna.MongODM.Migration
+namespace Etherna.MongODM.Core.Migration
 {
     public class MigrationResult
     {

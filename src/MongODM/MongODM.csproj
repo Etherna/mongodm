@@ -1,11 +1,11 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>netstandard2.0</TargetFramework>
+    <TargetFrameworks>netstandard2.0;netcoreapp3.0</TargetFrameworks>
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
-    <RootNamespace>Etherna.ExecContext</RootNamespace>
+    <RootNamespace>Etherna.MongODM</RootNamespace>
     <Authors>Etherna Sagl</Authors>
-    <Description>Execution context provider</Description>
+    <Description>Configuration package for MongODM using Asp.Net Core and Hangfire</Description>
     <LangVersion>8.0</LangVersion>
     <Nullable>enable</Nullable>
     
@@ -22,6 +22,7 @@
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
+    <PackageReference Include="Hangfire.AspNetCore" Version="1.7.15" />
     <PackageReference Include="Microsoft.CodeAnalysis.FxCopAnalyzers" Version="3.3.0">
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
@@ -30,6 +31,11 @@
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\MongODM.AspNetCore\MongODM.AspNetCore.csproj" />
+    <ProjectReference Include="..\MongODM.Hangfire\MongODM.Hangfire.csproj" />
   </ItemGroup>
 
 </Project>

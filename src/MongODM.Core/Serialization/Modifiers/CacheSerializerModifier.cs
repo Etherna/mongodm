@@ -19,7 +19,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 
-namespace Etherna.MongODM.Serialization.Modifiers
+namespace Etherna.MongODM.Core.Serialization.Modifiers
 {
     class CacheSerializerModifier : IDisposable
     {

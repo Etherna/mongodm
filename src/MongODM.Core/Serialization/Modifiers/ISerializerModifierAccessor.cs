@@ -14,7 +14,7 @@
 
 using System;
 
-namespace Etherna.MongODM.Serialization.Modifiers
+namespace Etherna.MongODM.Core.Serialization.Modifiers
 {
     public interface ISerializerModifierAccessor
     {

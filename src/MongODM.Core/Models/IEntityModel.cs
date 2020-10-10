@@ -14,7 +14,7 @@
 
 using System;
 
-namespace Etherna.MongODM.Models
+namespace Etherna.MongODM.Core.Models
 {
     public interface IEntityModel : IModel
     {

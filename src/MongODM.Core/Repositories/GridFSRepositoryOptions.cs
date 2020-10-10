@@ -15,7 +15,7 @@
 using MongoDB.Bson;
 using System;
 
-namespace Etherna.MongODM.Repositories
+namespace Etherna.MongODM.Core.Repositories
 {
     public class GridFSRepositoryOptions<TModel> : RepositoryOptionsBase
     {

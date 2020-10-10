@@ -19,7 +19,7 @@ using System.Linq.Expressions;
 using System.Reflection;
 using System.Threading;
 
-namespace Etherna.MongODM
+namespace Etherna.MongODM.Core
 {
     public static class ReflectionHelper
     {

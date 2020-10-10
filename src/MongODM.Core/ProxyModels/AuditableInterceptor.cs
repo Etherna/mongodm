@@ -13,13 +13,13 @@
 //   limitations under the License.
 
 using Castle.DynamicProxy;
-using Etherna.MongODM.Attributes;
+using Etherna.MongODM.Core.Attributes;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 
-namespace Etherna.MongODM.ProxyModels
+namespace Etherna.MongODM.Core.ProxyModels
 {
     public class AuditableInterceptor<TModel> : ModelInterceptorBase<TModel>
     {

@@ -13,11 +13,11 @@
 //   limitations under the License.
 
 using Etherna.ExecContext;
-using Etherna.MongODM.Models;
+using Etherna.MongODM.Core.Models;
 using System;
 using System.Collections.Generic;
 
-namespace Etherna.MongODM.Utility
+namespace Etherna.MongODM.Core.Utility
 {
     public class DbCache : IDbCache
     {

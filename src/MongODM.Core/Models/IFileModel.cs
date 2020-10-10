@@ -14,7 +14,7 @@
 
 using System.IO;
 
-namespace Etherna.MongODM.Models
+namespace Etherna.MongODM.Core.Models
 {
     public interface IFileModel : IEntityModel<string>
     {

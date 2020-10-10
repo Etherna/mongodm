@@ -1,4 +1,5 @@
-﻿using Etherna.MongODM.Serialization;
+﻿using Etherna.MongODM.Core;
+using Etherna.MongODM.Core.Serialization;
 
 namespace Etherna.MongODM.AspNetCoreSample.Models.ModelMaps
 {

@@ -12,13 +12,13 @@
 //   See the License for the specific language governing permissions and
 //   limitations under the License.
 
-using Etherna.MongODM.Models;
+using Etherna.MongODM.Core.Models;
 using MongoDB.Bson.Serialization;
 using MongoDB.Bson.Serialization.Serializers;
 using System;
 using System.Collections.Generic;
 
-namespace Etherna.MongODM.Serialization.Serializers
+namespace Etherna.MongODM.Core.Serialization.Serializers
 {
     class ReferenceSerializerAdapter<TInModel, TOutModel, TKey> :
         SerializerBase<TOutModel>, IBsonSerializer<TOutModel>, IBsonDocumentSerializer, IBsonIdProvider, IReferenceContainerSerializer

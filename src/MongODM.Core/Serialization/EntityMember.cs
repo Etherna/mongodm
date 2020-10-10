@@ -14,7 +14,7 @@
 
 using MongoDB.Bson.Serialization;
 
-namespace Etherna.MongODM.Serialization
+namespace Etherna.MongODM.Core.Serialization
 {
     public class EntityMember
     {

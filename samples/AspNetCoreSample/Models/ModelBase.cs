@@ -1,4 +1,4 @@
-﻿using Etherna.MongODM.Models;
+﻿using Etherna.MongODM.Core.Models;
 using System.Collections.Generic;
 
 namespace Etherna.MongODM.AspNetCoreSample.Models

@@ -12,13 +12,13 @@
 //   See the License for the specific language governing permissions and
 //   limitations under the License.
 
-using Etherna.MongODM.ProxyModels;
-using Etherna.MongODM.Repositories;
-using Etherna.MongODM.Serialization;
-using Etherna.MongODM.Serialization.Modifiers;
-using Etherna.MongODM.Utility;
+using Etherna.MongODM.Core.ProxyModels;
+using Etherna.MongODM.Core.Repositories;
+using Etherna.MongODM.Core.Serialization;
+using Etherna.MongODM.Core.Serialization.Modifiers;
+using Etherna.MongODM.Core.Utility;
 
-namespace Etherna.MongODM
+namespace Etherna.MongODM.Core
 {
     public interface IDbDependencies
     {

@@ -14,7 +14,7 @@
 
 using System;
 
-namespace Etherna.MongODM.Exceptions
+namespace Etherna.MongODM.Core.Exceptions
 {
     public class MongodmInvalidEntityTypeException : Exception
     {
