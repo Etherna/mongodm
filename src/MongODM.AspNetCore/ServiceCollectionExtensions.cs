@@ -14,6 +14,7 @@
 
 using Etherna.ExecContext;
 using Etherna.ExecContext.AsyncLocal;
+using Etherna.MongODM.AspNetCore;
 using Etherna.MongODM.Core;
 using Etherna.MongODM.Core.Models;
 using Etherna.MongODM.Core.ProxyModels;
@@ -23,13 +24,12 @@ using Etherna.MongODM.Core.Serialization.Modifiers;
 using Etherna.MongODM.Core.Tasks;
 using Etherna.MongODM.Core.Utility;
 using Microsoft.AspNetCore.Http;
-using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 
-namespace Etherna.MongODM.AspNetCore
+namespace Microsoft.Extensions.DependencyInjection
 {
     public static class ServiceCollectionExtensions
     {

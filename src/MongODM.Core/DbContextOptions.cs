@@ -12,6 +12,7 @@
 //   See the License for the specific language governing permissions and
 //   limitations under the License.
 
+using Etherna.MongODM.Core.Extensions;
 using Etherna.MongODM.Core.Serialization;
 using System.Linq;
 
@@ -29,5 +30,10 @@ namespace Etherna.MongODM.Core
 
     public class DbContextOptions<TDbContext> : DbContextOptions
         where TDbContext : class, IDbContext
-    { }
+    {
+        public DbContextOptions()
+        {
+            ConnectionString = $"mongodb://localhost/{typeof(TDbContext).Name.ToLowerFirstChar()}";
+        }
+    }
 }
