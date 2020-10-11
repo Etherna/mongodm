@@ -12,7 +12,6 @@
 //   See the License for the specific language governing permissions and
 //   limitations under the License.
 
-using Etherna.ExecContext;
 using Etherna.MongODM.AspNetCore;
 using Etherna.MongODM.Core.Models;
 using Etherna.MongODM.Core.ProxyModels;
@@ -22,7 +21,6 @@ using Hangfire.Mongo;
 using Hangfire.Mongo.Migration.Strategies;
 using Hangfire.Mongo.Migration.Strategies.Backup;
 using System;
-using System.Collections.Generic;
 
 namespace Microsoft.Extensions.DependencyInjection
 {
@@ -31,13 +29,12 @@ namespace Microsoft.Extensions.DependencyInjection
         // Methods.
         public static MongODMConfiguration UseMongODMWithHangfire<TModelBase>(
             this IServiceCollection services,
-            IEnumerable<IExecutionContext>? executionContexts = null,
             string? hangfireConnectionString = null,
             MongoStorageOptions? hangfireMongoStorageOptions = null)
             where TModelBase : class, IModel
         {
             // Configure MongODM.
-            var conf = services.UseMongODM<HangfireTaskRunner, TModelBase>(executionContexts);
+            var conf = services.UseMongODM<HangfireTaskRunner, TModelBase>();
 
             // Configure Hangfire.
             AddHangfire(services, hangfireConnectionString, hangfireMongoStorageOptions);
@@ -47,7 +44,6 @@ namespace Microsoft.Extensions.DependencyInjection
 
         public static MongODMConfiguration UseMongODMWithHangfire<TProxyGenerator, TModelBase>(
             this IServiceCollection services,
-            IEnumerable<IExecutionContext>? executionContexts = null,
             string? hangfireConnectionString = null,
             MongoStorageOptions? hangfireMongoStorageOptions = null)
             where TProxyGenerator : class, IProxyGenerator
@@ -57,7 +53,7 @@ namespace Microsoft.Extensions.DependencyInjection
                 throw new ArgumentNullException(nameof(hangfireConnectionString));
 
             // Configure MongODM.
-            var conf = services.UseMongODM<TProxyGenerator, HangfireTaskRunner, TModelBase>(executionContexts);
+            var conf = services.UseMongODM<TProxyGenerator, HangfireTaskRunner, TModelBase>();
 
             // Configure Hangfire.
             AddHangfire(services, hangfireConnectionString, hangfireMongoStorageOptions);

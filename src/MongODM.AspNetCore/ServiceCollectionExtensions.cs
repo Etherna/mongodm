@@ -26,44 +26,29 @@ using Etherna.MongODM.Core.Utility;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using System;
-using System.Collections.Generic;
-using System.Linq;
 
 namespace Microsoft.Extensions.DependencyInjection
 {
     public static class ServiceCollectionExtensions
     {
-        public static MongODMConfiguration UseMongODM<TTaskRunner, TModelBase>(
-            this IServiceCollection services,
-            IEnumerable<IExecutionContext>? executionContexts = null)
+        public static MongODMConfiguration UseMongODM<TTaskRunner, TModelBase>(this IServiceCollection services)
             where TTaskRunner : class, ITaskRunner
             where TModelBase : class, IModel => //needed because of this https://jira.mongodb.org/browse/CSHARP-3154
-            UseMongODM<ProxyGenerator, TTaskRunner, TModelBase>(
-                services,
-                executionContexts);
+            UseMongODM<ProxyGenerator, TTaskRunner, TModelBase>(services);
 
-        public static MongODMConfiguration UseMongODM<TProxyGenerator, TTaskRunner, TModelBase>(
-            this IServiceCollection services,
-            IEnumerable<IExecutionContext>? executionContexts = null)
+        public static MongODMConfiguration UseMongODM<TProxyGenerator, TTaskRunner, TModelBase>(this IServiceCollection services)
             where TProxyGenerator : class, IProxyGenerator
-            where TTaskRunner: class, ITaskRunner
-            where TModelBase: class, IModel //needed because of this https://jira.mongodb.org/browse/CSHARP-3154
+            where TTaskRunner : class, ITaskRunner
+            where TModelBase : class, IModel //needed because of this https://jira.mongodb.org/browse/CSHARP-3154
         {
             services.TryAddSingleton<IHttpContextAccessor, HttpContextAccessor>();
 
-            services.TryAddSingleton(serviceProvider =>
-            {
-                if (executionContexts is null || !executionContexts.Any())
-                    executionContexts = new IExecutionContext[] //default
-                    {
-                        new HttpContextExecutionContext(serviceProvider.GetService<IHttpContextAccessor>()),
-                        AsyncLocalContext.Instance
-                    };
-
-                return executionContexts.Count() == 1 ?
-                    executionContexts.First() :
-                    new ExecutionContextSelector(executionContexts);
-            });
+            services.TryAddSingleton<IExecutionContext>(serviceProvider =>
+               new ExecutionContextSelector(new IExecutionContext[] //default
+               {
+                    new HttpContextExecutionContext(serviceProvider.GetService<IHttpContextAccessor>()),
+                    AsyncLocalContext.Instance
+               }));
             services.TryAddSingleton<IProxyGenerator, TProxyGenerator>();
             services.TryAddSingleton<ITaskRunner, TTaskRunner>();
 
