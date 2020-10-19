@@ -9,6 +9,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\..\src\MongODM.AspNetCore.UI\MongODM.AspNetCore.UI.csproj" />
     <ProjectReference Include="..\..\src\MongODM\MongODM.csproj" />
   </ItemGroup>
 

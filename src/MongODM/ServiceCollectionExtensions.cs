@@ -27,7 +27,7 @@ namespace Microsoft.Extensions.DependencyInjection
     public static class ServiceCollectionExtensions
     {
         // Methods.
-        public static MongODMConfiguration UseMongODMWithHangfire<TModelBase>(
+        public static MongODMConfiguration AddMongODMWithHangfire<TModelBase>(
             this IServiceCollection services,
             string? hangfireConnectionString = null,
             MongoStorageOptions? hangfireMongoStorageOptions = null)
@@ -42,7 +42,7 @@ namespace Microsoft.Extensions.DependencyInjection
             return conf;
         }
 
-        public static MongODMConfiguration UseMongODMWithHangfire<TProxyGenerator, TModelBase>(
+        public static MongODMConfiguration AddMongODMWithHangfire<TProxyGenerator, TModelBase>(
             this IServiceCollection services,
             string? hangfireConnectionString = null,
             MongoStorageOptions? hangfireMongoStorageOptions = null)
