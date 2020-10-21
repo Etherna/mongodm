@@ -12,7 +12,7 @@
 //   See the License for the specific language governing permissions and
 //   limitations under the License.
 
-using Etherna.MongODM.AspNetCore;
+using Etherna.MongODM.Core;
 using Etherna.MongODM.Core.Models;
 using Etherna.MongODM.Core.ProxyModels;
 using Etherna.MongODM.HF.Tasks;
@@ -27,7 +27,7 @@ namespace Microsoft.Extensions.DependencyInjection
     public static class ServiceCollectionExtensions
     {
         // Methods.
-        public static MongODMConfiguration AddMongODMWithHangfire<TModelBase>(
+        public static IMongODMConfiguration AddMongODMWithHangfire<TModelBase>(
             this IServiceCollection services,
             string? hangfireConnectionString = null,
             MongoStorageOptions? hangfireMongoStorageOptions = null)
@@ -42,7 +42,7 @@ namespace Microsoft.Extensions.DependencyInjection
             return conf;
         }
 
-        public static MongODMConfiguration AddMongODMWithHangfire<TProxyGenerator, TModelBase>(
+        public static IMongODMConfiguration AddMongODMWithHangfire<TProxyGenerator, TModelBase>(
             this IServiceCollection services,
             string? hangfireConnectionString = null,
             MongoStorageOptions? hangfireMongoStorageOptions = null)

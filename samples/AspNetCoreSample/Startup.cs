@@ -1,5 +1,6 @@
 using Etherna.MongODM.AspNetCoreSample.Models;
 using Etherna.MongODM.AspNetCoreSample.Persistence;
+using Etherna.MongODM.Core.Tasks;
 using Hangfire;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.Configuration;
@@ -30,14 +31,23 @@ namespace Etherna.MongODM.AspNetCoreSample
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
         public void Configure(IApplicationBuilder app)
         {
-            // Enable hangfire server.
-            app.UseHangfireServer();
-
             // Configure Asp.Net application.
             app.UseDeveloperExceptionPage();
 
             app.UseStaticFiles();
             app.UseRouting();
+
+            app.UseAuthorization();
+
+            app.UseHangfireServer(new BackgroundJobServerOptions
+            {
+                Queues = new[]
+                {
+                    Queues.DB_MAINTENANCE,
+                    "default"
+                }
+            });
+            app.UseHangfireDashboard();
 
             app.UseEndpoints(endpoints =>
             {

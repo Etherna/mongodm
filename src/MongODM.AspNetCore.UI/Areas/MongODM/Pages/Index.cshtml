@@ -1,15 +1,20 @@
 ﻿@page
 @model Etherna.MongODM.AspNetCore.UI.Areas.MongODM.Pages.IndexModel
 @{
-    ViewData["Title"] = "Migrate db";
+    ViewData["Title"] = "MongODM Dashboard";
 }
-
-<h1>@ViewData["Title"]</h1>
 
 <div class="row">
     <div class="col-md-6">
-        <form method="post">
-            <button type="submit" class="btn btn-primary">Start migration</button>
+        @foreach (var context in Model.DbContexts)
+        {
+        <form method="post" class="form-horizontal">
+            <h2>@context.Identifier</h2>
+
+            <p>
+                <button type="submit" class="btn btn-primary" name="identifier" value="@context.Identifier" title="Start migration">Start migration</button>
+            </p>
         </form>
+        }
     </div>
 </div>
