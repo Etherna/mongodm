@@ -40,7 +40,7 @@ namespace Microsoft.Extensions.DependencyInjection
             where TTaskRunner : class, ITaskRunner
             where TModelBase : class, IModel //needed because of this https://jira.mongodb.org/browse/CSHARP-3154
         {
-            var configuration = new MongODMConfiguration(services);
+            var configuration = new AspNetCoreMongODMConfiguration(services);
             services.TryAddSingleton<IMongODMConfiguration>(configuration);
 
             services.TryAddSingleton<IHttpContextAccessor, HttpContextAccessor>();
