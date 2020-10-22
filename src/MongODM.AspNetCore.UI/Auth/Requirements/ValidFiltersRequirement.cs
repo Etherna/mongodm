@@ -12,14 +12,20 @@
 //   See the License for the specific language governing permissions and
 //   limitations under the License.
 
-using System.Globalization;
+using Etherna.MongODM.AspNetCore.UI.Auth.Filters;
+using Microsoft.AspNetCore.Authorization;
+using System;
+using System.Collections.Generic;
 
-namespace Etherna.MongODM.Core.Extensions
+namespace Etherna.MongODM.AspNetCore.UI.Auth.Requirements
 {
-    public static class StringExtensions
+    class ValidFiltersRequirement : IAuthorizationRequirement
     {
-        public static string ToLowerFirstChar(this string str, CultureInfo? cultureInfo = null) =>
-            string.IsNullOrEmpty(str) || char.IsLower(str[0]) ? str :
-                char.ToLower(str[0], cultureInfo ?? CultureInfo.InvariantCulture) + str.Substring(1);
+        public ValidFiltersRequirement(IEnumerable<IDashboardAuthFilter> filters)
+        {
+            Filters = filters ?? throw new ArgumentNullException(nameof(filters));
+        }
+
+        public IEnumerable<IDashboardAuthFilter> Filters { get; }
     }
 }

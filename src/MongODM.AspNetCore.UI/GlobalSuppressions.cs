@@ -12,17 +12,11 @@
 //   See the License for the specific language governing permissions and
 //   limitations under the License.
 
-using Microsoft.Extensions.DependencyInjection;
+// This file is used by Code Analysis to maintain SuppressMessage
+// attributes that are applied to this project.
+// Project-level suppressions either have no target or are given
+// a specific target and scoped to a namespace, type, member, etc.
 
-namespace Etherna.MongODM.AspNetCore
-{
-    public class MongODMConfiguration
-    {
-        public MongODMConfiguration(IServiceCollection services)
-        {
-            Services = services;
-        }
+using System.Diagnostics.CodeAnalysis;
 
-        public IServiceCollection Services { get; }
-    }
-}
+[assembly: SuppressMessage("Performance", "CA1822:Mark members as static", Justification = "Page models can have also empty methods", Scope = "NamespaceAndDescendants", Target = "Etherna.MongODM.AspNetCore.UI.Areas.MongODM.Pages")]

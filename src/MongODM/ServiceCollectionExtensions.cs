@@ -12,7 +12,7 @@
 //   See the License for the specific language governing permissions and
 //   limitations under the License.
 
-using Etherna.MongODM.AspNetCore;
+using Etherna.MongODM.Core;
 using Etherna.MongODM.Core.Models;
 using Etherna.MongODM.Core.ProxyModels;
 using Etherna.MongODM.HF.Tasks;
@@ -27,14 +27,14 @@ namespace Microsoft.Extensions.DependencyInjection
     public static class ServiceCollectionExtensions
     {
         // Methods.
-        public static MongODMConfiguration UseMongODMWithHangfire<TModelBase>(
+        public static IMongODMConfiguration AddMongODMWithHangfire<TModelBase>(
             this IServiceCollection services,
             string? hangfireConnectionString = null,
             MongoStorageOptions? hangfireMongoStorageOptions = null)
             where TModelBase : class, IModel
         {
             // Configure MongODM.
-            var conf = services.UseMongODM<HangfireTaskRunner, TModelBase>();
+            var conf = services.AddMongODM<HangfireTaskRunner, TModelBase>();
 
             // Configure Hangfire.
             AddHangfire(services, hangfireConnectionString, hangfireMongoStorageOptions);
@@ -42,7 +42,7 @@ namespace Microsoft.Extensions.DependencyInjection
             return conf;
         }
 
-        public static MongODMConfiguration UseMongODMWithHangfire<TProxyGenerator, TModelBase>(
+        public static IMongODMConfiguration AddMongODMWithHangfire<TProxyGenerator, TModelBase>(
             this IServiceCollection services,
             string? hangfireConnectionString = null,
             MongoStorageOptions? hangfireMongoStorageOptions = null)
@@ -53,7 +53,7 @@ namespace Microsoft.Extensions.DependencyInjection
                 throw new ArgumentNullException(nameof(hangfireConnectionString));
 
             // Configure MongODM.
-            var conf = services.UseMongODM<TProxyGenerator, HangfireTaskRunner, TModelBase>();
+            var conf = services.AddMongODM<TProxyGenerator, HangfireTaskRunner, TModelBase>();
 
             // Configure Hangfire.
             AddHangfire(services, hangfireConnectionString, hangfireMongoStorageOptions);

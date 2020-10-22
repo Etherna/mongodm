@@ -13,6 +13,23 @@
  *   limitations under the License.
  *@
 
+@page
+@model Etherna.MongODM.AspNetCore.UI.Areas.MongODM.Pages.IndexModel
 @{
-    Layout = "_Layout";
+    ViewData["Title"] = "MongODM Dashboard";
 }
+
+<div class="row">
+    <div class="col-md-6">
+        @foreach (var context in Model.DbContexts)
+        {
+        <form method="post" class="form-horizontal">
+            <h2>@context.Identifier</h2>
+
+            <p>
+                <button type="submit" class="btn btn-primary" name="identifier" value="@context.Identifier" title="Start migration">Start migration</button>
+            </p>
+        </form>
+        }
+    </div>
+</div>

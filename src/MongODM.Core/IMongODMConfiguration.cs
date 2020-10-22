@@ -12,23 +12,29 @@
 //   See the License for the specific language governing permissions and
 //   limitations under the License.
 
-using Etherna.MongODM.Core.Models;
+using System;
 using System.Collections.Generic;
-using System.Threading.Tasks;
 
-namespace Etherna.MongODM.Core.Utility
+namespace Etherna.MongODM.Core
 {
-    public interface IDbMigrationManager : IDbContextInitializable
+    public interface IMongODMConfiguration
     {
-        Task<DbMigrationOperation?> IsMigrationRunningAsync();
+        IEnumerable<Type> DbContextTypes { get; }
+        bool IsFrozen { get; }
 
-        Task<List<DbMigrationOperation>> GetLastMigrationsAsync(int page, int take);
+        // Methods.
+        IMongODMConfiguration AddDbContext<TDbContext>(
+            Action<DbContextOptions<TDbContext>>? dbContextConfig = null)
+            where TDbContext : class, IDbContext;
 
-        Task<DbMigrationOperation> GetMigrationAsync(string migrateOperationId);
+        IMongODMConfiguration AddDbContext<TDbContext, TDbContextImpl>(
+            Action<DbContextOptions<TDbContextImpl>>? dbContextConfig = null)
+            where TDbContext : class, IDbContext
+            where TDbContextImpl : class, TDbContext;
 
         /// <summary>
-        /// Start a db context migration process.
+        /// Freeze configuration.
         /// </summary>
-        Task StartDbContextMigrationAsync();
+        void Freeze();
     }
 }
