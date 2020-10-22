@@ -23,9 +23,11 @@ namespace Etherna.MongODM.AspNetCore.UI
         public DashboardOptions()
         {
             AuthFilters = new[] { new LocalRequestsOnlyAuthFilter() };
+            BasePath = "MongODM";
         }
 
         // Properties.
         public IEnumerable<IDashboardAuthFilter> AuthFilters { get; set; }
+        public string BasePath { get; set; }
     }
 }

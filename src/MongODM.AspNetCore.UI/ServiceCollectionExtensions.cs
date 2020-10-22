@@ -29,7 +29,6 @@ namespace Microsoft.Extensions.DependencyInjection
 
         public static IServiceCollection AddMongODMAdminDashboard(
             this IServiceCollection services,
-            string basePath = "MongODM",
             DashboardOptions? dashboardOptions = null)
         {
             if (services is null)
@@ -50,7 +49,7 @@ namespace Microsoft.Extensions.DependencyInjection
 
                             var segments = selector.AttributeRouteModel.Template.Split('/');
                             if (segments[0] == AreaName)
-                                segments[0] = basePath;
+                                segments[0] = dashboardOptions.BasePath;
 
                             selector.AttributeRouteModel.Template = string.Join("/", segments);
                         }
