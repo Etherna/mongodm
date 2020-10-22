@@ -78,9 +78,9 @@ namespace Etherna.MongODM.Core.Utility
             return migrateOp;
         }
 
-        public async Task StartDbContextMigrationAsync(string authorId)
+        public async Task StartDbContextMigrationAsync()
         {
-            var migrateOp = new DbMigrationOperation(dbContext, authorId);
+            var migrateOp = new DbMigrationOperation(dbContext);
             await dbContext.DbOperations.CreateAsync(migrateOp).ConfigureAwait(false);
 
             taskRunner.RunMigrateDbTask(dbContext.GetType(), migrateOp.Id);

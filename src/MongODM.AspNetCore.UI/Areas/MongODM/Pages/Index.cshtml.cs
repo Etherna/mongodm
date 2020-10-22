@@ -39,11 +39,7 @@ namespace Etherna.MongODM.AspNetCore.UI.Areas.MongODM.Pages
             var dbcontext = DbContexts.First(dbc => dbc.Identifier == identifier);
 
             // Migrate.
-            await dbcontext.DbMigrationManager.StartDbContextMigrationAsync("").ConfigureAwait(false);
-
-            //var userId = userManager.GetUserId(User);
-            //await ssoDbContext.DbMigrationManager.StartDbContextMigrationAsync(userId);
-            
+            await dbcontext.DbMigrationManager.StartDbContextMigrationAsync().ConfigureAwait(false);
         }
 
         // Helpers.

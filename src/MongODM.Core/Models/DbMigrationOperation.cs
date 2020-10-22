@@ -34,16 +34,14 @@ namespace Etherna.MongODM.Core.Models
         private List<MigrationLogBase> _logs = new List<MigrationLogBase>();
 
         // Constructors.
-        public DbMigrationOperation(IDbContext dbContext, string? author)
+        public DbMigrationOperation(IDbContext dbContext)
             : base(dbContext)
         {
-            Author = author;
             CurrentStatus = Status.New;
         }
         protected DbMigrationOperation() { }
 
         // Properties.
-        public virtual string? Author { get; protected set; }
         public virtual DateTime? CompletedDateTime { get; protected set; }
         public virtual Status CurrentStatus { get; protected set; }
         public virtual IEnumerable<MigrationLogBase> Logs

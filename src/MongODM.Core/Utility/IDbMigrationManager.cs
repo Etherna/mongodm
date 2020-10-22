@@ -29,7 +29,6 @@ namespace Etherna.MongODM.Core.Utility
         /// <summary>
         /// Start a db context migration process.
         /// </summary>
-        /// <param name="authorId">Id of user requiring the migration</param>
-        Task StartDbContextMigrationAsync(string authorId);
+        Task StartDbContextMigrationAsync();
     }
 }
