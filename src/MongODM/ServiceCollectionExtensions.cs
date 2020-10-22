@@ -34,7 +34,7 @@ namespace Microsoft.Extensions.DependencyInjection
             where TModelBase : class, IModel
         {
             // Configure MongODM.
-            var conf = services.UseMongODM<HangfireTaskRunner, TModelBase>();
+            var conf = services.AddMongODM<HangfireTaskRunner, TModelBase>();
 
             // Configure Hangfire.
             AddHangfire(services, hangfireConnectionString, hangfireMongoStorageOptions);
@@ -53,7 +53,7 @@ namespace Microsoft.Extensions.DependencyInjection
                 throw new ArgumentNullException(nameof(hangfireConnectionString));
 
             // Configure MongODM.
-            var conf = services.UseMongODM<TProxyGenerator, HangfireTaskRunner, TModelBase>();
+            var conf = services.AddMongODM<TProxyGenerator, HangfireTaskRunner, TModelBase>();
 
             // Configure Hangfire.
             AddHangfire(services, hangfireConnectionString, hangfireMongoStorageOptions);

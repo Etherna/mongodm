@@ -30,12 +30,12 @@ namespace Microsoft.Extensions.DependencyInjection
 {
     public static class ServiceCollectionExtensions
     {
-        public static IMongODMConfiguration UseMongODM<TTaskRunner, TModelBase>(this IServiceCollection services)
+        public static IMongODMConfiguration AddMongODM<TTaskRunner, TModelBase>(this IServiceCollection services)
             where TTaskRunner : class, ITaskRunner
             where TModelBase : class, IModel => //needed because of this https://jira.mongodb.org/browse/CSHARP-3154
-            UseMongODM<ProxyGenerator, TTaskRunner, TModelBase>(services);
+            AddMongODM<ProxyGenerator, TTaskRunner, TModelBase>(services);
 
-        public static IMongODMConfiguration UseMongODM<TProxyGenerator, TTaskRunner, TModelBase>(this IServiceCollection services)
+        public static IMongODMConfiguration AddMongODM<TProxyGenerator, TTaskRunner, TModelBase>(this IServiceCollection services)
             where TProxyGenerator : class, IProxyGenerator
             where TTaskRunner : class, ITaskRunner
             where TModelBase : class, IModel //needed because of this https://jira.mongodb.org/browse/CSHARP-3154
