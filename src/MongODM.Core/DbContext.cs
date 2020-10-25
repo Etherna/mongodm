@@ -53,7 +53,7 @@ namespace Etherna.MongODM.Core
             DbOperations = new CollectionRepository<OperationBase, string>(options.DbOperationsCollectionName);
             DocumentSchemaRegister = dependencies.DocumentSchemaRegister;
             Identifier = options.Identifier ?? GetType().Name;
-            LibraryVersion = GetType()
+            LibraryVersion = typeof(DbContext)
                 .GetTypeInfo()
                 .Assembly
                 .GetCustomAttribute<AssemblyInformationalVersionAttribute>()
