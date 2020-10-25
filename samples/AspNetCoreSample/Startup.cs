@@ -14,7 +14,6 @@
 
 using Etherna.MongODM.AspNetCoreSample.Models;
 using Etherna.MongODM.AspNetCoreSample.Persistence;
-using Etherna.MongODM.Core.Tasks;
 using Hangfire;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.Configuration;
@@ -53,14 +52,7 @@ namespace Etherna.MongODM.AspNetCoreSample
 
             app.UseAuthorization();
 
-            app.UseHangfireServer(new BackgroundJobServerOptions
-            {
-                Queues = new[]
-                {
-                    Queues.DB_MAINTENANCE,
-                    "default"
-                }
-            });
+            app.UseHangfireServer();
             app.UseHangfireDashboard();
 
             app.UseEndpoints(endpoints =>

@@ -12,10 +12,10 @@
 //   See the License for the specific language governing permissions and
 //   limitations under the License.
 
-namespace Etherna.MongODM.Core.Tasks
+namespace Etherna.MongODM.Core
 {
-    public static class Queues
+    public class MongODMOptions
     {
-        public const string DB_MAINTENANCE = "db_maintenance";
+        public string DbMaintenanceQueueName { get; set; } = "default";
     }
 }
