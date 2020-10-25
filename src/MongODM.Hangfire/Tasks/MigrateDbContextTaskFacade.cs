@@ -13,7 +13,6 @@
 //   limitations under the License.
 
 using Etherna.MongODM.Core.Tasks;
-using Hangfire;
 using Hangfire.Server;
 using System;
 using System.Reflection;
@@ -33,7 +32,6 @@ namespace Etherna.MongODM.HF.Tasks
         }
 
         // Methods.
-        [Queue(Queues.DB_MAINTENANCE)]
         public Task RunAsync(Type dbContextType, string dbMigrationOpId, PerformContext context)
         {
             var method = typeof(MigrateDbContextTask).GetMethod(

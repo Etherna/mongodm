@@ -12,14 +12,13 @@
 //   See the License for the specific language governing permissions and
 //   limitations under the License.
 
+using Etherna.MongODM;
 using Etherna.MongODM.Core;
 using Etherna.MongODM.Core.Models;
 using Etherna.MongODM.Core.ProxyModels;
 using Etherna.MongODM.HF.Tasks;
 using Hangfire;
 using Hangfire.Mongo;
-using Hangfire.Mongo.Migration.Strategies;
-using Hangfire.Mongo.Migration.Strategies.Backup;
 using System;
 
 namespace Microsoft.Extensions.DependencyInjection
@@ -29,34 +28,31 @@ namespace Microsoft.Extensions.DependencyInjection
         // Methods.
         public static IMongODMConfiguration AddMongODMWithHangfire<TModelBase>(
             this IServiceCollection services,
-            string? hangfireConnectionString = null,
-            MongoStorageOptions? hangfireMongoStorageOptions = null)
+            Action<HangfireOptions>? configureHangfireOptions = null,
+            Action<MongODMOptions>? configureMongODMOptions = null)
             where TModelBase : class, IModel
         {
             // Configure MongODM.
-            var conf = services.AddMongODM<HangfireTaskRunner, TModelBase>();
+            var conf = services.AddMongODM<HangfireTaskRunner, TModelBase>(configureMongODMOptions);
 
             // Configure Hangfire.
-            AddHangfire(services, hangfireConnectionString, hangfireMongoStorageOptions);
+            AddHangfire(services, configureHangfireOptions);
 
             return conf;
         }
 
         public static IMongODMConfiguration AddMongODMWithHangfire<TProxyGenerator, TModelBase>(
             this IServiceCollection services,
-            string? hangfireConnectionString = null,
-            MongoStorageOptions? hangfireMongoStorageOptions = null)
+            Action<HangfireOptions>? configureHangfireOptions = null,
+            Action<MongODMOptions>? configureMongODMOptions = null)
             where TProxyGenerator : class, IProxyGenerator
             where TModelBase : class, IModel
         {
-            if (hangfireConnectionString is null)
-                throw new ArgumentNullException(nameof(hangfireConnectionString));
-
             // Configure MongODM.
-            var conf = services.AddMongODM<TProxyGenerator, HangfireTaskRunner, TModelBase>();
+            var conf = services.AddMongODM<TProxyGenerator, HangfireTaskRunner, TModelBase>(configureMongODMOptions);
 
             // Configure Hangfire.
-            AddHangfire(services, hangfireConnectionString, hangfireMongoStorageOptions);
+            AddHangfire(services, configureHangfireOptions);
 
             return conf;
         }
@@ -64,24 +60,16 @@ namespace Microsoft.Extensions.DependencyInjection
         // Helpers.
         private static void AddHangfire(
             IServiceCollection services,
-            string? hangfireConnectionString,
-            MongoStorageOptions? hangfireMongoStorageOptions)
+            Action<HangfireOptions>? configureHangfireOptions)
         {
-            // Set default options.
-            hangfireConnectionString ??= "mongodb://localhost/hangfire";
-            hangfireMongoStorageOptions ??= new MongoStorageOptions
-            {
-                MigrationOptions = new MongoMigrationOptions
-                {
-                    MigrationStrategy = new MigrateMongoMigrationStrategy(),
-                    BackupStrategy = new CollectionMongoBackupStrategy()
-                }
-            };
+            // Configure options.
+            var hangfireOptions = new HangfireOptions();
+            configureHangfireOptions?.Invoke(hangfireOptions);
 
-            // Configure Hangfire.
+            // Add hangfire.
             services.AddHangfire(options =>
             {
-                options.UseMongoStorage(hangfireConnectionString, hangfireMongoStorageOptions);
+                options.UseMongoStorage(hangfireOptions.ConnectionString, hangfireOptions.StorageOptions);
             });
         }
     }

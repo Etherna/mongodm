@@ -25,23 +25,33 @@ using Etherna.MongODM.Core.Tasks;
 using Etherna.MongODM.Core.Utility;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.DependencyInjection.Extensions;
+using System;
 
 namespace Microsoft.Extensions.DependencyInjection
 {
     public static class ServiceCollectionExtensions
     {
-        public static IMongODMConfiguration AddMongODM<TTaskRunner, TModelBase>(this IServiceCollection services)
+        public static IMongODMConfiguration AddMongODM<TTaskRunner, TModelBase>(
+            this IServiceCollection services,
+            Action<MongODMOptions>? configureOptions = null)
             where TTaskRunner : class, ITaskRunner
             where TModelBase : class, IModel => //needed because of this https://jira.mongodb.org/browse/CSHARP-3154
-            AddMongODM<ProxyGenerator, TTaskRunner, TModelBase>(services);
+            AddMongODM<ProxyGenerator, TTaskRunner, TModelBase>(services, configureOptions);
 
-        public static IMongODMConfiguration AddMongODM<TProxyGenerator, TTaskRunner, TModelBase>(this IServiceCollection services)
+        public static IMongODMConfiguration AddMongODM<TProxyGenerator, TTaskRunner, TModelBase>(
+            this IServiceCollection services,
+            Action<MongODMOptions>? configureOptions = null)
             where TProxyGenerator : class, IProxyGenerator
             where TTaskRunner : class, ITaskRunner
             where TModelBase : class, IModel //needed because of this https://jira.mongodb.org/browse/CSHARP-3154
         {
+            // MongODM generic configuration.
             var configuration = new AspNetCoreMongODMConfiguration(services);
             services.TryAddSingleton<IMongODMConfiguration>(configuration);
+
+            var mongODMOptions = new MongODMOptions();
+            configureOptions?.Invoke(mongODMOptions);
+            services.TryAddSingleton(mongODMOptions);
 
             services.TryAddSingleton<IHttpContextAccessor, HttpContextAccessor>();
 
