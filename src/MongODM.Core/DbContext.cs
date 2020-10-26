@@ -51,7 +51,7 @@ namespace Etherna.MongODM.Core
             DbMaintainer = dependencies.DbMaintainer;
             DbMigrationManager = dependencies.DbMigrationManager;
             DbOperations = new CollectionRepository<OperationBase, string>(options.DbOperationsCollectionName);
-            DocumentSchemaRegister = dependencies.DocumentSchemaRegister;
+            ModelSchemaConfigurationRegister = dependencies.ModelSchemaConfigurationRegister;
             Identifier = options.Identifier ?? GetType().Name;
             LibraryVersion = typeof(DbContext)
                 .GetTypeInfo()
@@ -70,7 +70,7 @@ namespace Etherna.MongODM.Core
             // Initialize internal dependencies.
             DbMaintainer.Initialize(this);
             DbMigrationManager.Initialize(this);
-            DocumentSchemaRegister.Initialize(this);
+            ModelSchemaConfigurationRegister.Initialize(this);
             RepositoryRegister.Initialize(this);
 
             // Initialize repositories.
@@ -88,7 +88,7 @@ namespace Etherna.MongODM.Core
                 maps.Register(this);
 
             // Build and freeze document schema register.
-            DocumentSchemaRegister.Freeze();
+            ModelSchemaConfigurationRegister.Freeze();
         }
 
         // Public properties.
@@ -104,7 +104,7 @@ namespace Etherna.MongODM.Core
         public IDbMigrationManager DbMigrationManager { get; }
         public ICollectionRepository<OperationBase, string> DbOperations { get; }
         public virtual IEnumerable<MongoMigrationBase> DocumentMigrationList { get; } = Array.Empty<MongoMigrationBase>();
-        public IDocumentSchemaRegister DocumentSchemaRegister { get; }
+        public IModelSchemaConfigurationRegister ModelSchemaConfigurationRegister { get; }
         public string Identifier { get; }
         public SemanticVersion LibraryVersion { get; }
         public IProxyGenerator ProxyGenerator { get; }

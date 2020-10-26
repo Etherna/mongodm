@@ -27,23 +27,23 @@ using System.Threading.Tasks;
 
 namespace Etherna.MongODM.Core.Serialization
 {
-    public class DocumentSchemaRegister : IDocumentSchemaRegister, IDisposable
+    public class ModelSchemaConfigurationRegister : IModelSchemaConfigurationRegister, IDisposable
     {
         // Fields.
         private readonly ReaderWriterLockSlim configLock = new ReaderWriterLockSlim(LockRecursionPolicy.SupportsRecursion);
-        private readonly Dictionary<MemberInfo, List<DocumentSchemaMemberMap>> memberDependenciesMap =
-            new Dictionary<MemberInfo, List<DocumentSchemaMemberMap>>();
-        private readonly Dictionary<Type, List<DocumentSchemaMemberMap>> modelDependenciesMap =
-            new Dictionary<Type, List<DocumentSchemaMemberMap>>();
-        private readonly Dictionary<Type, List<DocumentSchemaMemberMap>> modelEntityReferencesIdsMap =
-            new Dictionary<Type, List<DocumentSchemaMemberMap>>();
+        private readonly Dictionary<MemberInfo, List<ModelSchemaMemberMap>> memberDependenciesMap =
+            new Dictionary<MemberInfo, List<ModelSchemaMemberMap>>();
+        private readonly Dictionary<Type, List<ModelSchemaMemberMap>> modelDependenciesMap =
+            new Dictionary<Type, List<ModelSchemaMemberMap>>();
+        private readonly Dictionary<Type, List<ModelSchemaMemberMap>> modelEntityReferencesIdsMap =
+            new Dictionary<Type, List<ModelSchemaMemberMap>>();
 
         private IDbContext dbContext = default!;
         private readonly ISerializerModifierAccessor serializerModifierAccessor;
-        private readonly List<DocumentSchema> schemas = new List<DocumentSchema>();
+        private readonly List<ModelSchema> schemas = new List<ModelSchema>();
 
         // Constructors and initialization.
-        public DocumentSchemaRegister(
+        public ModelSchemaConfigurationRegister(
             ISerializerModifierAccessor serializerModifierAccessor)
         {
             this.serializerModifierAccessor = serializerModifierAccessor;
@@ -61,7 +61,6 @@ namespace Etherna.MongODM.Core.Serialization
         // Properties.
         public bool IsFrozen { get; private set; }
         public bool IsInitialized { get; private set; }
-        public IEnumerable<DocumentSchema> Schemas => schemas;
 
         // Methods.
         public void Dispose()
@@ -126,31 +125,31 @@ namespace Etherna.MongODM.Core.Serialization
             }
         }
 
-        public IEnumerable<DocumentSchemaMemberMap> GetMemberDependencies(MemberInfo memberInfo)
+        public IEnumerable<ModelSchemaMemberMap> GetMemberDependencies(MemberInfo memberInfo)
         {
             Freeze();
 
-            if (memberDependenciesMap.TryGetValue(memberInfo, out List<DocumentSchemaMemberMap> dependencies))
+            if (memberDependenciesMap.TryGetValue(memberInfo, out List<ModelSchemaMemberMap> dependencies))
                 return dependencies;
-            return Array.Empty<DocumentSchemaMemberMap>();
+            return Array.Empty<ModelSchemaMemberMap>();
         }
 
-        public IEnumerable<DocumentSchemaMemberMap> GetModelDependencies(Type modelType)
+        public IEnumerable<ModelSchemaMemberMap> GetModelDependencies(Type modelType)
         {
             Freeze();
 
-            if (modelDependenciesMap.TryGetValue(modelType, out List<DocumentSchemaMemberMap> dependencies))
+            if (modelDependenciesMap.TryGetValue(modelType, out List<ModelSchemaMemberMap> dependencies))
                 return dependencies;
-            return Array.Empty<DocumentSchemaMemberMap>();
+            return Array.Empty<ModelSchemaMemberMap>();
         }
 
-        public IEnumerable<DocumentSchemaMemberMap> GetModelEntityReferencesIds(Type modelType)
+        public IEnumerable<ModelSchemaMemberMap> GetModelEntityReferencesIds(Type modelType)
         {
             Freeze();
 
-            if (modelEntityReferencesIdsMap.TryGetValue(modelType, out List<DocumentSchemaMemberMap> dependencies))
+            if (modelEntityReferencesIdsMap.TryGetValue(modelType, out List<ModelSchemaMemberMap> dependencies))
                 return dependencies;
-            return Array.Empty<DocumentSchemaMemberMap>();
+            return Array.Empty<ModelSchemaMemberMap>();
         }
 
         public void RegisterModelSchema<TModel>(
@@ -220,7 +219,7 @@ namespace Etherna.MongODM.Core.Serialization
                         { AddVersion = typeof(IEntityModel).IsAssignableFrom(typeof(TModel)) }; //true only for entity models
 
                 // Register schema.
-                schemas.Add(new DocumentSchema(classMap, typeof(TModel), proxyClassMap, serializer, fromVersion));
+                schemas.Add(new ModelSchema(classMap, typeof(TModel), proxyClassMap, serializer, fromVersion));
             }
             finally
             {
@@ -255,18 +254,18 @@ namespace Etherna.MongODM.Core.Serialization
                         memberMap));
 
                 // Add dependency to registers.
-                var dependency = new DocumentSchemaMemberMap(
+                var dependency = new ModelSchemaMemberMap(
                     modelType,
                     newMemberPath,
                     version,
                     useCascadeDeleteSetting);
 
                 if (!memberDependenciesMap.ContainsKey(memberMap.MemberInfo))
-                    memberDependenciesMap[memberMap.MemberInfo] = new List<DocumentSchemaMemberMap>();
+                    memberDependenciesMap[memberMap.MemberInfo] = new List<ModelSchemaMemberMap>();
                 if (!modelDependenciesMap.ContainsKey(modelType))
-                    modelDependenciesMap[modelType] = new List<DocumentSchemaMemberMap>();
+                    modelDependenciesMap[modelType] = new List<ModelSchemaMemberMap>();
                 if (!modelEntityReferencesIdsMap.ContainsKey(modelType))
-                    modelEntityReferencesIdsMap[modelType] = new List<DocumentSchemaMemberMap>();
+                    modelEntityReferencesIdsMap[modelType] = new List<ModelSchemaMemberMap>();
 
                 memberDependenciesMap[memberMap.MemberInfo].Add(dependency);
                 modelDependenciesMap[modelType].Add(dependency);

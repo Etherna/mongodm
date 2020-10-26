@@ -21,7 +21,7 @@ namespace Etherna.MongODM.AspNetCoreSample.Models.ModelMaps
     {
         public void Register(IDbContext dbContext)
         {
-            dbContext.DocumentSchemaRegister.RegisterModelSchema<Cat>("1.0.0");
+            dbContext.ModelSchemaConfigurationRegister.AddModelSchema<Cat>("1.0.0");
         }
     }
 }

@@ -12,17 +12,10 @@
 //   See the License for the specific language governing permissions and
 //   limitations under the License.
 
-using Etherna.MongODM.Core.Models;
-using Etherna.MongODM.Core.Serialization;
-
-namespace Etherna.MongODM.Core.ModelMaps
+namespace Etherna.MongODM.Core.Serialization
 {
-    class SeedOperationMap : IModelMapsCollector
+    public interface IModelSchemaConfiguration<TModel> where TModel : class
     {
-        public void Register(IDbContext dbContext)
-        {
-            dbContext.ModelSchemaConfigurationRegister.AddModelSchema<SeedOperation>(
-                "0.20.0");
-        }
+        IModelSchemaConfiguration<TModel> AddSecondarySchema(string tbd);
     }
 }

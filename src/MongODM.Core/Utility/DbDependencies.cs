@@ -25,7 +25,7 @@ namespace Etherna.MongODM.Core.Utility
             IDbCache dbCache,
             IDbMaintainer dbMaintainer,
             IDbMigrationManager dbContextMigrationManager,
-            IDocumentSchemaRegister documentSchemaRegister,
+            IModelSchemaConfigurationRegister modelSchemaRegister,
             IProxyGenerator proxyGenerator,
             IRepositoryRegister repositoryRegister,
             ISerializerModifierAccessor serializerModifierAccessor,
@@ -38,7 +38,7 @@ namespace Etherna.MongODM.Core.Utility
             DbCache = dbCache;
             DbMaintainer = dbMaintainer;
             DbMigrationManager = dbContextMigrationManager;
-            DocumentSchemaRegister = documentSchemaRegister;
+            ModelSchemaConfigurationRegister = modelSchemaRegister;
             ProxyGenerator = proxyGenerator;
             RepositoryRegister = repositoryRegister;
             SerializerModifierAccessor = serializerModifierAccessor;
@@ -47,7 +47,7 @@ namespace Etherna.MongODM.Core.Utility
         public IDbCache DbCache { get; }
         public IDbMaintainer DbMaintainer { get; }
         public IDbMigrationManager DbMigrationManager { get; }
-        public IDocumentSchemaRegister DocumentSchemaRegister { get; }
+        public IModelSchemaConfigurationRegister ModelSchemaConfigurationRegister { get; }
         public IProxyGenerator ProxyGenerator { get; }
         public IRepositoryRegister RepositoryRegister { get; }
         public ISerializerModifierAccessor SerializerModifierAccessor { get; }

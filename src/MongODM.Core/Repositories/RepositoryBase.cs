@@ -48,7 +48,7 @@ namespace Etherna.MongODM.Core.Repositories
         public abstract string Name { get; }
 
         // Methods.
-        public abstract Task BuildIndexesAsync(IDocumentSchemaRegister schemaRegister, CancellationToken cancellationToken = default);
+        public abstract Task BuildIndexesAsync(IModelSchemaConfigurationRegister schemaRegister, CancellationToken cancellationToken = default);
 
         public virtual async Task CreateAsync(IEnumerable<TModel> models, CancellationToken cancellationToken = default)
         {
@@ -74,7 +74,7 @@ namespace Etherna.MongODM.Core.Repositories
                 throw new ArgumentNullException(nameof(model));
 
             // Process cascade delete.
-            var referencesIdsPaths = DbContext.DocumentSchemaRegister.GetModelEntityReferencesIds(typeof(TModel))
+            var referencesIdsPaths = DbContext.ModelSchemaConfigurationRegister.GetModelEntityReferencesIds(typeof(TModel))
                 .Where(d => d.UseCascadeDelete == true)
                 .Where(d => d.EntityClassMapPath.Count() == 2) //ignore references of references
                 .DistinctBy(d => d.FullPathToString())

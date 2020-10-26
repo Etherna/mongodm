@@ -29,7 +29,7 @@ namespace Etherna.MongODM.Core.Repositories
         string Name { get; }
 
         Task BuildIndexesAsync(
-            IDocumentSchemaRegister schemaRegister,
+            IModelSchemaConfigurationRegister schemaRegister,
             CancellationToken cancellationToken = default);
 
         Task DeleteAsync(

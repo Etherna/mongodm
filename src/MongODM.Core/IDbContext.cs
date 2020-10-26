@@ -73,11 +73,6 @@ namespace Etherna.MongODM.Core
         IEnumerable<MongoMigrationBase> DocumentMigrationList { get; }
 
         /// <summary>
-        /// Container for model serialization and document schema information.
-        /// </summary>
-        IDocumentSchemaRegister DocumentSchemaRegister { get; }
-
-        /// <summary>
         /// DbContext unique identifier.
         /// </summary>
         string Identifier { get; }
@@ -86,6 +81,11 @@ namespace Etherna.MongODM.Core
         /// Current MongODM library version
         /// </summary>
         SemanticVersion LibraryVersion { get; }
+
+        /// <summary>
+        /// Register for model serialization and schema information.
+        /// </summary>
+        IModelSchemaConfigurationRegister ModelSchemaConfigurationRegister { get; }
 
         /// <summary>
         /// Current model proxy generator.

@@ -22,16 +22,16 @@ namespace Etherna.MongODM.Core.ModelMaps
     {
         public void Register(IDbContext dbContext)
         {
-            dbContext.DocumentSchemaRegister.RegisterModelSchema<DbMigrationOperation>(
+            dbContext.ModelSchemaConfigurationRegister.AddModelSchema<DbMigrationOperation>(
                 "0.20.0");
 
-            dbContext.DocumentSchemaRegister.RegisterModelSchema<MigrationLogBase>(
+            dbContext.ModelSchemaConfigurationRegister.AddModelSchema<MigrationLogBase>(
                 "0.20.0");
 
-            dbContext.DocumentSchemaRegister.RegisterModelSchema<DocumentMigrationLog>(
+            dbContext.ModelSchemaConfigurationRegister.AddModelSchema<DocumentMigrationLog>(
                 "0.20.0");
 
-            dbContext.DocumentSchemaRegister.RegisterModelSchema<IndexMigrationLog>(
+            dbContext.ModelSchemaConfigurationRegister.AddModelSchema<IndexMigrationLog>(
                 "0.20.0");
         }
     }

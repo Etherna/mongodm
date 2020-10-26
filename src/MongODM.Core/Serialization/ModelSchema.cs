@@ -17,28 +17,35 @@ using System;
 
 namespace Etherna.MongODM.Core.Serialization
 {
-    public class DocumentSchema
+    public abstract class ModelSchema
     {
         // Constructors.
-        public DocumentSchema(
+        public ModelSchema(
+            string id,
             BsonClassMap classMap,
-            Type modelType,
-            BsonClassMap? proxyClassMap,
-            IBsonSerializer? serializer,
-            SemanticVersion version)
+            IBsonSerializer? serializer)
         {
-            ClassMap = classMap;
-            ModelType = modelType;
-            ProxyClassMap = proxyClassMap;
+            Id = id ?? throw new ArgumentNullException(nameof(id));
+            ClassMap = classMap ?? throw new ArgumentNullException(nameof(classMap));
             Serializer = serializer;
-            Version = version;
         }
 
         // Properties.
+        public string Id { get; }
         public BsonClassMap ClassMap { get; }
-        public Type ModelType { get; }
-        public BsonClassMap? ProxyClassMap { get; }
+        public abstract Type ModelType { get; }
         public IBsonSerializer? Serializer { get; }
-        public SemanticVersion Version { get; }
+    }
+
+    public class ModelSchema<TModel> : ModelSchema
+    {
+        public ModelSchema(
+            string id,
+            BsonClassMap<TModel> classMap,
+            IBsonSerializer<TModel>? serializer)
+            : base(id, classMap, serializer)
+        { }
+
+        public override Type ModelType => typeof(TModel);
     }
 }

@@ -20,10 +20,10 @@ using System.Text;
 
 namespace Etherna.MongODM.Core.Serialization
 {
-    public class DocumentSchemaMemberMap
+    public class ModelSchemaMemberMap
     {
         // Constructors.
-        public DocumentSchemaMemberMap(
+        public ModelSchemaMemberMap(
             Type rootModelType,
             IEnumerable<EntityMember> memberPath,
             SemanticVersion version,
