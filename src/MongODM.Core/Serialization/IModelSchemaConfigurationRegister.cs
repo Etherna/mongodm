@@ -39,27 +39,31 @@ namespace Etherna.MongODM.Core.Serialization
         IEnumerable<ModelSchemaMemberMap> GetModelEntityReferencesIds(Type modelType);
 
         /// <summary>
-        /// Register a new model schema
+        /// Register a new model schema configuration
         /// </summary>
         /// <typeparam name="TModel">The model type</typeparam>
         /// <param name="id">The schema Id</param>
         /// <param name="modelMapInitializer">The model map inizializer</param>
         /// <param name="customSerializer">Custom serializer</param>
+        /// <param name="requireCollectionMigration">Migrate full collection on db migration</param>
         /// <returns>Configuration of model schema</returns>
         IModelSchemaConfiguration<TModel> AddModel<TModel>(
             string id,
             Action<BsonClassMap<TModel>>? modelMapInitializer = null,
-            IBsonSerializer<TModel>? customSerializer = null)
+            IBsonSerializer<TModel>? customSerializer = null,
+            bool requireCollectionMigration = false)
             where TModel : class;
 
         /// <summary>
-        /// Register a new model schema
+        /// Register a new model schema configuration
         /// </summary>
         /// <typeparam name="TModel">The model type</typeparam>
         /// <param name="modelSchema">The model schema</param>
+        /// <param name="requireCollectionMigration">Migrate full collection on db migration</param>
         /// <returns>Configuration of model schema</returns>
         IModelSchemaConfiguration<TModel> AddModel<TModel>(
-            ModelSchema<TModel> modelSchema)
+            ModelSchema<TModel> modelSchema,
+            bool requireCollectionMigration = false)
             where TModel : class;
     }
 }

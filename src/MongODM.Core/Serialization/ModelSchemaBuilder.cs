@@ -5,9 +5,9 @@ using System;
 
 namespace Etherna.MongODM.Core.Serialization
 {
-    class ModelSchemaBuilder : IModelSchemaBuilder
+    public static class ModelSchemaBuilder
     {
-        public ModelSchema<TModel> GenerateModelSchema<TModel>(
+        public static ModelSchema<TModel> GenerateModelSchema<TModel>(
             string id,
             Action<BsonClassMap<TModel>>? classMapInitializer = null,
             IBsonSerializer<TModel>? customSerializer = null) where TModel : class =>
@@ -16,10 +16,14 @@ namespace Etherna.MongODM.Core.Serialization
                 new BsonClassMap<TModel>(classMapInitializer ?? (cm => cm.AutoMap())),
                 customSerializer);
 
-        public void SetDefaultSerializer<TModel>(
+        public static void SetDefaultSerializer<TModel>(
             ModelSchema<TModel> modelSchema,
             IDbContext dbContext) where TModel : class
         {
+            if (modelSchema is null)
+                throw new ArgumentNullException(nameof(modelSchema));
+            if (dbContext is null)
+                throw new ArgumentNullException(nameof(dbContext));
             if (modelSchema.Serializer != null)
                 throw new InvalidOperationException("A serializer is already setted");
             if (typeof(TModel).IsAbstract)
@@ -32,10 +36,12 @@ namespace Etherna.MongODM.Core.Serialization
             { AddVersion = typeof(IEntityModel).IsAssignableFrom(typeof(TModel)) }; //true only for entity models
         }
 
-        public void UseProxyGenerator<TModel>(
+        public static void UseProxyGenerator<TModel>(
             ModelSchema<TModel> modelSchema,
             IDbContext dbContext) where TModel : class
         {
+            if (modelSchema is null)
+                throw new ArgumentNullException(nameof(modelSchema));
             if (dbContext is null)
                 throw new ArgumentNullException(nameof(dbContext));
             if (typeof(TModel).IsAbstract)

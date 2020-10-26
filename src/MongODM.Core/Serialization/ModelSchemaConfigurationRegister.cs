@@ -37,16 +37,13 @@ namespace Etherna.MongODM.Core.Serialization
             new Dictionary<Type, List<ModelSchemaMemberMap>>();
 
         private IDbContext dbContext = default!;
-        private readonly IModelSchemaBuilder modelSchemaBuilder;
         private readonly ISerializerModifierAccessor serializerModifierAccessor;
         private readonly List<IModelSchemaConfiguration> modelSchemaConfigurations = new List<IModelSchemaConfiguration>();
 
         // Constructor, initialization and dispose.
         public ModelSchemaConfigurationRegister(
-            IModelSchemaBuilder modelSchemaBuilder,
             ISerializerModifierAccessor serializerModifierAccessor)
         {
-            this.modelSchemaBuilder = modelSchemaBuilder;
             this.serializerModifierAccessor = serializerModifierAccessor;
         }
 
@@ -71,12 +68,15 @@ namespace Etherna.MongODM.Core.Serialization
         // Methods.
         public IModelSchemaConfiguration<TModel> AddModel<TModel>(
             string id,
-            Action<BsonClassMap<TModel>>? classMapInitializer = null,
-            IBsonSerializer<TModel>? customSerializer = null)
+            Action<BsonClassMap<TModel>>? modelMapInitializer = null,
+            IBsonSerializer<TModel>? customSerializer = null,
+            bool requireCollectionMigration = false)
             where TModel : class =>
-            AddModel(modelSchemaBuilder.GenerateModelSchema(id, classMapInitializer, customSerializer));
+            AddModel(ModelSchemaBuilder.GenerateModelSchema(id, modelMapInitializer, customSerializer), requireCollectionMigration);
 
-        public IModelSchemaConfiguration<TModel> AddModel<TModel>(ModelSchema<TModel> modelSchema)
+        public IModelSchemaConfiguration<TModel> AddModel<TModel>(
+            ModelSchema<TModel> modelSchema,
+            bool requireCollectionMigration = false)
             where TModel : class
         {
             if (modelSchema is null)
@@ -90,15 +90,15 @@ namespace Etherna.MongODM.Core.Serialization
 
                 // If not abstract, adjustments for use proxygenerator.
                 if (!typeof(TModel).IsAbstract)
-                    modelSchemaBuilder.UseProxyGenerator(modelSchema, dbContext);
+                    ModelSchemaBuilder.UseProxyGenerator(modelSchema, dbContext);
 
                 // If not abstract and there isn't a custom serializer, set the default one.
                 if (!typeof(TModel).IsAbstract &&
                     modelSchema.Serializer is null)
-                    modelSchemaBuilder.SetDefaultSerializer(modelSchema, dbContext);
+                    ModelSchemaBuilder.SetDefaultSerializer(modelSchema, dbContext);
 
                 // Register and return schema configuration.
-                var modelSchemaConfiguration = new ModelSchemaConfiguration<TModel>(modelSchema);
+                var modelSchemaConfiguration = new ModelSchemaConfiguration<TModel>(modelSchema, requireCollectionMigration);
                 modelSchemaConfigurations.Add(modelSchemaConfiguration);
 
                 return modelSchemaConfiguration;
