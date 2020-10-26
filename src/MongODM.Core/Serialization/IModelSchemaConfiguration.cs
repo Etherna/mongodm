@@ -14,7 +14,13 @@
 
 namespace Etherna.MongODM.Core.Serialization
 {
-    public interface IModelSchemaConfiguration<TModel> where TModel : class
+    public interface IModelSchemaConfiguration
+    {
+        ModelSchema ActiveModelSchema { get; }
+    }
+
+    public interface IModelSchemaConfiguration<TModel> : IModelSchemaConfiguration
+        where TModel : class
     {
         IModelSchemaConfiguration<TModel> AddSecondarySchema(string tbd);
     }

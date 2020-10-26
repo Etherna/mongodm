@@ -43,8 +43,8 @@ namespace Etherna.MongODM.Core.ProxyModels
 
         // Methods.
         public object CreateInstance(
-            IDbContext dbContext,
             Type type,
+            IDbContext dbContext,
             params object[] constructorArguments)
         {
             if (dbContext is null)
@@ -131,7 +131,7 @@ namespace Etherna.MongODM.Core.ProxyModels
         }
 
         public TModel CreateInstance<TModel>(IDbContext dbContext, params object[] constructorArguments) =>
-            (TModel)CreateInstance(dbContext, typeof(TModel), constructorArguments);
+            (TModel)CreateInstance(typeof(TModel), dbContext, constructorArguments);
 
         public void Dispose()
         {

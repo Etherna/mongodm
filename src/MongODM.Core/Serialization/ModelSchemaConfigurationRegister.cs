@@ -12,7 +12,6 @@
 //   See the License for the specific language governing permissions and
 //   limitations under the License.
 
-using Etherna.MongODM.Core.Models;
 using Etherna.MongODM.Core.Serialization.Modifiers;
 using Etherna.MongODM.Core.Serialization.Serializers;
 using MongoDB.Bson.Serialization;
@@ -23,7 +22,6 @@ using System.Linq;
 using System.Reflection;
 using System.Text;
 using System.Threading;
-using System.Threading.Tasks;
 
 namespace Etherna.MongODM.Core.Serialization
 {
@@ -41,9 +39,9 @@ namespace Etherna.MongODM.Core.Serialization
         private IDbContext dbContext = default!;
         private readonly IModelSchemaBuilder modelSchemaBuilder;
         private readonly ISerializerModifierAccessor serializerModifierAccessor;
-        private readonly List<ModelSchema> schemas = new List<ModelSchema>();
+        private readonly List<IModelSchemaConfiguration> modelSchemaConfigurations = new List<IModelSchemaConfiguration>();
 
-        // Constructors and initialization.
+        // Constructor, initialization and dispose.
         public ModelSchemaConfigurationRegister(
             IModelSchemaBuilder modelSchemaBuilder,
             ISerializerModifierAccessor serializerModifierAccessor)
@@ -61,14 +59,54 @@ namespace Etherna.MongODM.Core.Serialization
             IsInitialized = true;
         }
 
+        public void Dispose()
+        {
+            configLock.Dispose();
+        }
+
         // Properties.
         public bool IsFrozen { get; private set; }
         public bool IsInitialized { get; private set; }
 
         // Methods.
-        public void Dispose()
+        public IModelSchemaConfiguration<TModel> AddModel<TModel>(
+            string id,
+            Action<BsonClassMap<TModel>>? classMapInitializer = null,
+            IBsonSerializer<TModel>? customSerializer = null)
+            where TModel : class =>
+            AddModel(modelSchemaBuilder.GenerateModelSchema(id, classMapInitializer, customSerializer));
+
+        public IModelSchemaConfiguration<TModel> AddModel<TModel>(ModelSchema<TModel> modelSchema)
+            where TModel : class
         {
-            configLock.Dispose();
+            if (modelSchema is null)
+                throw new ArgumentNullException(nameof(modelSchema));
+
+            configLock.EnterWriteLock();
+            try
+            {
+                if (IsFrozen)
+                    throw new InvalidOperationException("Register is frozen");
+
+                // If not abstract, adjustments for use proxygenerator.
+                if (!typeof(TModel).IsAbstract)
+                    modelSchemaBuilder.UseProxyGenerator(modelSchema, dbContext);
+
+                // If not abstract and there isn't a custom serializer, set the default one.
+                if (!typeof(TModel).IsAbstract &&
+                    modelSchema.Serializer is null)
+                    modelSchemaBuilder.SetDefaultSerializer(modelSchema, dbContext);
+
+                // Register and return schema configuration.
+                var modelSchemaConfiguration = new ModelSchemaConfiguration<TModel>(modelSchema);
+                modelSchemaConfigurations.Add(modelSchemaConfiguration);
+
+                return modelSchemaConfiguration;
+            }
+            finally
+            {
+                configLock.ExitWriteLock();
+            }
         }
 
         public void Freeze()
@@ -109,12 +147,12 @@ namespace Etherna.MongODM.Core.Serialization
                     // Compile dependency registers.
                     foreach (var schema in schemas)
                     {
-                        schema.ClassMap.Freeze();
+                        schema.ModelMap.Freeze();
 
                         CompileDependencyRegisters(
                             schema.ModelType,
                             Array.Empty<EntityMember>(),
-                            schema.ClassMap,
+                            schema.ModelMap,
                             schema.Version);
                     }
 
@@ -153,70 +191,6 @@ namespace Etherna.MongODM.Core.Serialization
             if (modelEntityReferencesIdsMap.TryGetValue(modelType, out List<ModelSchemaMemberMap> dependencies))
                 return dependencies;
             return Array.Empty<ModelSchemaMemberMap>();
-        }
-
-        public IModelSchemaConfiguration<TModel> AddModel<TModel>(
-            string id,
-            Action<BsonClassMap<TModel>>? classMapInitializer = null,
-            IBsonSerializer<TModel>? customSerializer = null)
-            where TModel : class =>
-            AddModel(modelSchemaBuilder.GenerateModelSchema(id, classMapInitializer, customSerializer));
-
-        public IModelSchemaConfiguration<TModel> AddModel<TModel>(ModelSchema<TModel> modelSchema)
-            where TModel : class
-        {
-            throw new NotImplementedException();
-        }
-        public void RegisterModelSchema<TModel>(
-            SemanticVersion fromVersion,
-            BsonClassMap<TModel> classMap,
-            Func<IBsonSerializer<TModel>>? initCustomSerializer = null,
-            Func<TModel, SemanticVersion?, Task<TModel>>? modelMigrationAsync = null)
-            where TModel : class
-        {
-            if (classMap is null)
-                throw new ArgumentNullException(nameof(classMap));
-
-            configLock.EnterWriteLock();
-            try
-            {
-                if (IsFrozen)
-                    throw new InvalidOperationException("Register is frozen");
-
-                // If not abstract, adjustments for use proxygenerator.
-                BsonClassMap? proxyClassMap = null;
-                if (!typeof(TModel).IsAbstract)
-                {
-                    //set creator
-                    classMap.SetCreator(() => dbContext.ProxyGenerator.CreateInstance<TModel>(dbContext));
-
-                    //generate proxy classmap
-                    proxyClassMap = new BsonClassMap(
-                        dbContext.ProxyGenerator.CreateInstance<TModel>(dbContext).GetType());
-                }
-
-                // Generate model serializer.
-                IBsonSerializer<TModel>? serializer = null;
-
-                if (initCustomSerializer != null) //if custom is setted, keep it
-                    serializer = initCustomSerializer();
-
-                else if (!typeof(TModel).IsAbstract) //else if can deserialize, set default serializer
-                    serializer =
-                        new ExtendedClassMapSerializer<TModel>(
-                            dbContext.DbCache,
-                            dbContext.ApplicationVersion,
-                            serializerModifierAccessor,
-                            (m, v) => modelMigrationAsync?.Invoke(m, v) ?? Task.FromResult(m))
-                        { AddVersion = typeof(IEntityModel).IsAssignableFrom(typeof(TModel)) }; //true only for entity models
-
-                // Register schema.
-                schemas.Add(new ModelSchema(classMap, typeof(TModel), proxyClassMap, serializer, fromVersion));
-            }
-            finally
-            {
-                configLock.ExitWriteLock();
-            }
         }
 
         // Helpers.
