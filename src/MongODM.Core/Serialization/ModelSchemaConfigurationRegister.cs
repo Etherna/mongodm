@@ -39,13 +39,16 @@ namespace Etherna.MongODM.Core.Serialization
             new Dictionary<Type, List<ModelSchemaMemberMap>>();
 
         private IDbContext dbContext = default!;
+        private readonly IModelSchemaBuilder modelSchemaBuilder;
         private readonly ISerializerModifierAccessor serializerModifierAccessor;
         private readonly List<ModelSchema> schemas = new List<ModelSchema>();
 
         // Constructors and initialization.
         public ModelSchemaConfigurationRegister(
+            IModelSchemaBuilder modelSchemaBuilder,
             ISerializerModifierAccessor serializerModifierAccessor)
         {
+            this.modelSchemaBuilder = modelSchemaBuilder;
             this.serializerModifierAccessor = serializerModifierAccessor;
         }
 
@@ -152,29 +155,18 @@ namespace Etherna.MongODM.Core.Serialization
             return Array.Empty<ModelSchemaMemberMap>();
         }
 
-        public void RegisterModelSchema<TModel>(
-            SemanticVersion fromVersion,
-            Func<IBsonSerializer<TModel>>? initCustomSerializer = null,
-            Func<TModel, SemanticVersion?, Task<TModel>>? modelMigrationAsync = null)
+        public IModelSchemaConfiguration<TModel> AddModel<TModel>(
+            string id,
+            Action<BsonClassMap<TModel>>? classMapInitializer = null,
+            IBsonSerializer<TModel>? customSerializer = null)
             where TModel : class =>
-            RegisterModelSchema(
-                fromVersion,
-                new BsonClassMap<TModel>(cm => cm.AutoMap()),
-                initCustomSerializer,
-                modelMigrationAsync);
+            AddModel(modelSchemaBuilder.GenerateModelSchema(id, classMapInitializer, customSerializer));
 
-        public void RegisterModelSchema<TModel>(
-            SemanticVersion fromVersion,
-            Action<BsonClassMap<TModel>> classMapInitializer,
-            Func<IBsonSerializer<TModel>>? initCustomSerializer = null,
-            Func<TModel, SemanticVersion?, Task<TModel>>? modelMigrationAsync = null)
-            where TModel : class =>
-            RegisterModelSchema(
-                fromVersion,
-                new BsonClassMap<TModel>(classMapInitializer),
-                initCustomSerializer,
-                modelMigrationAsync);
-
+        public IModelSchemaConfiguration<TModel> AddModel<TModel>(ModelSchema<TModel> modelSchema)
+            where TModel : class
+        {
+            throw new NotImplementedException();
+        }
         public void RegisterModelSchema<TModel>(
             SemanticVersion fromVersion,
             BsonClassMap<TModel> classMap,

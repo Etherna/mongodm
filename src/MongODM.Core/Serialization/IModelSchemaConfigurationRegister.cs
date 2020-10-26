@@ -43,10 +43,12 @@ namespace Etherna.MongODM.Core.Serialization
         /// </summary>
         /// <typeparam name="TModel">The model type</typeparam>
         /// <param name="id">The schema Id</param>
+        /// <param name="modelMapInitializer">The model map inizializer</param>
         /// <param name="customSerializer">Custom serializer</param>
         /// <returns>Configuration of model schema</returns>
-        IModelSchemaConfiguration<TModel> AddModelSchema<TModel>(
+        IModelSchemaConfiguration<TModel> AddModel<TModel>(
             string id,
+            Action<BsonClassMap<TModel>>? modelMapInitializer = null,
             IBsonSerializer<TModel>? customSerializer = null)
             where TModel : class;
 
@@ -54,30 +56,10 @@ namespace Etherna.MongODM.Core.Serialization
         /// Register a new model schema
         /// </summary>
         /// <typeparam name="TModel">The model type</typeparam>
-        /// <param name="id">The schema Id</param>
-        /// <param name="classMapInitializer">The class map inizializer</param>
-        /// <param name="customSerializer">Custom serializer</param>
+        /// <param name="modelSchema">The model schema</param>
         /// <returns>Configuration of model schema</returns>
-        IModelSchemaConfiguration<TModel> AddModelSchema<TModel>(
-            string id,
-            Action<BsonClassMap<TModel>> classMapInitializer,
-            IBsonSerializer<TModel>? customSerializer = null)
+        IModelSchemaConfiguration<TModel> AddModel<TModel>(
+            ModelSchema<TModel> modelSchema)
             where TModel : class;
-
-        /// <summary>
-        /// Register a new model schema
-        /// </summary>
-        /// <typeparam name="TModel">The model type</typeparam>
-        /// <param name="id">The schema Id</param>
-        /// <param name="classMap">The class map</param>
-        /// <param name="customSerializer">Custom serializer</param>
-        /// <returns>Configuration of model schema</returns>
-        IModelSchemaConfiguration<TModel> AddModelSchema<TModel>(
-            string id,
-            BsonClassMap<TModel> classMap,
-            IBsonSerializer<TModel>? customSerializer = null)
-            where TModel : class;
-
-
     }
 }

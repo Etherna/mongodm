@@ -23,29 +23,34 @@ namespace Etherna.MongODM.Core.Serialization
         public ModelSchema(
             string id,
             BsonClassMap classMap,
-            IBsonSerializer? serializer)
+            IBsonSerializer? customSerializer)
         {
             Id = id ?? throw new ArgumentNullException(nameof(id));
             ClassMap = classMap ?? throw new ArgumentNullException(nameof(classMap));
-            Serializer = serializer;
+            CustomSerializer = customSerializer;
         }
 
         // Properties.
         public string Id { get; }
         public BsonClassMap ClassMap { get; }
+        public IBsonSerializer? CustomSerializer { get; }
         public abstract Type ModelType { get; }
-        public IBsonSerializer? Serializer { get; }
     }
 
     public class ModelSchema<TModel> : ModelSchema
     {
+        // Constructors.
+        /// <param name="id">The schema Id</param>
+        /// <param name="classMap">The class map</param>
+        /// <param name="customSerializer">Custom serializer</param>
         public ModelSchema(
             string id,
             BsonClassMap<TModel> classMap,
-            IBsonSerializer<TModel>? serializer)
-            : base(id, classMap, serializer)
+            IBsonSerializer<TModel>? customSerializer)
+            : base(id, classMap, customSerializer)
         { }
 
+        // Properties.
         public override Type ModelType => typeof(TModel);
     }
 }

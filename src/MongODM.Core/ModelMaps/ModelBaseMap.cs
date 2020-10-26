@@ -25,15 +25,16 @@ namespace Etherna.MongODM.Core.ModelMaps
         public void Register(IDbContext dbContext)
         {
             // register class maps.
-            dbContext.ModelSchemaConfigurationRegister.AddModelSchema<ModelBase>("0.20.0");
+            dbContext.ModelSchemaConfigurationRegister.AddModel<ModelBase>("bff55d53-0517-4a93-8fda-7bd448181449");
 
-            dbContext.ModelSchemaConfigurationRegister.AddModelSchema<EntityModelBase<string>>("0.20.0",
-                cm =>
+            dbContext.ModelSchemaConfigurationRegister.AddModel<EntityModelBase<string>>(
+                "586b48f5-ba1f-45e3-a812-744f88c1c969",
+                modelMap =>
                 {
-                    cm.AutoMap();
+                    modelMap.AutoMap();
 
                     // Set Id representation.
-                    cm.IdMemberMap.SetSerializer(new StringSerializer(BsonType.ObjectId))
+                    modelMap.IdMemberMap.SetSerializer(new StringSerializer(BsonType.ObjectId))
                                   .SetIdGenerator(new StringObjectIdGenerator());
                 });
         }

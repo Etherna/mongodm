@@ -21,8 +21,7 @@ namespace Etherna.MongODM.Core.ModelMaps
     {
         public void Register(IDbContext dbContext)
         {
-            dbContext.ModelSchemaConfigurationRegister.AddModelSchema<SeedOperation>(
-                "0.20.0");
+            dbContext.ModelSchemaConfigurationRegister.AddModel<SeedOperation>("f9bfe56e-8045-4559-b91b-4745c2fd9766");
         }
     }
 }

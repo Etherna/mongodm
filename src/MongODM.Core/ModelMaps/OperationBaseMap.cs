@@ -22,9 +22,8 @@ namespace Etherna.MongODM.Core.ModelMaps
     {
         public void Register(IDbContext dbContext)
         {
-            dbContext.ModelSchemaConfigurationRegister.AddModelSchema(
-                "0.20.0", //mongodm library's version
-                cm => cm.AutoMap(),
+            dbContext.ModelSchemaConfigurationRegister.AddModel(
+                "ee726d4f-6e6a-44b0-bf3e-45322534c36d",
                 customSerializer: new ExtendedClassMapSerializer<OperationBase>(
                     dbContext.DbCache,
                     dbContext.LibraryVersion,
