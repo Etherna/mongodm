@@ -51,7 +51,6 @@ namespace Etherna.MongODM.Core
             DbMaintainer = dependencies.DbMaintainer;
             DbMigrationManager = dependencies.DbMigrationManager;
             DbOperations = new CollectionRepository<OperationBase, string>(options.DbOperationsCollectionName);
-            ModelSchemaConfigurationRegister = dependencies.ModelSchemaConfigurationRegister;
             Identifier = options.Identifier ?? GetType().Name;
             LibraryVersion = typeof(DbContext)
                 .GetTypeInfo()
@@ -62,6 +61,7 @@ namespace Etherna.MongODM.Core
             ProxyGenerator = dependencies.ProxyGenerator;
             RepositoryRegister = dependencies.RepositoryRegister;
             SerializerModifierAccessor = dependencies.SerializerModifierAccessor;
+            SchemasRegister = dependencies.ModelSchemaConfigurationRegister;
 
             // Initialize MongoDB driver.
             Client = new MongoClient(options.ConnectionString);
@@ -70,8 +70,8 @@ namespace Etherna.MongODM.Core
             // Initialize internal dependencies.
             DbMaintainer.Initialize(this);
             DbMigrationManager.Initialize(this);
-            ModelSchemaConfigurationRegister.Initialize(this);
             RepositoryRegister.Initialize(this);
+            SchemasRegister.Initialize(this);
 
             // Initialize repositories.
             foreach (var repository in RepositoryRegister.ModelRepositoryMap.Values)
@@ -87,8 +87,8 @@ namespace Etherna.MongODM.Core
             foreach (var maps in ModelMapsCollectors)
                 maps.Register(this);
 
-            // Build and freeze document schema register.
-            ModelSchemaConfigurationRegister.Freeze();
+            // Build and freeze schemas register.
+            SchemasRegister.Freeze();
         }
 
         // Public properties.
@@ -104,13 +104,13 @@ namespace Etherna.MongODM.Core
         public IDbMigrationManager DbMigrationManager { get; }
         public ICollectionRepository<OperationBase, string> DbOperations { get; }
         public virtual IEnumerable<MongoMigrationBase> DocumentMigrationList { get; } = Array.Empty<MongoMigrationBase>();
-        public IModelSchemaConfigurationRegister ModelSchemaConfigurationRegister { get; }
         public string Identifier { get; }
         public SemanticVersion LibraryVersion { get; }
         public IProxyGenerator ProxyGenerator { get; }
         public IRepositoryRegister RepositoryRegister { get; }
         public ISerializerModifierAccessor SerializerModifierAccessor { get; }
-
+        public IModelSchemaConfigurationRegister SchemasRegister { get; }
+        
         // Protected properties.
         protected abstract IEnumerable<IModelMapsCollector> ModelMapsCollectors { get; }
 

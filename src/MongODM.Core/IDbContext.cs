@@ -83,11 +83,6 @@ namespace Etherna.MongODM.Core
         SemanticVersion LibraryVersion { get; }
 
         /// <summary>
-        /// Register for model serialization and schema information.
-        /// </summary>
-        IModelSchemaConfigurationRegister ModelSchemaConfigurationRegister { get; }
-
-        /// <summary>
         /// Current model proxy generator.
         /// </summary>
         IProxyGenerator ProxyGenerator { get; }
@@ -101,6 +96,11 @@ namespace Etherna.MongODM.Core
         /// Serializer modifier accessor.
         /// </summary>
         ISerializerModifierAccessor SerializerModifierAccessor { get; }
+
+        /// <summary>
+        /// Register for model serialization and schema information.
+        /// </summary>
+        IModelSchemaConfigurationRegister SchemasRegister { get; }
 
         // Methods.
         /// <summary>

@@ -78,7 +78,7 @@ namespace Etherna.MongODM.Core.Repositories
                     new CreateIndexOptions { Name = "ver" })));
 
             //referenced documents
-            var dependencies = DbContext.ModelSchemaConfigurationRegister.GetModelEntityReferencesIds(typeof(TModel));
+            var dependencies = DbContext.SchemasRegister.GetModelEntityReferencesIds(typeof(TModel));
 
             var idPaths = dependencies
                 .Select(dependency => dependency.MemberPathToString())

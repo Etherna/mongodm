@@ -22,7 +22,7 @@ namespace Etherna.MongODM.Core.ModelMaps
     {
         public void Register(IDbContext dbContext)
         {
-            dbContext.ModelSchemaConfigurationRegister.AddModel(
+            dbContext.SchemasRegister.AddModel(
                 "ee726d4f-6e6a-44b0-bf3e-45322534c36d",
                 customSerializer: new ExtendedClassMapSerializer<OperationBase>(
                     dbContext.DbCache,

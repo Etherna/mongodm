@@ -74,7 +74,7 @@ namespace Etherna.MongODM.Core.Repositories
                 throw new ArgumentNullException(nameof(model));
 
             // Process cascade delete.
-            var referencesIdsPaths = DbContext.ModelSchemaConfigurationRegister.GetModelEntityReferencesIds(typeof(TModel))
+            var referencesIdsPaths = DbContext.SchemasRegister.GetModelEntityReferencesIds(typeof(TModel))
                 .Where(d => d.UseCascadeDelete == true)
                 .Where(d => d.EntityClassMapPath.Count() == 2) //ignore references of references
                 .DistinctBy(d => d.FullPathToString())

@@ -54,7 +54,7 @@ namespace Etherna.MongODM.Core.Utility
                 throw new ArgumentNullException(nameof(modelId));
 
             var updatedMembers = updatedModel.ChangedMembers;
-            var dependencies = updatedMembers.SelectMany(member => dbContext.ModelSchemaConfigurationRegister.GetMemberDependencies(member))
+            var dependencies = updatedMembers.SelectMany(member => dbContext.SchemasRegister.GetMemberDependencies(member))
                                              .Where(d => d.IsEntityReferenceMember);
 
             foreach (var dependencyGroup in dependencies.GroupBy(d => d.RootModelType))
