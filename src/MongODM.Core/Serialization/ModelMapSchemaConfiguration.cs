@@ -4,14 +4,14 @@ using System.Collections.Generic;
 
 namespace Etherna.MongODM.Core.Serialization
 {
-    class ModelSchemaConfiguration<TModel> : IModelSchemaConfiguration<TModel>
+    class ModelMapSchemaConfiguration<TModel> : SchemaConfigurationBase, IModelMapSchemaConfiguration<TModel>
         where TModel : class
     {
         // Fields.
         private readonly List<ModelSchema> _secondaryModelSchemas = new List<ModelSchema>();
 
         // Constructor.
-        public ModelSchemaConfiguration(
+        public ModelMapSchemaConfiguration(
             ModelSchema<TModel> activeModelSchema,
             bool requireCollectionMigration = false)
         {
@@ -26,13 +26,13 @@ namespace Etherna.MongODM.Core.Serialization
         public IEnumerable<ModelSchema> SecondaryModelSchemas => _secondaryModelSchemas;
 
         // Methods.
-        public IModelSchemaConfiguration<TModel> AddSecondarySchema(
+        public IModelMapSchemaConfiguration<TModel> AddSecondarySchema(
             string id,
             Action<BsonClassMap<TModel>>? modelMapInitializer = null,
             IBsonSerializer<TModel>? customSerializer = null) =>
             AddSecondarySchema(ModelSchemaBuilder.GenerateModelSchema(id, modelMapInitializer, customSerializer));
 
-        public IModelSchemaConfiguration<TModel> AddSecondarySchema(ModelSchema<TModel> modelSchema)
+        public IModelMapSchemaConfiguration<TModel> AddSecondarySchema(ModelSchema<TModel> modelSchema)
         {
             _secondaryModelSchemas.Add(modelSchema);
             return this;

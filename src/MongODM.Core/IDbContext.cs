@@ -93,14 +93,14 @@ namespace Etherna.MongODM.Core
         IRepositoryRegister RepositoryRegister { get; }
 
         /// <summary>
+        /// Register for model serialization and schema information.
+        /// </summary>
+        ISchemaRegister SchemaRegister { get; }
+
+        /// <summary>
         /// Serializer modifier accessor.
         /// </summary>
         ISerializerModifierAccessor SerializerModifierAccessor { get; }
-
-        /// <summary>
-        /// Register for model serialization and schema information.
-        /// </summary>
-        IModelSchemaConfigurationRegister SchemasRegister { get; }
 
         // Methods.
         /// <summary>

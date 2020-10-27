@@ -18,7 +18,7 @@ using System.Collections.Generic;
 
 namespace Etherna.MongODM.Core.Serialization
 {
-    public interface IModelSchemaConfiguration
+    public interface IModelMapSchemaConfiguration
     {
         ModelSchema ActiveModelSchema { get; }
         Type ModelType { get; }
@@ -26,7 +26,7 @@ namespace Etherna.MongODM.Core.Serialization
         IEnumerable<ModelSchema> SecondaryModelSchemas { get; }
     }
 
-    public interface IModelSchemaConfiguration<TModel> : IModelSchemaConfiguration
+    public interface IModelMapSchemaConfiguration<TModel> : IModelMapSchemaConfiguration
         where TModel : class
     {
         /// <summary>
@@ -36,7 +36,7 @@ namespace Etherna.MongODM.Core.Serialization
         /// <param name="modelMapInitializer">The model map inizializer</param>
         /// <param name="customSerializer">Custom serializer</param>
         /// <returns>This same model schema configuration</returns>
-        IModelSchemaConfiguration<TModel> AddSecondarySchema(
+        IModelMapSchemaConfiguration<TModel> AddSecondarySchema(
             string id,
             Action<BsonClassMap<TModel>>? modelMapInitializer = null,
             IBsonSerializer<TModel>? customSerializer = null);
@@ -46,7 +46,7 @@ namespace Etherna.MongODM.Core.Serialization
         /// </summary>
         /// <param name="modelSchema">The model schema</param>
         /// <returns>This same model schema configuration</returns>
-        IModelSchemaConfiguration<TModel> AddSecondarySchema(
+        IModelMapSchemaConfiguration<TModel> AddSecondarySchema(
             ModelSchema<TModel> modelSchema);
     }
 }

@@ -52,7 +52,7 @@ namespace Etherna.MongODM.Core.Repositories
         public override string Name => options.Name;
 
         // Public methods.
-        public override async Task BuildIndexesAsync(IModelSchemaConfigurationRegister schemaRegister, CancellationToken cancellationToken = default)
+        public override async Task BuildIndexesAsync(ISchemaRegister schemaRegister, CancellationToken cancellationToken = default)
         {
             var newIndexes = new List<(string name, CreateIndexModel<TModel> createIndex)>();
 
@@ -78,7 +78,7 @@ namespace Etherna.MongODM.Core.Repositories
                     new CreateIndexOptions { Name = "ver" })));
 
             //referenced documents
-            var dependencies = DbContext.SchemasRegister.GetModelEntityReferencesIds(typeof(TModel));
+            var dependencies = DbContext.SchemaRegister.GetModelEntityReferencesIds(typeof(TModel));
 
             var idPaths = dependencies
                 .Select(dependency => dependency.MemberPathToString())

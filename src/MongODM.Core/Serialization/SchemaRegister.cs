@@ -25,7 +25,7 @@ using System.Threading;
 
 namespace Etherna.MongODM.Core.Serialization
 {
-    public class ModelSchemaConfigurationRegister : IModelSchemaConfigurationRegister, IDisposable
+    public class SchemaRegister : ISchemaRegister, IDisposable
     {
         // Fields.
         private readonly ReaderWriterLockSlim configLock = new ReaderWriterLockSlim(LockRecursionPolicy.SupportsRecursion);
@@ -38,10 +38,10 @@ namespace Etherna.MongODM.Core.Serialization
 
         private IDbContext dbContext = default!;
         private readonly ISerializerModifierAccessor serializerModifierAccessor;
-        private readonly List<IModelSchemaConfiguration> modelSchemaConfigurations = new List<IModelSchemaConfiguration>();
+        private readonly Dictionary<Type, ISchemaConfiguration> schemaConfigurations = new Dictionary<Type, ISchemaConfiguration>();
 
         // Constructor, initialization and dispose.
-        public ModelSchemaConfigurationRegister(
+        public SchemaRegister(
             ISerializerModifierAccessor serializerModifierAccessor)
         {
             this.serializerModifierAccessor = serializerModifierAccessor;
@@ -66,15 +66,15 @@ namespace Etherna.MongODM.Core.Serialization
         public bool IsInitialized { get; private set; }
 
         // Methods.
-        public IModelSchemaConfiguration<TModel> AddModel<TModel>(
+        public IModelMapSchemaConfiguration<TModel> AddModelMapSchema<TModel>(
             string id,
             Action<BsonClassMap<TModel>>? modelMapInitializer = null,
             IBsonSerializer<TModel>? customSerializer = null,
             bool requireCollectionMigration = false)
             where TModel : class =>
-            AddModel(ModelSchemaBuilder.GenerateModelSchema(id, modelMapInitializer, customSerializer), requireCollectionMigration);
+            AddModelMapSchema(ModelSchemaBuilder.GenerateModelSchema(id, modelMapInitializer, customSerializer), requireCollectionMigration);
 
-        public IModelSchemaConfiguration<TModel> AddModel<TModel>(
+        public IModelMapSchemaConfiguration<TModel> AddModelMapSchema<TModel>(
             ModelSchema<TModel> modelSchema,
             bool requireCollectionMigration = false)
             where TModel : class
@@ -98,8 +98,8 @@ namespace Etherna.MongODM.Core.Serialization
                     ModelSchemaBuilder.SetDefaultSerializer(modelSchema, dbContext);
 
                 // Register and return schema configuration.
-                var modelSchemaConfiguration = new ModelSchemaConfiguration<TModel>(modelSchema, requireCollectionMigration);
-                modelSchemaConfigurations.Add(modelSchemaConfiguration);
+                var modelSchemaConfiguration = new ModelMapSchemaConfiguration<TModel>(modelSchema, requireCollectionMigration);
+                schemaConfigurations.Add(typeof(TModel), modelSchemaConfiguration);
 
                 return modelSchemaConfiguration;
             }

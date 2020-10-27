@@ -60,8 +60,8 @@ namespace Etherna.MongODM.Core
                 ?.Split('+')[0] ?? "1.0.0";
             ProxyGenerator = dependencies.ProxyGenerator;
             RepositoryRegister = dependencies.RepositoryRegister;
+            SchemaRegister = dependencies.SchemaRegister;
             SerializerModifierAccessor = dependencies.SerializerModifierAccessor;
-            SchemasRegister = dependencies.ModelSchemaConfigurationRegister;
 
             // Initialize MongoDB driver.
             Client = new MongoClient(options.ConnectionString);
@@ -71,7 +71,7 @@ namespace Etherna.MongODM.Core
             DbMaintainer.Initialize(this);
             DbMigrationManager.Initialize(this);
             RepositoryRegister.Initialize(this);
-            SchemasRegister.Initialize(this);
+            SchemaRegister.Initialize(this);
 
             // Initialize repositories.
             foreach (var repository in RepositoryRegister.ModelRepositoryMap.Values)
@@ -88,7 +88,7 @@ namespace Etherna.MongODM.Core
                 maps.Register(this);
 
             // Build and freeze schemas register.
-            SchemasRegister.Freeze();
+            SchemaRegister.Freeze();
         }
 
         // Public properties.
@@ -108,8 +108,8 @@ namespace Etherna.MongODM.Core
         public SemanticVersion LibraryVersion { get; }
         public IProxyGenerator ProxyGenerator { get; }
         public IRepositoryRegister RepositoryRegister { get; }
+        public ISchemaRegister SchemaRegister { get; }
         public ISerializerModifierAccessor SerializerModifierAccessor { get; }
-        public IModelSchemaConfigurationRegister SchemasRegister { get; }
         
         // Protected properties.
         protected abstract IEnumerable<IModelMapsCollector> ModelMapsCollectors { get; }

@@ -20,13 +20,45 @@ using System.Reflection;
 namespace Etherna.MongODM.Core.Serialization
 {
     /// <summary>
-    /// Interface for <see cref="ModelSchemaConfigurationRegister"/> implementation.
+    /// Interface for <see cref="SchemaRegister"/> implementation.
     /// </summary>
-    public interface IModelSchemaConfigurationRegister : IDbContextInitializable
+    public interface ISchemaRegister : IDbContextInitializable
     {
+        // Properties.
         bool IsFrozen { get; }
 
         // Methods.
+        ICustomSerializerSchemaConfiguration<TModel> AddCustomSerializerSchema<TModel>()
+            where TModel : class;
+
+        /// <summary>
+        /// Register new model map schema
+        /// </summary>
+        /// <typeparam name="TModel">The model type</typeparam>
+        /// <param name="id">The schema Id</param>
+        /// <param name="modelMapInitializer">The model map inizializer</param>
+        /// <param name="customSerializer">Custom serializer</param>
+        /// <param name="requireCollectionMigration">Migrate full collection on db migration</param>
+        /// <returns>Configuration of model schema</returns>
+        IModelMapSchemaConfiguration<TModel> AddModelMapSchema<TModel>(
+            string id,
+            Action<BsonClassMap<TModel>>? modelMapInitializer = null,
+            IBsonSerializer<TModel>? customSerializer = null,
+            bool requireCollectionMigration = false)
+            where TModel : class;
+
+        /// <summary>
+        /// Register new model map schema
+        /// </summary>
+        /// <typeparam name="TModel">The model type</typeparam>
+        /// <param name="modelSchema">The model schema</param>
+        /// <param name="requireCollectionMigration">Migrate full collection on db migration</param>
+        /// <returns>Configuration of model schema</returns>
+        IModelMapSchemaConfiguration<TModel> AddModelMapSchema<TModel>(
+            ModelSchema<TModel> modelSchema,
+            bool requireCollectionMigration = false)
+            where TModel : class;
+
         /// <summary>
         /// Build and freeze the register.
         /// </summary>
@@ -37,33 +69,5 @@ namespace Etherna.MongODM.Core.Serialization
         IEnumerable<ModelSchemaMemberMap> GetModelDependencies(Type modelType);
 
         IEnumerable<ModelSchemaMemberMap> GetModelEntityReferencesIds(Type modelType);
-
-        /// <summary>
-        /// Register a new model schema configuration
-        /// </summary>
-        /// <typeparam name="TModel">The model type</typeparam>
-        /// <param name="id">The schema Id</param>
-        /// <param name="modelMapInitializer">The model map inizializer</param>
-        /// <param name="customSerializer">Custom serializer</param>
-        /// <param name="requireCollectionMigration">Migrate full collection on db migration</param>
-        /// <returns>Configuration of model schema</returns>
-        IModelSchemaConfiguration<TModel> AddModel<TModel>(
-            string id,
-            Action<BsonClassMap<TModel>>? modelMapInitializer = null,
-            IBsonSerializer<TModel>? customSerializer = null,
-            bool requireCollectionMigration = false)
-            where TModel : class;
-
-        /// <summary>
-        /// Register a new model schema configuration
-        /// </summary>
-        /// <typeparam name="TModel">The model type</typeparam>
-        /// <param name="modelSchema">The model schema</param>
-        /// <param name="requireCollectionMigration">Migrate full collection on db migration</param>
-        /// <returns>Configuration of model schema</returns>
-        IModelSchemaConfiguration<TModel> AddModel<TModel>(
-            ModelSchema<TModel> modelSchema,
-            bool requireCollectionMigration = false)
-            where TModel : class;
     }
 }

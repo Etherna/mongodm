@@ -21,7 +21,7 @@ namespace Etherna.MongODM.AspNetCoreSample.Models.ModelMaps
     {
         public void Register(IDbContext dbContext)
         {
-            dbContext.SchemasRegister.AddModel<Cat>("cd37bafa-a36d-4b1f-815a-deb50c49d030");
+            dbContext.SchemaRegister.AddModelMapSchema<Cat>("cd37bafa-a36d-4b1f-815a-deb50c49d030");
         }
     }
 }

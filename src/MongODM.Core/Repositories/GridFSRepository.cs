@@ -51,7 +51,7 @@ namespace Etherna.MongODM.Core.Repositories
         public override string Name => options.Name;
 
         // Methods.
-        public override Task BuildIndexesAsync(IModelSchemaConfigurationRegister schemaRegister, CancellationToken cancellationToken = default) => Task.CompletedTask;
+        public override Task BuildIndexesAsync(ISchemaRegister schemaRegister, CancellationToken cancellationToken = default) => Task.CompletedTask;
 
         public virtual Task<byte[]> DownloadAsBytesAsync(string id, CancellationToken cancellationToken = default) =>
             GridFSBucket.DownloadAsBytesAsync(ObjectId.Parse(id), null, cancellationToken);

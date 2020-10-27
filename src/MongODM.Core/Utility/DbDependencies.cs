@@ -25,9 +25,9 @@ namespace Etherna.MongODM.Core.Utility
             IDbCache dbCache,
             IDbMaintainer dbMaintainer,
             IDbMigrationManager dbContextMigrationManager,
-            IModelSchemaConfigurationRegister modelSchemaRegister,
             IProxyGenerator proxyGenerator,
             IRepositoryRegister repositoryRegister,
+            ISchemaRegister schemaRegister,
             ISerializerModifierAccessor serializerModifierAccessor,
 #pragma warning disable IDE0060 // Remove unused parameter. It's needed for run static configurations
 #pragma warning disable CA1801 // Review unused parameters. Same of above
@@ -38,7 +38,7 @@ namespace Etherna.MongODM.Core.Utility
             DbCache = dbCache;
             DbMaintainer = dbMaintainer;
             DbMigrationManager = dbContextMigrationManager;
-            ModelSchemaConfigurationRegister = modelSchemaRegister;
+            SchemaRegister = schemaRegister;
             ProxyGenerator = proxyGenerator;
             RepositoryRegister = repositoryRegister;
             SerializerModifierAccessor = serializerModifierAccessor;
@@ -47,9 +47,9 @@ namespace Etherna.MongODM.Core.Utility
         public IDbCache DbCache { get; }
         public IDbMaintainer DbMaintainer { get; }
         public IDbMigrationManager DbMigrationManager { get; }
-        public IModelSchemaConfigurationRegister ModelSchemaConfigurationRegister { get; }
         public IProxyGenerator ProxyGenerator { get; }
         public IRepositoryRegister RepositoryRegister { get; }
+        public ISchemaRegister SchemaRegister { get; }
         public ISerializerModifierAccessor SerializerModifierAccessor { get; }
     }
 }

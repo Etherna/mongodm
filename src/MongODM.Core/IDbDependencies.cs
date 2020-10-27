@@ -25,9 +25,9 @@ namespace Etherna.MongODM.Core
         IDbCache DbCache { get; }
         IDbMaintainer DbMaintainer { get; }
         IDbMigrationManager DbMigrationManager { get; }
-        IModelSchemaConfigurationRegister ModelSchemaConfigurationRegister { get; }
         IProxyGenerator ProxyGenerator { get; }
         IRepositoryRegister RepositoryRegister { get; }
+        ISchemaRegister SchemaRegister { get; }
         ISerializerModifierAccessor SerializerModifierAccessor { get; }
     }
 }

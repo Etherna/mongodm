@@ -75,8 +75,8 @@ namespace Microsoft.Extensions.DependencyInjection
             services.TryAddTransient<IDbDependencies, DbDependencies>();
             services.TryAddTransient<IDbMaintainer, DbMaintainer>();
             services.TryAddTransient<IDbMigrationManager, DbMigrationManager>();
-            services.TryAddTransient<IModelSchemaConfigurationRegister, ModelSchemaConfigurationRegister>();
             services.TryAddTransient<IRepositoryRegister, RepositoryRegister>();
+            services.TryAddTransient<ISchemaRegister, SchemaRegister>();
             services.TryAddSingleton<ISerializerModifierAccessor, SerializerModifierAccessor>();
 
             //tasks
