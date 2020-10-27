@@ -66,21 +66,47 @@ namespace Etherna.MongODM.Core.Serialization
         public bool IsInitialized { get; private set; }
 
         // Methods.
-        public IModelMapSchemaConfiguration<TModel> AddModelMapSchema<TModel>(
-            string id,
-            Action<BsonClassMap<TModel>>? modelMapInitializer = null,
-            IBsonSerializer<TModel>? customSerializer = null,
-            bool requireCollectionMigration = false)
-            where TModel : class =>
-            AddModelMapSchema(ModelSchemaBuilder.GenerateModelSchema(id, modelMapInitializer, customSerializer), requireCollectionMigration);
+        public ICustomSerializerSchemaConfiguration<TModel> AddCustomSerializerSchema<TModel>(
+            IBsonSerializer<TModel> customSerializer,
+            bool requireCollectionMigration = false) where TModel : class
+        {
+            if (customSerializer is null)
+                throw new ArgumentNullException(nameof(customSerializer));
+
+            configLock.EnterWriteLock();
+            try
+            {
+                if (IsFrozen)
+                    throw new InvalidOperationException("Register is frozen");
+
+                // Register and return schema configuration.
+                var modelSchemaConfiguration = new CustomSerializerSchemaConfiguration<TModel>(customSerializer, requireCollectionMigration);
+                schemaConfigurations.Add(typeof(TModel), modelSchemaConfiguration);
+
+                return modelSchemaConfiguration;
+            }
+            finally
+            {
+                configLock.ExitWriteLock();
+            }
+        }
 
         public IModelMapSchemaConfiguration<TModel> AddModelMapSchema<TModel>(
-            ModelSchema<TModel> modelSchema,
-            bool requireCollectionMigration = false)
-            where TModel : class
+            string id,
+            Action<BsonClassMap<TModel>>? activeModelMapInitializer = null,
+            IBsonSerializer<TModel>? customSerializer = null,
+            bool requireCollectionMigration = false) where TModel : class =>
+            AddModelMapSchema(new ModelMapSchema<TModel>(
+                id,
+                new BsonClassMap<TModel>(activeModelMapInitializer ?? (cm => cm.AutoMap())),
+                customSerializer), requireCollectionMigration);
+
+        public IModelMapSchemaConfiguration<TModel> AddModelMapSchema<TModel>(
+            ModelMapSchema<TModel> activeModelSchema,
+            bool requireCollectionMigration = false) where TModel : class
         {
-            if (modelSchema is null)
-                throw new ArgumentNullException(nameof(modelSchema));
+            if (activeModelSchema is null)
+                throw new ArgumentNullException(nameof(activeModelSchema));
 
             configLock.EnterWriteLock();
             try
@@ -90,15 +116,15 @@ namespace Etherna.MongODM.Core.Serialization
 
                 // If not abstract, adjustments for use proxygenerator.
                 if (!typeof(TModel).IsAbstract)
-                    ModelSchemaBuilder.UseProxyGenerator(modelSchema, dbContext);
+                    activeModelSchema.UseProxyGenerator(dbContext);
 
                 // If not abstract and there isn't a custom serializer, set the default one.
                 if (!typeof(TModel).IsAbstract &&
-                    modelSchema.Serializer is null)
-                    ModelSchemaBuilder.SetDefaultSerializer(modelSchema, dbContext);
+                    activeModelSchema.Serializer is null)
+                    activeModelSchema.UseDefaultSerializer(dbContext);
 
                 // Register and return schema configuration.
-                var modelSchemaConfiguration = new ModelMapSchemaConfiguration<TModel>(modelSchema, requireCollectionMigration);
+                var modelSchemaConfiguration = new ModelMapSchemaConfiguration<TModel>(activeModelSchema, requireCollectionMigration);
                 schemaConfigurations.Add(typeof(TModel), modelSchemaConfiguration);
 
                 return modelSchemaConfiguration;

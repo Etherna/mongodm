@@ -28,34 +28,43 @@ namespace Etherna.MongODM.Core.Serialization
         bool IsFrozen { get; }
 
         // Methods.
-        ICustomSerializerSchemaConfiguration<TModel> AddCustomSerializerSchema<TModel>()
+        /// <summary>
+        /// Register a new schema based on custom serializer
+        /// </summary>
+        /// <typeparam name="TModel">The model type</typeparam>
+        /// <param name="customSerializer">Custom serializer</param>
+        /// <param name="requireCollectionMigration">Migrate full collection on db migration</param>
+        /// <returns>Configuration of schema</returns>
+        ICustomSerializerSchemaConfiguration<TModel> AddCustomSerializerSchema<TModel>(
+            IBsonSerializer<TModel> customSerializer,
+            bool requireCollectionMigration = false)
             where TModel : class;
 
         /// <summary>
-        /// Register new model map schema
+        /// Register a new schema based on model map
         /// </summary>
         /// <typeparam name="TModel">The model type</typeparam>
         /// <param name="id">The schema Id</param>
-        /// <param name="modelMapInitializer">The model map inizializer</param>
-        /// <param name="customSerializer">Custom serializer</param>
+        /// <param name="activeModelMapInitializer">The active model map inizializer</param>
+        /// <param name="customSerializer">Replace default serializer with a custom</param>
         /// <param name="requireCollectionMigration">Migrate full collection on db migration</param>
-        /// <returns>Configuration of model schema</returns>
+        /// <returns>Configuration of schema</returns>
         IModelMapSchemaConfiguration<TModel> AddModelMapSchema<TModel>(
             string id,
-            Action<BsonClassMap<TModel>>? modelMapInitializer = null,
+            Action<BsonClassMap<TModel>>? activeModelMapInitializer = null,
             IBsonSerializer<TModel>? customSerializer = null,
             bool requireCollectionMigration = false)
             where TModel : class;
 
         /// <summary>
-        /// Register new model map schema
+        /// Register a new schema based on model map
         /// </summary>
         /// <typeparam name="TModel">The model type</typeparam>
-        /// <param name="modelSchema">The model schema</param>
+        /// <param name="activeModelSchema">The active model map schema</param>
         /// <param name="requireCollectionMigration">Migrate full collection on db migration</param>
-        /// <returns>Configuration of model schema</returns>
+        /// <returns>Configuration of schema</returns>
         IModelMapSchemaConfiguration<TModel> AddModelMapSchema<TModel>(
-            ModelSchema<TModel> modelSchema,
+            ModelMapSchema<TModel> activeModelSchema,
             bool requireCollectionMigration = false)
             where TModel : class;
 

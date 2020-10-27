@@ -8,33 +8,49 @@ namespace Etherna.MongODM.Core.Serialization
         where TModel : class
     {
         // Fields.
-        private readonly List<ModelSchema> _secondaryModelSchemas = new List<ModelSchema>();
+        private readonly List<ModelMapSchema> _secondarySchemas = new List<ModelMapSchema>();
 
         // Constructor.
         public ModelMapSchemaConfiguration(
-            ModelSchema<TModel> activeModelSchema,
+            ModelMapSchema<TModel> activeModelSchema,
             bool requireCollectionMigration = false)
+            : base(typeof(TModel), requireCollectionMigration)
         {
-            ActiveModelSchema = activeModelSchema;
-            RequireCollectionMigration = requireCollectionMigration;
+            ActiveSchema = activeModelSchema;
         }
 
         // Properties.
-        public ModelSchema ActiveModelSchema { get; }
-        public Type ModelType => typeof(TModel);
-        public bool RequireCollectionMigration { get; }
-        public IEnumerable<ModelSchema> SecondaryModelSchemas => _secondaryModelSchemas;
+        public ModelMapSchema ActiveSchema { get; }
+        public IBsonSerializer? FallbackSerializer { get; private set; }
+        public IEnumerable<ModelMapSchema> SecondarySchemas => _secondarySchemas;
 
         // Methods.
+        public IModelMapSchemaConfiguration<TModel> AddFallbackCustomSerializer(IBsonSerializer<TModel> fallbackSerializer)
+        {
+            if (fallbackSerializer is null)
+                throw new ArgumentNullException(nameof(fallbackSerializer));
+            if (FallbackSerializer != null)
+                throw new InvalidOperationException("Fallback serializer already setted");
+
+            FallbackSerializer = fallbackSerializer;
+            return this;
+        }
+
         public IModelMapSchemaConfiguration<TModel> AddSecondarySchema(
             string id,
             Action<BsonClassMap<TModel>>? modelMapInitializer = null,
             IBsonSerializer<TModel>? customSerializer = null) =>
-            AddSecondarySchema(ModelSchemaBuilder.GenerateModelSchema(id, modelMapInitializer, customSerializer));
+            AddSecondarySchema(new ModelMapSchema<TModel>(
+                id,
+                new BsonClassMap<TModel>(modelMapInitializer ?? (cm => cm.AutoMap())),
+                customSerializer));
 
-        public IModelMapSchemaConfiguration<TModel> AddSecondarySchema(ModelSchema<TModel> modelSchema)
+        public IModelMapSchemaConfiguration<TModel> AddSecondarySchema(ModelMapSchema<TModel> modelSchema)
         {
-            _secondaryModelSchemas.Add(modelSchema);
+            if (modelSchema is null)
+                throw new ArgumentNullException(nameof(modelSchema));
+
+            _secondarySchemas.Add(modelSchema);
             return this;
         }
     }

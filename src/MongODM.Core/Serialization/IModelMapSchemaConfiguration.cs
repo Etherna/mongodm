@@ -18,17 +18,24 @@ using System.Collections.Generic;
 
 namespace Etherna.MongODM.Core.Serialization
 {
-    public interface IModelMapSchemaConfiguration
+    public interface IModelMapSchemaConfiguration : ISchemaConfiguration
     {
-        ModelSchema ActiveModelSchema { get; }
-        Type ModelType { get; }
-        bool RequireCollectionMigration { get; }
-        IEnumerable<ModelSchema> SecondaryModelSchemas { get; }
+        ModelMapSchema ActiveSchema { get; }
+        IBsonSerializer? FallbackSerializer { get; }
+        IEnumerable<ModelMapSchema> SecondarySchemas { get; }
     }
 
     public interface IModelMapSchemaConfiguration<TModel> : IModelMapSchemaConfiguration
         where TModel : class
     {
+        /// <summary>
+        /// Add a fallback serializer invoked in case of undefined schema id
+        /// </summary>
+        /// <param name="fallbackSerializer">Fallback serializer</param>
+        /// <returns>This same model schema configuration</returns>
+        IModelMapSchemaConfiguration<TModel> AddFallbackCustomSerializer(
+            IBsonSerializer<TModel> fallbackSerializer);
+
         /// <summary>
         /// Register a secondary model schema
         /// </summary>
@@ -44,9 +51,9 @@ namespace Etherna.MongODM.Core.Serialization
         /// <summary>
         /// Register a secondary model schema
         /// </summary>
-        /// <param name="modelSchema">The model schema</param>
+        /// <param name="modelMapSchema">The model schema</param>
         /// <returns>This same model schema configuration</returns>
         IModelMapSchemaConfiguration<TModel> AddSecondarySchema(
-            ModelSchema<TModel> modelSchema);
+            ModelMapSchema<TModel> modelMapSchema);
     }
 }
