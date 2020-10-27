@@ -18,16 +18,15 @@ using System.Collections.Generic;
 
 namespace Etherna.MongODM.Core.Serialization
 {
-    public interface IModelMapSchemaConfiguration : ISchemaConfiguration
+    public interface IModelMapSchemaConfiguration<TModel> : ISchemaConfiguration
+        where TModel : class
     {
+        // Properties.
         ModelMapSchema ActiveSchema { get; }
         IBsonSerializer? FallbackSerializer { get; }
         IEnumerable<ModelMapSchema> SecondarySchemas { get; }
-    }
 
-    public interface IModelMapSchemaConfiguration<TModel> : IModelMapSchemaConfiguration
-        where TModel : class
-    {
+        // Methods.
         /// <summary>
         /// Add a fallback serializer invoked in case of undefined schema id
         /// </summary>

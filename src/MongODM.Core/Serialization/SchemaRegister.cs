@@ -114,17 +114,9 @@ namespace Etherna.MongODM.Core.Serialization
                 if (IsFrozen)
                     throw new InvalidOperationException("Register is frozen");
 
-                // If not abstract, adjustments for use proxygenerator.
-                if (!typeof(TModel).IsAbstract)
-                    activeModelSchema.UseProxyGenerator(dbContext);
-
-                // If not abstract and there isn't a custom serializer, set the default one.
-                if (!typeof(TModel).IsAbstract &&
-                    activeModelSchema.Serializer is null)
-                    activeModelSchema.UseDefaultSerializer(dbContext);
-
                 // Register and return schema configuration.
-                var modelSchemaConfiguration = new ModelMapSchemaConfiguration<TModel>(activeModelSchema, requireCollectionMigration);
+                var modelSchemaConfiguration = new ModelMapSchemaConfiguration<TModel>(
+                    activeModelSchema, dbContext, requireCollectionMigration);
                 schemaConfigurations.Add(typeof(TModel), modelSchemaConfiguration);
 
                 return modelSchemaConfiguration;
@@ -152,22 +144,18 @@ namespace Etherna.MongODM.Core.Serialization
             {
                 if (!IsFrozen)
                 {
-                    // Register class maps and serializers.
-                    foreach (var schemaGroup in schemas.GroupBy(s => s.ModelType)
-                                                       .Select(group => group.OrderByDescending(s => s.Version).First()))
+                    // Register active serializers.
+                    foreach (var schemaConfig in schemaConfigurations.Values)
                     {
-                        // Register regular model.
-                        //register class map
-                        BsonClassMap.RegisterClassMap(schemaGroup.ClassMap);
+                        if (schemaConfig.ActiveSerializer != null)
+                        {
+                            //regular model
+                            BsonSerializer.RegisterSerializer(schemaConfig.ModelType, schemaConfig.ActiveSerializer);
 
-                        //register serializer
-                        if (schemaGroup.Serializer != null)
-                            BsonSerializer.RegisterSerializer(schemaGroup.ModelType, schemaGroup.Serializer);
-
-                        // Register proxy model.
-                        //register proxy class map
-                        if (schemaGroup.ProxyClassMap != null)
-                            BsonClassMap.RegisterClassMap(schemaGroup.ProxyClassMap);
+                            //proxy model
+                            if (schemaConfig.ProxyModelType != null)
+                                BsonSerializer.RegisterSerializer(schemaConfig.ProxyModelType, schemaConfig.ActiveSerializer);
+                        }
                     }
 
                     // Compile dependency registers.

@@ -22,7 +22,6 @@ using MongoDB.Bson.Serialization.Serializers;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Threading.Tasks;
 
 namespace Etherna.MongODM.Core.Serialization.Serializers
 {
@@ -43,8 +42,8 @@ namespace Etherna.MongODM.Core.Serialization.Serializers
         // Fields.
         private readonly IDbCache dbCache;
         private readonly ISerializerModifierAccessor serializerModifierAccessor;
+        private readonly ISchemaRegister schemaRegister;
         private readonly ICollection<ExtraElementCondition> extraElements;
-        private readonly Func<TModel, SemanticVersion?, Task<TModel>> fixDeserializedModelAsync;
         private BsonClassMapSerializer<TModel> _serializer = default!;
 
         // Constructor.
@@ -52,15 +51,15 @@ namespace Etherna.MongODM.Core.Serialization.Serializers
             IDbCache dbCache,
             SemanticVersion documentVersion,
             ISerializerModifierAccessor serializerModifierAccessor,
-            Func<TModel, SemanticVersion?, Task<TModel>>? fixDeserializedModelAsync = null)
+            ISchemaRegister schemaRegister)
         {
             if (documentVersion is null)
                 throw new ArgumentNullException(nameof(documentVersion));
 
-            this.dbCache = dbCache;
-            this.serializerModifierAccessor = serializerModifierAccessor;
+            this.dbCache = dbCache ?? throw new ArgumentNullException(nameof(dbCache));
+            this.serializerModifierAccessor = serializerModifierAccessor ?? throw new ArgumentNullException(nameof(serializerModifierAccessor));
+            this.schemaRegister = schemaRegister ?? throw new ArgumentNullException(nameof(schemaRegister));
             extraElements = new List<ExtraElementCondition>();
-            this.fixDeserializedModelAsync = fixDeserializedModelAsync ?? ((m, _) => Task.FromResult(m));
             documentVersionElement = new BsonElement(
                 DbContext.DocumentVersionElementName,
                 DocumentVersionToBsonArray(documentVersion));
@@ -147,11 +146,6 @@ namespace Etherna.MongODM.Core.Serialization.Serializers
                     dbCache.AddModel(id, (IEntityModel)model);
                 }
             }
-
-            // Fix model.
-            var task = fixDeserializedModelAsync(model, documentVersion);
-            task.Wait();
-            model = task.Result;
 
             // Enable auditing.
             (model as IAuditable)?.EnableAuditing();

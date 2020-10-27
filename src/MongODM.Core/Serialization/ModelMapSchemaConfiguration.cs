@@ -9,20 +9,37 @@ namespace Etherna.MongODM.Core.Serialization
     {
         // Fields.
         private readonly List<ModelMapSchema> _secondarySchemas = new List<ModelMapSchema>();
+        private readonly IDbContext dbContext;
 
         // Constructor.
         public ModelMapSchemaConfiguration(
             ModelMapSchema<TModel> activeModelSchema,
+            IDbContext dbContext,
             bool requireCollectionMigration = false)
             : base(typeof(TModel), requireCollectionMigration)
         {
-            ActiveSchema = activeModelSchema;
+            ActiveSchema = activeModelSchema ?? throw new ArgumentNullException(nameof(activeModelSchema));
+            this.dbContext = dbContext ?? throw new ArgumentNullException(nameof(dbContext));
+
+            // Verify if have to use proxy model.
+            if (UseProxyModel)
+            {
+                ProxyModelType = dbContext.ProxyGenerator.CreateInstance(ModelType, dbContext).GetType();
+                activeModelSchema.UseProxyGenerator(dbContext);
+            }
+
+            // Verify if needs to use default serializer.
+            if (!typeof(TModel).IsAbstract && activeModelSchema.Serializer is null)
+                activeModelSchema.UseDefaultSerializer(dbContext);
         }
 
         // Properties.
         public ModelMapSchema ActiveSchema { get; }
+        public override IBsonSerializer? ActiveSerializer => ActiveSchema.Serializer;
         public IBsonSerializer? FallbackSerializer { get; private set; }
+        public override Type? ProxyModelType { get; }
         public IEnumerable<ModelMapSchema> SecondarySchemas => _secondarySchemas;
+        public override bool UseProxyModel => !typeof(TModel).IsAbstract;
 
         // Methods.
         public IModelMapSchemaConfiguration<TModel> AddFallbackCustomSerializer(IBsonSerializer<TModel> fallbackSerializer)
@@ -50,6 +67,11 @@ namespace Etherna.MongODM.Core.Serialization
             if (modelSchema is null)
                 throw new ArgumentNullException(nameof(modelSchema));
 
+            // Verify if have to use proxy model.
+            if (UseProxyModel)
+                modelSchema.UseProxyGenerator(dbContext);
+
+            // Add schema.
             _secondarySchemas.Add(modelSchema);
             return this;
         }

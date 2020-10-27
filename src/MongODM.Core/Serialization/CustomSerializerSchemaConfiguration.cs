@@ -1,4 +1,5 @@
 ﻿using MongoDB.Bson.Serialization;
+using System;
 
 namespace Etherna.MongODM.Core.Serialization
 {
@@ -11,10 +12,12 @@ namespace Etherna.MongODM.Core.Serialization
             bool requireCollectionMigration = false)
             : base(typeof(TModel), requireCollectionMigration)
         {
-            CustomSerializer = customSerializer;
+            ActiveSerializer = customSerializer;
         }
 
         // Properties.
-        public IBsonSerializer CustomSerializer { get; }
+        public override IBsonSerializer ActiveSerializer { get; }
+        public override Type? ProxyModelType => default;
+        public override bool UseProxyModel => false;
     }
 }

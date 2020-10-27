@@ -26,7 +26,8 @@ namespace Etherna.MongODM.Core.ModelMaps
                 customSerializer: new ExtendedClassMapSerializer<OperationBase>(
                     dbContext.DbCache,
                     dbContext.LibraryVersion,
-                    dbContext.SerializerModifierAccessor)
+                    dbContext.SerializerModifierAccessor,
+                    dbContext.SchemaRegister)
                 { AddVersion = true });
         }
     }

@@ -36,7 +36,6 @@ namespace Etherna.MongODM.Core.Serialization
         public string Id { get; }
         public BsonClassMap ModelMap { get; }
         public abstract Type ModelType { get; }
-        public BsonClassMap? ProxyModelMap { get; private set; }
         public IBsonSerializer? Serializer { get; private set; }
 
         // Methods.
@@ -61,10 +60,6 @@ namespace Etherna.MongODM.Core.Serialization
 
             // Set creator.
             ModelMap.SetCreator(() => dbContext.ProxyGenerator.CreateInstance(ModelType, dbContext));
-
-            // Generate proxy model map.
-            ProxyModelMap = new BsonClassMap(
-                dbContext.ProxyGenerator.CreateInstance(ModelType, dbContext).GetType());
         }
 
         // Protected methods.
@@ -94,7 +89,8 @@ namespace Etherna.MongODM.Core.Serialization
             return new ExtendedClassMapSerializer<TModel>(
                 dbContext.DbCache,
                 dbContext.ApplicationVersion,
-                dbContext.SerializerModifierAccessor)
+                dbContext.SerializerModifierAccessor,
+                dbContext.SchemaRegister)
             { AddVersion = typeof(IEntityModel).IsAssignableFrom(ModelType) }; //true only for entity models
         }
     }
