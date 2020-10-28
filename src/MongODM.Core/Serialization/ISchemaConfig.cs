@@ -3,8 +3,9 @@ using System;
 
 namespace Etherna.MongODM.Core.Serialization
 {
-    public interface ISchemaConfiguration
+    public interface ISchemaConfig : IFreezableConfig
     {
+        // Properties.
         IBsonSerializer? ActiveSerializer { get; }
         Type ModelType { get; }
         Type? ProxyModelType { get; }

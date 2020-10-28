@@ -3,11 +3,11 @@ using System;
 
 namespace Etherna.MongODM.Core.Serialization
 {
-    class CustomSerializerSchemaConfiguration<TModel> : SchemaConfigurationBase, ICustomSerializerSchemaConfiguration<TModel>
+    class CustomSerializerSchemaConfig<TModel> : SchemaConfigBase, ICustomSerializerSchemaConfig<TModel>
         where TModel : class
     {
         // Constructor.
-        public CustomSerializerSchemaConfiguration(
+        public CustomSerializerSchemaConfig(
             IBsonSerializer<TModel> customSerializer,
             bool requireCollectionMigration = false)
             : base(typeof(TModel), requireCollectionMigration)

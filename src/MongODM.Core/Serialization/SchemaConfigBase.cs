@@ -3,10 +3,10 @@ using System;
 
 namespace Etherna.MongODM.Core.Serialization
 {
-    abstract class SchemaConfigurationBase : ISchemaConfiguration
+    abstract class SchemaConfigBase : FreezableConfig, ISchemaConfig
     {
         // Constructor.
-        public SchemaConfigurationBase(
+        public SchemaConfigBase(
             Type modelType,
             bool requireCollectionMigration)
         {

@@ -18,21 +18,25 @@ using System.Collections.Generic;
 
 namespace Etherna.MongODM.Core.Serialization
 {
-    public interface IModelMapSchemaConfiguration<TModel> : ISchemaConfiguration
-        where TModel : class
+    public interface IModelMapSchemaConfig : ISchemaConfig
     {
         // Properties.
         ModelMapSchema ActiveSchema { get; }
         IBsonSerializer? FallbackSerializer { get; }
+        IDictionary<string, ModelMapSchema> SchemaDictionary { get; }
         IEnumerable<ModelMapSchema> SecondarySchemas { get; }
+    }
 
+    public interface IModelMapSchemaConfig<TModel> : IModelMapSchemaConfig
+        where TModel : class
+    {
         // Methods.
         /// <summary>
         /// Add a fallback serializer invoked in case of undefined schema id
         /// </summary>
         /// <param name="fallbackSerializer">Fallback serializer</param>
         /// <returns>This same model schema configuration</returns>
-        IModelMapSchemaConfiguration<TModel> AddFallbackCustomSerializer(
+        IModelMapSchemaConfig<TModel> AddFallbackCustomSerializer(
             IBsonSerializer<TModel> fallbackSerializer);
 
         /// <summary>
@@ -42,7 +46,7 @@ namespace Etherna.MongODM.Core.Serialization
         /// <param name="modelMapInitializer">The model map inizializer</param>
         /// <param name="customSerializer">Custom serializer</param>
         /// <returns>This same model schema configuration</returns>
-        IModelMapSchemaConfiguration<TModel> AddSecondarySchema(
+        IModelMapSchemaConfig<TModel> AddSecondarySchema(
             string id,
             Action<BsonClassMap<TModel>>? modelMapInitializer = null,
             IBsonSerializer<TModel>? customSerializer = null);
@@ -52,7 +56,7 @@ namespace Etherna.MongODM.Core.Serialization
         /// </summary>
         /// <param name="modelMapSchema">The model schema</param>
         /// <returns>This same model schema configuration</returns>
-        IModelMapSchemaConfiguration<TModel> AddSecondarySchema(
+        IModelMapSchemaConfig<TModel> AddSecondarySchema(
             ModelMapSchema<TModel> modelMapSchema);
     }
 }

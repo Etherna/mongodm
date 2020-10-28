@@ -22,11 +22,8 @@ namespace Etherna.MongODM.Core.Serialization
     /// <summary>
     /// Interface for <see cref="SchemaRegister"/> implementation.
     /// </summary>
-    public interface ISchemaRegister : IDbContextInitializable
+    public interface ISchemaRegister : IDbContextInitializable, IFreezableConfig
     {
-        // Properties.
-        bool IsFrozen { get; }
-
         // Methods.
         /// <summary>
         /// Register a new schema based on custom serializer
@@ -35,7 +32,7 @@ namespace Etherna.MongODM.Core.Serialization
         /// <param name="customSerializer">Custom serializer</param>
         /// <param name="requireCollectionMigration">Migrate full collection on db migration</param>
         /// <returns>Configuration of schema</returns>
-        ICustomSerializerSchemaConfiguration<TModel> AddCustomSerializerSchema<TModel>(
+        ICustomSerializerSchemaConfig<TModel> AddCustomSerializerSchema<TModel>(
             IBsonSerializer<TModel> customSerializer,
             bool requireCollectionMigration = false)
             where TModel : class;
@@ -49,7 +46,7 @@ namespace Etherna.MongODM.Core.Serialization
         /// <param name="customSerializer">Replace default serializer with a custom</param>
         /// <param name="requireCollectionMigration">Migrate full collection on db migration</param>
         /// <returns>Configuration of schema</returns>
-        IModelMapSchemaConfiguration<TModel> AddModelMapSchema<TModel>(
+        IModelMapSchemaConfig<TModel> AddModelMapSchema<TModel>(
             string id,
             Action<BsonClassMap<TModel>>? activeModelMapInitializer = null,
             IBsonSerializer<TModel>? customSerializer = null,
@@ -63,15 +60,10 @@ namespace Etherna.MongODM.Core.Serialization
         /// <param name="activeModelSchema">The active model map schema</param>
         /// <param name="requireCollectionMigration">Migrate full collection on db migration</param>
         /// <returns>Configuration of schema</returns>
-        IModelMapSchemaConfiguration<TModel> AddModelMapSchema<TModel>(
+        IModelMapSchemaConfig<TModel> AddModelMapSchema<TModel>(
             ModelMapSchema<TModel> activeModelSchema,
             bool requireCollectionMigration = false)
             where TModel : class;
-
-        /// <summary>
-        /// Build and freeze the register.
-        /// </summary>
-        void Freeze();
 
         IEnumerable<ModelSchemaMemberMap> GetMemberDependencies(MemberInfo memberInfo);
 

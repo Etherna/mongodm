@@ -21,14 +21,12 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using System.Text;
-using System.Threading;
 
 namespace Etherna.MongODM.Core.Serialization
 {
-    public class SchemaRegister : ISchemaRegister, IDisposable
+    public class SchemaRegister : FreezableConfig, ISchemaRegister
     {
         // Fields.
-        private readonly ReaderWriterLockSlim configLock = new ReaderWriterLockSlim(LockRecursionPolicy.SupportsRecursion);
         private readonly Dictionary<MemberInfo, List<ModelSchemaMemberMap>> memberDependenciesMap =
             new Dictionary<MemberInfo, List<ModelSchemaMemberMap>>();
         private readonly Dictionary<Type, List<ModelSchemaMemberMap>> modelDependenciesMap =
@@ -38,9 +36,9 @@ namespace Etherna.MongODM.Core.Serialization
 
         private IDbContext dbContext = default!;
         private readonly ISerializerModifierAccessor serializerModifierAccessor;
-        private readonly Dictionary<Type, ISchemaConfiguration> schemaConfigurations = new Dictionary<Type, ISchemaConfiguration>();
+        private readonly Dictionary<Type, ISchemaConfig> schemaConfigs = new Dictionary<Type, ISchemaConfig>();
 
-        // Constructor, initialization and dispose.
+        // Constructor, initialization.
         public SchemaRegister(
             ISerializerModifierAccessor serializerModifierAccessor)
         {
@@ -56,42 +54,26 @@ namespace Etherna.MongODM.Core.Serialization
             IsInitialized = true;
         }
 
-        public void Dispose()
-        {
-            configLock.Dispose();
-        }
-
         // Properties.
-        public bool IsFrozen { get; private set; }
         public bool IsInitialized { get; private set; }
 
         // Methods.
-        public ICustomSerializerSchemaConfiguration<TModel> AddCustomSerializerSchema<TModel>(
+        public ICustomSerializerSchemaConfig<TModel> AddCustomSerializerSchema<TModel>(
             IBsonSerializer<TModel> customSerializer,
-            bool requireCollectionMigration = false) where TModel : class
-        {
-            if (customSerializer is null)
-                throw new ArgumentNullException(nameof(customSerializer));
-
-            configLock.EnterWriteLock();
-            try
+            bool requireCollectionMigration = false) where TModel : class =>
+            ExecuteConfigAction(() =>
             {
-                if (IsFrozen)
-                    throw new InvalidOperationException("Register is frozen");
+                if (customSerializer is null)
+                    throw new ArgumentNullException(nameof(customSerializer));
 
                 // Register and return schema configuration.
-                var modelSchemaConfiguration = new CustomSerializerSchemaConfiguration<TModel>(customSerializer, requireCollectionMigration);
-                schemaConfigurations.Add(typeof(TModel), modelSchemaConfiguration);
+                var modelSchemaConfiguration = new CustomSerializerSchemaConfig<TModel>(customSerializer, requireCollectionMigration);
+                schemaConfigs.Add(typeof(TModel), modelSchemaConfiguration);
 
                 return modelSchemaConfiguration;
-            }
-            finally
-            {
-                configLock.ExitWriteLock();
-            }
-        }
+            });
 
-        public IModelMapSchemaConfiguration<TModel> AddModelMapSchema<TModel>(
+        public IModelMapSchemaConfig<TModel> AddModelMapSchema<TModel>(
             string id,
             Action<BsonClassMap<TModel>>? activeModelMapInitializer = null,
             IBsonSerializer<TModel>? customSerializer = null,
@@ -101,84 +83,21 @@ namespace Etherna.MongODM.Core.Serialization
                 new BsonClassMap<TModel>(activeModelMapInitializer ?? (cm => cm.AutoMap())),
                 customSerializer), requireCollectionMigration);
 
-        public IModelMapSchemaConfiguration<TModel> AddModelMapSchema<TModel>(
+        public IModelMapSchemaConfig<TModel> AddModelMapSchema<TModel>(
             ModelMapSchema<TModel> activeModelSchema,
-            bool requireCollectionMigration = false) where TModel : class
-        {
-            if (activeModelSchema is null)
-                throw new ArgumentNullException(nameof(activeModelSchema));
-
-            configLock.EnterWriteLock();
-            try
+            bool requireCollectionMigration = false) where TModel : class =>
+            ExecuteConfigAction(() =>
             {
-                if (IsFrozen)
-                    throw new InvalidOperationException("Register is frozen");
+                if (activeModelSchema is null)
+                    throw new ArgumentNullException(nameof(activeModelSchema));
 
                 // Register and return schema configuration.
-                var modelSchemaConfiguration = new ModelMapSchemaConfiguration<TModel>(
+                var modelSchemaConfiguration = new ModelMapSchemaConfig<TModel>(
                     activeModelSchema, dbContext, requireCollectionMigration);
-                schemaConfigurations.Add(typeof(TModel), modelSchemaConfiguration);
+                schemaConfigs.Add(typeof(TModel), modelSchemaConfiguration);
 
                 return modelSchemaConfiguration;
-            }
-            finally
-            {
-                configLock.ExitWriteLock();
-            }
-        }
-
-        public void Freeze()
-        {
-            configLock.EnterReadLock();
-            try
-            {
-                if (IsFrozen) return;
-            }
-            finally
-            {
-                configLock.ExitReadLock();
-            }
-
-            configLock.EnterWriteLock();
-            try
-            {
-                if (!IsFrozen)
-                {
-                    // Register active serializers.
-                    foreach (var schemaConfig in schemaConfigurations.Values)
-                    {
-                        if (schemaConfig.ActiveSerializer != null)
-                        {
-                            //regular model
-                            BsonSerializer.RegisterSerializer(schemaConfig.ModelType, schemaConfig.ActiveSerializer);
-
-                            //proxy model
-                            if (schemaConfig.ProxyModelType != null)
-                                BsonSerializer.RegisterSerializer(schemaConfig.ProxyModelType, schemaConfig.ActiveSerializer);
-                        }
-                    }
-
-                    // Compile dependency registers.
-                    foreach (var schema in schemas)
-                    {
-                        schema.ModelMap.Freeze();
-
-                        CompileDependencyRegisters(
-                            schema.ModelType,
-                            Array.Empty<EntityMember>(),
-                            schema.ModelMap,
-                            schema.Version);
-                    }
-
-                    // Freeze.
-                    IsFrozen = true;
-                }
-            }
-            finally
-            {
-                configLock.ExitWriteLock();
-            }
-        }
+            });
 
         public IEnumerable<ModelSchemaMemberMap> GetMemberDependencies(MemberInfo memberInfo)
         {
@@ -207,12 +126,45 @@ namespace Etherna.MongODM.Core.Serialization
             return Array.Empty<ModelSchemaMemberMap>();
         }
 
+        // Protected methods.
+        protected override void FreezeAction()
+        {
+            foreach (var schemaConfig in schemaConfigs.Values)
+            {
+                // Freeze schema config.
+                schemaConfig.Freeze();
+
+                // Register active serializers.
+                if (schemaConfig.ActiveSerializer != null)
+                {
+                    //regular model
+                    BsonSerializer.RegisterSerializer(schemaConfig.ModelType, schemaConfig.ActiveSerializer);
+
+                    //proxy model
+                    if (schemaConfig.ProxyModelType != null)
+                        BsonSerializer.RegisterSerializer(schemaConfig.ProxyModelType, schemaConfig.ActiveSerializer);
+                }
+
+                // Compile dependency registers.
+                /* Only model map based schemas can be analyzed for document dependencies.
+                 * Schemas based on custom serializers can't be explored.
+                 */
+                if (schemaConfig is IModelMapSchemaConfig modelMapSchemaConfig)
+                    foreach (var schema in modelMapSchemaConfig.SchemaDictionary.Values)
+                        CompileDependencyRegisters(
+                            schema.Id,
+                            schema.ModelType,
+                            schema.ModelMap,
+                            Array.Empty<EntityMember>());
+            }
+        }
+
         // Helpers.
         private void CompileDependencyRegisters(
+            string schemaId,
             Type modelType,
-            IEnumerable<EntityMember> memberPath,
             BsonClassMap currentClassMap,
-            SemanticVersion version,
+            IEnumerable<EntityMember> memberPath,
             bool? useCascadeDeleteSetting = null)
         {
             // Ignore class maps of abstract types. (child classes will map all their members)
@@ -261,7 +213,7 @@ namespace Etherna.MongODM.Core.Serialization
                 {
                     var useCascadeDelete = (memberSerializer as IReferenceContainerSerializer)?.UseCascadeDelete;
                     foreach (var childClassMap in classMapContainer.ContainedClassMaps)
-                        CompileDependencyRegisters(modelType, newMemberPath, childClassMap, version, useCascadeDelete);
+                        CompileDependencyRegisters(version, modelType, childClassMap, newMemberPath, useCascadeDelete);
                 }
 
                 //default serializers
@@ -269,7 +221,7 @@ namespace Etherna.MongODM.Core.Serialization
                     serializerType.GetGenericTypeDefinition() == typeof(BsonClassMapSerializer<>)) //default classmapp
                 {
                     var memberClassMap = BsonClassMap.LookupClassMap(memberMap.MemberType);
-                    CompileDependencyRegisters(modelType, newMemberPath, memberClassMap, version);
+                    CompileDependencyRegisters(version, modelType, memberClassMap, newMemberPath);
                 }
 
                 else if (serializerType.IsGenericType &&
@@ -283,7 +235,7 @@ namespace Etherna.MongODM.Core.Serialization
                         var elementType = interfaceType.GenericTypeArguments.Last();
 
                         var elementClassMap = BsonClassMap.LookupClassMap(elementType);
-                        CompileDependencyRegisters(modelType, newMemberPath, elementClassMap, version);
+                        CompileDependencyRegisters(version, modelType, elementClassMap, newMemberPath);
                     }
                 }
             }

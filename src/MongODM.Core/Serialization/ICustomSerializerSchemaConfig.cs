@@ -1,6 +1,6 @@
 ﻿namespace Etherna.MongODM.Core.Serialization
 {
-    public interface ICustomSerializerSchemaConfiguration<TModel> : ISchemaConfiguration
+    public interface ICustomSerializerSchemaConfig<TModel> : ISchemaConfig
         where TModel : class
     {
     }
