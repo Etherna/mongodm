@@ -35,7 +35,7 @@ namespace Etherna.MongODM.Core.ModelMaps
 
                     // Set Id representation.
                     modelMap.IdMemberMap.SetSerializer(new StringSerializer(BsonType.ObjectId))
-                                  .SetIdGenerator(new StringObjectIdGenerator());
+                                        .SetIdGenerator(new StringObjectIdGenerator());
                 });
         }
     }

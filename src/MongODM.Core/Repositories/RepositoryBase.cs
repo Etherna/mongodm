@@ -15,7 +15,7 @@
 using Etherna.MongODM.Core.Exceptions;
 using Etherna.MongODM.Core.Models;
 using Etherna.MongODM.Core.ProxyModels;
-using Etherna.MongODM.Core.Serialization;
+using Etherna.MongODM.Core.Serialization.Schemas;
 using MoreLinq;
 using System;
 using System.Collections;
@@ -76,7 +76,7 @@ namespace Etherna.MongODM.Core.Repositories
             // Process cascade delete.
             var referencesIdsPaths = DbContext.SchemaRegister.GetModelEntityReferencesIds(typeof(TModel))
                 .Where(d => d.UseCascadeDelete == true)
-                .Where(d => d.EntityClassMapPath.Count() == 2) //ignore references of references
+                .Where(d => d.EntityModelMapPath.Count() == 2) //ignore references of references
                 .DistinctBy(d => d.FullPathToString())
                 .Select(d => d.MemberPath);
 

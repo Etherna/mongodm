@@ -18,6 +18,7 @@ using Etherna.MongODM.Core.ProxyModels;
 using Etherna.MongODM.Core.Repositories;
 using Etherna.MongODM.Core.Serialization;
 using Etherna.MongODM.Core.Serialization.Modifiers;
+using Etherna.MongODM.Core.Serialization.Schemas;
 using Etherna.MongODM.Core.Utility;
 using MongoDB.Driver;
 using System.Collections.Generic;

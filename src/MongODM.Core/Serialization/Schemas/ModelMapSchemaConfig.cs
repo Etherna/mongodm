@@ -3,7 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 
-namespace Etherna.MongODM.Core.Serialization
+namespace Etherna.MongODM.Core.Serialization.Schemas
 {
     class ModelMapSchemaConfig<TModel> : SchemaConfigBase, IModelMapSchemaConfig<TModel>
         where TModel : class

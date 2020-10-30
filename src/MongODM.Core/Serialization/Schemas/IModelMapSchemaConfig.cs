@@ -16,7 +16,7 @@ using MongoDB.Bson.Serialization;
 using System;
 using System.Collections.Generic;
 
-namespace Etherna.MongODM.Core.Serialization
+namespace Etherna.MongODM.Core.Serialization.Schemas
 {
     public interface IModelMapSchemaConfig : ISchemaConfig
     {

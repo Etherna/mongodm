@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Threading;
 
-namespace Etherna.MongODM.Core.Serialization
+namespace Etherna.MongODM.Core.Serialization.Schemas
 {
     public abstract class FreezableConfig : IFreezableConfig, IDisposable
     {

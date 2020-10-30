@@ -17,7 +17,7 @@ using System;
 using System.Collections.Generic;
 using System.Reflection;
 
-namespace Etherna.MongODM.Core.Serialization
+namespace Etherna.MongODM.Core.Serialization.Schemas
 {
     /// <summary>
     /// Interface for <see cref="SchemaRegister"/> implementation.
@@ -65,10 +65,10 @@ namespace Etherna.MongODM.Core.Serialization
             bool requireCollectionMigration = false)
             where TModel : class;
 
-        IEnumerable<ModelSchemaMemberMap> GetMemberDependencies(MemberInfo memberInfo);
+        IEnumerable<SchemaMemberMap> GetMemberDependencies(MemberInfo memberInfo);
 
-        IEnumerable<ModelSchemaMemberMap> GetModelDependencies(Type modelType);
+        IEnumerable<SchemaMemberMap> GetModelDependencies(Type modelType);
 
-        IEnumerable<ModelSchemaMemberMap> GetModelEntityReferencesIds(Type modelType);
+        IEnumerable<SchemaMemberMap> GetModelEntityReferencesIds(Type modelType);
     }
 }

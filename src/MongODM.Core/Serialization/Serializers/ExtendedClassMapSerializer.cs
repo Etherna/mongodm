@@ -15,6 +15,7 @@
 using Etherna.MongODM.Core.Models;
 using Etherna.MongODM.Core.ProxyModels;
 using Etherna.MongODM.Core.Serialization.Modifiers;
+using Etherna.MongODM.Core.Serialization.Schemas;
 using Etherna.MongODM.Core.Utility;
 using MongoDB.Bson;
 using MongoDB.Bson.Serialization;

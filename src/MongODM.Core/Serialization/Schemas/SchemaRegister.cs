@@ -22,17 +22,17 @@ using System.Linq;
 using System.Reflection;
 using System.Text;
 
-namespace Etherna.MongODM.Core.Serialization
+namespace Etherna.MongODM.Core.Serialization.Schemas
 {
     public class SchemaRegister : FreezableConfig, ISchemaRegister
     {
         // Fields.
-        private readonly Dictionary<MemberInfo, List<ModelSchemaMemberMap>> memberDependenciesMap =
-            new Dictionary<MemberInfo, List<ModelSchemaMemberMap>>();
-        private readonly Dictionary<Type, List<ModelSchemaMemberMap>> modelDependenciesMap =
-            new Dictionary<Type, List<ModelSchemaMemberMap>>();
-        private readonly Dictionary<Type, List<ModelSchemaMemberMap>> modelEntityReferencesIdsMap =
-            new Dictionary<Type, List<ModelSchemaMemberMap>>();
+        private readonly Dictionary<MemberInfo, List<SchemaMemberMap>> memberDependenciesMap =
+            new Dictionary<MemberInfo, List<SchemaMemberMap>>();
+        private readonly Dictionary<Type, List<SchemaMemberMap>> modelDependenciesMap =
+            new Dictionary<Type, List<SchemaMemberMap>>();
+        private readonly Dictionary<Type, List<SchemaMemberMap>> modelEntityReferencesIdsMap =
+            new Dictionary<Type, List<SchemaMemberMap>>();
 
         private IDbContext dbContext = default!;
         private readonly ISerializerModifierAccessor serializerModifierAccessor;
@@ -99,31 +99,31 @@ namespace Etherna.MongODM.Core.Serialization
                 return modelSchemaConfiguration;
             });
 
-        public IEnumerable<ModelSchemaMemberMap> GetMemberDependencies(MemberInfo memberInfo)
+        public IEnumerable<SchemaMemberMap> GetMemberDependencies(MemberInfo memberInfo)
         {
             Freeze();
 
-            if (memberDependenciesMap.TryGetValue(memberInfo, out List<ModelSchemaMemberMap> dependencies))
+            if (memberDependenciesMap.TryGetValue(memberInfo, out List<SchemaMemberMap> dependencies))
                 return dependencies;
-            return Array.Empty<ModelSchemaMemberMap>();
+            return Array.Empty<SchemaMemberMap>();
         }
 
-        public IEnumerable<ModelSchemaMemberMap> GetModelDependencies(Type modelType)
+        public IEnumerable<SchemaMemberMap> GetModelDependencies(Type modelType)
         {
             Freeze();
 
-            if (modelDependenciesMap.TryGetValue(modelType, out List<ModelSchemaMemberMap> dependencies))
+            if (modelDependenciesMap.TryGetValue(modelType, out List<SchemaMemberMap> dependencies))
                 return dependencies;
-            return Array.Empty<ModelSchemaMemberMap>();
+            return Array.Empty<SchemaMemberMap>();
         }
 
-        public IEnumerable<ModelSchemaMemberMap> GetModelEntityReferencesIds(Type modelType)
+        public IEnumerable<SchemaMemberMap> GetModelEntityReferencesIds(Type modelType)
         {
             Freeze();
 
-            if (modelEntityReferencesIdsMap.TryGetValue(modelType, out List<ModelSchemaMemberMap> dependencies))
+            if (modelEntityReferencesIdsMap.TryGetValue(modelType, out List<SchemaMemberMap> dependencies))
                 return dependencies;
-            return Array.Empty<ModelSchemaMemberMap>();
+            return Array.Empty<SchemaMemberMap>();
         }
 
         // Protected methods.
@@ -162,47 +162,63 @@ namespace Etherna.MongODM.Core.Serialization
         // Helpers.
         private void CompileDependencyRegisters(
             string schemaId,
-            Type modelType,
-            BsonClassMap currentClassMap,
+            Type rootModelType,
+            BsonClassMap currentModelMap,
             IEnumerable<EntityMember> memberPath,
             bool? useCascadeDeleteSetting = null)
         {
             // Ignore class maps of abstract types. (child classes will map all their members)
-            if (currentClassMap.ClassType.IsAbstract)
+            if (currentModelMap.ClassType.IsAbstract)
                 return;
 
             // Identify last indented entity class maps.
-            var lastEntityClassMap = currentClassMap.IdMemberMap != null ?
-                currentClassMap :
-                memberPath.LastOrDefault()?.EntityClassMap;
+            /*
+             * If current model map owns an id member map, it is an entity model.
+             * Because it is the current on deep recursion, it is the last in path.
+             * Otherwise, the last is the same entity model map of the last member in path, if exists.
+             */
+            var lastEntityModelMap = currentModelMap.IdMemberMap != null ?
+                currentModelMap :
+                memberPath.LastOrDefault()?.EntityModelMap;
 
             // Explore recursively members.
-            foreach (var memberMap in currentClassMap.AllMemberMaps)
+            foreach (var memberMap in currentModelMap.AllMemberMaps)
             {
-                // Update path.
-                var newMemberPath = memberPath.Append(
-                    new EntityMember(
-                        lastEntityClassMap,
-                        memberMap));
+                // Identify if exists a cyclicity with member path.
+                if (memberPath.Select(m => m.MemberMap).Contains(memberMap))
+                {
+                    var memberPathString = string.Join("->",
+                        memberPath.Select(m => m.MemberMap).Append(memberMap)
+                                  .Select(m => $"[{m.ClassMap.ClassType.Name}]{m.MemberName}"));
 
-                // Add dependency to registers.
-                var dependency = new ModelSchemaMemberMap(
-                    modelType,
-                    newMemberPath,
-                    version,
+                    throw new InvalidOperationException("Invalid cyclicity identified with model map definition:\n" + memberPathString);
+                }
+
+                // Update path.
+                var currentMemberPath = memberPath.Append(
+                    new EntityMember(
+                        memberMap,
+                        lastEntityModelMap));
+
+                // Identify current member with its path, starting from current model map, with this schema id.
+                var memberDependency = new SchemaMemberMap(
+                    schemaId,
+                    rootModelType,
+                    currentMemberPath,
                     useCascadeDeleteSetting);
 
+                // Add dependency to registers.
                 if (!memberDependenciesMap.ContainsKey(memberMap.MemberInfo))
-                    memberDependenciesMap[memberMap.MemberInfo] = new List<ModelSchemaMemberMap>();
-                if (!modelDependenciesMap.ContainsKey(modelType))
-                    modelDependenciesMap[modelType] = new List<ModelSchemaMemberMap>();
-                if (!modelEntityReferencesIdsMap.ContainsKey(modelType))
-                    modelEntityReferencesIdsMap[modelType] = new List<ModelSchemaMemberMap>();
+                    memberDependenciesMap[memberMap.MemberInfo] = new List<SchemaMemberMap>();
+                if (!modelDependenciesMap.ContainsKey(rootModelType))
+                    modelDependenciesMap[rootModelType] = new List<SchemaMemberMap>();
+                if (!modelEntityReferencesIdsMap.ContainsKey(rootModelType))
+                    modelEntityReferencesIdsMap[rootModelType] = new List<SchemaMemberMap>();
 
-                memberDependenciesMap[memberMap.MemberInfo].Add(dependency);
-                modelDependenciesMap[modelType].Add(dependency);
-                if (dependency.IsEntityReferenceMember && dependency.IsIdMember)
-                    modelEntityReferencesIdsMap[modelType].Add(dependency);
+                memberDependenciesMap[memberMap.MemberInfo].Add(memberDependency);
+                modelDependenciesMap[rootModelType].Add(memberDependency);
+                if (memberDependency.IsEntityReferenceMember && memberDependency.IsIdMember)
+                    modelEntityReferencesIdsMap[rootModelType].Add(memberDependency);
 
                 // Analize recursion on member.
                 var memberSerializer = memberMap.GetSerializer();
@@ -213,7 +229,7 @@ namespace Etherna.MongODM.Core.Serialization
                 {
                     var useCascadeDelete = (memberSerializer as IReferenceContainerSerializer)?.UseCascadeDelete;
                     foreach (var childClassMap in classMapContainer.ContainedClassMaps)
-                        CompileDependencyRegisters(version, modelType, childClassMap, newMemberPath, useCascadeDelete);
+                        CompileDependencyRegisters(schemaId, rootModelType, childClassMap, currentMemberPath, useCascadeDelete);
                 }
 
                 //default serializers
@@ -221,7 +237,7 @@ namespace Etherna.MongODM.Core.Serialization
                     serializerType.GetGenericTypeDefinition() == typeof(BsonClassMapSerializer<>)) //default classmapp
                 {
                     var memberClassMap = BsonClassMap.LookupClassMap(memberMap.MemberType);
-                    CompileDependencyRegisters(version, modelType, memberClassMap, newMemberPath);
+                    CompileDependencyRegisters(schemaId, rootModelType, memberClassMap, currentMemberPath);
                 }
 
                 else if (serializerType.IsGenericType &&
@@ -235,7 +251,7 @@ namespace Etherna.MongODM.Core.Serialization
                         var elementType = interfaceType.GenericTypeArguments.Last();
 
                         var elementClassMap = BsonClassMap.LookupClassMap(elementType);
-                        CompileDependencyRegisters(version, modelType, elementClassMap, newMemberPath);
+                        CompileDependencyRegisters(schemaId, rootModelType, elementClassMap, currentMemberPath);
                     }
                 }
             }

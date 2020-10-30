@@ -1,7 +1,7 @@
 ﻿using MongoDB.Bson.Serialization;
 using System;
 
-namespace Etherna.MongODM.Core.Serialization
+namespace Etherna.MongODM.Core.Serialization.Schemas
 {
     class CustomSerializerSchemaConfig<TModel> : SchemaConfigBase, ICustomSerializerSchemaConfig<TModel>
         where TModel : class

@@ -1,4 +1,4 @@
-﻿namespace Etherna.MongODM.Core.Serialization
+﻿namespace Etherna.MongODM.Core.Serialization.Schemas
 {
     public interface IFreezableConfig
     {

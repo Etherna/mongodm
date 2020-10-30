@@ -14,22 +14,25 @@
 
 using MongoDB.Bson.Serialization;
 
-namespace Etherna.MongODM.Core.Serialization
+namespace Etherna.MongODM.Core.Serialization.Schemas
 {
+    /// <summary>
+    /// Represents a model member with the optional entity model map containing it
+    /// </summary>
     public class EntityMember
     {
         // Constructors.
         public EntityMember(
-            BsonClassMap? entityClassMap,
-            BsonMemberMap memberMap)
+            BsonMemberMap memberMap,
+            BsonClassMap? entityModelMap)
         {
-            EntityClassMap = entityClassMap;
+            EntityModelMap = entityModelMap;
             MemberMap = memberMap;
         }
 
         // Properties.
-        public BsonClassMap? EntityClassMap { get; }
-        public bool IsId => MemberMap == EntityClassMap?.IdMemberMap;
+        public BsonClassMap? EntityModelMap { get; }
+        public bool IsId => MemberMap == EntityModelMap?.IdMemberMap;
         public BsonMemberMap MemberMap { get; }
     }
 }

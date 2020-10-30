@@ -18,62 +18,92 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 
-namespace Etherna.MongODM.Core.Serialization
+namespace Etherna.MongODM.Core.Serialization.Schemas
 {
-    public class ModelSchemaMemberMap
+    /// <summary>
+    /// Identify a mapped member with a path from a model type, with a related schema id
+    /// </summary>
+    public class SchemaMemberMap
     {
         // Constructors.
-        public ModelSchemaMemberMap(
+        public SchemaMemberMap(
+            string schemaId,
             Type rootModelType,
             IEnumerable<EntityMember> memberPath,
-            SemanticVersion version,
             bool? useCascadeDelete)
         {
-            MemberPath = memberPath;
+            SchemaId = schemaId;
             RootModelType = rootModelType;
+            MemberPath = memberPath;
             UseCascadeDelete = useCascadeDelete;
-            Version = version;
         }
 
         // Properties.
-        public IEnumerable<BsonClassMap> EntityClassMapPath => MemberPath.Select(m => m.EntityClassMap!)
+        /// <summary>
+        /// Description of all encountered entity models in member path
+        /// </summary>
+        public IEnumerable<BsonClassMap> EntityModelMapPath => MemberPath.Select(m => m.EntityModelMap!)
                                                                          .Where(cm => cm != null)
                                                                          .Distinct();
+        /// <summary>
+        /// True if member is an entity Id
+        /// </summary>
         public bool IsIdMember => MemberPath.Last().IsId;
-        public bool IsEntityReferenceMember => EntityClassMapPath.Count() >= 2;
+        /// <summary>
+        /// True if member is contained into a referenced entity model
+        /// </summary>
+        public bool IsEntityReferenceMember => EntityModelMapPath.Count() >= 2;
+        /// <summary>
+        /// The full path from root type to current member
+        /// </summary>
         public IEnumerable<EntityMember> MemberPath { get; }
-        public IEnumerable<EntityMember> MemberPathToEntity
+        /// <summary>
+        /// The member path from the root type, to the member that references the entity model that owns current member
+        /// </summary>
+        public IEnumerable<EntityMember> PathToMemberEntityModel
         {
             get
             {
                 var lastEntityNestedMembers = MemberPath.Aggregate<EntityMember, (int counter, BsonClassMap? lastEntityClassMap), int>(
                     (1, null),
-                    (acc, member) => member.EntityClassMap == acc.lastEntityClassMap ?
-                        (acc.counter++, acc.lastEntityClassMap) :
-                        (1, member.EntityClassMap),
+                    (acc, member) => member.EntityModelMap == acc.lastEntityClassMap ?
+                        (acc.counter++, member.EntityModelMap) :
+                        (1, member.EntityModelMap),
                     acc => acc.counter);
-                var idMemberDeep = MemberPath.Count() - lastEntityNestedMembers;
+                var entityMemberDeep = MemberPath.Count() - lastEntityNestedMembers;
 
-                return MemberPath.Take(idMemberDeep);
+                return MemberPath.Take(entityMemberDeep);
             }
         }
-        public IEnumerable<EntityMember> MemberPathToId
+        /// <summary>
+        /// The member path from the root type, to the id member of the entity model that owns current member
+        /// </summary>
+        public IEnumerable<EntityMember> PathToMemberEntityModelId
         {
             get
             {
                 if (IsIdMember)
                     return MemberPath;
 
-                var lastEntityClassMap = MemberPath.Last().EntityClassMap;
-                if (lastEntityClassMap is null)
+                var lastEntityModelMap = MemberPath.Last().EntityModelMap;
+                if (lastEntityModelMap is null)
                     throw new InvalidOperationException("This model is not related to a an entity model with an Id");
 
-                return MemberPathToEntity.Append(new EntityMember(lastEntityClassMap, lastEntityClassMap.IdMemberMap));
+                return PathToMemberEntityModel.Append(new EntityMember(lastEntityModelMap.IdMemberMap, lastEntityModelMap));
             }
         }
+        /// <summary>
+        /// The root model of starting for member path
+        /// </summary>
         public Type RootModelType { get; }
+        /// <summary>
+        /// Current defining schema id
+        /// </summary>
+        public string SchemaId { get; }
+        /// <summary>
+        /// True if requested to apply cascade delete
+        /// </summary>
         public bool? UseCascadeDelete { get; }
-        public SemanticVersion Version { get; }
 
         // Methods.
         public string MemberPathToString() =>
@@ -86,8 +116,8 @@ namespace Etherna.MongODM.Core.Serialization
             StringBuilder strBuilder = new StringBuilder();
             
             strBuilder.AppendLine(FullPathToString());
-            strBuilder.AppendLine($"    version: {Version}");
-            strBuilder.AppendLine($"    entity: {string.Join("->", EntityClassMapPath.Select(cm => cm.ClassType.Name))}");
+            strBuilder.AppendLine($"    schemaId: {SchemaId}");
+            strBuilder.AppendLine($"    entity: {string.Join("->", EntityModelMapPath.Select(cm => cm.ClassType.Name))}");
             strBuilder.AppendLine($"    isEntityRefMem: {IsEntityReferenceMember}");
             strBuilder.AppendLine($"    isIdMem: {IsIdMember}");
             strBuilder.AppendLine($"    cascadeDelete: {UseCascadeDelete?.ToString() ?? "null"}");

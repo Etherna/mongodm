@@ -17,7 +17,7 @@ using Etherna.MongODM.Core.Serialization.Serializers;
 using MongoDB.Bson.Serialization;
 using System;
 
-namespace Etherna.MongODM.Core.Serialization
+namespace Etherna.MongODM.Core.Serialization.Schemas
 {
     public abstract class ModelMapSchema
     {

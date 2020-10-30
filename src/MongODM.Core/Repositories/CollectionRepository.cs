@@ -15,7 +15,7 @@
 using Etherna.MongODM.Core.Exceptions;
 using Etherna.MongODM.Core.Models;
 using Etherna.MongODM.Core.ProxyModels;
-using Etherna.MongODM.Core.Serialization;
+using Etherna.MongODM.Core.Serialization.Schemas;
 using MongoDB.Bson;
 using MongoDB.Driver;
 using MongoDB.Driver.Linq;

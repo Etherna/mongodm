@@ -13,7 +13,7 @@
 //   limitations under the License.
 
 using Etherna.MongODM.Core.Models;
-using Etherna.MongODM.Core.Serialization;
+using Etherna.MongODM.Core.Serialization.Schemas;
 using System;
 using System.Collections.Generic;
 using System.Threading;
