@@ -13,7 +13,7 @@
 //   limitations under the License.
 
 using Etherna.MongODM.Core.Conventions;
-using Etherna.MongODM.Core.Models;
+using Etherna.MongODM.Core.Domain.Models;
 using Etherna.MongODM.Core.ProxyModels;
 using Etherna.MongODM.Core.Utility;
 using MongoDB.Bson;

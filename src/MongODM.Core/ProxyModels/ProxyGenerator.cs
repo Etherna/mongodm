@@ -13,7 +13,7 @@
 //   limitations under the License.
 
 using Castle.DynamicProxy;
-using Etherna.MongODM.Core.Models;
+using Etherna.MongODM.Core.Domain.Models;
 using System;
 using System.Collections.Generic;
 using System.Linq;

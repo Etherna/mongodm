@@ -60,7 +60,7 @@ namespace Etherna.MongODM.Core.Utility
             foreach (var dependencyGroup in dependencies.GroupBy(d => d.RootModelType))
             {
                 var idPaths = dependencyGroup
-                    .Select(dependency => string.Join(".", dependency.PathToMemberEntityModelId.Select(member => member.MemberMap.MemberInfo.Name)))
+                    .Select(dependency => string.Join(".", dependency.PathToMemberEntityModelId.Select(member => member.BsonMemberMap.MemberInfo.Name)))
                     .Distinct();
 
                 // Enqueue call for background job.

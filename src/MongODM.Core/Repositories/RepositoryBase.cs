@@ -12,10 +12,10 @@
 //   See the License for the specific language governing permissions and
 //   limitations under the License.
 
+using Etherna.MongODM.Core.Domain.Models;
 using Etherna.MongODM.Core.Exceptions;
-using Etherna.MongODM.Core.Models;
 using Etherna.MongODM.Core.ProxyModels;
-using Etherna.MongODM.Core.Serialization.Schemas;
+using Etherna.MongODM.Core.Serialization.Mapping;
 using MoreLinq;
 using System;
 using System.Collections;
@@ -171,7 +171,7 @@ namespace Etherna.MongODM.Core.Repositories
             else
             {
                 //recursion on value
-                var memberInfo = currentMember.MemberMap.MemberInfo;
+                var memberInfo = currentMember.BsonMemberMap.MemberInfo;
                 var memberValue = ReflectionHelper.GetValue(currentModel, memberInfo);
                 if (memberValue == null)
                     return;

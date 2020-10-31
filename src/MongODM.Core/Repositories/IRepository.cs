@@ -12,8 +12,8 @@
 //   See the License for the specific language governing permissions and
 //   limitations under the License.
 
-using Etherna.MongODM.Core.Models;
-using Etherna.MongODM.Core.Serialization.Schemas;
+using Etherna.MongODM.Core.Domain.Models;
+using Etherna.MongODM.Core.Serialization.Mapping;
 using System;
 using System.Collections.Generic;
 using System.Threading;

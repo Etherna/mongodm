@@ -12,7 +12,7 @@
 //   See the License for the specific language governing permissions and
 //   limitations under the License.
 
-using Etherna.MongODM.Core.Models;
+using Etherna.MongODM.Core.Domain.Models;
 using Etherna.MongODM.Core.Serialization.Serializers;
 using MongoDB.Bson.Serialization;
 using System;
@@ -22,6 +22,14 @@ namespace Etherna.MongODM.Core.Extensions
 {
     public static class ClassMapExtensions
     {
+        public static bool IsEntity(this BsonClassMap classMap)
+        {
+            if (classMap is null)
+                throw new ArgumentNullException(nameof(classMap));
+
+            return classMap.IdMemberMap != null;
+        }
+
         public static BsonMemberMap SetMemberSerializer<TModel, TMember>(
             this BsonClassMap<TModel> classMap,
             Expression<Func<TModel, TMember>> memberLambda,

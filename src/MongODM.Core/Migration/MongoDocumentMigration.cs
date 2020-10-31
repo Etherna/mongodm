@@ -12,7 +12,7 @@
 //   See the License for the specific language governing permissions and
 //   limitations under the License.
 
-using Etherna.MongODM.Core.Models;
+using Etherna.MongODM.Core.Domain.Models;
 using Etherna.MongODM.Core.Repositories;
 using Etherna.MongODM.Core.Serialization;
 using MongoDB.Bson;

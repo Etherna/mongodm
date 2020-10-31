@@ -13,7 +13,7 @@
 //   limitations under the License.
 
 using Etherna.ExecContext;
-using Etherna.MongODM.Core.Models;
+using Etherna.MongODM.Core.Domain.Models;
 using System;
 using System.Collections.Generic;
 
