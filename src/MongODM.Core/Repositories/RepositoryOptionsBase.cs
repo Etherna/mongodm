@@ -16,7 +16,7 @@ namespace Etherna.MongODM.Core.Repositories
 {
     public abstract class RepositoryOptionsBase
     {
-        public RepositoryOptionsBase(string name)
+        protected RepositoryOptionsBase(string name)
         {
             Name = name ?? throw new System.ArgumentNullException(nameof(name));
         }

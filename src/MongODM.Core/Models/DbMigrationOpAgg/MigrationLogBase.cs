@@ -28,7 +28,7 @@ namespace Etherna.MongODM.Core.Models.DbMigrationOpAgg
         }
 
         // Constructors.
-        public MigrationLogBase(ExecutionState state)
+        protected MigrationLogBase(ExecutionState state)
         {
             CreationDateTime = DateTime.Now;
             State = state;

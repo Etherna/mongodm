@@ -37,7 +37,7 @@ namespace Etherna.MongODM.Core
         public const string DocumentVersionElementName = "v";
 
         // Constructors and initialization.
-        public DbContext(
+        protected DbContext(
             IDbDependencies dependencies,
             DbContextOptions options)
         {

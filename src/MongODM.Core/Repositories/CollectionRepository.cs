@@ -256,7 +256,7 @@ namespace Etherna.MongODM.Core.Repositories
                 DbContext.DbMaintainer.OnUpdatedModel((IAuditable)model, model.Id);
 
             // Reset changed members.
-            (model as IAuditable)?.ResetChangedMembers();
+            ((IAuditable)model).ResetChangedMembers();
         }
     }
 }

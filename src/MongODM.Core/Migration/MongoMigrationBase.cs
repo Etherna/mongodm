@@ -22,7 +22,7 @@ namespace Etherna.MongODM.Core.Migration
     public abstract class MongoMigrationBase
     {
         // Constructors.
-        public MongoMigrationBase(string id)
+        protected MongoMigrationBase(string id)
         {
             Id = id ?? throw new ArgumentNullException(nameof(id));
         }
