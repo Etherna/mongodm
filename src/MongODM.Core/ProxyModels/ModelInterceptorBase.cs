@@ -23,7 +23,7 @@ namespace Etherna.MongODM.Core.ProxyModels
     {
         private readonly IEnumerable<Type> additionalInterfaces;
 
-        public ModelInterceptorBase(IEnumerable<Type> additionalInterfaces)
+        protected ModelInterceptorBase(IEnumerable<Type> additionalInterfaces)
         {
             this.additionalInterfaces = additionalInterfaces;
         }

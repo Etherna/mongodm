@@ -19,7 +19,7 @@ namespace Etherna.MongODM.Core.Domain.Models
     public abstract class OperationBase : EntityModelBase<string>
     {
         // Constructors and dispose.
-        public OperationBase(IDbContext dbContext)
+        protected OperationBase(IDbContext dbContext)
         {
             if (dbContext is null)
                 throw new ArgumentNullException(nameof(dbContext));
