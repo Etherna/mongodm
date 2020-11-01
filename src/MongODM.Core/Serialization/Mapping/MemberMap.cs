@@ -30,7 +30,6 @@ namespace Etherna.MongODM.Core.Serialization.Mapping
         // Fields.
         private readonly IEnumerable<BsonMemberMap> _memberPath;
         private readonly ModelMap _modelMap;
-        private IEnumerable<BsonMemberMap> _memberPathToLastEntityModel = default!;
         private IEnumerable<BsonMemberMap> _memberPathToLastEntityModelId = default!;
 
         // Constructors.
@@ -84,37 +83,6 @@ namespace Etherna.MongODM.Core.Serialization.Mapping
             {
                 Freeze();
                 return _modelMap;
-            }
-        }
-
-        /// <summary>
-        /// The member path from the root type, to the member that references the entity model owning current member.
-        /// Empty if an entity model doesn't exists.
-        /// </summary>
-        /// <example>
-        /// [(E)ntityModel, (V)alueObject, (->) member]
-        /// 
-        /// MemberPath:
-        ///  E-> V-> E-> V->
-        /// [ 0 , 1 , 2 , 3 ]
-        /// return: members([0, 1])
-        /// 
-        /// MemberPath:
-        ///  E-> V-> V-> V->
-        /// [ 0 , 1 , 2 , 3 ]
-        /// return: members([ ])
-        /// 
-        /// MemberPath:
-        ///  V-> V-> V-> V->
-        /// [ 0 , 1 , 2 , 3 ]
-        /// return: members([ ])
-        /// </example>
-        public IEnumerable<BsonMemberMap> MemberPathToLastEntityModel
-        {
-            get
-            {
-                Freeze(); //also initialize
-                return _memberPathToLastEntityModel;
             }
         }
 
@@ -187,6 +155,7 @@ namespace Etherna.MongODM.Core.Serialization.Mapping
             _modelMap.Freeze();
 
             // Initizialize properties.
+            //prop MemberPathToLastEntityModelId
             int take = _memberPath.Count() - 1;
             for (; take >= 0; take--)
             {
@@ -194,12 +163,6 @@ namespace Etherna.MongODM.Core.Serialization.Mapping
                     break;
             }
 
-            //prop MemberPathToLastEntityModel
-            _memberPathToLastEntityModel = take >= 0 ? //if exists an entity
-                _memberPath.Take(take) :
-                Array.Empty<BsonMemberMap>();
-
-            //prop MemberPathToLastEntityModelId
             _memberPathToLastEntityModelId = take >= 0 ? //if exists an entity
                 _memberPath.Take(take).Append(
                     _memberPath.ElementAt(take).ClassMap.IdMemberMap) :
