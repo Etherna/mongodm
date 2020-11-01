@@ -57,10 +57,10 @@ namespace Etherna.MongODM.Core.Utility
             var dependencies = updatedMembers.SelectMany(member => dbContext.SchemaRegister.GetMemberDependencies(member))
                                              .Where(d => d.IsEntityReferenceMember);
 
-            foreach (var dependencyGroup in dependencies.GroupBy(d => d.RootModelType))
+            foreach (var dependencyGroup in dependencies.GroupBy(d => d.ModelMap.ModelType))
             {
                 var idPaths = dependencyGroup
-                    .Select(dependency => string.Join(".", dependency.PathToMemberEntityModelId.Select(member => member.BsonMemberMap.MemberInfo.Name)))
+                    .Select(dependency => string.Join(".", dependency.MemberPathToLastEntityModelId.Select(member => member.MemberInfo.Name)))
                     .Distinct();
 
                 // Enqueue call for background job.

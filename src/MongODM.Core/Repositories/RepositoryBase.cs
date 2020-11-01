@@ -14,8 +14,10 @@
 
 using Etherna.MongODM.Core.Domain.Models;
 using Etherna.MongODM.Core.Exceptions;
+using Etherna.MongODM.Core.Extensions;
 using Etherna.MongODM.Core.ProxyModels;
 using Etherna.MongODM.Core.Serialization.Mapping;
+using MongoDB.Bson.Serialization;
 using MoreLinq;
 using System;
 using System.Collections;
@@ -151,7 +153,7 @@ namespace Etherna.MongODM.Core.Repositories
         protected abstract Task<TModel> FindOneOnDBAsync(TKey id, CancellationToken cancellationToken = default);
 
         // Helpers.
-        private async Task CascadeDeleteMembersAsync(object currentModel, IEnumerable<EntityMember> idPath)
+        private async Task CascadeDeleteMembersAsync(object currentModel, IEnumerable<BsonMemberMap> idPath)
         {
             if (!idPath.Any())
                 throw new ArgumentException("Member path can't be empty", nameof(idPath));
@@ -159,7 +161,7 @@ namespace Etherna.MongODM.Core.Repositories
             var currentMember = idPath.First();
             var memberTail = idPath.Skip(1);
 
-            if (currentMember.IsId)
+            if (currentMember.IsIdMember())
             {
                 //cascade delete model
                 var repository = DbContext.RepositoryRegister.ModelRepositoryMap[currentModel.GetType().BaseType];
@@ -171,7 +173,7 @@ namespace Etherna.MongODM.Core.Repositories
             else
             {
                 //recursion on value
-                var memberInfo = currentMember.BsonMemberMap.MemberInfo;
+                var memberInfo = currentMember.MemberInfo;
                 var memberValue = ReflectionHelper.GetValue(currentModel, memberInfo);
                 if (memberValue == null)
                     return;

@@ -124,6 +124,36 @@ namespace Etherna.MongODM.Core.Serialization.Mapping
             return Array.Empty<MemberMap>();
         }
 
+        public override string ToString()
+        {
+            StringBuilder strBuilder = new StringBuilder();
+
+            // Model dependencies.
+            strBuilder.AppendLine("Model dependencies:");
+            foreach (var dependencies in from dependency in modelDependenciesMap
+                                         orderby $"{dependency.Key.Name}"
+                                         select dependency)
+            {
+                strBuilder.AppendLine($"{dependencies.Key.Name}");
+                foreach (var dependency in dependencies.Value)
+                    strBuilder.AppendLine($"  {dependency}");
+            }
+            strBuilder.AppendLine();
+
+            // Member dependencies.
+            strBuilder.AppendLine("Member dependencies:");
+            foreach (var dependencies in from dependency in memberDependenciesMap
+                                         orderby $"{dependency.Key.DeclaringType.Name}.{dependency.Key.Name}"
+                                         select dependency)
+            {
+                strBuilder.AppendLine($"{dependencies.Key.DeclaringType.Name}.{dependencies.Key.Name}");
+                foreach (var dependency in dependencies.Value)
+                    strBuilder.AppendLine($"  {dependency}");
+            }
+
+            return strBuilder.ToString();
+        }
+
         // Protected methods.
         protected override void FreezeAction()
         {
@@ -203,17 +233,17 @@ namespace Etherna.MongODM.Core.Serialization.Mapping
                 memberDependenciesMap[bsonMemberMap.MemberInfo].Add(memberMap);
 
                 //2
-                if (!modelDependenciesMap.ContainsKey(rootModelType))
-                    modelDependenciesMap[rootModelType] = new List<MemberMap>();
+                if (!modelDependenciesMap.ContainsKey(modelMap.ModelType))
+                    modelDependenciesMap[modelMap.ModelType] = new List<MemberMap>();
 
-                modelDependenciesMap[rootModelType].Add(memberMap);
+                modelDependenciesMap[modelMap.ModelType].Add(memberMap);
 
                 //3
-                if (!modelEntityReferencesIdsMap.ContainsKey(rootModelType))
-                    modelEntityReferencesIdsMap[rootModelType] = new List<MemberMap>();
+                if (!modelEntityReferencesIdsMap.ContainsKey(modelMap.ModelType))
+                    modelEntityReferencesIdsMap[modelMap.ModelType] = new List<MemberMap>();
 
                 if (memberMap.IsEntityReferenceMember && memberMap.IsIdMember)
-                    modelEntityReferencesIdsMap[rootModelType].Add(memberMap);
+                    modelEntityReferencesIdsMap[modelMap.ModelType].Add(memberMap);
 
                 // Analize recursion on member.
                 var memberSerializer = bsonMemberMap.GetSerializer();
@@ -224,7 +254,7 @@ namespace Etherna.MongODM.Core.Serialization.Mapping
                 {
                     var useCascadeDelete = (memberSerializer as IReferenceContainerSerializer)?.UseCascadeDelete;
                     foreach (var childClassMap in classMapContainer.ContainedClassMaps)
-                        CompileDependencyRegisters(modelMapId, rootModelType, childClassMap, lastEntityClassMap, currentMemberPath, useCascadeDelete);
+                        CompileDependencyRegisters(modelMap, childClassMap, lastEntityClassMap, currentMemberPath, useCascadeDelete);
                 }
 
                 //default serializers
@@ -232,7 +262,7 @@ namespace Etherna.MongODM.Core.Serialization.Mapping
                     serializerType.GetGenericTypeDefinition() == typeof(BsonClassMapSerializer<>)) //default classmapp
                 {
                     var memberClassMap = BsonClassMap.LookupClassMap(bsonMemberMap.MemberType);
-                    CompileDependencyRegisters(modelMapId, rootModelType, memberClassMap, lastEntityClassMap, currentMemberPath);
+                    CompileDependencyRegisters(modelMap, memberClassMap, lastEntityClassMap, currentMemberPath);
                 }
 
                 else if (serializerType.IsGenericType &&
@@ -246,38 +276,10 @@ namespace Etherna.MongODM.Core.Serialization.Mapping
                         var elementType = interfaceType.GenericTypeArguments.Last();
 
                         var elementClassMap = BsonClassMap.LookupClassMap(elementType);
-                        CompileDependencyRegisters(modelMapId, rootModelType, elementClassMap, lastEntityClassMap, currentMemberPath);
+                        CompileDependencyRegisters(modelMap, elementClassMap, lastEntityClassMap, currentMemberPath);
                     }
                 }
             }
-        }
-
-        private string MembersDependenciesToString()
-        {
-            StringBuilder strBuilder = new StringBuilder();
-            foreach (var dependencies in from dependency in memberDependenciesMap
-                                         orderby $"{dependency.Key.DeclaringType.Name}.{dependency.Key.Name}"
-                                         select dependency)
-            {
-                strBuilder.AppendLine($"{dependencies.Key.DeclaringType.Name}.{dependencies.Key.Name}");
-                foreach (var dependency in dependencies.Value)
-                    strBuilder.AppendLine($"  {dependency}");
-            }
-            return strBuilder.ToString();
-        }
-
-        private string ModelDependenciesToString()
-        {
-            StringBuilder strBuilder = new StringBuilder();
-            foreach (var dependencies in from dependency in modelDependenciesMap
-                                         orderby $"{dependency.Key.Name}"
-                                         select dependency)
-            {
-                strBuilder.AppendLine($"{dependencies.Key.Name}");
-                foreach (var dependency in dependencies.Value)
-                    strBuilder.AppendLine($"  {dependency}");
-            }
-            return strBuilder.ToString();
         }
     }
 }

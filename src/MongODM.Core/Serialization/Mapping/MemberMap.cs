@@ -12,6 +12,7 @@
 //   See the License for the specific language governing permissions and
 //   limitations under the License.
 
+using Etherna.MongODM.Core.Extensions;
 using Etherna.MongODM.Core.Utility;
 using MongoDB.Bson.Serialization;
 using System;
@@ -26,14 +27,22 @@ namespace Etherna.MongODM.Core.Serialization.Mapping
     /// </summary>
     public class MemberMap : FreezableConfig
     {
+        // Fields.
+        private readonly IEnumerable<BsonMemberMap> _memberPath;
+        private readonly ModelMap _modelMap;
+        private IEnumerable<BsonMemberMap> _memberPathToLastEntityModel = default!;
+        private IEnumerable<BsonMemberMap> _memberPathToLastEntityModelId = default!;
+
         // Constructors.
         public MemberMap(
             ModelMap modelMap,
             IEnumerable<BsonMemberMap> memberPath,
             bool? useCascadeDelete)
         {
-            ModelMap = modelMap;
-            MemberPath = memberPath;
+            _modelMap = modelMap ?? throw new ArgumentNullException(nameof(modelMap));
+            _memberPath = memberPath ?? throw new ArgumentNullException(nameof(memberPath));
+            if (!memberPath.Any())
+                throw new ArgumentException("Member path can't be empty", nameof(memberPath));
             UseCascadeDelete = useCascadeDelete;
         }
 
@@ -41,14 +50,13 @@ namespace Etherna.MongODM.Core.Serialization.Mapping
         /// <summary>
         /// Description of all encountered entity models in member path
         /// </summary>
-        public IEnumerable<BsonClassMap> EntityModelMapPath => MemberPath.Select(m => m.EntityModelMap!)
-                                                                         .Where(cm => cm != null)
-                                                                         .Distinct();
+        public IEnumerable<BsonClassMap> EntityModelMapPath => MemberPath.Select(memberMap => memberMap.ClassMap)
+                                                                         .Where(classMap => classMap.IsEntity());
 
         /// <summary>
         /// True if member is an entity Id
         /// </summary>
-        public bool IsIdMember => MemberPath.Last().IsId;
+        public bool IsIdMember => MemberPath.Last().IsIdMember();
 
         /// <summary>
         /// True if member is contained into a referenced entity model
@@ -58,44 +66,90 @@ namespace Etherna.MongODM.Core.Serialization.Mapping
         /// <summary>
         /// The full path from root type to current member
         /// </summary>
-        public IEnumerable<BsonMemberMap> MemberPath { get; }
-
-        public ModelMap ModelMap { get; }
-
-        /// <summary>
-        /// The member path from the root type, to the member that references the entity model owning current member
-        /// </summary>
-        public IEnumerable<BsonMemberMap> PathToMemberEntityModel
+        public IEnumerable<BsonMemberMap> MemberPath
         {
             get
             {
-                var lastEntityNestedMembers = MemberPath.Aggregate<EntityMember, (int counter, BsonClassMap? lastEntityClassMap), int>(
-                    (1, null),
-                    (acc, member) => member.EntityModelMap == acc.lastEntityClassMap ?
-                        (acc.counter++, member.EntityModelMap) :
-                        (1, member.EntityModelMap),
-                    acc => acc.counter);
-                var entityMemberDeep = MemberPath.Count() - lastEntityNestedMembers;
+                Freeze();
+                return _memberPath;
+            }
+        }
 
-                return MemberPath.Take(entityMemberDeep);
+        /// <summary>
+        /// The root owning model map
+        /// </summary>
+        public ModelMap ModelMap
+        {
+            get
+            {
+                Freeze();
+                return _modelMap;
+            }
+        }
+
+        /// <summary>
+        /// The member path from the root type, to the member that references the entity model owning current member.
+        /// Empty if an entity model doesn't exists.
+        /// </summary>
+        /// <example>
+        /// [(E)ntityModel, (V)alueObject, (->) member]
+        /// 
+        /// MemberPath:
+        ///  E-> V-> E-> V->
+        /// [ 0 , 1 , 2 , 3 ]
+        /// return: members([0, 1])
+        /// 
+        /// MemberPath:
+        ///  E-> V-> V-> V->
+        /// [ 0 , 1 , 2 , 3 ]
+        /// return: members([ ])
+        /// 
+        /// MemberPath:
+        ///  V-> V-> V-> V->
+        /// [ 0 , 1 , 2 , 3 ]
+        /// return: members([ ])
+        /// </example>
+        public IEnumerable<BsonMemberMap> MemberPathToLastEntityModel
+        {
+            get
+            {
+                Freeze(); //also initialize
+                return _memberPathToLastEntityModel;
             }
         }
 
         /// <summary>
         /// The member path from the root type, to the id member of the entity model that owns current member
         /// </summary>
-        public IEnumerable<BsonMemberMap> PathToMemberEntityModelId
+        /// <example>
+        /// [(E)ntityModel, (V)alueObject, (->) !id member, (i>) id member]
+        /// 
+        /// MemberPath:
+        ///  E-> V-> Ei>
+        /// [ 0 , 1 , 2 ]
+        /// return: members([0, 1, 2])
+        /// 
+        /// MemberPath:
+        ///  E-> V-> E-> V->
+        /// [ 0 , 1 , 2 , 3 ]
+        /// return: members([0, 1, {Ei>}])
+        /// 
+        /// MemberPath:
+        ///  V-> V-> V-> V->
+        /// [ 0 , 1 , 2 , 3 ]
+        /// return: members([ ])
+        /// 
+        /// MemberPath:
+        ///  E-> V-> V-> V->
+        /// [ 0 , 1 , 2 , 3 ]
+        /// return: members([{Ei>}])
+        /// </example>
+        public IEnumerable<BsonMemberMap> MemberPathToLastEntityModelId
         {
             get
             {
-                if (IsIdMember)
-                    return MemberPath;
-
-                var lastEntityModelMap = MemberPath.Last().EntityModelMap;
-                if (lastEntityModelMap is null)
-                    throw new InvalidOperationException("This model is not related to a an entity model with an Id");
-
-                return PathToMemberEntityModel.Append(new EntityMember(lastEntityModelMap.IdMemberMap, lastEntityModelMap));
+                Freeze(); //also initialize
+                return _memberPathToLastEntityModelId;
             }
         }
 
@@ -127,7 +181,29 @@ namespace Etherna.MongODM.Core.Serialization.Mapping
         // Protected methods.
         protected override void FreezeAction()
         {
-            base.FreezeAction();
+            // Freeze child maps.
+            foreach (var member in _memberPath)
+                member.Freeze();
+            _modelMap.Freeze();
+
+            // Initizialize properties.
+            int take = _memberPath.Count() - 1;
+            for (; take >= 0; take--)
+            {
+                if (_memberPath.ElementAt(take).ClassMap.IsEntity())
+                    break;
+            }
+
+            //prop MemberPathToLastEntityModel
+            _memberPathToLastEntityModel = take >= 0 ? //if exists an entity
+                _memberPath.Take(take) :
+                Array.Empty<BsonMemberMap>();
+
+            //prop MemberPathToLastEntityModelId
+            _memberPathToLastEntityModelId = take >= 0 ? //if exists an entity
+                _memberPath.Take(take).Append(
+                    _memberPath.ElementAt(take).ClassMap.IdMemberMap) :
+                Array.Empty<BsonMemberMap>();
         }
     }
 }

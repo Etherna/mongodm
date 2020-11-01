@@ -20,7 +20,7 @@ using System.Linq.Expressions;
 
 namespace Etherna.MongODM.Core.Extensions
 {
-    public static class ClassMapExtensions
+    public static class BsonClassMapExtensions
     {
         public static bool IsEntity(this BsonClassMap classMap)
         {
