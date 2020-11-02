@@ -46,9 +46,8 @@ namespace Etherna.MongODM.Core.Serialization.Serializers
         // Properties.
         public IBsonSerializer ChildSerializer => ValueSerializer;
 
-        public IModelMapsSchema ModelMapsSchema =>
-            ValueSerializer is IModelMapsSchemaSerializer classMapContainer ?
-            classMapContainer.ModelMapsSchema : Array.Empty<BsonClassMap>();
+        public IModelMapsSchema? ModelMapsSchema =>
+            (ValueSerializer as IModelMapsSchemaSerializer)?.ModelMapsSchema;
         
         public bool? UseCascadeDelete =>
             (ValueSerializer as IReferenceContainerSerializer)?.UseCascadeDelete;

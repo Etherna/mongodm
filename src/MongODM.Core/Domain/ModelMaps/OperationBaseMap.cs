@@ -15,6 +15,7 @@
 using Etherna.MongODM.Core.Domain.Models;
 using Etherna.MongODM.Core.Serialization;
 using Etherna.MongODM.Core.Serialization.Serializers;
+using MongoDB.Bson;
 
 namespace Etherna.MongODM.Core.Domain.ModelMaps
 {
@@ -25,7 +26,11 @@ namespace Etherna.MongODM.Core.Domain.ModelMaps
             dbContext.SchemaRegister.AddModelMapSchema("ee726d4f-6e6a-44b0-bf3e-45322534c36d",
                 customSerializer: new ModelMapSerializer<OperationBase>(
                     dbContext.DbCache,
-                    dbContext.LibraryVersion,
+                    dbContext.ApplicationVersionWriteInDocuments ?
+                        new BsonElement(
+                            dbContext.ApplicationVersionElementName,
+                            dbContext.LibraryVersion.ToBsonArray()) :
+                        (BsonElement?)null,
                     dbContext.SerializerModifierAccessor,
                     dbContext.SchemaRegister)
                 { AddVersion = true });

@@ -13,14 +13,13 @@
 //   limitations under the License.
 
 using Etherna.MongODM.Core.Extensions;
-using Etherna.MongODM.Core.Serialization;
 using System.Linq;
 
-namespace Etherna.MongODM.Core
+namespace Etherna.MongODM.Core.Options
 {
     public class DbContextOptions
     {
-        public SemanticVersion ApplicationVersion { get; set; } = "1.0.0";
+        public ApplicationVersionOptions ApplicationVersion { get; set; } = new ApplicationVersionOptions();
         public string ConnectionString { get; set; } = "mongodb://localhost/localDb";
         public string DbName => ConnectionString.Split('?')[0]
                                                 .Split('/').Last();

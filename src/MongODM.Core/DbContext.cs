@@ -15,6 +15,7 @@
 using Etherna.MongODM.Core.Domain.ModelMaps;
 using Etherna.MongODM.Core.Domain.Models;
 using Etherna.MongODM.Core.Migration;
+using Etherna.MongODM.Core.Options;
 using Etherna.MongODM.Core.ProxyModels;
 using Etherna.MongODM.Core.Repositories;
 using Etherna.MongODM.Core.Serialization;
@@ -34,9 +35,6 @@ namespace Etherna.MongODM.Core
 {
     public abstract class DbContext : IDbContext
     {
-        // Consts.
-        public const string DocumentVersionElementName = "v";
-
         // Constructors and initialization.
         protected DbContext(
             IDbDependencies dependencies,
@@ -47,7 +45,9 @@ namespace Etherna.MongODM.Core
             if (options is null)
                 throw new ArgumentNullException(nameof(options));
 
-            ApplicationVersion = options.ApplicationVersion;
+            ApplicationVersion = options.ApplicationVersion.CurrentVersion;
+            ApplicationVersionElementName = options.ApplicationVersion.ElementName;
+            ApplicationVersionWriteInDocuments = options.ApplicationVersion.WriteInDocuments;
             DbCache = dependencies.DbCache;
             DbMaintainer = dependencies.DbMaintainer;
             DbMigrationManager = dependencies.DbMigrationManager;
@@ -79,6 +79,7 @@ namespace Etherna.MongODM.Core
                 repository.Initialize(this);
 
             // Register model maps.
+            //internal maps
             new DbMigrationOperationMap().Register(this);
             new ModelBaseMap().Register(this);
             new OperationBaseMap().Register(this);
@@ -94,6 +95,8 @@ namespace Etherna.MongODM.Core
 
         // Public properties.
         public SemanticVersion ApplicationVersion { get; }
+        public string ApplicationVersionElementName { get; }
+        public bool ApplicationVersionWriteInDocuments { get; }
         public IReadOnlyCollection<IEntityModel> ChangedModelsList =>
             DbCache.LoadedModels.Values
                 .Where(model => (model as IAuditable)?.IsChanged == true)

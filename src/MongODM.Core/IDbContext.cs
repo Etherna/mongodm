@@ -37,6 +37,16 @@ namespace Etherna.MongODM.Core
         /// </summary>
         SemanticVersion ApplicationVersion { get; }
 
+        /// <summary>
+        /// Name of element with current application version.
+        /// </summary>
+        string ApplicationVersionElementName { get; }
+
+        /// <summary>
+        /// True if version must be written in documents
+        /// </summary>
+        bool ApplicationVersionWriteInDocuments { get; }
+
         // Properties.
         /// <summary>
         /// Current MongoDB client.

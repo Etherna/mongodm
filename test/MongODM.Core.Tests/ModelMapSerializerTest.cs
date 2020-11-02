@@ -80,7 +80,7 @@ namespace Etherna.MongODM.Core
 
         // Fields.
         private readonly Mock<IDbCache> dbCacheMock;
-        private readonly SemanticVersion documentVersion = new SemanticVersion("1.0.0");
+        private readonly BsonElement documentVersionElement = new BsonElement("v", new SemanticVersion("1.0.0").ToBsonArray());
         private readonly Mock<ISerializerModifierAccessor> serializerModifierAccessorMock;
         private readonly Mock<ISchemaRegister> schemaRegisterMock;
 
@@ -140,7 +140,7 @@ namespace Etherna.MongODM.Core
             var bsonReader = new BsonDocumentReader(test.Document);
             var serializer = new ModelMapSerializer<FakeModel>(
                 dbCacheMock.Object,
-                documentVersion,
+                documentVersionElement,
                 serializerModifierAccessorMock.Object,
                 schemaRegisterMock.Object);
 
@@ -163,7 +163,7 @@ namespace Etherna.MongODM.Core
             var comparisonSerializer = CreateBsonClassMapSerializer();
             var serializer = new ModelMapSerializer<FakeModel>(
                 dbCacheMock.Object,
-                documentVersion,
+                documentVersionElement,
                 serializerModifierAccessorMock.Object,
                 schemaRegisterMock.Object);
 
@@ -195,7 +195,7 @@ namespace Etherna.MongODM.Core
             var comparisonSerializer = CreateBsonClassMapSerializer();
             var serializer = new ModelMapSerializer<FakeModel>(
                 dbCacheMock.Object,
-                documentVersion,
+                documentVersionElement,
                 serializerModifierAccessorMock.Object,
                 schemaRegisterMock.Object);
 
@@ -314,7 +314,7 @@ namespace Etherna.MongODM.Core
             // Setup
             var serializer = new ModelMapSerializer<FakeModel>(
                 dbCacheMock.Object,
-                documentVersion,
+                documentVersionElement,
                 serializerModifierAccessorMock.Object,
                 schemaRegisterMock.Object)
                 .AddExtraElement(new BsonElement("ExtraElement", new BsonString("extraValue")), test.Condition);
@@ -340,7 +340,7 @@ namespace Etherna.MongODM.Core
             var comparisonSerializer = CreateBsonClassMapSerializer();
             var serializer = new ModelMapSerializer<FakeModel>(
                 dbCacheMock.Object,
-                documentVersion,
+                documentVersionElement,
                 serializerModifierAccessorMock.Object,
                 schemaRegisterMock.Object);
 

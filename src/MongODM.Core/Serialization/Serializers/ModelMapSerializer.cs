@@ -38,11 +38,9 @@ namespace Etherna.MongODM.Core.Serialization.Serializers
             public Func<BsonSerializationContext, bool> Condition { get; set; }
         }
 
-        // Static readonly fields.
-        private readonly BsonElement documentVersionElement;
-
         // Fields.
         private readonly IDbCache dbCache;
+        private readonly BsonElement? documentVersionElement;
         private readonly ISerializerModifierAccessor serializerModifierAccessor;
         private readonly ISchemaRegister schemaRegister;
         private readonly ICollection<ExtraElementCondition> extraElements;
@@ -51,20 +49,15 @@ namespace Etherna.MongODM.Core.Serialization.Serializers
         // Constructor.
         public ModelMapSerializer(
             IDbCache dbCache,
-            SemanticVersion documentVersion,
+            BsonElement? documentVersionElement,
             ISerializerModifierAccessor serializerModifierAccessor,
             ISchemaRegister schemaRegister)
         {
-            if (documentVersion is null)
-                throw new ArgumentNullException(nameof(documentVersion));
-
             this.dbCache = dbCache ?? throw new ArgumentNullException(nameof(dbCache));
             this.serializerModifierAccessor = serializerModifierAccessor ?? throw new ArgumentNullException(nameof(serializerModifierAccessor));
             this.schemaRegister = schemaRegister ?? throw new ArgumentNullException(nameof(schemaRegister));
             extraElements = new List<ExtraElementCondition>();
-            documentVersionElement = new BsonElement(
-                DbContext.DocumentVersionElementName,
-                DocumentVersionToBsonArray(documentVersion));
+            this.documentVersionElement = documentVersionElement;
         }
 
         // Properties.
@@ -111,15 +104,15 @@ namespace Etherna.MongODM.Core.Serialization.Serializers
             // Deserialize on document.
             var bsonDocument = BsonDocumentSerializer.Instance.Deserialize(context, args);
 
-            // Get version.
-            SemanticVersion? documentVersion = null;
-            if (bsonDocument.TryGetElement(DbContext.DocumentVersionElementName, out BsonElement versionElement))
-                documentVersion = BsonValueToDocumentVersion(versionElement.Value);
+            //// Get version.
+            //SemanticVersion? documentVersion = null;
+            //if (bsonDocument.TryGetElement(DbContext.DocumentVersionElementName, out BsonElement versionElement))
+            //    documentVersion = BsonValueToDocumentVersion(versionElement.Value);
 
             // Initialize localContext and bsonReader
             using var bsonReader = new ExtendedBsonDocumentReader(bsonDocument)
             {
-                DocumentVersion = documentVersion
+                DocumentVersion = null // documentVersion
             };
             var localContext = BsonDeserializationContext.CreateRoot(bsonReader, builder =>
             {
@@ -224,21 +217,5 @@ namespace Etherna.MongODM.Core.Serialization.Serializers
                     bsonArray.Count >= 4 ? bsonArray[3].AsString : null),
                 _ => throw new NotSupportedException(),
             };
-
-        private static BsonArray DocumentVersionToBsonArray(SemanticVersion documentVersion)
-        {
-            var bsonArray = new BsonArray(new[]
-            {
-                new BsonInt32(documentVersion.MajorRelease),
-                new BsonInt32(documentVersion.MinorRelease),
-                new BsonInt32(documentVersion.PatchRelease)
-            });
-            if (documentVersion.LabelRelease != null)
-            {
-                bsonArray.Add(new BsonString(documentVersion.LabelRelease));
-            }
-
-            return bsonArray;
-        }
     }
 }

@@ -17,6 +17,7 @@ using Etherna.ExecContext.AsyncLocal;
 using Etherna.MongODM.AspNetCore;
 using Etherna.MongODM.Core;
 using Etherna.MongODM.Core.Domain.Models;
+using Etherna.MongODM.Core.Options;
 using Etherna.MongODM.Core.ProxyModels;
 using Etherna.MongODM.Core.Repositories;
 using Etherna.MongODM.Core.Serialization.Mapping;

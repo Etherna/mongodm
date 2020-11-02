@@ -16,6 +16,7 @@ using Etherna.MongODM.Core.Domain.Models;
 using Etherna.MongODM.Core.Extensions;
 using Etherna.MongODM.Core.Serialization.Serializers;
 using Etherna.MongODM.Core.Utility;
+using MongoDB.Bson;
 using MongoDB.Bson.Serialization;
 using System;
 
@@ -112,7 +113,11 @@ namespace Etherna.MongODM.Core.Serialization.Mapping
 
             return new ModelMapSerializer<TModel>(
                 dbContext.DbCache,
-                dbContext.ApplicationVersion,
+                dbContext.ApplicationVersionWriteInDocuments ?
+                    new BsonElement(
+                        dbContext.ApplicationVersionElementName,
+                        dbContext.ApplicationVersion.ToBsonArray()) :
+                    (BsonElement?)null,
                 dbContext.SerializerModifierAccessor,
                 dbContext.SchemaRegister)
             { AddVersion = typeof(IEntityModel).IsAssignableFrom(ModelType) }; //true only for entity models

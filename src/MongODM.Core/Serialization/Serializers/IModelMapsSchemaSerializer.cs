@@ -18,6 +18,6 @@ namespace Etherna.MongODM.Core.Serialization.Serializers
 {
     public interface IModelMapsSchemaSerializer
     {
-        IModelMapsSchema ModelMapsSchema { get; }
+        IModelMapsSchema? ModelMapsSchema { get; }
     }
 }

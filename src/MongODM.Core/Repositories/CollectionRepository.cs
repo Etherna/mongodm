@@ -70,13 +70,6 @@ namespace Etherna.MongODM.Core.Repositories
                 return (options.Name, new CreateIndexModel<TModel>(keys, options));
             }));
 
-            //root document
-            newIndexes.Add(
-                ("ver",
-                 new CreateIndexModel<TModel>(
-                    Builders<TModel>.IndexKeys.Ascending(Core.DbContext.DocumentVersionElementName),
-                    new CreateIndexOptions { Name = "ver" })));
-
             //referenced documents
             var dependencies = DbContext.SchemaRegister.GetReferencedIdMemberMapsFromRootModel(typeof(TModel));
 

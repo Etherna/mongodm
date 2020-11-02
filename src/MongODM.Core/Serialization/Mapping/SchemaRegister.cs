@@ -227,10 +227,10 @@ namespace Etherna.MongODM.Core.Serialization.Mapping
 
                 // Analize recursion on member.
                 var memberSerializer = bsonMemberMap.GetSerializer();
-                var serializerType = memberSerializer.GetType();
 
                 //model maps schema serializers
-                if (memberSerializer is IModelMapsSchemaSerializer schemaSerializer)
+                if (memberSerializer is IModelMapsSchemaSerializer schemaSerializer &&
+                    schemaSerializer.ModelMapsSchema != null)
                 {
                     var useCascadeDelete = (memberSerializer as IReferenceContainerSerializer)?.UseCascadeDelete;
                     foreach (var childModelMap in schemaSerializer.ModelMapsSchema.AllMapsDictionary.Values)
