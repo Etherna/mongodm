@@ -13,6 +13,7 @@
 //   limitations under the License.
 
 using Etherna.MongODM.Core.Domain.Models;
+using Etherna.MongODM.Core.Serialization.Mapping.Schemas;
 using MongoDB.Bson.Serialization;
 using MongoDB.Bson.Serialization.Serializers;
 using System;
@@ -35,7 +36,7 @@ namespace Etherna.MongODM.Core.Serialization.Serializers
         }
 
         // Properties.
-        public IEnumerable<BsonClassMap> ContainedClassMaps => serializerBase.ContainedClassMaps;
+        public IModelMapsSchema ModelMapsSchema => serializerBase.ModelMapsSchema;
         public bool? UseCascadeDelete => serializerBase.UseCascadeDelete;
 
         // Methods.

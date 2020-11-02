@@ -14,6 +14,7 @@
 
 using Etherna.MongODM.Core.Domain.Models;
 using Etherna.MongODM.Core.ProxyModels;
+using Etherna.MongODM.Core.Serialization.Mapping.Schemas;
 using MongoDB.Bson;
 using MongoDB.Bson.Serialization;
 using MongoDB.Bson.Serialization.Conventions;
@@ -52,7 +53,7 @@ namespace Etherna.MongODM.Core.Serialization.Serializers
         }
 
         // Properties.
-        public IEnumerable<BsonClassMap> ContainedClassMaps => registeredClassMaps.Values;
+        public IModelMapsSchema ModelMapsSchema => registeredClassMaps.Values;
         public IDiscriminatorConvention DiscriminatorConvention
         {
             get

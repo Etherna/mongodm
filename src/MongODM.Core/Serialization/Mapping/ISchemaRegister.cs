@@ -26,6 +26,9 @@ namespace Etherna.MongODM.Core.Serialization.Mapping
     /// </summary>
     public interface ISchemaRegister : IDbContextInitializable, IFreezableConfig
     {
+        // Properties.
+        IReadOnlyDictionary<Type, ISchema> Schemas { get; }
+
         // Methods.
         /// <summary>
         /// Register a new schema based on custom serializer
@@ -67,10 +70,8 @@ namespace Etherna.MongODM.Core.Serialization.Mapping
             bool requireCollectionMigration = false)
             where TModel : class;
 
-        IEnumerable<MemberMap> GetMemberDependencies(MemberInfo memberInfo);
+        IEnumerable<MemberMap> GetMemberMapsFromMemberInfo(MemberInfo memberInfo);
 
-        IEnumerable<MemberMap> GetModelDependencies(Type modelType);
-
-        IEnumerable<MemberMap> GetModelEntityReferencesIds(Type modelType);
+        IEnumerable<MemberMap> GetReferencedIdMemberMapsFromRootModel(Type modelType);
     }
 }

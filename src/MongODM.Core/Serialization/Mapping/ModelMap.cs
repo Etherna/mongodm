@@ -110,7 +110,7 @@ namespace Etherna.MongODM.Core.Serialization.Mapping
             if (dbContext is null)
                 throw new ArgumentNullException(nameof(dbContext));
 
-            return new ExtendedClassMapSerializer<TModel>(
+            return new ModelMapSerializer<TModel>(
                 dbContext.DbCache,
                 dbContext.ApplicationVersion,
                 dbContext.SerializerModifierAccessor,

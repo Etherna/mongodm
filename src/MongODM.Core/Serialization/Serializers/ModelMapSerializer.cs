@@ -15,6 +15,7 @@
 using Etherna.MongODM.Core.Domain.Models;
 using Etherna.MongODM.Core.ProxyModels;
 using Etherna.MongODM.Core.Serialization.Mapping;
+using Etherna.MongODM.Core.Serialization.Mapping.Schemas;
 using Etherna.MongODM.Core.Serialization.Modifiers;
 using Etherna.MongODM.Core.Utility;
 using MongoDB.Bson;
@@ -26,8 +27,8 @@ using System.Linq;
 
 namespace Etherna.MongODM.Core.Serialization.Serializers
 {
-    public class ExtendedClassMapSerializer<TModel> :
-        SerializerBase<TModel>, IBsonSerializer<TModel>, IBsonDocumentSerializer, IBsonIdProvider, IClassMapContainerSerializer
+    public class ModelMapSerializer<TModel> :
+        SerializerBase<TModel>, IBsonSerializer<TModel>, IBsonDocumentSerializer, IBsonIdProvider, IModelMapsSchemaSerializer
         where TModel : class
     {
         // Nested struct.
@@ -48,7 +49,7 @@ namespace Etherna.MongODM.Core.Serialization.Serializers
         private BsonClassMapSerializer<TModel> _serializer = default!;
 
         // Constructor.
-        public ExtendedClassMapSerializer(
+        public ModelMapSerializer(
             IDbCache dbCache,
             SemanticVersion documentVersion,
             ISerializerModifierAccessor serializerModifierAccessor,
@@ -68,14 +69,14 @@ namespace Etherna.MongODM.Core.Serialization.Serializers
 
         // Properties.
         public bool AddVersion { get; set; }
-        public IEnumerable<BsonClassMap> ContainedClassMaps => new[] { BsonClassMap.LookupClassMap(typeof(TModel)) };
+        public IModelMapsSchema ModelMapsSchema => (IModelMapsSchema)schemaRegister.Schemas[typeof(TModel)];
         public BsonClassMapSerializer<TModel> Serializer
         {
             get
             {
                 if (_serializer == null)
                 {
-                    var classMap = BsonClassMap.LookupClassMap(typeof(TModel));
+                    var classMap = ModelMapsSchema.ActiveMap.BsonClassMap;
                     _serializer = new BsonClassMapSerializer<TModel>(classMap);
                 }
                 return _serializer;
@@ -83,7 +84,7 @@ namespace Etherna.MongODM.Core.Serialization.Serializers
         }
 
         // Methods.
-        public ExtendedClassMapSerializer<TModel> AddExtraElement(
+        public ModelMapSerializer<TModel> AddExtraElement(
             BsonElement element,
             Func<BsonSerializationContext, bool>? condition = null)
         {

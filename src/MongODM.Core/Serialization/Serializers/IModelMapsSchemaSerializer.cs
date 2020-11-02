@@ -12,13 +12,12 @@
 //   See the License for the specific language governing permissions and
 //   limitations under the License.
 
-using MongoDB.Bson.Serialization;
-using System.Collections.Generic;
+using Etherna.MongODM.Core.Serialization.Mapping.Schemas;
 
 namespace Etherna.MongODM.Core.Serialization.Serializers
 {
-    public interface IClassMapContainerSerializer
+    public interface IModelMapsSchemaSerializer
     {
-        IEnumerable<BsonClassMap> ContainedClassMaps { get; }
+        IModelMapsSchema ModelMapsSchema { get; }
     }
 }

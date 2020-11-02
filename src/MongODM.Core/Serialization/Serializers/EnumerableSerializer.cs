@@ -12,6 +12,7 @@
 //   See the License for the specific language governing permissions and
 //   limitations under the License.
 
+using Etherna.MongODM.Core.Serialization.Mapping.Schemas;
 using MongoDB.Bson.Serialization;
 using MongoDB.Bson.Serialization.Serializers;
 using System;
@@ -50,9 +51,9 @@ namespace Etherna.MongODM.Core.Serialization.Serializers
         // Properties.
         public IBsonSerializer ChildSerializer => ItemSerializer;
 
-        public IEnumerable<BsonClassMap> ContainedClassMaps =>
-            ItemSerializer is IClassMapContainerSerializer classMapContainer ?
-            classMapContainer.ContainedClassMaps : Array.Empty<BsonClassMap>();
+        public IModelMapsSchema ModelMapsSchema =>
+            ItemSerializer is IModelMapsSchemaSerializer classMapContainer ?
+            classMapContainer.ModelMapsSchema : Array.Empty<BsonClassMap>();
 
         public bool? UseCascadeDelete =>
             (ItemSerializer as IReferenceContainerSerializer)?.UseCascadeDelete;

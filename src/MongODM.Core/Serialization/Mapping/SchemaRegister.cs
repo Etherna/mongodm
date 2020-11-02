@@ -17,7 +17,6 @@ using Etherna.MongODM.Core.Serialization.Mapping.Schemas;
 using Etherna.MongODM.Core.Serialization.Serializers;
 using Etherna.MongODM.Core.Utility;
 using MongoDB.Bson.Serialization;
-using MongoDB.Bson.Serialization.Serializers;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
@@ -30,15 +29,14 @@ namespace Etherna.MongODM.Core.Serialization.Mapping
     public class SchemaRegister : FreezableConfig, ISchemaRegister
     {
         // Fields.
-        private readonly Dictionary<MemberInfo, List<MemberMap>> memberDependenciesMap =
+        private readonly Dictionary<Type, ISchema> _schemas = new Dictionary<Type, ISchema>();
+
+        private readonly Dictionary<MemberInfo, List<MemberMap>> memberInfoToMemberMapsDictionary =
             new Dictionary<MemberInfo, List<MemberMap>>();
-        private readonly Dictionary<Type, List<MemberMap>> modelDependenciesMap =
-            new Dictionary<Type, List<MemberMap>>();
-        private readonly Dictionary<Type, List<MemberMap>> modelEntityReferencesIdsMap =
+        private readonly Dictionary<Type, List<MemberMap>> modelTypeToReferencedIdMemberMapsDictionary =
             new Dictionary<Type, List<MemberMap>>();
 
         private IDbContext dbContext = default!;
-        private readonly Dictionary<Type, ISchema> schemasByModelType = new Dictionary<Type, ISchema>();
 
         // Constructor, initialization.
         public void Initialize(IDbContext dbContext)
@@ -53,6 +51,15 @@ namespace Etherna.MongODM.Core.Serialization.Mapping
         // Properties.
         public bool IsInitialized { get; private set; }
 
+        public IReadOnlyDictionary<Type, ISchema> Schemas
+        {
+            get
+            {
+                Freeze();
+                return _schemas;
+            }
+        }
+
         // Methods.
         public ICustomSerializerSchema<TModel> AddCustomSerializerSchema<TModel>(
             IBsonSerializer<TModel> customSerializer,
@@ -64,7 +71,7 @@ namespace Etherna.MongODM.Core.Serialization.Mapping
 
                 // Register and return schema configuration.
                 var modelSchemaConfiguration = new CustomSerializerSchema<TModel>(customSerializer, requireCollectionMigration);
-                schemasByModelType.Add(typeof(TModel), modelSchemaConfiguration);
+                _schemas.Add(typeof(TModel), modelSchemaConfiguration);
 
                 return modelSchemaConfiguration;
             });
@@ -92,34 +99,25 @@ namespace Etherna.MongODM.Core.Serialization.Mapping
                 // Register and return schema configuration.
                 var modelSchemaConfiguration = new ModelMapsSchema<TModel>(
                     activeModelMap, dbContext, requireCollectionMigration);
-                schemasByModelType.Add(typeof(TModel), modelSchemaConfiguration);
+                _schemas.Add(typeof(TModel), modelSchemaConfiguration);
 
                 return modelSchemaConfiguration;
             });
 
-        public IEnumerable<MemberMap> GetMemberDependencies(MemberInfo memberInfo)
+        public IEnumerable<MemberMap> GetMemberMapsFromMemberInfo(MemberInfo memberInfo)
         {
             Freeze();
 
-            if (memberDependenciesMap.TryGetValue(memberInfo, out List<MemberMap> dependencies))
+            if (memberInfoToMemberMapsDictionary.TryGetValue(memberInfo, out List<MemberMap> dependencies))
                 return dependencies;
             return Array.Empty<MemberMap>();
         }
 
-        public IEnumerable<MemberMap> GetModelDependencies(Type modelType)
+        public IEnumerable<MemberMap> GetReferencedIdMemberMapsFromRootModel(Type modelType)
         {
             Freeze();
 
-            if (modelDependenciesMap.TryGetValue(modelType, out List<MemberMap> dependencies))
-                return dependencies;
-            return Array.Empty<MemberMap>();
-        }
-
-        public IEnumerable<MemberMap> GetModelEntityReferencesIds(Type modelType)
-        {
-            Freeze();
-
-            if (modelEntityReferencesIdsMap.TryGetValue(modelType, out List<MemberMap> dependencies))
+            if (modelTypeToReferencedIdMemberMapsDictionary.TryGetValue(modelType, out List<MemberMap> dependencies))
                 return dependencies;
             return Array.Empty<MemberMap>();
         }
@@ -128,21 +126,9 @@ namespace Etherna.MongODM.Core.Serialization.Mapping
         {
             StringBuilder strBuilder = new StringBuilder();
 
-            // Model dependencies.
-            strBuilder.AppendLine("Model dependencies:");
-            foreach (var dependencies in from dependency in modelDependenciesMap
-                                         orderby $"{dependency.Key.Name}"
-                                         select dependency)
-            {
-                strBuilder.AppendLine($"{dependencies.Key.Name}");
-                foreach (var dependency in dependencies.Value)
-                    strBuilder.AppendLine($"  {dependency}");
-            }
-            strBuilder.AppendLine();
-
             // Member dependencies.
             strBuilder.AppendLine("Member dependencies:");
-            foreach (var dependencies in from dependency in memberDependenciesMap
+            foreach (var dependencies in from dependency in memberInfoToMemberMapsDictionary
                                          orderby $"{dependency.Key.DeclaringType.Name}.{dependency.Key.Name}"
                                          select dependency)
             {
@@ -157,7 +143,7 @@ namespace Etherna.MongODM.Core.Serialization.Mapping
         // Protected methods.
         protected override void FreezeAction()
         {
-            foreach (var schema in schemasByModelType.Values)
+            foreach (var schema in _schemas.Values)
             {
                 // Freeze schema.
                 schema.Freeze();
@@ -226,58 +212,29 @@ namespace Etherna.MongODM.Core.Serialization.Mapping
                     useCascadeDeleteSetting);
 
                 // Add member dependency to registers.
-                //1
-                if (!memberDependenciesMap.ContainsKey(bsonMemberMap.MemberInfo))
-                    memberDependenciesMap[bsonMemberMap.MemberInfo] = new List<MemberMap>();
+                //memberInfo to related member maps, for each different model maps version
+                if (!memberInfoToMemberMapsDictionary.ContainsKey(bsonMemberMap.MemberInfo))
+                    memberInfoToMemberMapsDictionary[bsonMemberMap.MemberInfo] = new List<MemberMap>();
 
-                memberDependenciesMap[bsonMemberMap.MemberInfo].Add(memberMap);
+                memberInfoToMemberMapsDictionary[bsonMemberMap.MemberInfo].Add(memberMap);
 
-                //2
-                if (!modelDependenciesMap.ContainsKey(modelMap.ModelType))
-                    modelDependenciesMap[modelMap.ModelType] = new List<MemberMap>();
-
-                modelDependenciesMap[modelMap.ModelType].Add(memberMap);
-
-                //3
-                if (!modelEntityReferencesIdsMap.ContainsKey(modelMap.ModelType))
-                    modelEntityReferencesIdsMap[modelMap.ModelType] = new List<MemberMap>();
+                //model type to each referenced id member maps, for each different model maps version
+                if (!modelTypeToReferencedIdMemberMapsDictionary.ContainsKey(modelMap.ModelType))
+                    modelTypeToReferencedIdMemberMapsDictionary[modelMap.ModelType] = new List<MemberMap>();
 
                 if (memberMap.IsEntityReferenceMember && memberMap.IsIdMember)
-                    modelEntityReferencesIdsMap[modelMap.ModelType].Add(memberMap);
+                    modelTypeToReferencedIdMemberMapsDictionary[modelMap.ModelType].Add(memberMap);
 
                 // Analize recursion on member.
                 var memberSerializer = bsonMemberMap.GetSerializer();
                 var serializerType = memberSerializer.GetType();
-                
-                //custom serializers
-                if (memberSerializer is IClassMapContainerSerializer classMapContainer)
+
+                //model maps schema serializers
+                if (memberSerializer is IModelMapsSchemaSerializer schemaSerializer)
                 {
                     var useCascadeDelete = (memberSerializer as IReferenceContainerSerializer)?.UseCascadeDelete;
-                    foreach (var childClassMap in classMapContainer.ContainedClassMaps)
-                        CompileDependencyRegisters(modelMap, childClassMap, lastEntityClassMap, currentMemberPath, useCascadeDelete);
-                }
-
-                //default serializers
-                else if (serializerType.IsGenericType &&
-                    serializerType.GetGenericTypeDefinition() == typeof(BsonClassMapSerializer<>)) //default classmapp
-                {
-                    var memberClassMap = BsonClassMap.LookupClassMap(bsonMemberMap.MemberType);
-                    CompileDependencyRegisters(modelMap, memberClassMap, lastEntityClassMap, currentMemberPath);
-                }
-
-                else if (serializerType.IsGenericType &&
-                    serializerType.GetGenericTypeDefinition() == typeof(ImpliedImplementationInterfaceSerializer<,>)) //array
-                {
-                    var interfaceType = serializerType.GenericTypeArguments[0];
-                    if (interfaceType.IsGenericType &&
-                        (interfaceType.GetGenericTypeDefinition() == typeof(IEnumerable<>) ||
-                         interfaceType.GetGenericTypeDefinition() == typeof(IDictionary<,>)))
-                    {
-                        var elementType = interfaceType.GenericTypeArguments.Last();
-
-                        var elementClassMap = BsonClassMap.LookupClassMap(elementType);
-                        CompileDependencyRegisters(modelMap, elementClassMap, lastEntityClassMap, currentMemberPath);
-                    }
+                    foreach (var childModelMap in schemaSerializer.ModelMapsSchema.AllMapsDictionary.Values)
+                        CompileDependencyRegisters(modelMap, childModelMap.BsonClassMap, lastEntityClassMap, currentMemberPath, useCascadeDelete);
                 }
             }
         }

@@ -121,6 +121,8 @@ namespace Etherna.MongODM.Core.Serialization.Mapping
             }
         }
 
+        public string ModelMapId => ModelMap.Id;
+
         /// <summary>
         /// True if requested to apply cascade delete
         /// </summary>
