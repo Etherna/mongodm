@@ -12,7 +12,7 @@
 //   See the License for the specific language governing permissions and
 //   limitations under the License.
 
-using Etherna.MongODM.Core.Serialization.Mapping.Schemas;
+using Etherna.MongODM.Core.Serialization.Mapping;
 using MongoDB.Bson.Serialization;
 using MongoDB.Bson.Serialization.Options;
 using MongoDB.Bson.Serialization.Serializers;
@@ -44,10 +44,11 @@ namespace Etherna.MongODM.Core.Serialization.Serializers
         { }
 
         // Properties.
-        public IBsonSerializer ChildSerializer => ValueSerializer;
+        public IEnumerable<ModelMap> AllChildModelMaps =>
+            (ValueSerializer as IModelMapsContainerSerializer)?.AllChildModelMaps ??
+            Array.Empty<ModelMap>();
 
-        public IModelMapsSchema? ModelMapsSchema =>
-            (ValueSerializer as IModelMapsSchemaSerializer)?.ModelMapsSchema;
+        public IBsonSerializer ChildSerializer => ValueSerializer;
         
         public bool? UseCascadeDelete =>
             (ValueSerializer as IReferenceContainerSerializer)?.UseCascadeDelete;

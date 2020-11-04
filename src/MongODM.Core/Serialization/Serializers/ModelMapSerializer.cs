@@ -15,6 +15,7 @@
 using Etherna.MongODM.Core.Domain.Models;
 using Etherna.MongODM.Core.Options;
 using Etherna.MongODM.Core.ProxyModels;
+using Etherna.MongODM.Core.Serialization.Mapping;
 using Etherna.MongODM.Core.Serialization.Mapping.Schemas;
 using Etherna.MongODM.Core.Serialization.Modifiers;
 using Etherna.MongODM.Core.Utility;
@@ -28,16 +29,14 @@ using System.Linq;
 namespace Etherna.MongODM.Core.Serialization.Serializers
 {
     public class ModelMapSerializer<TModel> :
-        SerializerBase<TModel>, IBsonSerializer<TModel>, IBsonDocumentSerializer, IBsonIdProvider, IModelMapsSchemaSerializer
+        SerializerBase<TModel>, IBsonSerializer<TModel>, IBsonDocumentSerializer, IBsonIdProvider, IModelMapsContainerSerializer
         where TModel : class
     {
         // Fields.
-        private readonly BsonClassMapSerializer<TModel> activeClassMapSerializer;
         private readonly BsonElement activeModelMapIdElement;
         private readonly IDbCache dbCache;
         private readonly BsonElement documentSemVerElement;
         private readonly DocumentSemVerOptions documentSemVerOptions;
-        private readonly IBsonSerializer<TModel>? fallbackSerializer;
         private readonly ModelMapVersionOptions modelMapVersionOptions;
         private readonly ISerializerModifierAccessor serializerModifierAccessor;
 
@@ -51,15 +50,13 @@ namespace Etherna.MongODM.Core.Serialization.Serializers
         {
             this.dbCache = dbCache ?? throw new ArgumentNullException(nameof(dbCache));
             this.documentSemVerOptions = documentSemVerOptions ?? throw new ArgumentNullException(nameof(documentSemVerOptions));
+            this.ModelMapsSchema = modelMapsSchema ?? throw new ArgumentNullException(nameof(modelMapsSchema));
             this.modelMapVersionOptions = modelMapVersionOptions ?? throw new ArgumentNullException(nameof(modelMapVersionOptions));
             this.serializerModifierAccessor = serializerModifierAccessor ?? throw new ArgumentNullException(nameof(serializerModifierAccessor));
-            ModelMapsSchema = modelMapsSchema ?? throw new ArgumentNullException(nameof(modelMapsSchema));
 
             documentSemVerElement = new BsonElement(
                 documentSemVerOptions.ElementName,
                 documentSemVerOptions.CurrentVersion.ToBsonArray());
-
-            fallbackSerializer = modelMapsSchema.FallbackSerializer;
 
             ClassMapSerializers = modelMapsSchema.AllMapsDictionary.ToDictionary(
                 pair => pair.Key,
@@ -68,7 +65,6 @@ namespace Etherna.MongODM.Core.Serialization.Serializers
                     var classMap = pair.Value.BsonClassMap;
                     return new BsonClassMapSerializer<TModel>(classMap);
                 });
-            activeClassMapSerializer = ClassMapSerializers[modelMapsSchema.ActiveMap.Id];
 
             activeModelMapIdElement = new BsonElement(
                 modelMapVersionOptions.ElementName,
@@ -76,8 +72,11 @@ namespace Etherna.MongODM.Core.Serialization.Serializers
         }
 
         // Properties.
+        public BsonClassMapSerializer<TModel> ActiveClassMapSerializer => ClassMapSerializers[ModelMapsSchema.ActiveMap.Id];
+        public IEnumerable<ModelMap> AllChildModelMaps => ModelMapsSchema.AllMapsDictionary.Values;
         public IReadOnlyDictionary<string, BsonClassMapSerializer<TModel>> ClassMapSerializers { get; }
-        public IModelMapsSchema ModelMapsSchema { get; }
+        public IBsonSerializer<TModel>? FallbackSerializer => ModelMapsSchema.FallbackSerializer;
+        public IModelMapsSchema<TModel> ModelMapsSchema { get; }
 
         // Methods.
         public override TModel Deserialize(BsonDeserializationContext context, BsonDeserializationArgs args)
@@ -129,15 +128,15 @@ namespace Etherna.MongODM.Core.Serialization.Serializers
             }
 
             //else, if a fallback serializator exists
-            else if (fallbackSerializer != null)
+            else if (FallbackSerializer != null)
             {
-                model = fallbackSerializer.Deserialize(localContext, args);
+                model = FallbackSerializer.Deserialize(localContext, args);
             }
 
             //else, deserialize wih current active model map
             else
             {
-                model = activeClassMapSerializer.Deserialize(localContext, args);
+                model = ActiveClassMapSerializer.Deserialize(localContext, args);
             }
 
             // Add model to cache.
@@ -165,7 +164,7 @@ namespace Etherna.MongODM.Core.Serialization.Serializers
         }
 
         public bool GetDocumentId(object document, out object id, out Type idNominalType, out IIdGenerator idGenerator) =>
-            activeClassMapSerializer.GetDocumentId(document, out id, out idNominalType, out idGenerator);
+            ActiveClassMapSerializer.GetDocumentId(document, out id, out idNominalType, out idGenerator);
 
         public override void Serialize(BsonSerializationContext context, BsonSerializationArgs args, TModel value)
         {
@@ -190,7 +189,7 @@ namespace Etherna.MongODM.Core.Serialization.Serializers
                 builder => builder.IsDynamicType = context.IsDynamicType);
 
             // Serialize.
-            activeClassMapSerializer.Serialize(localContext, args, value);
+            ActiveClassMapSerializer.Serialize(localContext, args, value);
 
             // Add additional data.
             //add model map id
@@ -211,10 +210,10 @@ namespace Etherna.MongODM.Core.Serialization.Serializers
         }
 
         public void SetDocumentId(object document, object id) =>
-            activeClassMapSerializer.SetDocumentId(document, id);
+            ActiveClassMapSerializer.SetDocumentId(document, id);
 
         public bool TryGetMemberSerializationInfo(string memberName, out BsonSerializationInfo serializationInfo) =>
-            activeClassMapSerializer.TryGetMemberSerializationInfo(memberName, out serializationInfo);
+            ActiveClassMapSerializer.TryGetMemberSerializationInfo(memberName, out serializationInfo);
 
         // Helpers.
         private static string? BsonValueToModelMapId(BsonValue bsonValue) =>

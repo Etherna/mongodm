@@ -13,10 +13,12 @@
 //   limitations under the License.
 
 using Etherna.MongODM.Core.Domain.Models;
+using Etherna.MongODM.Core.Serialization.Mapping;
 using Etherna.MongODM.Core.Serialization.Mapping.Schemas;
 using MongoDB.Bson.Serialization;
 using MongoDB.Bson.Serialization.Serializers;
 using System;
+using System.Collections.Generic;
 
 namespace Etherna.MongODM.Core.Serialization.Serializers
 {
@@ -47,7 +49,7 @@ namespace Etherna.MongODM.Core.Serialization.Serializers
         }
 
         // Properties.
-        public IModelMapsSchema ModelMapsSchema => defaultSerializer.ModelMapsSchema;
+        public IEnumerable<ModelMap> AllChildModelMaps => defaultSerializer.AllChildModelMaps;
         public bool? UseCascadeDelete => defaultSerializer.UseCascadeDelete;
 
         // Methods.

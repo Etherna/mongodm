@@ -232,11 +232,10 @@ namespace Etherna.MongODM.Core.Serialization.Mapping
                 var memberSerializer = bsonMemberMap.GetSerializer();
 
                 //model maps schema serializers
-                if (memberSerializer is IModelMapsSchemaSerializer schemaSerializer &&
-                    schemaSerializer.ModelMapsSchema != null)
+                if (memberSerializer is IModelMapsContainerSerializer schemaSerializer)
                 {
                     var useCascadeDelete = (memberSerializer as IReferenceContainerSerializer)?.UseCascadeDelete;
-                    foreach (var childModelMap in schemaSerializer.ModelMapsSchema.AllMapsDictionary.Values)
+                    foreach (var childModelMap in schemaSerializer.AllChildModelMaps)
                         CompileDependencyRegisters(modelMap, childModelMap.BsonClassMap, lastEntityClassMap, currentMemberPath, useCascadeDelete);
                 }
             }

@@ -12,12 +12,13 @@
 //   See the License for the specific language governing permissions and
 //   limitations under the License.
 
-using Etherna.MongODM.Core.Serialization.Mapping.Schemas;
+using Etherna.MongODM.Core.Serialization.Mapping;
+using System.Collections.Generic;
 
 namespace Etherna.MongODM.Core.Serialization.Serializers
 {
-    public interface IModelMapsSchemaSerializer
+    public interface IModelMapsContainerSerializer
     {
-        IModelMapsSchema? ModelMapsSchema { get; }
+        IEnumerable<ModelMap> AllChildModelMaps { get; }
     }
 }
