@@ -62,15 +62,14 @@ namespace Etherna.MongODM.Core.Serialization.Mapping
 
         // Methods.
         public ICustomSerializerSchema<TModel> AddCustomSerializerSchema<TModel>(
-            IBsonSerializer<TModel> customSerializer,
-            bool requireCollectionMigration = false) where TModel : class =>
+            IBsonSerializer<TModel> customSerializer) where TModel : class =>
             ExecuteConfigAction(() =>
             {
                 if (customSerializer is null)
                     throw new ArgumentNullException(nameof(customSerializer));
 
                 // Register and return schema configuration.
-                var modelSchemaConfiguration = new CustomSerializerSchema<TModel>(customSerializer, requireCollectionMigration);
+                var modelSchemaConfiguration = new CustomSerializerSchema<TModel>(customSerializer);
                 _schemas.Add(typeof(TModel), modelSchemaConfiguration);
 
                 return modelSchemaConfiguration;
@@ -81,28 +80,29 @@ namespace Etherna.MongODM.Core.Serialization.Mapping
         public IModelMapsSchema<TModel> AddModelMapSchema<TModel>(
             string activeModelMapId,
             Action<BsonClassMap<TModel>>? activeModelMapInitializer = null,
-            IBsonSerializer<TModel>? customSerializer = null,
-            bool requireCollectionMigration = false) where TModel : class =>
+            IBsonSerializer<TModel>? customSerializer = null) where TModel : class =>
             AddModelMapSchema(new ModelMap<TModel>(
                 activeModelMapId,
                 new BsonClassMap<TModel>(activeModelMapInitializer ?? (cm => cm.AutoMap())),
-                customSerializer), requireCollectionMigration);
+                customSerializer));
 
         public IModelMapsSchema<TModel> AddModelMapSchema<TModel>(
-            ModelMap<TModel> activeModelMap,
-            bool requireCollectionMigration = false) where TModel : class =>
+            ModelMap<TModel> activeModelMap)
+            where TModel : class =>
             ExecuteConfigAction(() =>
             {
                 if (activeModelMap is null)
                     throw new ArgumentNullException(nameof(activeModelMap));
 
                 // Register and return schema configuration.
-                var modelSchemaConfiguration = new ModelMapsSchema<TModel>(
-                    activeModelMap, dbContext, requireCollectionMigration);
+                var modelSchemaConfiguration = new ModelMapsSchema<TModel>(activeModelMap, dbContext);
                 _schemas.Add(typeof(TModel), modelSchemaConfiguration);
 
                 return modelSchemaConfiguration;
             });
+
+        public ICustomSerializerSchema<TModel> GetCustomSerializerSchema<TModel>() where TModel : class =>
+            (ICustomSerializerSchema<TModel>)Schemas[typeof(TModel)];
 
         public IEnumerable<MemberMap> GetMemberMapsFromMemberInfo(MemberInfo memberInfo)
         {
@@ -112,6 +112,9 @@ namespace Etherna.MongODM.Core.Serialization.Mapping
                 return dependencies;
             return Array.Empty<MemberMap>();
         }
+
+        public IModelMapsSchema<TModel> GetModelMapsSchema<TModel>() where TModel : class =>
+            (IModelMapsSchema<TModel>)Schemas[typeof(TModel)];
 
         public IEnumerable<MemberMap> GetReferencedIdMemberMapsFromRootModel(Type modelType)
         {

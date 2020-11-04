@@ -45,13 +45,11 @@ namespace Etherna.MongODM.Core
             if (options is null)
                 throw new ArgumentNullException(nameof(options));
 
-            ApplicationVersion = options.ApplicationVersion.CurrentVersion;
-            ApplicationVersionElementName = options.ApplicationVersion.ElementName;
-            ApplicationVersionWriteInDocuments = options.ApplicationVersion.WriteInDocuments;
             DbCache = dependencies.DbCache;
             DbMaintainer = dependencies.DbMaintainer;
             DbMigrationManager = dependencies.DbMigrationManager;
             DbOperations = new CollectionRepository<OperationBase, string>(options.DbOperationsCollectionName);
+            DocumentSemVerOptions = options.DocumentSemVer;
             Identifier = options.Identifier ?? GetType().Name;
             LibraryVersion = typeof(DbContext)
                 .GetTypeInfo()
@@ -59,6 +57,7 @@ namespace Etherna.MongODM.Core
                 .GetCustomAttribute<AssemblyInformationalVersionAttribute>()
                 ?.InformationalVersion
                 ?.Split('+')[0] ?? "1.0.0";
+            ModelMapVersionOptions = options.ModelMapVersion;
             ProxyGenerator = dependencies.ProxyGenerator;
             RepositoryRegister = dependencies.RepositoryRegister;
             SchemaRegister = dependencies.SchemaRegister;
@@ -94,9 +93,6 @@ namespace Etherna.MongODM.Core
         }
 
         // Public properties.
-        public SemanticVersion ApplicationVersion { get; }
-        public string ApplicationVersionElementName { get; }
-        public bool ApplicationVersionWriteInDocuments { get; }
         public IReadOnlyCollection<IEntityModel> ChangedModelsList =>
             DbCache.LoadedModels.Values
                 .Where(model => (model as IAuditable)?.IsChanged == true)
@@ -108,13 +104,15 @@ namespace Etherna.MongODM.Core
         public IDbMigrationManager DbMigrationManager { get; }
         public ICollectionRepository<OperationBase, string> DbOperations { get; }
         public virtual IEnumerable<MongoMigrationBase> DocumentMigrationList { get; } = Array.Empty<MongoMigrationBase>();
+        public DocumentSemVerOptions DocumentSemVerOptions { get; }
         public string Identifier { get; }
         public SemanticVersion LibraryVersion { get; }
+        public ModelMapVersionOptions ModelMapVersionOptions { get; }
         public IProxyGenerator ProxyGenerator { get; }
         public IRepositoryRegister RepositoryRegister { get; }
         public ISchemaRegister SchemaRegister { get; }
         public ISerializerModifierAccessor SerializerModifierAccessor { get; }
-        
+
         // Protected properties.
         protected abstract IEnumerable<IModelMapsCollector> ModelMapsCollectors { get; }
 

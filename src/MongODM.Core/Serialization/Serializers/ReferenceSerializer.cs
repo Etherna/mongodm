@@ -28,7 +28,12 @@ using System.Threading;
 namespace Etherna.MongODM.Core.Serialization.Serializers
 {
     public class ReferenceSerializer<TModelBase, TKey> :
-        SerializerBase<TModelBase>, IBsonSerializer<TModelBase>, IBsonDocumentSerializer, IBsonIdProvider, IReferenceContainerSerializer, IDisposable
+        SerializerBase<TModelBase>,
+        IBsonSerializer<TModelBase>,
+        IBsonDocumentSerializer,
+        IBsonIdProvider,
+        IReferenceContainerSerializer,
+        IDisposable
         where TModelBase : class, IEntityModel<TKey>
     {
         // Fields.

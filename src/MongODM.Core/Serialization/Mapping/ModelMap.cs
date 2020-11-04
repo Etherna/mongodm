@@ -113,14 +113,10 @@ namespace Etherna.MongODM.Core.Serialization.Mapping
 
             return new ModelMapSerializer<TModel>(
                 dbContext.DbCache,
-                dbContext.ApplicationVersionWriteInDocuments ?
-                    new BsonElement(
-                        dbContext.ApplicationVersionElementName,
-                        dbContext.ApplicationVersion.ToBsonArray()) :
-                    (BsonElement?)null,
-                dbContext.SerializerModifierAccessor,
-                dbContext.SchemaRegister)
-            { AddVersion = typeof(IEntityModel).IsAssignableFrom(ModelType) }; //true only for entity models
+                dbContext.DocumentSemVerOptions,
+                dbContext.SchemaRegister.GetModelMapsSchema<TModel>(),
+                dbContext.ModelMapVersionOptions,
+                dbContext.SerializerModifierAccessor);
         }
     }
 }

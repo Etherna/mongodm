@@ -8,9 +8,8 @@ namespace Etherna.MongODM.Core.Serialization.Mapping.Schemas
     {
         // Constructor.
         public CustomSerializerSchema(
-            IBsonSerializer<TModel> customSerializer,
-            bool requireCollectionMigration = false)
-            : base(typeof(TModel), requireCollectionMigration)
+            IBsonSerializer<TModel> customSerializer)
+            : base(typeof(TModel))
         {
             ActiveSerializer = customSerializer;
         }

@@ -8,18 +8,15 @@ namespace Etherna.MongODM.Core.Serialization.Mapping.Schemas
     {
         // Constructor.
         public SchemaBase(
-            Type modelType,
-            bool requireCollectionMigration)
+            Type modelType)
         {
             ModelType = modelType;
-            RequireCollectionMigration = requireCollectionMigration;
         }
 
         // Properties.
         public abstract IBsonSerializer? ActiveSerializer { get; }
         public Type ModelType { get; }
         public abstract Type? ProxyModelType { get; }
-        public bool RequireCollectionMigration { get; }
         public abstract bool? UseProxyModel { get; }
     }
 }

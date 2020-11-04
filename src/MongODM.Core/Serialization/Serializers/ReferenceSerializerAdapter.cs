@@ -17,12 +17,15 @@ using Etherna.MongODM.Core.Serialization.Mapping.Schemas;
 using MongoDB.Bson.Serialization;
 using MongoDB.Bson.Serialization.Serializers;
 using System;
-using System.Collections.Generic;
 
 namespace Etherna.MongODM.Core.Serialization.Serializers
 {
     class ReferenceSerializerAdapter<TInModel, TOutModel, TKey> :
-        SerializerBase<TOutModel>, IBsonSerializer<TOutModel>, IBsonDocumentSerializer, IBsonIdProvider, IReferenceContainerSerializer
+        SerializerBase<TOutModel>,
+        IBsonSerializer<TOutModel>,
+        IBsonDocumentSerializer,
+        IBsonIdProvider,
+        IReferenceContainerSerializer
         where TInModel : class, IEntityModel<TKey>
         where TOutModel : class, TInModel
     {

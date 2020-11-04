@@ -19,12 +19,13 @@ namespace Etherna.MongODM.Core.Options
 {
     public class DbContextOptions
     {
-        public ApplicationVersionOptions ApplicationVersion { get; set; } = new ApplicationVersionOptions();
         public string ConnectionString { get; set; } = "mongodb://localhost/localDb";
         public string DbName => ConnectionString.Split('?')[0]
                                                 .Split('/').Last();
         public string DbOperationsCollectionName { get; set; } = "_db_ops";
+        public DocumentSemVerOptions DocumentSemVer { get; set; } = new DocumentSemVerOptions();
         public string? Identifier { get; set; }
+        public ModelMapVersionOptions ModelMapVersion { get; set; } = new ModelMapVersionOptions();
     }
 
     public class DbContextOptions<TDbContext> : DbContextOptions

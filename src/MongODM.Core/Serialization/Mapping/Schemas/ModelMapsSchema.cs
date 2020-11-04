@@ -12,16 +12,15 @@ namespace Etherna.MongODM.Core.Serialization.Mapping.Schemas
         // Fields.
         private readonly ModelMap _activeMap;
         private IDictionary<string, ModelMap> _allMapsDictionary = default!;
-        private IBsonSerializer? _fallbackSerializer;
+        private IBsonSerializer<TModel>? _fallbackSerializer;
         private readonly List<ModelMap> _secondaryMaps = new List<ModelMap>();
         private readonly IDbContext dbContext;
 
         // Constructor.
         public ModelMapsSchema(
             ModelMap<TModel> activeMap,
-            IDbContext dbContext,
-            bool requireCollectionMigration = false)
-            : base(typeof(TModel), requireCollectionMigration)
+            IDbContext dbContext)
+            : base(typeof(TModel))
         {
             _activeMap = activeMap ?? throw new ArgumentNullException(nameof(activeMap));
             this.dbContext = dbContext ?? throw new ArgumentNullException(nameof(dbContext));
@@ -64,7 +63,8 @@ namespace Etherna.MongODM.Core.Serialization.Mapping.Schemas
                 return _allMapsDictionary;
             }
         }
-        public IBsonSerializer? FallbackSerializer
+
+        public IBsonSerializer<TModel>? FallbackSerializer
         {
             get
             {

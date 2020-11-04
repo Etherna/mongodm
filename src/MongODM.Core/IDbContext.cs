@@ -14,6 +14,7 @@
 
 using Etherna.MongODM.Core.Domain.Models;
 using Etherna.MongODM.Core.Migration;
+using Etherna.MongODM.Core.Options;
 using Etherna.MongODM.Core.ProxyModels;
 using Etherna.MongODM.Core.Repositories;
 using Etherna.MongODM.Core.Serialization;
@@ -32,21 +33,6 @@ namespace Etherna.MongODM.Core
     /// </summary>
     public interface IDbContext
     {
-        /// <summary>
-        /// Current application version.
-        /// </summary>
-        SemanticVersion ApplicationVersion { get; }
-
-        /// <summary>
-        /// Name of element with current application version.
-        /// </summary>
-        string ApplicationVersionElementName { get; }
-
-        /// <summary>
-        /// True if version must be written in documents
-        /// </summary>
-        bool ApplicationVersionWriteInDocuments { get; }
-
         // Properties.
         /// <summary>
         /// Current MongoDB client.
@@ -83,6 +69,8 @@ namespace Etherna.MongODM.Core
         /// </summary>
         IEnumerable<MongoMigrationBase> DocumentMigrationList { get; }
 
+        DocumentSemVerOptions DocumentSemVerOptions { get; }
+
         /// <summary>
         /// DbContext unique identifier.
         /// </summary>
@@ -92,6 +80,8 @@ namespace Etherna.MongODM.Core
         /// Current MongODM library version
         /// </summary>
         SemanticVersion LibraryVersion { get; }
+
+        ModelMapVersionOptions ModelMapVersionOptions { get; }
 
         /// <summary>
         /// Current model proxy generator.

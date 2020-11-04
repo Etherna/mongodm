@@ -17,7 +17,6 @@ using Etherna.MongODM.Core.Serialization.Mapping.Schemas;
 using MongoDB.Bson.Serialization;
 using MongoDB.Bson.Serialization.Serializers;
 using System;
-using System.Collections.Generic;
 
 namespace Etherna.MongODM.Core.Serialization.Serializers
 {
@@ -58,7 +57,7 @@ namespace Etherna.MongODM.Core.Serialization.Serializers
                 throw new ArgumentNullException(nameof(context));
 
             var extendedReader = context.Reader as ExtendedBsonDocumentReader;
-            var switchContext = new CaseContext { DocumentVersion = extendedReader?.DocumentVersion };
+            var switchContext = new CaseContext { DocumentVersion = extendedReader?.DocumentSemVer };
 
             // Try cases.
             foreach (var (condition, deserializer) in caseDeserializers)

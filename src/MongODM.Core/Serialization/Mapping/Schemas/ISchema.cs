@@ -10,7 +10,6 @@ namespace Etherna.MongODM.Core.Serialization.Mapping.Schemas
         IBsonSerializer? ActiveSerializer { get; }
         Type ModelType { get; }
         Type? ProxyModelType { get; }
-        bool RequireCollectionMigration { get; }
         bool? UseProxyModel { get; }
     }
 }

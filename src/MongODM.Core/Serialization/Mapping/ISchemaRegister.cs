@@ -35,11 +35,9 @@ namespace Etherna.MongODM.Core.Serialization.Mapping
         /// </summary>
         /// <typeparam name="TModel">The model type</typeparam>
         /// <param name="customSerializer">Custom serializer</param>
-        /// <param name="requireCollectionMigration">Migrate full collection on db migration</param>
         /// <returns>The new schema</returns>
         ICustomSerializerSchema<TModel> AddCustomSerializerSchema<TModel>(
-            IBsonSerializer<TModel> customSerializer,
-            bool requireCollectionMigration = false)
+            IBsonSerializer<TModel> customSerializer)
             where TModel : class;
 
         /// <summary>
@@ -49,13 +47,11 @@ namespace Etherna.MongODM.Core.Serialization.Mapping
         /// <param name="activeModelMapId">The active model map Id</param>
         /// <param name="activeModelMapInitializer">The active model map inizializer</param>
         /// <param name="customSerializer">Replace default serializer with a custom</param>
-        /// <param name="requireCollectionMigration">Migrate full collection on db migration</param>
         /// <returns>The new schema</returns>
         IModelMapsSchema<TModel> AddModelMapSchema<TModel>(
             string activeModelMapId,
             Action<BsonClassMap<TModel>>? activeModelMapInitializer = null,
-            IBsonSerializer<TModel>? customSerializer = null,
-            bool requireCollectionMigration = false)
+            IBsonSerializer<TModel>? customSerializer = null)
             where TModel : class;
 
         /// <summary>
@@ -63,14 +59,18 @@ namespace Etherna.MongODM.Core.Serialization.Mapping
         /// </summary>
         /// <typeparam name="TModel">The model type</typeparam>
         /// <param name="activeModelMap">The active model map</param>
-        /// <param name="requireCollectionMigration">Migrate full collection on db migration</param>
         /// <returns>The new schema</returns>
         IModelMapsSchema<TModel> AddModelMapSchema<TModel>(
-            ModelMap<TModel> activeModelMap,
-            bool requireCollectionMigration = false)
+            ModelMap<TModel> activeModelMap)
+            where TModel : class;
+
+        ICustomSerializerSchema<TModel> GetCustomSerializerSchema<TModel>()
             where TModel : class;
 
         IEnumerable<MemberMap> GetMemberMapsFromMemberInfo(MemberInfo memberInfo);
+
+        IModelMapsSchema<TModel> GetModelMapsSchema<TModel>()
+            where TModel : class;
 
         IEnumerable<MemberMap> GetReferencedIdMemberMapsFromRootModel(Type modelType);
     }
