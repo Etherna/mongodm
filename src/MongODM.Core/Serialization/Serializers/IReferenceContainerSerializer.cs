@@ -16,6 +16,6 @@ namespace Etherna.MongODM.Core.Serialization.Serializers
 {
     public interface IReferenceContainerSerializer : IModelMapsContainerSerializer
     {
-        bool? UseCascadeDelete { get; }
+        bool UseCascadeDelete { get; }
     }
 }

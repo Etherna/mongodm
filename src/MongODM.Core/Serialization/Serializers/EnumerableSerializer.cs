@@ -55,8 +55,8 @@ namespace Etherna.MongODM.Core.Serialization.Serializers
 
         public IBsonSerializer ChildSerializer => ItemSerializer;
 
-        public bool? UseCascadeDelete =>
-            (ItemSerializer as IReferenceContainerSerializer)?.UseCascadeDelete;
+        public bool UseCascadeDelete =>
+            (ItemSerializer as IReferenceContainerSerializer)?.UseCascadeDelete ?? false;
 
         // Public methods.
         public override void Serialize(BsonSerializationContext context, BsonSerializationArgs args, IEnumerable<TItem> value)

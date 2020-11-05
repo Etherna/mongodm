@@ -12,11 +12,9 @@
 //   See the License for the specific language governing permissions and
 //   limitations under the License.
 
-using Etherna.MongODM.Core.Domain.Models;
 using Etherna.MongODM.Core.Extensions;
 using Etherna.MongODM.Core.Serialization.Serializers;
 using Etherna.MongODM.Core.Utility;
-using MongoDB.Bson;
 using MongoDB.Bson.Serialization;
 using System;
 
@@ -24,6 +22,7 @@ namespace Etherna.MongODM.Core.Serialization.Mapping
 {
     public abstract class ModelMap : FreezableConfig
     {
+        // Fields.
         private readonly BsonClassMap _bsonClassMap;
         private IBsonSerializer? _serializer;
 

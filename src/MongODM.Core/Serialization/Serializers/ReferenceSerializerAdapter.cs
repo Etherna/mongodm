@@ -14,7 +14,6 @@
 
 using Etherna.MongODM.Core.Domain.Models;
 using Etherna.MongODM.Core.Serialization.Mapping;
-using Etherna.MongODM.Core.Serialization.Mapping.Schemas;
 using MongoDB.Bson.Serialization;
 using MongoDB.Bson.Serialization.Serializers;
 using System;
@@ -42,7 +41,7 @@ namespace Etherna.MongODM.Core.Serialization.Serializers
 
         // Properties.
         public IEnumerable<ModelMap> AllChildModelMaps => serializerBase.AllChildModelMaps;
-        public bool? UseCascadeDelete => serializerBase.UseCascadeDelete;
+        public bool UseCascadeDelete => serializerBase.UseCascadeDelete;
 
         // Methods.
         public override TOutModel Deserialize(BsonDeserializationContext context, BsonDeserializationArgs args)

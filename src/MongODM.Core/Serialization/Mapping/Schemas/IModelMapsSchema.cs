@@ -56,9 +56,9 @@ namespace Etherna.MongODM.Core.Serialization.Mapping.Schemas
         /// <summary>
         /// Register a secondary model map
         /// </summary>
-        /// <param name="modelMapSchema">The model map</param>
+        /// <param name="modelMap">The model map</param>
         /// <returns>This same model schema configuration</returns>
         IModelMapsSchema<TModel> AddSecondaryMap(
-            ModelMap<TModel> modelMapSchema);
+            ModelMap<TModel> modelMap);
     }
 }

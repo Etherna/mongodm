@@ -1,26 +1,24 @@
-﻿using MongoDB.Bson.Serialization;
+﻿using Etherna.MongODM.Core.Utility;
+using MongoDB.Bson.Serialization;
 using System;
 using System.Collections.Generic;
-using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 
-namespace Etherna.MongODM.Core.Serialization.Mapping.Schemas
+namespace Etherna.MongODM.Core.Serialization.Serializers.Config
 {
-    class ModelMapsSchema<TModel> : SchemaBase, IModelMapsSchema<TModel>
-        where TModel : class
+    public class ReferenceSchema<TModel> : FreezableConfig, IReferenceSchema<TModel>
     {
         // Fields.
-        private readonly ModelMap<TModel> _activeMap;
-        private IDictionary<string, ModelMap> _allMapsDictionary = default!;
+        private readonly ReferenceModelMap<TModel> _activeMap;
+        private IDictionary<string, ReferenceModelMap> _allMapsDictionary = default!;
         private IBsonSerializer<TModel>? _fallbackSerializer;
-        private readonly List<ModelMap> _secondaryMaps = new List<ModelMap>();
+        private readonly List<ReferenceModelMap> _secondaryMaps = new List<ReferenceModelMap>();
         private readonly IDbContext dbContext;
 
         // Constructor.
-        public ModelMapsSchema(
-            ModelMap<TModel> activeMap,
+        public ReferenceSchema(
+            ReferenceModelMap<TModel> activeMap,
             IDbContext dbContext)
-            : base(typeof(TModel))
         {
             _activeMap = activeMap ?? throw new ArgumentNullException(nameof(activeMap));
             this.dbContext = dbContext ?? throw new ArgumentNullException(nameof(dbContext));
@@ -31,14 +29,10 @@ namespace Etherna.MongODM.Core.Serialization.Mapping.Schemas
                 ProxyModelType = dbContext.ProxyGenerator.CreateInstance(ModelType, dbContext).GetType();
                 activeMap.UseProxyGenerator(dbContext);
             }
-
-            // Verify if needs to use default serializer.
-            if (!typeof(TModel).IsAbstract && activeMap.Serializer is null)
-                activeMap.UseDefaultSerializer(dbContext);
         }
 
         // Properties.
-        public ModelMap ActiveMap
+        public ReferenceModelMap ActiveMap
         {
             get
             {
@@ -46,8 +40,8 @@ namespace Etherna.MongODM.Core.Serialization.Mapping.Schemas
                 return _activeMap;
             }
         }
-        public override IBsonSerializer? ActiveSerializer => ActiveMap.Serializer;
-        public IDictionary<string, ModelMap> AllMapsDictionary
+
+        public IDictionary<string, ReferenceModelMap> AllMapsDictionary
         {
             get
             {
@@ -72,8 +66,12 @@ namespace Etherna.MongODM.Core.Serialization.Mapping.Schemas
                 return _fallbackSerializer;
             }
         }
-        public override Type? ProxyModelType { get; }
-        public IEnumerable<ModelMap> SecondaryMaps
+
+        public Type ModelType => typeof(TModel);
+
+        public Type? ProxyModelType { get; }
+
+        public IEnumerable<ReferenceModelMap> SecondaryMaps
         {
             get
             {
@@ -81,10 +79,11 @@ namespace Etherna.MongODM.Core.Serialization.Mapping.Schemas
                 return _secondaryMaps;
             }
         }
-        public override bool UseProxyModel => !typeof(TModel).IsAbstract;
+
+        public bool UseProxyModel => !typeof(TModel).IsAbstract;
 
         // Methods.
-        public IModelMapsSchema<TModel> AddFallbackCustomSerializer(IBsonSerializer<TModel> fallbackSerializer) =>
+        public IReferenceSchema<TModel> AddFallbackCustomSerializer(IBsonSerializer<TModel> fallbackSerializer) =>
             ExecuteConfigAction(() =>
             {
                 if (fallbackSerializer is null)
@@ -97,18 +96,14 @@ namespace Etherna.MongODM.Core.Serialization.Mapping.Schemas
                 return this;
             });
 
-
-        [SuppressMessage("Reliability", "CA2000:Dispose objects before losing scope", Justification = "Don't dispose here")]
-        public IModelMapsSchema<TModel> AddSecondaryMap(
+        public IReferenceSchema<TModel> AddSecondaryMap(
             string id,
-            Action<BsonClassMap<TModel>>? modelMapInitializer = null,
-            IBsonSerializer<TModel>? customSerializer = null) =>
-            AddSecondaryMap(new ModelMap<TModel>(
+            Action<BsonClassMap<TModel>>? modelMapInitializer = null) =>
+            AddSecondaryMap(new ReferenceModelMap<TModel>(
                 id,
-                new BsonClassMap<TModel>(modelMapInitializer ?? (cm => cm.AutoMap())),
-                customSerializer));
+                new BsonClassMap<TModel>(modelMapInitializer ?? (cm => cm.AutoMap()))));
 
-        public IModelMapsSchema<TModel> AddSecondaryMap(ModelMap<TModel> modelMap) =>
+        public IReferenceSchema<TModel> AddSecondaryMap(ReferenceModelMap<TModel> modelMap) =>
             ExecuteConfigAction(() =>
             {
                 if (modelMap is null)

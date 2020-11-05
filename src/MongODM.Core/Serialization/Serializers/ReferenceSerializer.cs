@@ -15,7 +15,7 @@
 using Etherna.MongODM.Core.Domain.Models;
 using Etherna.MongODM.Core.ProxyModels;
 using Etherna.MongODM.Core.Serialization.Mapping;
-using Etherna.MongODM.Core.Serialization.Mapping.Schemas;
+using Etherna.MongODM.Core.Serialization.Serializers.Config;
 using MongoDB.Bson;
 using MongoDB.Bson.Serialization;
 using MongoDB.Bson.Serialization.Conventions;
@@ -41,25 +41,37 @@ namespace Etherna.MongODM.Core.Serialization.Serializers
         private IDiscriminatorConvention _discriminatorConvention = default!;
 
         private readonly ReaderWriterLockSlim configLockAdapters = new ReaderWriterLockSlim(LockRecursionPolicy.SupportsRecursion);
-        private readonly ReaderWriterLockSlim configLockClassMaps = new ReaderWriterLockSlim(LockRecursionPolicy.SupportsRecursion);
         private readonly ReaderWriterLockSlim configLockSerializers = new ReaderWriterLockSlim(LockRecursionPolicy.SupportsRecursion);
         private readonly IDbContext dbContext;
-
+        private readonly ReferenceSerializerConfiguration configuration;
         private readonly IDictionary<Type, IBsonSerializer> registeredAdapters = new Dictionary<Type, IBsonSerializer>();
-        private readonly IDictionary<Type, BsonClassMap> registeredClassMaps = new Dictionary<Type, BsonClassMap>();
         private readonly IDictionary<Type, IBsonSerializer> registeredSerializers = new Dictionary<Type, IBsonSerializer>();
 
-        // Constructors.
+        // Constructor and dispose.
         public ReferenceSerializer(
             IDbContext dbContext,
-            bool useCascadeDelete)
+            Action<ReferenceSerializerConfiguration> configure)
         {
+            if (configure is null)
+                throw new ArgumentNullException(nameof(configure));
+
             this.dbContext = dbContext ?? throw new ArgumentNullException(nameof(dbContext));
-            UseCascadeDelete = useCascadeDelete;
+
+            configuration = new ReferenceSerializerConfiguration(dbContext);
+            configure(configuration);
+            configuration.Freeze();
+        }
+
+        public void Dispose()
+        {
+            configLockAdapters.Dispose();
+            configLockSerializers.Dispose();
+            configuration.Dispose();
         }
 
         // Properties.
-        public IEnumerable<ModelMap> AllChildModelMaps => registeredClassMaps.Values;
+        public IEnumerable<ModelMap> AllChildModelMaps => configuration.Schemas.Values
+            .SelectMany(s => s.AllMapsDictionary.Values);
         public IDiscriminatorConvention DiscriminatorConvention
         {
             get
@@ -69,7 +81,7 @@ namespace Etherna.MongODM.Core.Serialization.Serializers
                 return _discriminatorConvention;
             }
         }
-        public bool? UseCascadeDelete { get; }
+        public bool UseCascadeDelete => configuration.UseCascadeDelete;
 
         // Methods.
         public override TModelBase Deserialize(BsonDeserializationContext context, BsonDeserializationArgs args)
@@ -161,13 +173,6 @@ namespace Etherna.MongODM.Core.Serialization.Serializers
             }
 
             return model!;
-        }
-
-        public void Dispose()
-        {
-            configLockAdapters.Dispose();
-            configLockClassMaps.Dispose();
-            configLockSerializers.Dispose();
         }
 
         public IBsonSerializer<TModel> GetAdapter<TModel>()

@@ -17,6 +17,6 @@ namespace Etherna.MongODM.Core.Serialization.Mapping.Schemas
         public abstract IBsonSerializer? ActiveSerializer { get; }
         public Type ModelType { get; }
         public abstract Type? ProxyModelType { get; }
-        public abstract bool? UseProxyModel { get; }
+        public abstract bool UseProxyModel { get; }
     }
 }
