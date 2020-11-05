@@ -70,8 +70,10 @@ namespace Etherna.MongODM.Core.Serialization.Serializers
         }
 
         // Properties.
-        public IEnumerable<ModelMap> AllChildModelMaps => configuration.Schemas.Values
-            .SelectMany(s => s.AllMapsDictionary.Values);
+        public IEnumerable<BsonClassMap> AllChildClassMaps => configuration.Schemas.Values
+            .SelectMany(schema => schema.AllMapsDictionary.Values
+                .Select(map => map.BsonClassMap));
+
         public IDiscriminatorConvention DiscriminatorConvention
         {
             get
@@ -81,6 +83,7 @@ namespace Etherna.MongODM.Core.Serialization.Serializers
                 return _discriminatorConvention;
             }
         }
+
         public bool UseCascadeDelete => configuration.UseCascadeDelete;
 
         // Methods.

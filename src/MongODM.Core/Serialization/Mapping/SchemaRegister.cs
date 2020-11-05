@@ -235,8 +235,8 @@ namespace Etherna.MongODM.Core.Serialization.Mapping
                 if (memberSerializer is IModelMapsContainerSerializer schemaSerializer)
                 {
                     var useCascadeDelete = (memberSerializer as IReferenceContainerSerializer)?.UseCascadeDelete;
-                    foreach (var childModelMap in schemaSerializer.AllChildModelMaps)
-                        CompileDependencyRegisters(modelMap, childModelMap.BsonClassMap, lastEntityClassMap, currentMemberPath, useCascadeDelete);
+                    foreach (var childClassMap in schemaSerializer.AllChildClassMaps)
+                        CompileDependencyRegisters(modelMap, childClassMap, lastEntityClassMap, currentMemberPath, useCascadeDelete);
                 }
             }
         }

@@ -49,9 +49,9 @@ namespace Etherna.MongODM.Core.Serialization.Serializers
         { }
 
         // Properties.
-        public IEnumerable<ModelMap> AllChildModelMaps =>
-            (ItemSerializer as IModelMapsContainerSerializer)?.AllChildModelMaps ??
-            Array.Empty<ModelMap>();
+        public IEnumerable<BsonClassMap> AllChildClassMaps =>
+            (ItemSerializer as IModelMapsContainerSerializer)?.AllChildClassMaps ??
+            Array.Empty<BsonClassMap>();
 
         public IBsonSerializer ChildSerializer => ItemSerializer;
 

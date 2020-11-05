@@ -73,9 +73,13 @@ namespace Etherna.MongODM.Core.Serialization.Serializers
 
         // Properties.
         public BsonClassMapSerializer<TModel> ActiveClassMapSerializer => ClassMapSerializers[ModelMapsSchema.ActiveMap.Id];
-        public IEnumerable<ModelMap> AllChildModelMaps => ModelMapsSchema.AllMapsDictionary.Values;
+
+        public IEnumerable<BsonClassMap> AllChildClassMaps => ModelMapsSchema.AllMapsDictionary.Values.Select(map => map.BsonClassMap);
+
         public IReadOnlyDictionary<string, BsonClassMapSerializer<TModel>> ClassMapSerializers { get; }
+
         public IBsonSerializer<TModel>? FallbackSerializer => ModelMapsSchema.FallbackSerializer;
+
         public IModelMapsSchema<TModel> ModelMapsSchema { get; }
 
         // Methods.

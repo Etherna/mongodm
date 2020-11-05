@@ -40,7 +40,8 @@ namespace Etherna.MongODM.Core.Serialization.Serializers
         }
 
         // Properties.
-        public IEnumerable<ModelMap> AllChildModelMaps => serializerBase.AllChildModelMaps;
+        public IEnumerable<BsonClassMap> AllChildClassMaps => serializerBase.AllChildClassMaps;
+
         public bool UseCascadeDelete => serializerBase.UseCascadeDelete;
 
         // Methods.
