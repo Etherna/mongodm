@@ -13,7 +13,6 @@
 //   limitations under the License.
 
 using Etherna.MongODM.Core.Domain.Models;
-using Etherna.MongODM.Core.Serialization.Mapping;
 using MongoDB.Bson.Serialization;
 using MongoDB.Bson.Serialization.Serializers;
 using System;

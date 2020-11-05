@@ -2,6 +2,7 @@
 using MongoDB.Bson.Serialization;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 
 namespace Etherna.MongODM.Core.Serialization.Serializers.Config
@@ -58,7 +59,7 @@ namespace Etherna.MongODM.Core.Serialization.Serializers.Config
             }
         }
 
-        public IBsonSerializer<TModel>? FallbackSerializer
+        public IBsonSerializer? FallbackSerializer
         {
             get
             {
@@ -96,6 +97,7 @@ namespace Etherna.MongODM.Core.Serialization.Serializers.Config
                 return this;
             });
 
+        [SuppressMessage("Reliability", "CA2000:Dispose objects before losing scope", Justification = "Don't dispose here")]
         public IReferenceSchema<TModel> AddSecondaryMap(
             string id,
             Action<BsonClassMap<TModel>>? modelMapInitializer = null) =>

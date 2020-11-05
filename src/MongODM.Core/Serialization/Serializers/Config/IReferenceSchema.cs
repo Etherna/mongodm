@@ -7,8 +7,10 @@ namespace Etherna.MongODM.Core.Serialization.Serializers.Config
 {
     public interface IReferenceSchema : IFreezableConfig
     {
+        // Properties.
         ReferenceModelMap ActiveMap { get; }
         IDictionary<string, ReferenceModelMap> AllMapsDictionary { get; }
+        IBsonSerializer? FallbackSerializer { get; }
         Type ModelType { get; }
         Type? ProxyModelType { get; }
         IEnumerable<ReferenceModelMap> SecondaryMaps { get; }
@@ -17,9 +19,6 @@ namespace Etherna.MongODM.Core.Serialization.Serializers.Config
 
     public interface IReferenceSchema<TModel> : IReferenceSchema
     {
-        // Properties.
-        IBsonSerializer<TModel>? FallbackSerializer { get; }
-
         // Methods.
         /// <summary>
         /// Add a fallback serializer invoked in case of undefined schema id

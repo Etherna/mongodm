@@ -13,8 +13,8 @@
 //   limitations under the License.
 
 using Etherna.MongODM.Core.Domain.Models;
+using Etherna.MongODM.Core.Extensions;
 using Etherna.MongODM.Core.ProxyModels;
-using Etherna.MongODM.Core.Serialization.Mapping;
 using Etherna.MongODM.Core.Serialization.Serializers.Config;
 using MongoDB.Bson;
 using MongoDB.Bson.Serialization;
@@ -41,11 +41,9 @@ namespace Etherna.MongODM.Core.Serialization.Serializers
         private IDiscriminatorConvention _discriminatorConvention = default!;
 
         private readonly ReaderWriterLockSlim configLockAdapters = new ReaderWriterLockSlim(LockRecursionPolicy.SupportsRecursion);
-        private readonly ReaderWriterLockSlim configLockSerializers = new ReaderWriterLockSlim(LockRecursionPolicy.SupportsRecursion);
         private readonly IDbContext dbContext;
         private readonly ReferenceSerializerConfiguration configuration;
         private readonly IDictionary<Type, IBsonSerializer> registeredAdapters = new Dictionary<Type, IBsonSerializer>();
-        private readonly IDictionary<Type, IBsonSerializer> registeredSerializers = new Dictionary<Type, IBsonSerializer>();
 
         // Constructor and dispose.
         public ReferenceSerializer(
@@ -65,7 +63,6 @@ namespace Etherna.MongODM.Core.Serialization.Serializers
         public void Dispose()
         {
             configLockAdapters.Dispose();
-            configLockSerializers.Dispose();
             configuration.Dispose();
         }
 
@@ -107,11 +104,15 @@ namespace Etherna.MongODM.Core.Serialization.Serializers
                     throw new InvalidOperationException(message);
             }
 
-            // Get actual type.
+            // Find pre-deserialization informations.
+            //get actual type
             var actualType = DiscriminatorConvention.GetActualType(bsonReader, args.NominalType);
 
+            //get model map id
+            var modelMapId = bsonReader.IdempotentFindStringElement(dbContext.ModelMapVersionOptions.ElementName);
+
             // Deserialize object.
-            var serializer = GetSerializer(actualType);
+            var serializer = configuration.GetSerializer(actualType, modelMapId);
             var model = serializer.Deserialize(context, args) as TModelBase;
 
             // Process model.
@@ -214,9 +215,16 @@ namespace Etherna.MongODM.Core.Serialization.Serializers
             if (document is null)
                 throw new ArgumentNullException(nameof(document));
 
-            var documentType = dbContext.ProxyGenerator.PurgeProxyType(document.GetType());
-            var serializer = (IBsonIdProvider)GetSerializer(documentType);
-            return serializer.GetDocumentId(document, out id, out idNominalType, out idGenerator);
+            var modelType = dbContext.ProxyGenerator.PurgeProxyType(document.GetType());
+            var serializer = configuration.GetActiveModelMapSerializer(modelType);
+
+            if (serializer is IBsonIdProvider idProvider)
+                return idProvider.GetDocumentId(document, out id, out idNominalType, out idGenerator);
+
+            id = default!;
+            idNominalType = default!;
+            idGenerator = default!;
+            return false;
         }
 
         public ReferenceSerializer<TModelBase, TKey> RegisterProxyType<TModel>()
@@ -347,53 +355,6 @@ namespace Etherna.MongODM.Core.Serialization.Serializers
 
             classMap.Freeze();
             return classMap;
-        }
-
-        private IBsonSerializer GetSerializer(Type actualType)
-        {
-            configLockSerializers.EnterReadLock();
-            try
-            {
-                if (registeredSerializers.ContainsKey(actualType))
-                {
-                    return registeredSerializers[actualType];
-                }
-            }
-            finally
-            {
-                configLockSerializers.ExitReadLock();
-            }
-
-            configLockSerializers.EnterWriteLock();
-            try
-            {
-                if (!registeredSerializers.ContainsKey(actualType))
-                {
-                    BsonClassMap classMap;
-                    configLockClassMaps.EnterReadLock();
-                    try
-                    {
-                        if (!registeredClassMaps.ContainsKey(actualType))
-                        {
-                            throw new InvalidOperationException("Can't identify right class map");
-                        }
-                        classMap = registeredClassMaps[actualType];
-                    }
-                    finally
-                    {
-                        configLockClassMaps.ExitReadLock();
-                    }
-                    var classMapSerializerDefinition = typeof(BsonClassMapSerializer<>);
-                    var classMapSerializerType = classMapSerializerDefinition.MakeGenericType(actualType);
-                    var serializer = (IBsonSerializer)Activator.CreateInstance(classMapSerializerType, classMap);
-                    registeredSerializers.Add(actualType, serializer);
-                }
-                return registeredSerializers[actualType];
-            }
-            finally
-            {
-                configLockSerializers.ExitWriteLock();
-            }
         }
     }
 }
