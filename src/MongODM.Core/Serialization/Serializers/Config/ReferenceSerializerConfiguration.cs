@@ -1,4 +1,5 @@
 ﻿using Etherna.MongODM.Core.Utility;
+using MongoDB.Bson;
 using MongoDB.Bson.Serialization;
 using System;
 using System.Collections.Generic;
@@ -12,6 +13,7 @@ namespace Etherna.MongODM.Core.Serialization.Serializers.Config
         // Fields.
         private readonly Dictionary<Type, IReferenceSchema> _schemas = new Dictionary<Type, IReferenceSchema>();
         private bool _useCascadeDelete;
+        private readonly IDictionary<Type, BsonElement> activeModelMapIdBsonElement = new Dictionary<Type, BsonElement>();
         private readonly IDbContext dbContext;
         private readonly IDictionary<(Type, string), IBsonSerializer> registeredSerializers = new Dictionary<(Type, string), IBsonSerializer>();
 
@@ -71,7 +73,17 @@ namespace Etherna.MongODM.Core.Serialization.Serializers.Config
                 return modelSchemaConfiguration;
             });
 
-        public IBsonSerializer GetActiveModelMapSerializer(Type modelType)
+        public BsonElement GetActiveModelMapIdBsonElement(Type modelType)
+        {
+            if (modelType is null)
+                throw new ArgumentNullException(nameof(modelType));
+
+            Freeze();
+
+            return activeModelMapIdBsonElement[modelType];
+        }
+
+        public IBsonSerializer GetActiveSerializer(Type modelType)
         {
             if (modelType is null)
                 throw new ArgumentNullException(nameof(modelType));
@@ -110,7 +122,7 @@ namespace Etherna.MongODM.Core.Serialization.Serializers.Config
                     return schema.FallbackSerializer;
 
                 //else, deserialize wih current active model map
-                else return GetActiveModelMapSerializer(modelType);
+                else return GetActiveSerializer(modelType);
             }
 
             //else, throw an exception of unregistered schema
@@ -129,6 +141,13 @@ namespace Etherna.MongODM.Core.Serialization.Serializers.Config
             {
                 // Freeze schemas.
                 schema.Freeze();
+
+                // Generate active model maps id bson elements.
+                activeModelMapIdBsonElement.Add(
+                    schema.ModelType,
+                    new BsonElement(
+                        dbContext.ModelMapVersionOptions.ElementName,
+                        new BsonString(schema.ActiveMap.Id)));
 
                 // Generate serializers.
                 foreach (var modelMap in schema.AllMapsDictionary.Values)

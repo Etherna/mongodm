@@ -17,13 +17,13 @@ using Etherna.MongODM.Core.Extensions;
 using Etherna.MongODM.Core.ProxyModels;
 using Etherna.MongODM.Core.Serialization.Serializers.Config;
 using MongoDB.Bson;
+using MongoDB.Bson.IO;
 using MongoDB.Bson.Serialization;
 using MongoDB.Bson.Serialization.Conventions;
 using MongoDB.Bson.Serialization.Serializers;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Reflection;
 using System.Threading;
 
 namespace Etherna.MongODM.Core.Serialization.Serializers
@@ -215,8 +215,7 @@ namespace Etherna.MongODM.Core.Serialization.Serializers
             if (document is null)
                 throw new ArgumentNullException(nameof(document));
 
-            var modelType = dbContext.ProxyGenerator.PurgeProxyType(document.GetType());
-            var serializer = configuration.GetActiveModelMapSerializer(modelType);
+            var serializer = configuration.GetActiveSerializer(document.GetType());
 
             if (serializer is IBsonIdProvider idProvider)
                 return idProvider.GetDocumentId(document, out id, out idNominalType, out idGenerator);
@@ -225,56 +224,6 @@ namespace Etherna.MongODM.Core.Serialization.Serializers
             idNominalType = default!;
             idGenerator = default!;
             return false;
-        }
-
-        public ReferenceSerializer<TModelBase, TKey> RegisterProxyType<TModel>()
-        {
-            var proxyType = dbContext.ProxyGenerator.CreateInstance<TModel>(dbContext)!.GetType();
-
-            // Initialize class map.
-            var createBsonClassMapInfo = GetType().GetMethod(nameof(CreateBsonClassMap), BindingFlags.Instance | BindingFlags.NonPublic);
-            var createBsonClassMap = createBsonClassMapInfo.MakeGenericMethod(proxyType);
-
-            var classMap = (BsonClassMap)createBsonClassMap.Invoke(this, new object[] { null! });
-
-            // Add info to dictionary of registered types.
-            configLockClassMaps.EnterWriteLock();
-            try
-            {
-                registeredClassMaps.Add(proxyType, classMap);
-            }
-            finally
-            {
-                configLockClassMaps.ExitWriteLock();
-            }
-
-            // Return this for cascade use.
-            return this;
-        }
-
-        public ReferenceSerializer<TModelBase, TKey> RegisterType<TModel>(Action<BsonClassMap<TModel>>? classMapInitializer = null)
-            where TModel : class
-        {
-            // Initialize class map.
-            var classMap = CreateBsonClassMap(classMapInitializer ?? (cm => cm.AutoMap()));
-
-            // Set creator.
-            if (!typeof(TModel).IsAbstract)
-                classMap.SetCreator(() => dbContext.ProxyGenerator.CreateInstance<TModel>(dbContext));
-
-            // Add info to dictionary of registered types.
-            configLockClassMaps.EnterWriteLock();
-            try
-            {
-                registeredClassMaps.Add(typeof(TModel), classMap);
-            }
-            finally
-            {
-                configLockClassMaps.ExitWriteLock();
-            }
-
-            // Return this for cascade use.
-            return this;
         }
 
         public override void Serialize(BsonSerializationContext context, BsonSerializationArgs args, TModelBase value)
@@ -289,12 +238,28 @@ namespace Etherna.MongODM.Core.Serialization.Serializers
                 return;
             }
 
-            // Clear extra elements.
+            // Clear extra elements. They are never needed with references.
             value.ExtraElements?.Clear();
 
-            // Serialize object.
-            var serializer = GetSerializer(value.GetType());
-            serializer.Serialize(context, args, value);
+            // Initialize localContext, bsonDocument and bsonWriter.
+            var bsonDocument = new BsonDocument();
+            using var bsonWriter = new BsonDocumentWriter(bsonDocument);
+            var localContext = BsonSerializationContext.CreateRoot(
+                bsonWriter,
+                builder => builder.IsDynamicType = context.IsDynamicType);
+
+            // Serialize.
+            var serializer = configuration.GetActiveSerializer(value.GetType());
+            serializer.Serialize(localContext, args, value);
+
+            // Add additional data.
+            //add model map id
+            if (bsonDocument.Contains(dbContext.ModelMapVersionOptions.ElementName))
+                bsonDocument.Remove(dbContext.ModelMapVersionOptions.ElementName);
+            bsonDocument.InsertAt(0, configuration.GetActiveModelMapIdBsonElement(value.GetType()));
+
+            // Serialize document.
+            BsonDocumentSerializer.Instance.Serialize(context, args, bsonDocument);
         }
 
         public void SetDocumentId(object document, object id)
@@ -302,58 +267,27 @@ namespace Etherna.MongODM.Core.Serialization.Serializers
             if (document is null)
                 throw new ArgumentNullException(nameof(document));
 
-            var documentType = dbContext.ProxyGenerator.PurgeProxyType(document.GetType());
-            var serializer = (IBsonIdProvider)GetSerializer(documentType);
-            serializer.SetDocumentId(document, id);
+            var serializer = configuration.GetActiveSerializer(document.GetType());
+
+            if (serializer is IBsonIdProvider idProvider)
+                idProvider.SetDocumentId(document, id);
+            else
+                throw new InvalidOperationException("Can't find a valid serializer");
         }
 
         public bool TryGetMemberSerializationInfo(string memberName, out BsonSerializationInfo serializationInfo)
         {
-            // Identify class map and get information
-            configLockClassMaps.EnterReadLock();
-            try
-            {
-                var modelType = (from pair in registeredClassMaps
-                                 where pair.Value.GetMemberMap(memberName) != null
-                                 select pair.Key).FirstOrDefault();
-                var serializer = (IBsonDocumentSerializer)GetSerializer(modelType);
-                return serializer.TryGetMemberSerializationInfo(memberName, out serializationInfo);
-            }
-            finally
-            {
-                configLockClassMaps.ExitReadLock();
-            }
-        }
+            var modelType = configuration.Schemas.Values
+                .Select(s => s.ActiveMap.BsonClassMap)
+                .Where(cm => cm.GetMemberMap(memberName) != null)
+                .First()
+                .ClassType;
+            var serializer = configuration.GetActiveSerializer(modelType);
 
-        // Helpers.
-        /// <summary>
-        /// Create a new BsonClassMap for type TModel, and link its baseClassMap if already registered
-        /// </summary>
-        /// <typeparam name="TModel">The destination model type of class map</typeparam>
-        /// <param name="classMapInitializer">The class map inizializer. Empty initilization if null</param>
-        /// <returns>The new created class map</returns>
-        private BsonClassMap<TModel> CreateBsonClassMap<TModel>(Action<BsonClassMap<TModel>>? classMapInitializer = null)
-        {
-            classMapInitializer ??= cm => { };
-
-            BsonClassMap<TModel> classMap = new BsonClassMap<TModel>(classMapInitializer);
-            var baseType = typeof(TModel).BaseType;
-            configLockClassMaps.EnterReadLock();
-            try
-            {
-                if (registeredClassMaps.ContainsKey(baseType))
-                {
-                    // Inject base class map.
-                    classMap.SetBaseClassMap(registeredClassMaps[baseType]);
-                }
-            }
-            finally
-            {
-                configLockClassMaps.ExitReadLock();
-            }
-
-            classMap.Freeze();
-            return classMap;
+            if (serializer is IBsonDocumentSerializer documentSerializer)
+                return documentSerializer.TryGetMemberSerializationInfo(memberName, out serializationInfo);
+            else
+                throw new InvalidOperationException("Can't find a valid serializer");
         }
     }
 }
