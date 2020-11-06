@@ -22,8 +22,8 @@ namespace Etherna.MongODM.Core.Serialization.Mapping.Schemas
     {
         // Properties.
         ModelMap ActiveMap { get; }
-        IEnumerable<ModelMap> SecondaryMaps { get; }
         IDictionary<string, ModelMap> AllMapsDictionary { get; }
+        IEnumerable<ModelMap> SecondaryMaps { get; }
     }
 
     public interface IModelMapsSchema<TModel> : IModelMapsSchema

@@ -101,10 +101,10 @@ namespace Etherna.MongODM.Core.Serialization.Mapping
                 _schemas.Add(typeof(TModel), modelSchemaConfiguration);
 
                 // If model maps schema uses proxy model, register a new one for proxy type.
-                if (modelSchemaConfiguration.UseProxyModel)
+                if (modelSchemaConfiguration.ProxyModelType != null)
                 {
-                    var proxyModelSchema = CreateNewDefaultModelMapsSchema(modelSchemaConfiguration.ProxyModelType!);
-                    _schemas.Add(modelSchemaConfiguration.ProxyModelType!, proxyModelSchema);
+                    var proxyModelSchema = CreateNewDefaultModelMapsSchema(modelSchemaConfiguration.ProxyModelType);
+                    _schemas.Add(modelSchemaConfiguration.ProxyModelType, proxyModelSchema);
                 }
 
                 return modelSchemaConfiguration;
@@ -309,7 +309,7 @@ namespace Etherna.MongODM.Core.Serialization.Mapping
                 foreach (var modelMap in schema.AllMapsDictionary.Values)
                 {
                     // Search base model map.
-                    ModelMap baseModelMap = modelMap.BaseModelMapId != null ?
+                    var baseModelMap = modelMap.BaseModelMapId != null ?
                         ((IModelMapsSchema)baseSchema).AllMapsDictionary[modelMap.BaseModelMapId] :
                         ((IModelMapsSchema)baseSchema).ActiveMap;
 

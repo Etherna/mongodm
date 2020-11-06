@@ -100,10 +100,12 @@ namespace Etherna.MongODM.Core.Serialization.Serializers.Config
         [SuppressMessage("Reliability", "CA2000:Dispose objects before losing scope", Justification = "Don't dispose here")]
         public IReferenceSchema<TModel> AddSecondaryMap(
             string id,
+            string? baseModelMapId = null,
             Action<BsonClassMap<TModel>>? modelMapInitializer = null) =>
             AddSecondaryMap(new ReferenceModelMap<TModel>(
                 id,
-                new BsonClassMap<TModel>(modelMapInitializer ?? (cm => cm.AutoMap()))));
+                new BsonClassMap<TModel>(modelMapInitializer ?? (cm => cm.AutoMap())),
+                baseModelMapId));
 
         public IReferenceSchema<TModel> AddSecondaryMap(ReferenceModelMap<TModel> modelMap) =>
             ExecuteConfigAction(() =>
