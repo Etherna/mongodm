@@ -46,11 +46,13 @@ namespace Etherna.MongODM.Core.Serialization.Mapping
         /// <typeparam name="TModel">The model type</typeparam>
         /// <param name="activeModelMapId">The active model map Id</param>
         /// <param name="activeModelMapInitializer">The active model map inizializer</param>
+        /// <param name="baseModelMapId">Id of the base model map for this model map</param>
         /// <param name="customSerializer">Replace default serializer with a custom</param>
         /// <returns>The new schema</returns>
         IModelMapsSchema<TModel> AddModelMapSchema<TModel>(
             string activeModelMapId,
             Action<BsonClassMap<TModel>>? activeModelMapInitializer = null,
+            string? baseModelMapId = null,
             IBsonSerializer<TModel>? customSerializer = null)
             where TModel : class;
 

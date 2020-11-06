@@ -344,8 +344,7 @@ namespace Etherna.MongODM.Core.Serialization.Serializers
                 if (registeredClassMaps.ContainsKey(baseType))
                 {
                     // Inject base class map.
-                    typeof(BsonClassMap).GetField("_baseClassMap", BindingFlags.Instance | BindingFlags.NonPublic)
-                        .SetValue(classMap, registeredClassMaps[baseType]);
+                    classMap.SetBaseClassMap(registeredClassMaps[baseType]);
                 }
             }
             finally

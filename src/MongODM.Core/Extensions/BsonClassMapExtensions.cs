@@ -17,6 +17,7 @@ using Etherna.MongODM.Core.Serialization.Serializers;
 using MongoDB.Bson.Serialization;
 using System;
 using System.Linq.Expressions;
+using System.Reflection;
 
 namespace Etherna.MongODM.Core.Extensions
 {
@@ -28,6 +29,12 @@ namespace Etherna.MongODM.Core.Extensions
                 throw new ArgumentNullException(nameof(classMap));
 
             return classMap.IdMemberMap != null;
+        }
+
+        public static void SetBaseClassMap(this BsonClassMap classMap, BsonClassMap baseClassMap)
+        {
+            typeof(BsonClassMap).GetField("_baseClassMap", BindingFlags.Instance | BindingFlags.NonPublic)
+                .SetValue(classMap, baseClassMap);
         }
 
         public static BsonMemberMap SetMemberSerializer<TModel, TMember>(

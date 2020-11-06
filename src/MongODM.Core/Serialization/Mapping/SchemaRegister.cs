@@ -80,10 +80,12 @@ namespace Etherna.MongODM.Core.Serialization.Mapping
         public IModelMapsSchema<TModel> AddModelMapSchema<TModel>(
             string activeModelMapId,
             Action<BsonClassMap<TModel>>? activeModelMapInitializer = null,
+            string? baseModelMapId = null,
             IBsonSerializer<TModel>? customSerializer = null) where TModel : class =>
             AddModelMapSchema(new ModelMap<TModel>(
                 activeModelMapId,
                 new BsonClassMap<TModel>(activeModelMapInitializer ?? (cm => cm.AutoMap())),
+                baseModelMapId,
                 customSerializer));
 
         public IModelMapsSchema<TModel> AddModelMapSchema<TModel>(
@@ -146,6 +148,10 @@ namespace Etherna.MongODM.Core.Serialization.Mapping
         // Protected methods.
         protected override void FreezeAction()
         {
+            // Link model maps with their base map.
+            LinkBaseModelMaps();
+
+            // Freeze, register serializers and compile registers.
             foreach (var schema in _schemas.Values)
             {
                 // Freeze schema.
@@ -237,6 +243,78 @@ namespace Etherna.MongODM.Core.Serialization.Mapping
                     var useCascadeDelete = (memberSerializer as IReferenceContainerSerializer)?.UseCascadeDelete;
                     foreach (var childClassMap in schemaSerializer.AllChildClassMaps)
                         CompileDependencyRegisters(modelMap, childClassMap, lastEntityClassMap, currentMemberPath, useCascadeDelete);
+                }
+            }
+        }
+
+        private IModelMapsSchema CreateNewDefaultModelMapSchema(Type modelType)
+        {
+            //class map
+            var classMapDefinition = typeof(BsonClassMap<>);
+            var classMapType = classMapDefinition.MakeGenericType(modelType);
+
+            var classMap = (BsonClassMap)Activator.CreateInstance(classMapType);
+
+            //model map
+            var modelMapDefinition = typeof(ModelMap<>);
+            var modelMapType = modelMapDefinition.MakeGenericType(modelType);
+
+            var activeModelMap = (ModelMap)Activator.CreateInstance(
+                modelMapType,
+                Guid.NewGuid().ToString(), //string id
+                classMap,                  //BsonClassMap<TModel> bsonClassMap
+                null,                      //string? baseModelMapId
+                null);                     //IBsonSerializer<TModel>? serializer
+
+            //model maps schema
+            var modelMapsSchemaDefinition = typeof(ModelMapsSchema<>);
+            var modelMapsSchemaType = modelMapsSchemaDefinition.MakeGenericType(modelType);
+
+            return (IModelMapsSchema)Activator.CreateInstance(
+                modelMapsSchemaType,
+                activeModelMap,      //ModelMap<TModel> activeMap
+                dbContext);          //IDbContext dbContext
+        }
+
+        private void LinkBaseModelMaps()
+        {
+            /* A stack with a while iteration is needed, instead of a foreach construct,
+             * because we will add new schemas if needed. Foreach is based on enumerable
+             * iterator, and if an enumerable is modified during foreach execution, an
+             * exception is rised.
+             */
+            var processingSchemas = new Stack<IModelMapsSchema>(_schemas.Values.OfType<IModelMapsSchema>());
+
+            while (processingSchemas.Any())
+            {
+                var schema = processingSchemas.Pop();
+                var baseModelType = schema.ModelType.BaseType;
+
+                // If don't need to be linked, because it is typeof(object).
+                if (baseModelType is null)
+                    continue;
+
+                // Get base type schema, or generate it.
+                if (!_schemas.TryGetValue(baseModelType, out ISchema baseSchema))
+                {
+                    // Create schema instance.
+                    baseSchema = CreateNewDefaultModelMapSchema(baseModelType);
+
+                    // Register schema instance.
+                    _schemas.Add(baseModelType, baseSchema);
+                    processingSchemas.Push((IModelMapsSchema)baseSchema);
+                }
+
+                // Process schema's model maps.
+                foreach (var modelMap in schema.AllMapsDictionary.Values)
+                {
+                    // Search base model map.
+                    ModelMap baseModelMap = modelMap.BaseModelMapId != null ?
+                        ((IModelMapsSchema)baseSchema).AllMapsDictionary[modelMap.BaseModelMapId] :
+                        ((IModelMapsSchema)baseSchema).ActiveMap;
+
+                    // Link base model map.
+                    modelMap.SetBaseModelMap(baseModelMap);
                 }
             }
         }

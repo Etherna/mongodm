@@ -45,11 +45,13 @@ namespace Etherna.MongODM.Core.Serialization.Mapping.Schemas
         /// Register a secondary model map
         /// </summary>
         /// <param name="id">The map Id</param>
+        /// <param name="baseModelMapId">Id of the base model map for this model map</param>
         /// <param name="modelMapInitializer">The model map inizializer</param>
         /// <param name="customSerializer">Custom serializer</param>
         /// <returns>This same model schema configuration</returns>
         IModelMapsSchema<TModel> AddSecondaryMap(
             string id,
+            string? baseModelMapId = null,
             Action<BsonClassMap<TModel>>? modelMapInitializer = null,
             IBsonSerializer<TModel>? customSerializer = null);
 

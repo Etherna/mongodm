@@ -29,16 +29,19 @@ namespace Etherna.MongODM.Core.Serialization.Mapping
         // Constructors.
         protected ModelMap(
             string id,
+            string? baseModelMapId,
             BsonClassMap bsonClassMap,
-            IBsonSerializer? serializer = null)
+            IBsonSerializer? serializer)
         {
             Id = id ?? throw new ArgumentNullException(nameof(id));
+            BaseModelMapId = baseModelMapId;
             _bsonClassMap = bsonClassMap ?? throw new ArgumentNullException(nameof(bsonClassMap));
             _serializer = serializer;
         }
 
         // Properties.
         public string Id { get; }
+        public string? BaseModelMapId { get; private set; }
         public BsonClassMap BsonClassMap
         {
             get
@@ -59,6 +62,16 @@ namespace Etherna.MongODM.Core.Serialization.Mapping
         }
 
         // Methods.
+        public void SetBaseModelMap(ModelMap baseModelMap) =>
+            ExecuteConfigAction(() =>
+            {
+                if (baseModelMap is null)
+                    throw new ArgumentNullException(nameof(baseModelMap));
+
+                BaseModelMapId = baseModelMap.Id;
+                _bsonClassMap.SetBaseClassMap(baseModelMap._bsonClassMap);
+            });
+
         public void UseDefaultSerializer(IDbContext dbContext) =>
             ExecuteConfigAction(() =>
             {
@@ -100,8 +113,9 @@ namespace Etherna.MongODM.Core.Serialization.Mapping
         public ModelMap(
             string id,
             BsonClassMap<TModel> bsonClassMap,
+            string? baseModelMapId = null,
             IBsonSerializer<TModel>? serializer = null)
-            : base(id, bsonClassMap, serializer)
+            : base(id, baseModelMapId, bsonClassMap, serializer)
         { }
 
         // Methods.
