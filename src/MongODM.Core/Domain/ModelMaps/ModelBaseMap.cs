@@ -25,9 +25,9 @@ namespace Etherna.MongODM.Core.Domain.ModelMaps
         public void Register(IDbContext dbContext)
         {
             // register class maps.
-            dbContext.SchemaRegister.AddModelMapSchema<ModelBase>("bff55d53-0517-4a93-8fda-7bd448181449");
+            dbContext.SchemaRegister.AddModelMapsSchema<ModelBase>("bff55d53-0517-4a93-8fda-7bd448181449");
 
-            dbContext.SchemaRegister.AddModelMapSchema<EntityModelBase<string>>("586b48f5-ba1f-45e3-a812-744f88c1c969",
+            dbContext.SchemaRegister.AddModelMapsSchema<EntityModelBase<string>>("586b48f5-ba1f-45e3-a812-744f88c1c969",
                 modelMap =>
                 {
                     modelMap.AutoMap();

@@ -77,18 +77,18 @@ namespace Etherna.MongODM.Core.Serialization.Mapping
 
 
         [SuppressMessage("Reliability", "CA2000:Dispose objects before losing scope", Justification = "Don't need to dispose")]
-        public IModelMapsSchema<TModel> AddModelMapSchema<TModel>(
+        public IModelMapsSchema<TModel> AddModelMapsSchema<TModel>(
             string activeModelMapId,
             Action<BsonClassMap<TModel>>? activeModelMapInitializer = null,
             string? baseModelMapId = null,
             IBsonSerializer<TModel>? customSerializer = null) where TModel : class =>
-            AddModelMapSchema(new ModelMap<TModel>(
+            AddModelMapsSchema(new ModelMap<TModel>(
                 activeModelMapId,
                 new BsonClassMap<TModel>(activeModelMapInitializer ?? (cm => cm.AutoMap())),
                 baseModelMapId,
                 customSerializer));
 
-        public IModelMapsSchema<TModel> AddModelMapSchema<TModel>(
+        public IModelMapsSchema<TModel> AddModelMapsSchema<TModel>(
             ModelMap<TModel> activeModelMap)
             where TModel : class =>
             ExecuteConfigAction(() =>
@@ -99,6 +99,13 @@ namespace Etherna.MongODM.Core.Serialization.Mapping
                 // Register and return schema configuration.
                 var modelSchemaConfiguration = new ModelMapsSchema<TModel>(activeModelMap, dbContext);
                 _schemas.Add(typeof(TModel), modelSchemaConfiguration);
+
+                // If model maps schema uses proxy model, register a new one for proxy type.
+                if (modelSchemaConfiguration.UseProxyModel)
+                {
+                    var proxyModelSchema = CreateNewDefaultModelMapsSchema(modelSchemaConfiguration.ProxyModelType!);
+                    _schemas.Add(modelSchemaConfiguration.ProxyModelType!, proxyModelSchema);
+                }
 
                 return modelSchemaConfiguration;
             });
@@ -157,16 +164,9 @@ namespace Etherna.MongODM.Core.Serialization.Mapping
                 // Freeze schema.
                 schema.Freeze();
 
-                // Register active serializers.
+                // Register active serializer.
                 if (schema.ActiveSerializer != null)
-                {
-                    //regular model
                     BsonSerializer.RegisterSerializer(schema.ModelType, schema.ActiveSerializer);
-
-                    //proxy model
-                    if (schema.ProxyModelType != null)
-                        BsonSerializer.RegisterSerializer(schema.ProxyModelType, schema.ActiveSerializer);
-                }
 
                 // Compile dependency registers.
                 /* Only model map based schemas can be analyzed for document dependencies.
@@ -247,7 +247,7 @@ namespace Etherna.MongODM.Core.Serialization.Mapping
             }
         }
 
-        private IModelMapsSchema CreateNewDefaultModelMapSchema(Type modelType)
+        private IModelMapsSchema CreateNewDefaultModelMapsSchema(Type modelType)
         {
             //class map
             var classMapDefinition = typeof(BsonClassMap<>);
@@ -298,7 +298,7 @@ namespace Etherna.MongODM.Core.Serialization.Mapping
                 if (!_schemas.TryGetValue(baseModelType, out ISchema baseSchema))
                 {
                     // Create schema instance.
-                    baseSchema = CreateNewDefaultModelMapSchema(baseModelType);
+                    baseSchema = CreateNewDefaultModelMapsSchema(baseModelType);
 
                     // Register schema instance.
                     _schemas.Add(baseModelType, baseSchema);
