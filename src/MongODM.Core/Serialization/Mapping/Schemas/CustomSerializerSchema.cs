@@ -17,6 +17,5 @@ namespace Etherna.MongODM.Core.Serialization.Mapping.Schemas
         // Properties.
         public override IBsonSerializer ActiveSerializer { get; }
         public override Type? ProxyModelType => default;
-        public override bool UseProxyModel => false;
     }
 }

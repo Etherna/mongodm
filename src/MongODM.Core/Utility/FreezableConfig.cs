@@ -49,8 +49,6 @@ namespace Etherna.MongODM.Core.Utility
         }
 
         // Protected methods.
-        protected virtual void FreezeAction() { }
-
         protected void ExecuteConfigAction(Action configAction) =>
             ExecuteConfigAction(() =>
             {
@@ -76,5 +74,7 @@ namespace Etherna.MongODM.Core.Utility
                 configLock.ExitWriteLock();
             }
         }
+
+        protected virtual void FreezeAction() { }
     }
 }

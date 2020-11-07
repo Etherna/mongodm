@@ -27,6 +27,9 @@ namespace Etherna.MongODM.Core.Serialization.Mapping
     public interface ISchemaRegister : IDbContextInitializable, IFreezableConfig
     {
         // Properties.
+        /// <summary>
+        /// All registered schemas, indexed by model type
+        /// </summary>
         IReadOnlyDictionary<Type, ISchema> Schemas { get; }
 
         // Methods.
@@ -66,14 +69,34 @@ namespace Etherna.MongODM.Core.Serialization.Mapping
             ModelMap<TModel> activeModelMap)
             where TModel : class;
 
+        /// <summary>
+        /// Get a registered custom serializer schema for a given model type
+        /// </summary>
+        /// <typeparam name="TModel">The model type</typeparam>
+        /// <returns>The schema</returns>
         ICustomSerializerSchema<TModel> GetCustomSerializerSchema<TModel>()
             where TModel : class;
 
-        IEnumerable<MemberMap> GetMemberMapsFromMemberInfo(MemberInfo memberInfo);
+        /// <summary>
+        /// Get all id member dependencies from a root model type
+        /// </summary>
+        /// <param name="modelType">The model type</param>
+        /// <returns>The list of member dependencies</returns>
+        IEnumerable<MemberDependency> GetIdMemberDependenciesFromRootModel(Type modelType);
 
+        /// <summary>
+        /// Get all member dependencies that points to a specific member definition
+        /// </summary>
+        /// <param name="memberInfo">The member definition</param>
+        /// <returns>The list of member dependencies</returns>
+        IEnumerable<MemberDependency> GetMemberDependenciesFromMemberInfo(MemberInfo memberInfo);
+
+        /// <summary>
+        /// Get a registered model map schema for a given model type
+        /// </summary>
+        /// <typeparam name="TModel"></typeparam>
+        /// <returns></returns>
         IModelMapsSchema<TModel> GetModelMapsSchema<TModel>()
             where TModel : class;
-
-        IEnumerable<MemberMap> GetReferencedIdMemberMapsFromRootModel(Type modelType);
     }
 }

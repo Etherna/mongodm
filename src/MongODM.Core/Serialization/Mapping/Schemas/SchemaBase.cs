@@ -4,10 +4,10 @@ using System;
 
 namespace Etherna.MongODM.Core.Serialization.Mapping.Schemas
 {
-    abstract class SchemaBase : FreezableConfig, ISchema
+    public abstract class SchemaBase : FreezableConfig, ISchema
     {
         // Constructor.
-        public SchemaBase(
+        protected SchemaBase(
             Type modelType)
         {
             ModelType = modelType;
@@ -17,6 +17,5 @@ namespace Etherna.MongODM.Core.Serialization.Mapping.Schemas
         public abstract IBsonSerializer? ActiveSerializer { get; }
         public Type ModelType { get; }
         public abstract Type? ProxyModelType { get; }
-        public abstract bool UseProxyModel { get; }
     }
 }

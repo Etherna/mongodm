@@ -22,10 +22,6 @@ namespace Etherna.MongODM.Core.Serialization.Mapping
 {
     public abstract class ModelMap : FreezableConfig
     {
-        // Fields.
-        private readonly BsonClassMap _bsonClassMap;
-        private IBsonSerializer? _serializer;
-
         // Constructors.
         protected ModelMap(
             string id,
@@ -35,31 +31,17 @@ namespace Etherna.MongODM.Core.Serialization.Mapping
         {
             Id = id ?? throw new ArgumentNullException(nameof(id));
             BaseModelMapId = baseModelMapId;
-            _bsonClassMap = bsonClassMap ?? throw new ArgumentNullException(nameof(bsonClassMap));
-            _serializer = serializer;
+            BsonClassMap = bsonClassMap ?? throw new ArgumentNullException(nameof(bsonClassMap));
+            Serializer = serializer;
         }
 
         // Properties.
         public string Id { get; }
         public string? BaseModelMapId { get; private set; }
-        public BsonClassMap BsonClassMap
-        {
-            get
-            {
-                Freeze();
-                return _bsonClassMap;
-            }
-        }
+        public BsonClassMap BsonClassMap { get; }
         public bool IsEntity => BsonClassMap.IsEntity();
         public Type ModelType => BsonClassMap.ClassType;
-        public IBsonSerializer? Serializer
-        {
-            get
-            {
-                Freeze();
-                return _serializer;
-            }
-        }
+        public IBsonSerializer? Serializer { get; private set; }
 
         // Methods.
         public void SetBaseModelMap(ModelMap baseModelMap) =>
@@ -69,7 +51,7 @@ namespace Etherna.MongODM.Core.Serialization.Mapping
                     throw new ArgumentNullException(nameof(baseModelMap));
 
                 BaseModelMapId = baseModelMap.Id;
-                _bsonClassMap.SetBaseClassMap(baseModelMap._bsonClassMap);
+                BsonClassMap.SetBaseClassMap(baseModelMap.BsonClassMap);
             });
 
         public void UseDefaultSerializer(IDbContext dbContext) =>
@@ -77,12 +59,12 @@ namespace Etherna.MongODM.Core.Serialization.Mapping
             {
                 if (dbContext is null)
                     throw new ArgumentNullException(nameof(dbContext));
-                if (_serializer != null)
+                if (Serializer != null)
                     throw new InvalidOperationException("A serializer is already setted");
                 if (ModelType.IsAbstract)
                     throw new InvalidOperationException("Can't set default serializer of an abstract model");
 
-                _serializer = GetDefaultSerializer(dbContext);
+                Serializer = GetDefaultSerializer(dbContext);
             });
 
         public void UseProxyGenerator(IDbContext dbContext) =>
@@ -94,13 +76,13 @@ namespace Etherna.MongODM.Core.Serialization.Mapping
                     throw new InvalidOperationException("Can't generate proxy of an abstract model");
 
                 // Set creator.
-                _bsonClassMap.SetCreator(() => dbContext.ProxyGenerator.CreateInstance(ModelType, dbContext));
+                BsonClassMap.SetCreator(() => dbContext.ProxyGenerator.CreateInstance(ModelType, dbContext));
             });
 
         // Protected methods.
         protected override void FreezeAction()
         {
-            _bsonClassMap.Freeze();
+            BsonClassMap.Freeze();
         }
 
         protected abstract IBsonSerializer GetDefaultSerializer(IDbContext dbContext);

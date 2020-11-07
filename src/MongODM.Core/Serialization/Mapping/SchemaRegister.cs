@@ -31,10 +31,10 @@ namespace Etherna.MongODM.Core.Serialization.Mapping
         // Fields.
         private readonly Dictionary<Type, ISchema> _schemas = new Dictionary<Type, ISchema>();
 
-        private readonly Dictionary<MemberInfo, List<MemberMap>> memberInfoToMemberMapsDictionary =
-            new Dictionary<MemberInfo, List<MemberMap>>();
-        private readonly Dictionary<Type, List<MemberMap>> modelTypeToReferencedIdMemberMapsDictionary =
-            new Dictionary<Type, List<MemberMap>>();
+        private readonly Dictionary<MemberInfo, List<MemberDependency>> memberInfoToMemberMapsDictionary =
+            new Dictionary<MemberInfo, List<MemberDependency>>();
+        private readonly Dictionary<Type, List<MemberDependency>> modelTypeToReferencedIdMemberMapsDictionary =
+            new Dictionary<Type, List<MemberDependency>>();
 
         private IDbContext dbContext = default!;
 
@@ -50,15 +50,7 @@ namespace Etherna.MongODM.Core.Serialization.Mapping
 
         // Properties.
         public bool IsInitialized { get; private set; }
-
-        public IReadOnlyDictionary<Type, ISchema> Schemas
-        {
-            get
-            {
-                Freeze();
-                return _schemas;
-            }
-        }
+        public IReadOnlyDictionary<Type, ISchema> Schemas => _schemas;
 
         // Methods.
         public ICustomSerializerSchema<TModel> AddCustomSerializerSchema<TModel>(
@@ -113,26 +105,26 @@ namespace Etherna.MongODM.Core.Serialization.Mapping
         public ICustomSerializerSchema<TModel> GetCustomSerializerSchema<TModel>() where TModel : class =>
             (ICustomSerializerSchema<TModel>)Schemas[typeof(TModel)];
 
-        public IEnumerable<MemberMap> GetMemberMapsFromMemberInfo(MemberInfo memberInfo)
+        public IEnumerable<MemberDependency> GetIdMemberDependenciesFromRootModel(Type modelType)
         {
-            Freeze();
+            Freeze(); //needed for initialization
 
-            if (memberInfoToMemberMapsDictionary.TryGetValue(memberInfo, out List<MemberMap> dependencies))
+            if (modelTypeToReferencedIdMemberMapsDictionary.TryGetValue(modelType, out List<MemberDependency> dependencies))
                 return dependencies;
-            return Array.Empty<MemberMap>();
+            return Array.Empty<MemberDependency>();
+        }
+
+        public IEnumerable<MemberDependency> GetMemberDependenciesFromMemberInfo(MemberInfo memberInfo)
+        {
+            Freeze(); //needed for initialization
+
+            if (memberInfoToMemberMapsDictionary.TryGetValue(memberInfo, out List<MemberDependency> dependencies))
+                return dependencies;
+            return Array.Empty<MemberDependency>();
         }
 
         public IModelMapsSchema<TModel> GetModelMapsSchema<TModel>() where TModel : class =>
             (IModelMapsSchema<TModel>)Schemas[typeof(TModel)];
-
-        public IEnumerable<MemberMap> GetReferencedIdMemberMapsFromRootModel(Type modelType)
-        {
-            Freeze();
-
-            if (modelTypeToReferencedIdMemberMapsDictionary.TryGetValue(modelType, out List<MemberMap> dependencies))
-                return dependencies;
-            return Array.Empty<MemberMap>();
-        }
 
         public override string ToString()
         {
@@ -215,7 +207,7 @@ namespace Etherna.MongODM.Core.Serialization.Mapping
                 var currentMemberPath = bsonMemberPath.Append(bsonMemberMap);
 
                 // Identify current member with its root model map, the path from current model map, and cascade delete information.
-                var memberMap = new MemberMap(
+                var memberMap = new MemberDependency(
                     modelMap,
                     currentMemberPath,
                     useCascadeDeleteSetting);
@@ -223,13 +215,13 @@ namespace Etherna.MongODM.Core.Serialization.Mapping
                 // Add member dependency to registers.
                 //memberInfo to related member maps, for each different model maps version
                 if (!memberInfoToMemberMapsDictionary.ContainsKey(bsonMemberMap.MemberInfo))
-                    memberInfoToMemberMapsDictionary[bsonMemberMap.MemberInfo] = new List<MemberMap>();
+                    memberInfoToMemberMapsDictionary[bsonMemberMap.MemberInfo] = new List<MemberDependency>();
 
                 memberInfoToMemberMapsDictionary[bsonMemberMap.MemberInfo].Add(memberMap);
 
                 //model type to each referenced id member maps, for each different model maps version
                 if (!modelTypeToReferencedIdMemberMapsDictionary.ContainsKey(modelMap.ModelType))
-                    modelTypeToReferencedIdMemberMapsDictionary[modelMap.ModelType] = new List<MemberMap>();
+                    modelTypeToReferencedIdMemberMapsDictionary[modelMap.ModelType] = new List<MemberDependency>();
 
                 if (memberMap.IsEntityReferenceMember && memberMap.IsIdMember)
                     modelTypeToReferencedIdMemberMapsDictionary[modelMap.ModelType].Add(memberMap);

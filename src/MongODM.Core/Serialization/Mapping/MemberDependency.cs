@@ -13,7 +13,6 @@
 //   limitations under the License.
 
 using Etherna.MongODM.Core.Extensions;
-using Etherna.MongODM.Core.Utility;
 using MongoDB.Bson.Serialization;
 using System;
 using System.Collections.Generic;
@@ -23,25 +22,23 @@ using System.Text;
 namespace Etherna.MongODM.Core.Serialization.Mapping
 {
     /// <summary>
-    /// Identify a member map with a reference to its <see cref="ModelMap"/> and its path
+    /// Identify a member map with a reference to root model map and its path
     /// </summary>
-    public class MemberMap : FreezableConfig
+    public class MemberDependency
     {
         // Fields.
-        private readonly IEnumerable<BsonMemberMap> _memberPath;
-        private readonly ModelMap _modelMap;
         private IEnumerable<BsonMemberMap> _memberPathToLastEntityModelId = default!;
 
         // Constructors.
-        public MemberMap(
-            ModelMap modelMap,
+        public MemberDependency(
+            ModelMap rootModelMap,
             IEnumerable<BsonMemberMap> memberPath,
             bool? useCascadeDelete)
         {
-            _modelMap = modelMap ?? throw new ArgumentNullException(nameof(modelMap));
-            _memberPath = memberPath ?? throw new ArgumentNullException(nameof(memberPath));
+            MemberPath = memberPath ?? throw new ArgumentNullException(nameof(memberPath));
             if (!memberPath.Any())
                 throw new ArgumentException("Member path can't be empty", nameof(memberPath));
+            RootModelMap = rootModelMap ?? throw new ArgumentNullException(nameof(rootModelMap));
             UseCascadeDelete = useCascadeDelete;
         }
 
@@ -65,26 +62,7 @@ namespace Etherna.MongODM.Core.Serialization.Mapping
         /// <summary>
         /// The full path from root type to current member
         /// </summary>
-        public IEnumerable<BsonMemberMap> MemberPath
-        {
-            get
-            {
-                Freeze();
-                return _memberPath;
-            }
-        }
-
-        /// <summary>
-        /// The root owning model map
-        /// </summary>
-        public ModelMap ModelMap
-        {
-            get
-            {
-                Freeze();
-                return _modelMap;
-            }
-        }
+        public IEnumerable<BsonMemberMap> MemberPath { get; }
 
         /// <summary>
         /// The member path from the root type, to the id member of the entity model that owns current member
@@ -116,12 +94,28 @@ namespace Etherna.MongODM.Core.Serialization.Mapping
         {
             get
             {
-                Freeze(); //also initialize
+                if (_memberPathToLastEntityModelId is null)
+                {
+                    int take = MemberPath.Count() - 1;
+                    for (; take >= 0; take--)
+                    {
+                        if (MemberPath.ElementAt(take).ClassMap.IsEntity())
+                            break;
+                    }
+
+                    _memberPathToLastEntityModelId = take >= 0 ? //if exists an entity
+                        MemberPath.Take(take).Append(
+                            MemberPath.ElementAt(take).ClassMap.IdMemberMap) :
+                        Array.Empty<BsonMemberMap>();
+                }
                 return _memberPathToLastEntityModelId;
             }
         }
 
-        public string ModelMapId => ModelMap.Id;
+        /// <summary>
+        /// The root owning model map
+        /// </summary>
+        public ModelMap RootModelMap { get; }
 
         /// <summary>
         /// True if requested to apply cascade delete
@@ -132,43 +126,20 @@ namespace Etherna.MongODM.Core.Serialization.Mapping
         public string MemberPathToString() =>
             string.Join(".", MemberPath.Select(member => member.MemberInfo.Name));
 
-        public string FullPathToString() => $"{ModelMap.ModelType.Name}.{MemberPathToString()}";
+        public string FullPathToString() => $"{RootModelMap.ModelType.Name}.{MemberPathToString()}";
 
         public override string ToString()
         {
             StringBuilder strBuilder = new StringBuilder();
             
             strBuilder.AppendLine(FullPathToString());
-            strBuilder.AppendLine($"    modelMapId: {ModelMap.Id}");
+            strBuilder.AppendLine($"    modelMapId: {RootModelMap.Id}");
             strBuilder.AppendLine($"    entity: {string.Join("->", EntityModelMapPath.Select(cm => cm.ClassType.Name))}");
             strBuilder.AppendLine($"    isEntityRefMem: {IsEntityReferenceMember}");
             strBuilder.AppendLine($"    isIdMem: {IsIdMember}");
             strBuilder.AppendLine($"    cascadeDelete: {UseCascadeDelete?.ToString() ?? "null"}");
 
             return strBuilder.ToString();
-        }
-
-        // Protected methods.
-        protected override void FreezeAction()
-        {
-            // Freeze child maps.
-            foreach (var member in _memberPath)
-                member.Freeze();
-            _modelMap.Freeze();
-
-            // Initizialize properties.
-            //prop MemberPathToLastEntityModelId
-            int take = _memberPath.Count() - 1;
-            for (; take >= 0; take--)
-            {
-                if (_memberPath.ElementAt(take).ClassMap.IsEntity())
-                    break;
-            }
-
-            _memberPathToLastEntityModelId = take >= 0 ? //if exists an entity
-                _memberPath.Take(take).Append(
-                    _memberPath.ElementAt(take).ClassMap.IdMemberMap) :
-                Array.Empty<BsonMemberMap>();
         }
     }
 }

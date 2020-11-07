@@ -10,9 +10,7 @@ namespace Etherna.MongODM.Core.Serialization.Mapping.Schemas
         where TModel : class
     {
         // Fields.
-        private readonly ModelMap<TModel> _activeMap;
         private IDictionary<string, ModelMap> _allMapsDictionary = default!;
-        private IBsonSerializer<TModel>? _fallbackSerializer;
         private readonly List<ModelMap> _secondaryMaps = new List<ModelMap>();
         private readonly IDbContext dbContext;
 
@@ -22,66 +20,47 @@ namespace Etherna.MongODM.Core.Serialization.Mapping.Schemas
             IDbContext dbContext)
             : base(typeof(TModel))
         {
-            _activeMap = activeMap ?? throw new ArgumentNullException(nameof(activeMap));
+            ActiveMap = activeMap ?? throw new ArgumentNullException(nameof(activeMap));
             this.dbContext = dbContext ?? throw new ArgumentNullException(nameof(dbContext));
 
             // Verify if have to use proxy model.
-            if (UseProxyModel)
+            if (!typeof(TModel).IsAbstract)
             {
                 ProxyModelType = dbContext.ProxyGenerator.CreateInstance(ModelType, dbContext).GetType();
-                activeMap.UseProxyGenerator(dbContext);
+                ActiveMap.UseProxyGenerator(dbContext);
             }
 
             // Verify if needs to use default serializer.
             if (!typeof(TModel).IsAbstract && activeMap.Serializer is null)
-                activeMap.UseDefaultSerializer(dbContext);
+                ActiveMap.UseDefaultSerializer(dbContext);
         }
 
         // Properties.
-        public ModelMap ActiveMap
-        {
-            get
-            {
-                Freeze();
-                return _activeMap;
-            }
-        }
+        public ModelMap ActiveMap { get; }
         public override IBsonSerializer? ActiveSerializer => ActiveMap.Serializer;
         public IDictionary<string, ModelMap> AllMapsDictionary
         {
             get
             {
-                Freeze();
-
                 if (_allMapsDictionary is null)
                 {
-                    // Build schema dictionary.
-                    _allMapsDictionary = SecondaryMaps
+                    var result = SecondaryMaps
                         .Append(ActiveMap)
                         .ToDictionary(modelMap => modelMap.Id);
+
+                    if (!IsFrozen)
+                        return result;
+
+                    //optimize performance only if frozen
+                    _allMapsDictionary = result;
                 }
                 return _allMapsDictionary;
             }
         }
 
-        public IBsonSerializer<TModel>? FallbackSerializer
-        {
-            get
-            {
-                Freeze();
-                return _fallbackSerializer;
-            }
-        }
+        public IBsonSerializer<TModel>? FallbackSerializer { get; private set; }
         public override Type? ProxyModelType { get; }
-        public IEnumerable<ModelMap> SecondaryMaps
-        {
-            get
-            {
-                Freeze();
-                return _secondaryMaps;
-            }
-        }
-        public override bool UseProxyModel => !typeof(TModel).IsAbstract;
+        public IEnumerable<ModelMap> SecondaryMaps => _secondaryMaps;
 
         // Methods.
         public IModelMapsSchema<TModel> AddFallbackCustomSerializer(IBsonSerializer<TModel> fallbackSerializer) =>
@@ -89,10 +68,10 @@ namespace Etherna.MongODM.Core.Serialization.Mapping.Schemas
             {
                 if (fallbackSerializer is null)
                     throw new ArgumentNullException(nameof(fallbackSerializer));
-                if (_fallbackSerializer != null)
+                if (FallbackSerializer != null)
                     throw new InvalidOperationException("Fallback serializer already setted");
 
-                _fallbackSerializer = fallbackSerializer;
+                FallbackSerializer = fallbackSerializer;
 
                 return this;
             });
@@ -116,8 +95,8 @@ namespace Etherna.MongODM.Core.Serialization.Mapping.Schemas
                 if (modelMap is null)
                     throw new ArgumentNullException(nameof(modelMap));
 
-                // Verify if have to use proxy model.
-                if (UseProxyModel)
+                // Verify if this schema uses proxy model.
+                if (ProxyModelType != null)
                     modelMap.UseProxyGenerator(dbContext);
 
                 // Add schema.
@@ -128,7 +107,7 @@ namespace Etherna.MongODM.Core.Serialization.Mapping.Schemas
         // Protected methods.
         protected override void FreezeAction()
         {
-            _activeMap.Freeze();
+            ActiveMap.Freeze();
             foreach (var secondaryMap in _secondaryMaps)
                 secondaryMap.Freeze();
         }
