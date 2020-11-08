@@ -24,14 +24,7 @@ namespace Etherna.MongODM.Core.Serialization.Serializers.Config
         }
 
         // Properties.
-        public IReadOnlyDictionary<Type, IReferenceSchema> Schemas
-        {
-            get
-            {
-                Freeze();
-                return _schemas;
-            }
-        }
+        public IReadOnlyDictionary<Type, IReferenceSchema> Schemas => _schemas;
 
         public bool UseCascadeDelete
         {
@@ -78,7 +71,7 @@ namespace Etherna.MongODM.Core.Serialization.Serializers.Config
             if (modelType is null)
                 throw new ArgumentNullException(nameof(modelType));
 
-            Freeze();
+            Freeze(); //needed for initialization
 
             return activeModelMapIdBsonElement[modelType];
         }
@@ -90,7 +83,7 @@ namespace Etherna.MongODM.Core.Serialization.Serializers.Config
             if (!_schemas.ContainsKey(modelType))
                 throw new InvalidOperationException("Can't identify registered schema for type " + modelType.Name);
 
-            Freeze();
+            Freeze(); //needed for initialization
 
             return registeredSerializers[(modelType, _schemas[modelType].ActiveMap.Id)];
         }
@@ -104,7 +97,7 @@ namespace Etherna.MongODM.Core.Serialization.Serializers.Config
             if (modelType is null)
                 throw new ArgumentNullException(nameof(modelType));
 
-            Freeze();
+            Freeze(); //needed for initialization
 
             // Find serializer.
             //if a correct model map is identified with its id

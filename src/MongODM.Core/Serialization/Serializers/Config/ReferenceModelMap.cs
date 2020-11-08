@@ -7,9 +7,6 @@ namespace Etherna.MongODM.Core.Serialization.Serializers.Config
 {
     public abstract class ReferenceModelMap : FreezableConfig
     {
-        // Fields.
-        private readonly BsonClassMap _bsonClassMap;
-
         // Constructors.
         protected ReferenceModelMap(
             string id,
@@ -18,20 +15,13 @@ namespace Etherna.MongODM.Core.Serialization.Serializers.Config
         {
             Id = id ?? throw new ArgumentNullException(nameof(id));
             BaseModelMapId = baseModelMapId;
-            _bsonClassMap = bsonClassMap ?? throw new ArgumentNullException(nameof(bsonClassMap));
+            BsonClassMap = bsonClassMap ?? throw new ArgumentNullException(nameof(bsonClassMap));
         }
 
         // Properties.
         public string Id { get; }
         public string? BaseModelMapId { get; private set; }
-        public BsonClassMap BsonClassMap
-        {
-            get
-            {
-                Freeze();
-                return _bsonClassMap;
-            }
-        }
+        public BsonClassMap BsonClassMap { get; }
         public bool IsEntity => BsonClassMap.IsEntity();
         public Type ModelType => BsonClassMap.ClassType;
 
@@ -43,10 +33,10 @@ namespace Etherna.MongODM.Core.Serialization.Serializers.Config
                     throw new ArgumentNullException(nameof(baseModelMap));
 
                 BaseModelMapId = baseModelMap.Id;
-                _bsonClassMap.SetBaseClassMap(baseModelMap._bsonClassMap);
+                BsonClassMap.SetBaseClassMap(baseModelMap.BsonClassMap);
             });
 
-        internal void UseProxyGenerator(IDbContext dbContext) =>
+        public void UseProxyGenerator(IDbContext dbContext) =>
             ExecuteConfigAction(() =>
             {
                 if (dbContext is null)
@@ -55,13 +45,13 @@ namespace Etherna.MongODM.Core.Serialization.Serializers.Config
                     throw new InvalidOperationException("Can't generate proxy of an abstract model");
 
                 // Set creator.
-                _bsonClassMap.SetCreator(() => dbContext.ProxyGenerator.CreateInstance(ModelType, dbContext));
+                BsonClassMap.SetCreator(() => dbContext.ProxyGenerator.CreateInstance(ModelType, dbContext));
             });
 
         // Protected methods.
         protected override void FreezeAction()
         {
-            _bsonClassMap.Freeze();
+            BsonClassMap.Freeze();
         }
     }
 

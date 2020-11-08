@@ -14,7 +14,6 @@ namespace Etherna.MongODM.Core.Serialization.Serializers.Config
         Type ModelType { get; }
         Type? ProxyModelType { get; }
         IEnumerable<ReferenceModelMap> SecondaryMaps { get; }
-        bool UseProxyModel { get; }
     }
 
     public interface IReferenceSchema<TModel> : IReferenceSchema
