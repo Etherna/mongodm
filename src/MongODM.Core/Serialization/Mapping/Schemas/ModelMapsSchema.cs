@@ -24,15 +24,12 @@ namespace Etherna.MongODM.Core.Serialization.Mapping.Schemas
             this.dbContext = dbContext ?? throw new ArgumentNullException(nameof(dbContext));
 
             // Verify if have to use proxy model.
-            if (!typeof(TModel).IsAbstract)
+            if (!typeof(TModel).IsAbstract &&
+                !dbContext.ProxyGenerator.IsProxyType(typeof(TModel)))
             {
                 ProxyModelType = dbContext.ProxyGenerator.CreateInstance(ModelType, dbContext).GetType();
                 ActiveMap.UseProxyGenerator(dbContext);
             }
-
-            // Verify if needs to use default serializer.
-            if (!typeof(TModel).IsAbstract && activeMap.Serializer is null)
-                ActiveMap.UseDefaultSerializer(dbContext);
         }
 
         // Properties.
@@ -107,6 +104,11 @@ namespace Etherna.MongODM.Core.Serialization.Mapping.Schemas
         // Protected methods.
         protected override void FreezeAction()
         {
+            // Verify if needs to use default serializer.
+            if (!typeof(TModel).IsAbstract && ActiveMap.Serializer is null)
+                ActiveMap.UseDefaultSerializer(dbContext);
+
+            // Freeze model maps.
             ActiveMap.Freeze();
             foreach (var secondaryMap in _secondaryMaps)
                 secondaryMap.Freeze();

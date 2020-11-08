@@ -15,6 +15,7 @@
 using Etherna.MongODM.Core.Domain.Models;
 using Etherna.MongODM.Core.Options;
 using Etherna.MongODM.Core.ProxyModels;
+using Etherna.MongODM.Core.Serialization.Mapping;
 using Etherna.MongODM.Core.Serialization.Mapping.Schemas;
 using Etherna.MongODM.Core.Serialization.Modifiers;
 using Etherna.MongODM.Core.Utility;
@@ -32,42 +33,32 @@ namespace Etherna.MongODM.Core.Serialization.Serializers
         where TModel : class
     {
         // Fields.
-        private readonly BsonElement activeModelMapIdElement;
+        private IReadOnlyDictionary<string, BsonClassMapSerializer<TModel>> _classMapSerializers = default!;
+        private IModelMapsSchema<TModel> _modelMapsSchema = default!;
         private readonly IDbCache dbCache;
         private readonly BsonElement documentSemVerElement;
         private readonly DocumentSemVerOptions documentSemVerOptions;
         private readonly ModelMapVersionOptions modelMapVersionOptions;
+        private readonly ISchemaRegister schemaRegister;
         private readonly ISerializerModifierAccessor serializerModifierAccessor;
 
         // Constructor.
         public ModelMapSerializer(
             IDbCache dbCache,
             DocumentSemVerOptions documentSemVerOptions,
-            IModelMapsSchema<TModel> modelMapsSchema,
             ModelMapVersionOptions modelMapVersionOptions,
+            ISchemaRegister schemaRegister,
             ISerializerModifierAccessor serializerModifierAccessor)
         {
             this.dbCache = dbCache ?? throw new ArgumentNullException(nameof(dbCache));
             this.documentSemVerOptions = documentSemVerOptions ?? throw new ArgumentNullException(nameof(documentSemVerOptions));
-            this.ModelMapsSchema = modelMapsSchema ?? throw new ArgumentNullException(nameof(modelMapsSchema));
             this.modelMapVersionOptions = modelMapVersionOptions ?? throw new ArgumentNullException(nameof(modelMapVersionOptions));
+            this.schemaRegister = schemaRegister ?? throw new ArgumentNullException(nameof(schemaRegister));
             this.serializerModifierAccessor = serializerModifierAccessor ?? throw new ArgumentNullException(nameof(serializerModifierAccessor));
 
             documentSemVerElement = new BsonElement(
                 documentSemVerOptions.ElementName,
                 documentSemVerOptions.CurrentVersion.ToBsonArray());
-
-            ClassMapSerializers = modelMapsSchema.AllMapsDictionary.ToDictionary(
-                pair => pair.Key,
-                pair =>
-                {
-                    var classMap = pair.Value.BsonClassMap;
-                    return new BsonClassMapSerializer<TModel>(classMap);
-                });
-
-            activeModelMapIdElement = new BsonElement(
-                modelMapVersionOptions.ElementName,
-                new BsonString(modelMapsSchema.ActiveMap.Id));
         }
 
         // Properties.
@@ -75,11 +66,37 @@ namespace Etherna.MongODM.Core.Serialization.Serializers
 
         public IEnumerable<BsonClassMap> AllChildClassMaps => ModelMapsSchema.AllMapsDictionary.Values.Select(map => map.BsonClassMap);
 
-        public IReadOnlyDictionary<string, BsonClassMapSerializer<TModel>> ClassMapSerializers { get; }
+        public IReadOnlyDictionary<string, BsonClassMapSerializer<TModel>> ClassMapSerializers
+        {
+            get
+            {
+                if (_classMapSerializers is null)
+                {
+                    _classMapSerializers = ModelMapsSchema.AllMapsDictionary.ToDictionary(
+                        pair => pair.Key,
+                        pair =>
+                        {
+                            var classMap = pair.Value.BsonClassMap;
+                            return new BsonClassMapSerializer<TModel>(classMap);
+                        });
+                }
+
+                return _classMapSerializers;
+            }
+        }
 
         public IBsonSerializer<TModel>? FallbackSerializer => ModelMapsSchema.FallbackSerializer;
 
-        public IModelMapsSchema<TModel> ModelMapsSchema { get; }
+        public IModelMapsSchema<TModel> ModelMapsSchema
+        {
+            get
+            {
+                if (_modelMapsSchema is null)
+                    _modelMapsSchema = schemaRegister.GetModelMapsSchema<TModel>();
+
+                return _modelMapsSchema;
+            }
+        }
 
         // Methods.
         public override TModel Deserialize(BsonDeserializationContext context, BsonDeserializationArgs args)
@@ -181,6 +198,10 @@ namespace Etherna.MongODM.Core.Serialization.Serializers
                 return;
             }
 
+            // Clear extra elements.
+            if (value is IModel model)
+                model.ExtraElements?.Clear();
+
             // Initialize localContext, bsonDocument and bsonWriter.
             var bsonDocument = new BsonDocument();
             using var bsonWriter = new ExtendedBsonDocumentWriter(bsonDocument)
@@ -198,7 +219,9 @@ namespace Etherna.MongODM.Core.Serialization.Serializers
             //add model map id
             if (bsonDocument.Contains(modelMapVersionOptions.ElementName))
                 bsonDocument.Remove(modelMapVersionOptions.ElementName);
-            bsonDocument.InsertAt(0, activeModelMapIdElement);
+            bsonDocument.InsertAt(0, new BsonElement(
+                modelMapVersionOptions.ElementName,
+                new BsonString(ModelMapsSchema.ActiveMap.Id)));
 
             //add version
             if (documentSemVerOptions.WriteInDocuments && bsonWriter.IsRootDocument)

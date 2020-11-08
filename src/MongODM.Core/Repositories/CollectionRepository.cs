@@ -104,7 +104,8 @@ namespace Etherna.MongODM.Core.Repositories
             }
 
             // Build new indexes.
-            await Collection.Indexes.CreateManyAsync(newIndexes.Select(i => i.createIndex), cancellationToken).ConfigureAwait(false);
+            if (newIndexes.Any())
+                await Collection.Indexes.CreateManyAsync(newIndexes.Select(i => i.createIndex), cancellationToken).ConfigureAwait(false);
         }
 
         public virtual Task<IAsyncCursor<TProjection>> FindAsync<TProjection>(

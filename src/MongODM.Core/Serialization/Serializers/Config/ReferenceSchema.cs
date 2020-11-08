@@ -23,7 +23,8 @@ namespace Etherna.MongODM.Core.Serialization.Serializers.Config
             this.dbContext = dbContext ?? throw new ArgumentNullException(nameof(dbContext));
 
             // Verify if have to use proxy model.
-            if (!typeof(TModel).IsAbstract)
+            if (!typeof(TModel).IsAbstract &&
+                !dbContext.ProxyGenerator.IsProxyType(typeof(TModel)))
             {
                 ProxyModelType = dbContext.ProxyGenerator.CreateInstance(ModelType, dbContext).GetType();
                 activeMap.UseProxyGenerator(dbContext);
@@ -91,8 +92,8 @@ namespace Etherna.MongODM.Core.Serialization.Serializers.Config
                 if (modelMap is null)
                     throw new ArgumentNullException(nameof(modelMap));
 
-                // Verify if have to use proxy model.
-                if (!typeof(TModel).IsAbstract)
+                // Verify if this schema uses proxy model.
+                if (ProxyModelType != null)
                     modelMap.UseProxyGenerator(dbContext);
 
                 // Add schema.
@@ -103,6 +104,7 @@ namespace Etherna.MongODM.Core.Serialization.Serializers.Config
         // Protected methods.
         protected override void FreezeAction()
         {
+            // Freeze model maps.
             ActiveMap.Freeze();
             foreach (var secondaryMap in _secondaryMaps)
                 secondaryMap.Freeze();

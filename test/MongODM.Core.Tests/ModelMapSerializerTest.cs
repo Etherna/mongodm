@@ -15,7 +15,7 @@
 using Etherna.MongODM.Core.Comparers;
 using Etherna.MongODM.Core.Models;
 using Etherna.MongODM.Core.Options;
-using Etherna.MongODM.Core.Serialization.Mapping.Schemas;
+using Etherna.MongODM.Core.Serialization.Mapping;
 using Etherna.MongODM.Core.Serialization.Modifiers;
 using Etherna.MongODM.Core.Serialization.Serializers;
 using Etherna.MongODM.Core.Utility;
@@ -79,8 +79,8 @@ namespace Etherna.MongODM.Core
         private readonly Mock<IDbCache> dbCacheMock;
         private readonly DocumentSemVerOptions documentSemVerOptions = new DocumentSemVerOptions();
         private readonly ModelMapVersionOptions modelMapVersionOptions = new ModelMapVersionOptions();
+        private readonly Mock<ISchemaRegister> schemaRegisterMock;
         private readonly Mock<ISerializerModifierAccessor> serializerModifierAccessorMock;
-        private readonly Mock<IModelMapsSchema<FakeModel>> modelMapsSchemaMock;
 
         // Constructor.
         public ModelMapSerializerTest()
@@ -89,9 +89,9 @@ namespace Etherna.MongODM.Core
             dbCacheMock.Setup(c => c.LoadedModels.ContainsKey(It.IsAny<object>()))
                 .Returns(() => false);
 
-            serializerModifierAccessorMock = new Mock<ISerializerModifierAccessor>();
+            schemaRegisterMock = new Mock<ISchemaRegister>();
 
-            modelMapsSchemaMock = new Mock<IModelMapsSchema<FakeModel>>();
+            serializerModifierAccessorMock = new Mock<ISerializerModifierAccessor>();
         }
 
         // Tests.
@@ -139,8 +139,8 @@ namespace Etherna.MongODM.Core
             var serializer = new ModelMapSerializer<FakeModel>(
                 dbCacheMock.Object,
                 documentSemVerOptions,
-                modelMapsSchemaMock.Object,
                 modelMapVersionOptions,
+                schemaRegisterMock.Object,
                 serializerModifierAccessorMock.Object);
 
             // Action
@@ -163,8 +163,8 @@ namespace Etherna.MongODM.Core
             var serializer = new ModelMapSerializer<FakeModel>(
                 dbCacheMock.Object,
                 documentSemVerOptions,
-                modelMapsSchemaMock.Object,
                 modelMapVersionOptions,
+                schemaRegisterMock.Object,
                 serializerModifierAccessorMock.Object);
 
             // Action
@@ -196,8 +196,8 @@ namespace Etherna.MongODM.Core
             var serializer = new ModelMapSerializer<FakeModel>(
                 dbCacheMock.Object,
                 documentSemVerOptions,
-                modelMapsSchemaMock.Object,
                 modelMapVersionOptions,
+                schemaRegisterMock.Object,
                 serializerModifierAccessorMock.Object);
 
             // Action
@@ -312,8 +312,8 @@ namespace Etherna.MongODM.Core
             var serializer = new ModelMapSerializer<FakeModel>(
                 dbCacheMock.Object,
                 documentSemVerOptions,
-                modelMapsSchemaMock.Object,
                 modelMapVersionOptions,
+                schemaRegisterMock.Object,
                 serializerModifierAccessorMock.Object);
 
             // Action
@@ -338,8 +338,8 @@ namespace Etherna.MongODM.Core
             var serializer = new ModelMapSerializer<FakeModel>(
                 dbCacheMock.Object,
                 documentSemVerOptions,
-                modelMapsSchemaMock.Object,
                 modelMapVersionOptions,
+                schemaRegisterMock.Object,
                 serializerModifierAccessorMock.Object);
 
             // Action

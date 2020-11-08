@@ -109,8 +109,8 @@ namespace Etherna.MongODM.Core.Serialization.Mapping
             return new ModelMapSerializer<TModel>(
                 dbContext.DbCache,
                 dbContext.DocumentSemVerOptions,
-                dbContext.SchemaRegister.GetModelMapsSchema<TModel>(),
                 dbContext.ModelMapVersionOptions,
+                dbContext.SchemaRegister,
                 dbContext.SerializerModifierAccessor);
         }
     }

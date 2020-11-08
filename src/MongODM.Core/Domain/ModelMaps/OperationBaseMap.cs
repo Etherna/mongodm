@@ -29,10 +29,10 @@ namespace Etherna.MongODM.Core.Domain.ModelMaps
                     new DocumentSemVerOptions
                     {
                         CurrentVersion = dbContext.LibraryVersion,
-                        WriteInDocuments = true
+                        WriteInDocuments = false
                     },
-                    dbContext.SchemaRegister.GetModelMapsSchema<OperationBase>(),
                     dbContext.ModelMapVersionOptions,
+                    dbContext.SchemaRegister,
                     dbContext.SerializerModifierAccessor));
         }
     }
