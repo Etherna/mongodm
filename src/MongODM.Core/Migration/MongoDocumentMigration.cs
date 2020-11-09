@@ -33,10 +33,7 @@ namespace Etherna.MongODM.Core.Migration
         private readonly ICollectionRepository<TModel, TKey> _sourceCollection;
 
         // Constructors.
-        public MongoDocumentMigration(
-            ICollectionRepository<TModel, TKey> sourceCollection,
-            string id)
-            : base(id)
+        public MongoDocumentMigration(ICollectionRepository<TModel, TKey> sourceCollection)
         {
             if (sourceCollection is null)
                 throw new ArgumentNullException(nameof(sourceCollection));

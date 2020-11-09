@@ -43,9 +43,7 @@ namespace Etherna.MongODM.Core.Migration
             ICollectionRepository<TModelSource, TKeySource> sourceCollection,
             ICollectionRepository<TModelDest, TKeyDest> destinationCollection,
             Func<TModelSource, TModelDest> converter,
-            Func<TModelSource, bool> discriminator,
-            string id)
-            : base(id)
+            Func<TModelSource, bool> discriminator)
         {
             if (sourceCollection is null)
                 throw new ArgumentNullException(nameof(sourceCollection));

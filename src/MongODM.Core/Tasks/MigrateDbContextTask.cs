@@ -51,7 +51,6 @@ namespace Etherna.MongODM.Core.Tasks
                     {
                         dbMigrationOp.AddLog(new DocumentMigrationLog(
                             docMigration.SourceCollection.Name,
-                            docMigration.Id,
                             MigrationLogBase.ExecutionState.Executing,
                             procDocs));
 
@@ -61,7 +60,6 @@ namespace Etherna.MongODM.Core.Tasks
                 //ended document migration log
                 dbMigrationOp.AddLog(new DocumentMigrationLog(
                     docMigration.SourceCollection.Name,
-                    docMigration.Id,
                     result.Succeded ?
                         MigrationLogBase.ExecutionState.Succeded :
                         MigrationLogBase.ExecutionState.Failed,
