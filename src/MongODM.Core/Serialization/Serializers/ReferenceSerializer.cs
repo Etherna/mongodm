@@ -218,7 +218,7 @@ namespace Etherna.MongODM.Core.Serialization.Serializers
             if (document is null)
                 throw new ArgumentNullException(nameof(document));
 
-            var serializer = configuration.GetActiveSerializer(document.GetType());
+            var serializer = configuration.Schemas[document.GetType()].ActiveSerializer;
 
             if (serializer is IBsonIdProvider idProvider)
                 return idProvider.GetDocumentId(document, out id, out idNominalType, out idGenerator);
@@ -252,7 +252,7 @@ namespace Etherna.MongODM.Core.Serialization.Serializers
                 builder => builder.IsDynamicType = context.IsDynamicType);
 
             // Serialize.
-            var serializer = configuration.GetActiveSerializer(value.GetType());
+            var serializer = configuration.Schemas[value.GetType()].ActiveSerializer;
 
             if (serializer is null)
                 throw new InvalidOperationException($"Can't identify a valid serializer for type {value.GetType().Name}");
@@ -274,7 +274,7 @@ namespace Etherna.MongODM.Core.Serialization.Serializers
             if (document is null)
                 throw new ArgumentNullException(nameof(document));
 
-            var serializer = configuration.GetActiveSerializer(document.GetType());
+            var serializer = configuration.Schemas[document.GetType()].ActiveSerializer;
 
             if (serializer is IBsonIdProvider idProvider)
                 idProvider.SetDocumentId(document, id);
@@ -289,7 +289,7 @@ namespace Etherna.MongODM.Core.Serialization.Serializers
                 .Where(cm => cm.GetMemberMap(memberName) != null)
                 .First()
                 .ClassType;
-            var serializer = configuration.GetActiveSerializer(modelType);
+            var serializer = configuration.Schemas[modelType].ActiveSerializer;
 
             if (serializer is IBsonDocumentSerializer documentSerializer)
                 return documentSerializer.TryGetMemberSerializationInfo(memberName, out serializationInfo);

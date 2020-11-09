@@ -15,6 +15,7 @@ namespace Etherna.MongODM.Core.Serialization.Serializers
         // Fields.
         private readonly Dictionary<Type, IModelMapsSchema> _schemas = new Dictionary<Type, IModelMapsSchema>();
         private bool _useCascadeDelete;
+
         private readonly IDictionary<Type, BsonElement> activeModelMapIdBsonElement = new Dictionary<Type, BsonElement>();
         private readonly IDbContext dbContext;
 
@@ -77,16 +78,6 @@ namespace Etherna.MongODM.Core.Serialization.Serializers
             return activeModelMapIdBsonElement[modelType];
         }
 
-        public IBsonSerializer? GetActiveSerializer(Type modelType)
-        {
-            if (modelType is null)
-                throw new ArgumentNullException(nameof(modelType));
-            if (!_schemas.ContainsKey(modelType))
-                throw new InvalidOperationException("Can't identify registered schema for type " + modelType.Name);
-
-            return Schemas[modelType].ActiveSerializer;
-        }
-
         public IReferenceModelMapsSchema<TModel> GetModelMapsSchema<TModel>()
             where TModel : class =>
             (IReferenceModelMapsSchema<TModel>)Schemas[typeof(TModel)];
@@ -101,9 +92,9 @@ namespace Etherna.MongODM.Core.Serialization.Serializers
             // Find serializer.
             var schema = _schemas[modelType];
 
-            //if a correct model map is identified with its id
+            //if a correct model map is identified with its id, use its bson class map serializer
             if (modelMapId != null && schema.AllMapsDictionary.ContainsKey(modelMapId))
-                return schema.AllMapsDictionary[modelMapId].Serializer;
+                return schema.AllMapsDictionary[modelMapId].BsonClassMapSerializer;
 
             //else, use fallback serializer if exists. The schema's active serializer otherwise
             return schema.FallbackSerializer ?? schema.ActiveSerializer;

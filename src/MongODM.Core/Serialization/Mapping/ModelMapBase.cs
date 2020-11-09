@@ -8,6 +8,7 @@ namespace Etherna.MongODM.Core.Serialization.Mapping
     public abstract class ModelMapBase : FreezableConfig
     {
         // Fields.
+        private IBsonSerializer _bsonClassMapSerializer = default!;
         private IBsonSerializer? _serializer;
 
         // Constructors.
@@ -27,6 +28,19 @@ namespace Etherna.MongODM.Core.Serialization.Mapping
         public string Id { get; }
         public string? BaseModelMapId { get; private set; }
         public BsonClassMap BsonClassMap { get; }
+        public IBsonSerializer BsonClassMapSerializer
+        {
+            get
+            {
+                if (_bsonClassMapSerializer is null)
+                {
+                    var classMapSerializerDefinition = typeof(BsonClassMapSerializer<>);
+                    var classMapSerializerType = classMapSerializerDefinition.MakeGenericType(ModelType);
+                    _bsonClassMapSerializer = (IBsonSerializer)Activator.CreateInstance(classMapSerializerType, BsonClassMap);
+                }
+                return _bsonClassMapSerializer;
+            }
+        }
         public bool IsEntity => BsonClassMap.IsEntity();
         public Type ModelType => BsonClassMap.ClassType;
         public IBsonSerializer? Serializer
@@ -70,6 +84,6 @@ namespace Etherna.MongODM.Core.Serialization.Mapping
             BsonClassMap.Freeze();
         }
 
-        protected abstract IBsonSerializer? GetDefaultSerializer();
+        protected virtual IBsonSerializer? GetDefaultSerializer() => default;
     }
 }

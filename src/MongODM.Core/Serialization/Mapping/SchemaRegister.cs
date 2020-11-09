@@ -38,7 +38,7 @@ namespace Etherna.MongODM.Core.Serialization.Mapping
 
         private IDbContext dbContext = default!;
 
-        // Constructor, initialization.
+        // Constructor and initializer.
         public void Initialize(IDbContext dbContext)
         {
             if (IsInitialized)
