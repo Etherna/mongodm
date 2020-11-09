@@ -1,22 +1,9 @@
-﻿using Etherna.MongODM.Core.Utility;
-using MongoDB.Bson.Serialization;
+﻿using MongoDB.Bson.Serialization;
 using System;
-using System.Collections.Generic;
 
-namespace Etherna.MongODM.Core.Serialization.Serializers.Config
+namespace Etherna.MongODM.Core.Serialization.Mapping.Schemas
 {
-    public interface IReferenceSchema : IFreezableConfig
-    {
-        // Properties.
-        ReferenceModelMap ActiveMap { get; }
-        IDictionary<string, ReferenceModelMap> AllMapsDictionary { get; }
-        IBsonSerializer? FallbackSerializer { get; }
-        Type ModelType { get; }
-        Type? ProxyModelType { get; }
-        IEnumerable<ReferenceModelMap> SecondaryMaps { get; }
-    }
-
-    public interface IReferenceSchema<TModel> : IReferenceSchema
+    public interface IReferenceModelMapsSchema<TModel> : IModelMapsSchema
     {
         // Methods.
         /// <summary>
@@ -24,7 +11,7 @@ namespace Etherna.MongODM.Core.Serialization.Serializers.Config
         /// </summary>
         /// <param name="fallbackSerializer">Fallback serializer</param>
         /// <returns>This same model schema</returns>
-        IReferenceSchema<TModel> AddFallbackCustomSerializer(
+        IReferenceModelMapsSchema<TModel> AddFallbackCustomSerializer(
             IBsonSerializer<TModel> fallbackSerializer);
 
         /// <summary>
@@ -34,7 +21,7 @@ namespace Etherna.MongODM.Core.Serialization.Serializers.Config
         /// <param name="baseModelMapId">Id of the base model map for this model map</param>
         /// <param name="modelMapInitializer">The model map inizializer</param>
         /// <returns>This same model schema configuration</returns>
-        IReferenceSchema<TModel> AddSecondaryMap(
+        IReferenceModelMapsSchema<TModel> AddSecondaryMap(
             string id,
             string? baseModelMapId = null,
             Action<BsonClassMap<TModel>>? modelMapInitializer = null);
@@ -44,7 +31,7 @@ namespace Etherna.MongODM.Core.Serialization.Serializers.Config
         /// </summary>
         /// <param name="modelMap">The model map</param>
         /// <returns>This same model schema configuration</returns>
-        IReferenceSchema<TModel> AddSecondaryMap(
+        IReferenceModelMapsSchema<TModel> AddSecondaryMap(
             ReferenceModelMap<TModel> modelMap);
     }
 }

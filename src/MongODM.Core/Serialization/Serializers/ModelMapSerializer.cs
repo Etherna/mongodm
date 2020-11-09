@@ -85,8 +85,6 @@ namespace Etherna.MongODM.Core.Serialization.Serializers
             }
         }
 
-        public IBsonSerializer<TModel>? FallbackSerializer => ModelMapsSchema.FallbackSerializer;
-
         public IModelMapsSchema<TModel> ModelMapsSchema
         {
             get
@@ -148,9 +146,9 @@ namespace Etherna.MongODM.Core.Serialization.Serializers
             }
 
             //else, if a fallback serializator exists
-            else if (FallbackSerializer != null)
+            else if (ModelMapsSchema.FallbackSerializer != null)
             {
-                model = FallbackSerializer.Deserialize(localContext, args);
+                model = (TModel)ModelMapsSchema.FallbackSerializer.Deserialize(localContext, args);
             }
 
             //else, deserialize wih current active model map

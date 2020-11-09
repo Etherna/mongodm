@@ -21,17 +21,16 @@ namespace Etherna.MongODM.Core.Serialization.Mapping.Schemas
     public interface IModelMapsSchema : ISchema
     {
         // Properties.
-        ModelMap ActiveMap { get; }
-        IDictionary<string, ModelMap> AllMapsDictionary { get; }
-        IEnumerable<ModelMap> SecondaryMaps { get; }
+        ModelMapBase ActiveMap { get; }
+        IReadOnlyDictionary<string, ModelMapBase> AllMapsDictionary { get; }
+        IDbContext DbContext { get; }
+        IBsonSerializer? FallbackSerializer { get; }
+        IEnumerable<ModelMapBase> SecondaryMaps { get; }
     }
 
     public interface IModelMapsSchema<TModel> : IModelMapsSchema
         where TModel : class
     {
-        // Properties.
-        IBsonSerializer<TModel>? FallbackSerializer { get; }
-
         // Methods.
         /// <summary>
         /// Add a fallback serializer invoked in case of undefined schema id

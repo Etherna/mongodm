@@ -3,19 +3,24 @@ using Etherna.MongODM.Core.Utility;
 using MongoDB.Bson.Serialization;
 using System;
 
-namespace Etherna.MongODM.Core.Serialization.Serializers.Config
+namespace Etherna.MongODM.Core.Serialization.Mapping
 {
-    public abstract class ReferenceModelMap : FreezableConfig
+    public abstract class ModelMapBase : FreezableConfig
     {
+        // Fields.
+        private IBsonSerializer? _serializer;
+
         // Constructors.
-        protected ReferenceModelMap(
+        protected ModelMapBase(
             string id,
             string? baseModelMapId,
-            BsonClassMap bsonClassMap)
+            BsonClassMap bsonClassMap,
+            IBsonSerializer? serializer)
         {
             Id = id ?? throw new ArgumentNullException(nameof(id));
             BaseModelMapId = baseModelMapId;
             BsonClassMap = bsonClassMap ?? throw new ArgumentNullException(nameof(bsonClassMap));
+            _serializer = serializer;
         }
 
         // Properties.
@@ -24,9 +29,19 @@ namespace Etherna.MongODM.Core.Serialization.Serializers.Config
         public BsonClassMap BsonClassMap { get; }
         public bool IsEntity => BsonClassMap.IsEntity();
         public Type ModelType => BsonClassMap.ClassType;
+        public IBsonSerializer? Serializer
+        {
+            get
+            {
+                if (_serializer is null && !ModelType.IsAbstract) //can't set serializer of an abstract model
+                    _serializer = GetDefaultSerializer();
+
+                return _serializer;
+            }
+        }
 
         // Methods.
-        public void SetBaseModelMap(ReferenceModelMap baseModelMap) =>
+        public void SetBaseModelMap(ModelMapBase baseModelMap) =>
             ExecuteConfigAction(() =>
             {
                 if (baseModelMap is null)
@@ -51,18 +66,10 @@ namespace Etherna.MongODM.Core.Serialization.Serializers.Config
         // Protected methods.
         protected override void FreezeAction()
         {
+            // Freeze bson class maps.
             BsonClassMap.Freeze();
         }
-    }
 
-    public class ReferenceModelMap<TModel> : ReferenceModelMap
-    {
-        // Constructors.
-        public ReferenceModelMap(
-            string id,
-            BsonClassMap<TModel> bsonClassMap,
-            string? baseModelMapId = null)
-            : base(id, baseModelMapId, bsonClassMap)
-        { }
+        protected abstract IBsonSerializer? GetDefaultSerializer();
     }
 }

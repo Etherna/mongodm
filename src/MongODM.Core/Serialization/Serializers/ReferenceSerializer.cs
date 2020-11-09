@@ -15,7 +15,6 @@
 using Etherna.MongODM.Core.Domain.Models;
 using Etherna.MongODM.Core.Extensions;
 using Etherna.MongODM.Core.ProxyModels;
-using Etherna.MongODM.Core.Serialization.Serializers.Config;
 using MongoDB.Bson;
 using MongoDB.Bson.IO;
 using MongoDB.Bson.Serialization;
@@ -113,6 +112,10 @@ namespace Etherna.MongODM.Core.Serialization.Serializers
 
             // Deserialize object.
             var serializer = configuration.GetSerializer(actualType, modelMapId);
+
+            if (serializer is null)
+                throw new InvalidOperationException($"Can't identify a valid serializer for type {actualType.Name}");
+
             var model = serializer.Deserialize(context, args) as TModelBase;
 
             // Process model.
@@ -250,6 +253,10 @@ namespace Etherna.MongODM.Core.Serialization.Serializers
 
             // Serialize.
             var serializer = configuration.GetActiveSerializer(value.GetType());
+
+            if (serializer is null)
+                throw new InvalidOperationException($"Can't identify a valid serializer for type {value.GetType().Name}");
+
             serializer.Serialize(localContext, args, value);
 
             // Add additional data.

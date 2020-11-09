@@ -31,7 +31,7 @@ namespace Etherna.MongODM.Core.Serialization.Mapping
 
         // Constructors.
         public MemberDependency(
-            ModelMap rootModelMap,
+            ModelMapBase rootModelMap,
             IEnumerable<BsonMemberMap> memberPath,
             bool? useCascadeDelete)
         {
@@ -115,7 +115,7 @@ namespace Etherna.MongODM.Core.Serialization.Mapping
         /// <summary>
         /// The root owning model map
         /// </summary>
-        public ModelMap RootModelMap { get; }
+        public ModelMapBase RootModelMap { get; }
 
         /// <summary>
         /// True if requested to apply cascade delete
