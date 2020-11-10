@@ -25,10 +25,12 @@ namespace Etherna.MongODM.Core.Comparers
             if (ReferenceEquals(x, y)) return true;
             if (x is null || y is null) return false;
 
+            //(x.EnumerableProp is null) XOR (y.EnumerableProp is null)
             if ((x.EnumerableProp == null || y.EnumerableProp == null) &&
                 !(x.EnumerableProp == null && y.EnumerableProp == null))
                 return false;
-            if (x.EnumerableProp != null)
+            //because prev XOR is false, if (x.EnumerableProp != null) so (y.EnumerableProp != null)
+            if (x.EnumerableProp != null && y.EnumerableProp != null)
             {
                 if (x.EnumerableProp.Count() != y.EnumerableProp.Count())
                     return false;
@@ -37,12 +39,14 @@ namespace Etherna.MongODM.Core.Comparers
                     return false;
             }
 
+            //XOR
             if ((x.ExtraElements == null || y.ExtraElements == null) &&
                 !(x.ExtraElements == null && y.ExtraElements == null))
                 return false;
-            if (x.ExtraElements != null)
+            //as before
+            if (x.ExtraElements != null && y.ExtraElements != null)
             {
-                if (x.ExtraElements.Count() != y.ExtraElements.Count())
+                if (x.ExtraElements.Count != y.ExtraElements.Count)
                     return false;
                 if (x.ExtraElements.Zip(y.ExtraElements, (xVal, yVal) => new { xVal, yVal })
                     .Any(pair => !Equals(pair.xVal, pair.yVal)))

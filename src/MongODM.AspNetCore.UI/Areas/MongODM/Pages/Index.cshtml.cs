@@ -14,6 +14,7 @@
 
 using Etherna.MongODM.Core;
 using Microsoft.AspNetCore.Mvc.RazorPages;
+using Microsoft.Extensions.DependencyInjection;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -61,7 +62,7 @@ namespace Etherna.MongODM.AspNetCore.UI.Areas.MongODM.Pages
         {
             // Get dbcontext instances.
             var dbContextTypes = configuration.DbContextTypes;
-            DbContexts = dbContextTypes.Select(type => (IDbContext)serviceProvider.GetService(type));
+            DbContexts = dbContextTypes.Select(type => (IDbContext)serviceProvider.GetRequiredService(type));
         }
     }
 }

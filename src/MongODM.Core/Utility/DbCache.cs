@@ -88,7 +88,7 @@ namespace Etherna.MongODM.Core.Utility
             if (!executionContext.Items.ContainsKey(CacheKey))
                 executionContext.Items.Add(CacheKey, new Dictionary<object, IEntityModel>());
 
-            return (Dictionary<object, IEntityModel>)executionContext.Items[CacheKey];
+            return (Dictionary<object, IEntityModel>)executionContext.Items[CacheKey]!;
         }
     }
 }

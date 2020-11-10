@@ -6,7 +6,7 @@
     <RootNamespace>Etherna.ExecContext</RootNamespace>
     <Authors>Etherna Sagl</Authors>
     <Description>Execution context provider</Description>
-    <LangVersion>8.0</LangVersion>
+    <LangVersion>9.0</LangVersion>
     <Nullable>enable</Nullable>
     
     <RepositoryUrl>https://github.com/Etherna/mongodm</RepositoryUrl>

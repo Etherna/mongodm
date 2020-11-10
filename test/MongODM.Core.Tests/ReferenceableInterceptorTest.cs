@@ -187,7 +187,7 @@ namespace Etherna.MongODM.Core
             {
                 var initializeInvocationMock = InterceptorMockHelper.GetExternalMethodInvocationMock<FakeModel, IReferenceable>(
                     nameof(IReferenceable.SetAsSummary),
-                    new object[] { new string[0] });
+                    new object[] { Array.Empty<string>() });
                 interceptor.Intercept(initializeInvocationMock.Object);
             }
 
