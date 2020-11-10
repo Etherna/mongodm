@@ -40,7 +40,7 @@ namespace Etherna.MongODM.Core.Serialization.Modifiers
             if (!context.Items.ContainsKey(ModifierKey))
                 context.Items.Add(ModifierKey, new List<ReferenceSerializerModifier>());
 
-            requestes = (ICollection<ReferenceSerializerModifier>)context.Items[ModifierKey];
+            requestes = (ICollection<ReferenceSerializerModifier>)context.Items[ModifierKey]!;
 
             lock (((ICollection)requestes).SyncRoot)
                 requestes.Add(this);
@@ -65,7 +65,7 @@ namespace Etherna.MongODM.Core.Serialization.Modifiers
 
             if (!context.Items.ContainsKey(ModifierKey))
                 return false;
-            var requestes = (ICollection<ReferenceSerializerModifier>)context.Items[ModifierKey];
+            var requestes = (ICollection<ReferenceSerializerModifier>)context.Items[ModifierKey]!;
 
             lock (((ICollection)requestes).SyncRoot)
                 return requestes.Any(r => r.ReadOnlyId);

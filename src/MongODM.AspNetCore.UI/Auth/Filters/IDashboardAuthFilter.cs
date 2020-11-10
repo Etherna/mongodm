@@ -19,6 +19,6 @@ namespace Etherna.MongODM.AspNetCore.UI.Auth.Filters
 {
     public interface IDashboardAuthFilter
     {
-        Task<bool> AuthorizeAsync(HttpContext context);
+        Task<bool> AuthorizeAsync(HttpContext? context);
     }
 }

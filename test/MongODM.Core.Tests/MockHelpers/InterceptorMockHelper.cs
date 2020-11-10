@@ -98,7 +98,7 @@ namespace Etherna.MongODM.Core.MockHelpers
             TMember returnValue = default)
             where TProxy : class
         {
-            return GetExternalPropertyGetInvocationMock(memberLambda, proxyModel, returnValue);
+            return GetExternalPropertyGetInvocationMock(memberLambda, proxyModel, returnValue!);
         }
 
         public static Mock<Castle.DynamicProxy.IInvocation> GetPropertySetInvocationMock<TProxy, TMember>(

@@ -172,7 +172,7 @@ namespace Etherna.MongODM.Core
             test.PostAction(bsonReader);
 
             // Assert
-            Assert.Equal(test.ExpectedModel, result as FakeModel, new FakeModelComparer());
+            Assert.Equal(test.ExpectedModel, result, new FakeModelComparer());
         }
 
         [Fact]

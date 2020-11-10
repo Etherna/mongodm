@@ -19,4 +19,4 @@
 
 using System.Diagnostics.CodeAnalysis;
 
-[assembly: SuppressMessage("Performance", "CA1822:Mark members as static", Justification = "Page models can have also empty methods", Scope = "NamespaceAndDescendants", Target = "Etherna.MongODM.AspNetCore.UI.Areas.MongODM.Pages")]
+[assembly: SuppressMessage("Performance", "CA1822:Mark members as static", Justification = "Page models can have also empty methods", Scope = "NamespaceAndDescendants", Target = "~N:Etherna.MongODM.AspNetCore.UI.Areas.MongODM.Pages")]

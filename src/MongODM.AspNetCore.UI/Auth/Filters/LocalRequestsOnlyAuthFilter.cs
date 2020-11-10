@@ -20,13 +20,13 @@ namespace Etherna.MongODM.AspNetCore.UI.Auth.Filters
 {
     public class LocalRequestsOnlyAuthFilter : IDashboardAuthFilter
     {
-        public Task<bool> AuthorizeAsync(HttpContext context)
+        public Task<bool> AuthorizeAsync(HttpContext? context)
         {
             if (context is null)
-                throw new ArgumentNullException(nameof(context));
+                return Task.FromResult(false);
 
-            var localIpAddress = context.Connection.LocalIpAddress.ToString();
-            var remoteIpAddress = context.Connection.RemoteIpAddress.ToString();
+            var localIpAddress = context.Connection.LocalIpAddress?.ToString();
+            var remoteIpAddress = context.Connection.RemoteIpAddress?.ToString();
 
             // If unknown, assume not local.
             if (string.IsNullOrEmpty(remoteIpAddress))

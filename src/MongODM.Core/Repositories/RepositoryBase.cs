@@ -97,7 +97,7 @@ namespace Etherna.MongODM.Core.Repositories
 
         public async Task DeleteAsync(IEntityModel model, CancellationToken cancellationToken = default)
         {
-            if (!(model is TModel castedModel))
+            if (model is not TModel castedModel)
                 throw new MongodmInvalidEntityTypeException("Invalid model type");
             await DeleteAsync(castedModel, cancellationToken).ConfigureAwait(false);
         }
