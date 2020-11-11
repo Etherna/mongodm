@@ -39,7 +39,7 @@ namespace Etherna.MongODM.Core.Serialization.Mapping
         /// <typeparam name="TModel">The model type</typeparam>
         /// <param name="customSerializer">Custom serializer</param>
         /// <returns>The new schema</returns>
-        ICustomSerializerSchema<TModel> AddCustomSerializerSchema<TModel>(
+        ICustomSerializerSchemaBuilder<TModel> AddCustomSerializerSchema<TModel>(
             IBsonSerializer<TModel> customSerializer)
             where TModel : class;
 
@@ -49,13 +49,11 @@ namespace Etherna.MongODM.Core.Serialization.Mapping
         /// <typeparam name="TModel">The model type</typeparam>
         /// <param name="activeModelMapId">The active model map Id</param>
         /// <param name="activeModelMapInitializer">The active model map inizializer</param>
-        /// <param name="baseModelMapId">Id of the base model map for this model map</param>
         /// <param name="customSerializer">Replace default serializer with a custom</param>
         /// <returns>The new schema</returns>
-        IModelMapsSchema<TModel> AddModelMapsSchema<TModel>(
+        IModelMapsSchemaBuilder<TModel> AddModelMapsSchema<TModel>(
             string activeModelMapId,
             Action<BsonClassMap<TModel>>? activeModelMapInitializer = null,
-            string? baseModelMapId = null,
             IBsonSerializer<TModel>? customSerializer = null)
             where TModel : class;
 
@@ -65,16 +63,8 @@ namespace Etherna.MongODM.Core.Serialization.Mapping
         /// <typeparam name="TModel">The model type</typeparam>
         /// <param name="activeModelMap">The active model map</param>
         /// <returns>The new schema</returns>
-        IModelMapsSchema<TModel> AddModelMapsSchema<TModel>(
+        IModelMapsSchemaBuilder<TModel> AddModelMapsSchema<TModel>(
             ModelMap<TModel> activeModelMap)
-            where TModel : class;
-
-        /// <summary>
-        /// Get a registered custom serializer schema for a given model type
-        /// </summary>
-        /// <typeparam name="TModel">The model type</typeparam>
-        /// <returns>The schema</returns>
-        ICustomSerializerSchema<TModel> GetCustomSerializerSchema<TModel>()
             where TModel : class;
 
         /// <summary>
@@ -94,9 +84,8 @@ namespace Etherna.MongODM.Core.Serialization.Mapping
         /// <summary>
         /// Get a registered model map schema for a given model type
         /// </summary>
-        /// <typeparam name="TModel"></typeparam>
-        /// <returns></returns>
-        IModelMapsSchema<TModel> GetModelMapsSchema<TModel>()
-            where TModel : class;
+        /// <param name="modelType">The model type</param>
+        /// <returns>The registered model maps schema</returns>
+        IModelMapsSchema GetModelMapsSchema(Type modelType);
     }
 }

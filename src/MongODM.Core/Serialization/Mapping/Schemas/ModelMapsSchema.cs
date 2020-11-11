@@ -4,7 +4,7 @@ using System.Diagnostics.CodeAnalysis;
 
 namespace Etherna.MongODM.Core.Serialization.Mapping.Schemas
 {
-    class ModelMapsSchema<TModel> : ModelMapsSchemaBase, IModelMapsSchema<TModel>
+    class ModelMapsSchema<TModel> : ModelMapsSchemaBase, IModelMapsSchemaBuilder<TModel>
         where TModel : class
     {
         // Constructor.
@@ -15,17 +15,17 @@ namespace Etherna.MongODM.Core.Serialization.Mapping.Schemas
         { }
 
         // Methods.
-        public IModelMapsSchema<TModel> AddFallbackCustomSerializer(IBsonSerializer<TModel> fallbackSerializer)
+        public IModelMapsSchemaBuilder<TModel> AddFallbackCustomSerializer(IBsonSerializer<TModel> fallbackSerializer)
         {
             AddFallbackCustomSerializerHelper(fallbackSerializer);
             return this;
         }
 
         [SuppressMessage("Reliability", "CA2000:Dispose objects before losing scope", Justification = "Don't dispose here")]
-        public IModelMapsSchema<TModel> AddSecondaryMap(
+        public IModelMapsSchemaBuilder<TModel> AddSecondaryMap(
             string id,
-            string? baseModelMapId = null,
             Action<BsonClassMap<TModel>>? modelMapInitializer = null,
+            string? baseModelMapId = null,
             IBsonSerializer<TModel>? customSerializer = null)
         {
             // Verify if needs a default serializer.
@@ -42,7 +42,7 @@ namespace Etherna.MongODM.Core.Serialization.Mapping.Schemas
             return AddSecondaryMap(modelMap);
         }
 
-        public IModelMapsSchema<TModel> AddSecondaryMap(ModelMap<TModel> modelMap)
+        public IModelMapsSchemaBuilder<TModel> AddSecondaryMap(ModelMap<TModel> modelMap)
         {
             AddSecondaryMapHelper(modelMap);
             return this;

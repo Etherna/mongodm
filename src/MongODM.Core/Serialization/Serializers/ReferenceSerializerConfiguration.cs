@@ -36,7 +36,7 @@ namespace Etherna.MongODM.Core.Serialization.Serializers
 
         // Methods.
         [SuppressMessage("Reliability", "CA2000:Dispose objects before losing scope", Justification = "Don't need to dispose")]
-        public IReferenceModelMapsSchema<TModel> AddModelMapsSchema<TModel>(
+        public IReferenceModelMapsSchemaBuilder<TModel> AddModelMapsSchema<TModel>(
             string activeModelMapId,
             Action<BsonClassMap<TModel>>? activeModelMapInitializer = null,
             string? baseModelMapId = null)
@@ -46,7 +46,7 @@ namespace Etherna.MongODM.Core.Serialization.Serializers
                 new BsonClassMap<TModel>(activeModelMapInitializer ?? (cm => cm.AutoMap())),
                 baseModelMapId));
 
-        public IReferenceModelMapsSchema<TModel> AddModelMapsSchema<TModel>(
+        public IReferenceModelMapsSchemaBuilder<TModel> AddModelMapsSchema<TModel>(
             ModelMap<TModel> activeModelMap)
             where TModel : class =>
             ExecuteConfigAction(() =>
@@ -77,10 +77,6 @@ namespace Etherna.MongODM.Core.Serialization.Serializers
 
             return activeModelMapIdBsonElement[modelType];
         }
-
-        public IReferenceModelMapsSchema<TModel> GetModelMapsSchema<TModel>()
-            where TModel : class =>
-            (IReferenceModelMapsSchema<TModel>)Schemas[typeof(TModel)];
 
         public IBsonSerializer? GetSerializer(Type modelType, string? modelMapId)
         {

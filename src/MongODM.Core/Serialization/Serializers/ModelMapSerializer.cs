@@ -33,7 +33,7 @@ namespace Etherna.MongODM.Core.Serialization.Serializers
         where TModel : class
     {
         // Fields.
-        private IModelMapsSchema<TModel> _modelMapsSchema = default!;
+        private IModelMapsSchema _modelMapsSchema = default!;
         private readonly IDbCache dbCache;
         private readonly BsonElement documentSemVerElement;
         private readonly DocumentSemVerOptions documentSemVerOptions;
@@ -63,12 +63,12 @@ namespace Etherna.MongODM.Core.Serialization.Serializers
         // Properties.
         public IEnumerable<BsonClassMap> AllChildClassMaps => ModelMapsSchema.AllMapsDictionary.Values.Select(map => map.BsonClassMap);
 
-        public IModelMapsSchema<TModel> ModelMapsSchema
+        public IModelMapsSchema ModelMapsSchema
         {
             get
             {
                 if (_modelMapsSchema is null)
-                    _modelMapsSchema = schemaRegister.GetModelMapsSchema<TModel>();
+                    _modelMapsSchema = schemaRegister.GetModelMapsSchema(typeof(TModel));
 
                 return _modelMapsSchema;
             }

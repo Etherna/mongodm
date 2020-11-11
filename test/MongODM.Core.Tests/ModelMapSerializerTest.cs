@@ -79,7 +79,7 @@ namespace Etherna.MongODM.Core
         // Fields.
         private readonly Mock<IDbCache> dbCacheMock = new();
         private readonly DocumentSemVerOptions documentSemVerOptions = new();
-        private readonly Mock<IModelMapsSchema<FakeModel>> modelMapsSchemaMock = new();
+        private readonly Mock<IModelMapsSchema> modelMapsSchemaMock = new();
         private readonly ModelMapVersionOptions modelMapVersionOptions = new();
         private readonly Mock<ISchemaRegister> schemaRegisterMock = new();
         private readonly Mock<ISerializerModifierAccessor> serializerModifierAccessorMock = new();
@@ -90,7 +90,7 @@ namespace Etherna.MongODM.Core
             dbCacheMock.Setup(c => c.LoadedModels.ContainsKey(It.IsAny<object>()))
                 .Returns(() => false);
 
-            schemaRegisterMock.Setup(sr => sr.GetModelMapsSchema<FakeModel>())
+            schemaRegisterMock.Setup(sr => sr.GetModelMapsSchema(typeof(FakeModel)))
                 .Returns(() => modelMapsSchemaMock.Object);
         }
 

@@ -3,7 +3,7 @@ using System;
 
 namespace Etherna.MongODM.Core.Serialization.Mapping.Schemas
 {
-    class CustomSerializerSchema<TModel> : SchemaBase, ICustomSerializerSchema<TModel>
+    class CustomSerializerSchema<TModel> : SchemaBase, ICustomSerializerSchemaBuilder<TModel>
         where TModel : class
     {
         // Constructor.

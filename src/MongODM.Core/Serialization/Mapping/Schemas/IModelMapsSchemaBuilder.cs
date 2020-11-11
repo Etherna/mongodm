@@ -3,7 +3,8 @@ using System;
 
 namespace Etherna.MongODM.Core.Serialization.Mapping.Schemas
 {
-    public interface IReferenceModelMapsSchema<TModel> : IModelMapsSchema
+    public interface IModelMapsSchemaBuilder<TModel>
+        where TModel : class
     {
         // Methods.
         /// <summary>
@@ -11,27 +12,29 @@ namespace Etherna.MongODM.Core.Serialization.Mapping.Schemas
         /// </summary>
         /// <param name="fallbackSerializer">Fallback serializer</param>
         /// <returns>This same model schema</returns>
-        IReferenceModelMapsSchema<TModel> AddFallbackCustomSerializer(
+        IModelMapsSchemaBuilder<TModel> AddFallbackCustomSerializer(
             IBsonSerializer<TModel> fallbackSerializer);
 
         /// <summary>
         /// Register a secondary model map
         /// </summary>
         /// <param name="id">The map Id</param>
-        /// <param name="baseModelMapId">Id of the base model map for this model map</param>
         /// <param name="modelMapInitializer">The model map inizializer</param>
+        /// <param name="baseModelMapId">Id of the base model map for this model map</param>
+        /// <param name="customSerializer">Custom serializer</param>
         /// <returns>This same model schema configuration</returns>
-        IReferenceModelMapsSchema<TModel> AddSecondaryMap(
+        IModelMapsSchemaBuilder<TModel> AddSecondaryMap(
             string id,
+            Action<BsonClassMap<TModel>>? modelMapInitializer = null,
             string? baseModelMapId = null,
-            Action<BsonClassMap<TModel>>? modelMapInitializer = null);
+            IBsonSerializer<TModel>? customSerializer = null);
 
         /// <summary>
         /// Register a secondary model map
         /// </summary>
         /// <param name="modelMap">The model map</param>
         /// <returns>This same model schema configuration</returns>
-        IReferenceModelMapsSchema<TModel> AddSecondaryMap(
+        IModelMapsSchemaBuilder<TModel> AddSecondaryMap(
             ModelMap<TModel> modelMap);
     }
 }

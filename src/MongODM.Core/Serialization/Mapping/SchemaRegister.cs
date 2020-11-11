@@ -53,7 +53,7 @@ namespace Etherna.MongODM.Core.Serialization.Mapping
         public IReadOnlyDictionary<Type, ISchema> Schemas => _schemas;
 
         // Methods.
-        public ICustomSerializerSchema<TModel> AddCustomSerializerSchema<TModel>(
+        public ICustomSerializerSchemaBuilder<TModel> AddCustomSerializerSchema<TModel>(
             IBsonSerializer<TModel> customSerializer) where TModel : class =>
             ExecuteConfigAction(() =>
             {
@@ -69,10 +69,9 @@ namespace Etherna.MongODM.Core.Serialization.Mapping
 
 
         [SuppressMessage("Reliability", "CA2000:Dispose objects before losing scope", Justification = "Don't need to dispose")]
-        public IModelMapsSchema<TModel> AddModelMapsSchema<TModel>(
+        public IModelMapsSchemaBuilder<TModel> AddModelMapsSchema<TModel>(
             string activeModelMapId,
             Action<BsonClassMap<TModel>>? activeModelMapInitializer = null,
-            string? baseModelMapId = null,
             IBsonSerializer<TModel>? customSerializer = null) where TModel : class
         {
             // Verify if needs a default serializer.
@@ -83,13 +82,13 @@ namespace Etherna.MongODM.Core.Serialization.Mapping
             var modelMap = new ModelMap<TModel>(
                 activeModelMapId,
                 new BsonClassMap<TModel>(activeModelMapInitializer ?? (cm => cm.AutoMap())),
-                baseModelMapId,
+                null,
                 customSerializer);
 
             return AddModelMapsSchema(modelMap);
         }
 
-        public IModelMapsSchema<TModel> AddModelMapsSchema<TModel>(
+        public IModelMapsSchemaBuilder<TModel> AddModelMapsSchema<TModel>(
             ModelMap<TModel> activeModelMap)
             where TModel : class =>
             ExecuteConfigAction(() =>
@@ -111,9 +110,6 @@ namespace Etherna.MongODM.Core.Serialization.Mapping
                 return modelSchemaConfiguration;
             });
 
-        public ICustomSerializerSchema<TModel> GetCustomSerializerSchema<TModel>() where TModel : class =>
-            (ICustomSerializerSchema<TModel>)Schemas[typeof(TModel)];
-
         public IEnumerable<MemberDependency> GetIdMemberDependenciesFromRootModel(Type modelType)
         {
             Freeze(); //needed for initialization
@@ -132,8 +128,8 @@ namespace Etherna.MongODM.Core.Serialization.Mapping
             return Array.Empty<MemberDependency>();
         }
 
-        public IModelMapsSchema<TModel> GetModelMapsSchema<TModel>() where TModel : class =>
-            (IModelMapsSchema<TModel>)Schemas[typeof(TModel)];
+        public IModelMapsSchema GetModelMapsSchema(Type modelType) =>
+            (IModelMapsSchema)Schemas[modelType];
 
         public override string ToString()
         {

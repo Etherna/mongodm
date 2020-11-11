@@ -13,7 +13,6 @@
 //   limitations under the License.
 
 using MongoDB.Bson.Serialization;
-using System;
 using System.Collections.Generic;
 
 namespace Etherna.MongODM.Core.Serialization.Mapping.Schemas
@@ -26,40 +25,5 @@ namespace Etherna.MongODM.Core.Serialization.Mapping.Schemas
         IDbContext DbContext { get; }
         IBsonSerializer? FallbackSerializer { get; }
         IEnumerable<IModelMap> SecondaryMaps { get; }
-    }
-
-    public interface IModelMapsSchema<TModel> : IModelMapsSchema
-        where TModel : class
-    {
-        // Methods.
-        /// <summary>
-        /// Add a fallback serializer invoked in case of undefined schema id
-        /// </summary>
-        /// <param name="fallbackSerializer">Fallback serializer</param>
-        /// <returns>This same model schema</returns>
-        IModelMapsSchema<TModel> AddFallbackCustomSerializer(
-            IBsonSerializer<TModel> fallbackSerializer);
-
-        /// <summary>
-        /// Register a secondary model map
-        /// </summary>
-        /// <param name="id">The map Id</param>
-        /// <param name="baseModelMapId">Id of the base model map for this model map</param>
-        /// <param name="modelMapInitializer">The model map inizializer</param>
-        /// <param name="customSerializer">Custom serializer</param>
-        /// <returns>This same model schema configuration</returns>
-        IModelMapsSchema<TModel> AddSecondaryMap(
-            string id,
-            string? baseModelMapId = null,
-            Action<BsonClassMap<TModel>>? modelMapInitializer = null,
-            IBsonSerializer<TModel>? customSerializer = null);
-
-        /// <summary>
-        /// Register a secondary model map
-        /// </summary>
-        /// <param name="modelMap">The model map</param>
-        /// <returns>This same model schema configuration</returns>
-        IModelMapsSchema<TModel> AddSecondaryMap(
-            ModelMap<TModel> modelMap);
     }
 }
