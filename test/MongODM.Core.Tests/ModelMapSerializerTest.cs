@@ -257,7 +257,6 @@ namespace Etherna.MongODM.Core
                             {
                                 new BsonDocument(new BsonElement[]
                                 {
-                                    new BsonElement("_m", new BsonString("mapId")),
                                     new BsonElement("_id", BsonNull.Value),
                                     new BsonElement("CreationDateTime", new BsonDateTime(new DateTime())),
                                     new BsonElement("EnumerableProp", BsonNull.Value),
@@ -270,7 +269,6 @@ namespace Etherna.MongODM.Core
                             new BsonElement("IntegerProp", new BsonInt32(42)),
                             new BsonElement("ObjectProp", new BsonDocument(new BsonElement[]
                             {
-                                new BsonElement("_m", new BsonString("mapId")),
                                 new BsonElement("_id", BsonNull.Value),
                                 new BsonElement("CreationDateTime", new BsonDateTime(new DateTime())),
                                 new BsonElement("EnumerableProp", BsonNull.Value),
