@@ -41,13 +41,13 @@ namespace Etherna.MongODM.Core.Serialization.Serializers
             Action<BsonClassMap<TModel>>? activeModelMapInitializer = null,
             string? baseModelMapId = null)
             where TModel : class =>
-            AddModelMapsSchema(new ReferenceModelMap<TModel>(
+            AddModelMapsSchema(new ModelMap<TModel>(
                 activeModelMapId,
                 new BsonClassMap<TModel>(activeModelMapInitializer ?? (cm => cm.AutoMap())),
                 baseModelMapId));
 
         public IReferenceModelMapsSchema<TModel> AddModelMapsSchema<TModel>(
-            ReferenceModelMap<TModel> activeModelMap)
+            ModelMap<TModel> activeModelMap)
             where TModel : class =>
             ExecuteConfigAction(() =>
             {
@@ -131,14 +131,15 @@ namespace Etherna.MongODM.Core.Serialization.Serializers
             var classMap = (BsonClassMap)Activator.CreateInstance(classMapType);
 
             //model map
-            var modelMapDefinition = typeof(ReferenceModelMap<>);
+            var modelMapDefinition = typeof(ModelMap<>);
             var modelMapType = modelMapDefinition.MakeGenericType(modelType);
 
-            var activeModelMap = (ModelMapBase)Activator.CreateInstance(
+            var activeModelMap = (ModelMap)Activator.CreateInstance(
                 modelMapType,
                 Guid.NewGuid().ToString(), //string id
                 classMap,                  //BsonClassMap<TModel> bsonClassMap
-                null);                     //string? baseModelMapId
+                null,                      //string? baseModelMapId
+                null);                     //IBsonSerializer<TModel>? serializer
 
             //model maps schema
             var modelMapsSchemaDefinition = typeof(ReferenceModelMapsSchema<>);

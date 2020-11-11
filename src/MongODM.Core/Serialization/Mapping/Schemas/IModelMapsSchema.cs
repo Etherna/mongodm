@@ -21,11 +21,11 @@ namespace Etherna.MongODM.Core.Serialization.Mapping.Schemas
     public interface IModelMapsSchema : ISchema
     {
         // Properties.
-        ModelMapBase ActiveMap { get; }
-        IReadOnlyDictionary<string, ModelMapBase> AllMapsDictionary { get; }
+        IModelMap ActiveMap { get; }
+        IReadOnlyDictionary<string, IModelMap> AllMapsDictionary { get; }
         IDbContext DbContext { get; }
         IBsonSerializer? FallbackSerializer { get; }
-        IEnumerable<ModelMapBase> SecondaryMaps { get; }
+        IEnumerable<IModelMap> SecondaryMaps { get; }
     }
 
     public interface IModelMapsSchema<TModel> : IModelMapsSchema

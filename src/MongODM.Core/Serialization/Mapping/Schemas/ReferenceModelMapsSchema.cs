@@ -8,7 +8,7 @@ namespace Etherna.MongODM.Core.Serialization.Mapping.Schemas
     {
         // Constructor.
         public ReferenceModelMapsSchema(
-            ReferenceModelMap<TModel> activeMap,
+            ModelMap<TModel> activeMap,
             IDbContext dbContext)
             : base(activeMap, dbContext, typeof(TModel))
         { }
@@ -25,12 +25,12 @@ namespace Etherna.MongODM.Core.Serialization.Mapping.Schemas
             string id,
             string? baseModelMapId = null,
             Action<BsonClassMap<TModel>>? modelMapInitializer = null) =>
-            AddSecondaryMap(new ReferenceModelMap<TModel>(
+            AddSecondaryMap(new ModelMap<TModel>(
                 id,
                 new BsonClassMap<TModel>(modelMapInitializer ?? (cm => cm.AutoMap())),
                 baseModelMapId));
 
-        public IReferenceModelMapsSchema<TModel> AddSecondaryMap(ReferenceModelMap<TModel> modelMap)
+        public IReferenceModelMapsSchema<TModel> AddSecondaryMap(ModelMap<TModel> modelMap)
         {
             AddSecondaryMapHelper(modelMap);
             return this;

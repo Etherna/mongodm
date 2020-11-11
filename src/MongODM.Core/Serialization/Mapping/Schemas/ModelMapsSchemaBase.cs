@@ -8,12 +8,12 @@ namespace Etherna.MongODM.Core.Serialization.Mapping.Schemas
     abstract class ModelMapsSchemaBase : SchemaBase, IModelMapsSchema
     {
         // Fields.
-        private Dictionary<string, ModelMapBase> _allMapsDictionary = default!;
-        protected readonly List<ModelMapBase> _secondaryMaps = new List<ModelMapBase>();
+        private Dictionary<string, IModelMap> _allMapsDictionary = default!;
+        protected readonly List<IModelMap> _secondaryMaps = new List<IModelMap>();
 
         // Constructor.
         protected ModelMapsSchemaBase(
-            ModelMapBase activeMap,
+            IModelMap activeMap,
             IDbContext dbContext,
             Type modelType)
             : base(modelType)
@@ -31,9 +31,9 @@ namespace Etherna.MongODM.Core.Serialization.Mapping.Schemas
         }
 
         // Properties.
-        public ModelMapBase ActiveMap { get; }
+        public IModelMap ActiveMap { get; }
         public override IBsonSerializer? ActiveSerializer => ActiveMap.Serializer;
-        public IReadOnlyDictionary<string, ModelMapBase> AllMapsDictionary
+        public IReadOnlyDictionary<string, IModelMap> AllMapsDictionary
         {
             get
             {
@@ -55,7 +55,7 @@ namespace Etherna.MongODM.Core.Serialization.Mapping.Schemas
         public IDbContext DbContext { get; }
         public IBsonSerializer? FallbackSerializer { get; protected set; }
         public override Type? ProxyModelType { get; }
-        public IEnumerable<ModelMapBase> SecondaryMaps => _secondaryMaps;
+        public IEnumerable<IModelMap> SecondaryMaps => _secondaryMaps;
 
         // Protected methods.
         protected void AddFallbackCustomSerializerHelper(IBsonSerializer fallbackSerializer) =>
@@ -69,7 +69,7 @@ namespace Etherna.MongODM.Core.Serialization.Mapping.Schemas
                 FallbackSerializer = fallbackSerializer;
             });
 
-        protected void AddSecondaryMapHelper(ModelMapBase modelMap) =>
+        protected void AddSecondaryMapHelper(IModelMap modelMap) =>
             ExecuteConfigAction(() =>
             {
                 if (modelMap is null)

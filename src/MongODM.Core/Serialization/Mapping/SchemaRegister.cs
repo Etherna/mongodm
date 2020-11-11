@@ -73,13 +73,21 @@ namespace Etherna.MongODM.Core.Serialization.Mapping
             string activeModelMapId,
             Action<BsonClassMap<TModel>>? activeModelMapInitializer = null,
             string? baseModelMapId = null,
-            IBsonSerializer<TModel>? customSerializer = null) where TModel : class =>
-            AddModelMapsSchema(new ModelMap<TModel>(
+            IBsonSerializer<TModel>? customSerializer = null) where TModel : class
+        {
+            // Verify if needs a default serializer.
+            if (!typeof(TModel).IsAbstract)
+                customSerializer ??= ModelMap.GetDefaultSerializer<TModel>(dbContext);
+
+            // Create model map.
+            var modelMap = new ModelMap<TModel>(
                 activeModelMapId,
                 new BsonClassMap<TModel>(activeModelMapInitializer ?? (cm => cm.AutoMap())),
-                dbContext,
                 baseModelMapId,
-                customSerializer));
+                customSerializer);
+
+            return AddModelMapsSchema(modelMap);
+        }
 
         public IModelMapsSchema<TModel> AddModelMapsSchema<TModel>(
             ModelMap<TModel> activeModelMap)
@@ -177,7 +185,7 @@ namespace Etherna.MongODM.Core.Serialization.Mapping
 
         // Helpers.
         private void CompileDependencyRegisters(
-            ModelMapBase modelMap,
+            IModelMap modelMap,
             BsonClassMap currentClassMap,
             BsonClassMap? lastEntityClassMap,
             IEnumerable<BsonMemberMap> bsonMemberPath,
@@ -252,11 +260,10 @@ namespace Etherna.MongODM.Core.Serialization.Mapping
             var modelMapDefinition = typeof(ModelMap<>);
             var modelMapType = modelMapDefinition.MakeGenericType(modelType);
 
-            var activeModelMap = (ModelMapBase)Activator.CreateInstance(
+            var activeModelMap = (ModelMap)Activator.CreateInstance(
                 modelMapType,
                 Guid.NewGuid().ToString(), //string id
                 classMap,                  //BsonClassMap<TModel> bsonClassMap
-                dbContext,                 //IDbContext dbContext
                 null,                      //string? baseModelMapId
                 null);                     //IBsonSerializer<TModel>? serializer
 

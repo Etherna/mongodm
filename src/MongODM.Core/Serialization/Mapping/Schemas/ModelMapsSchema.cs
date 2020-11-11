@@ -26,13 +26,21 @@ namespace Etherna.MongODM.Core.Serialization.Mapping.Schemas
             string id,
             string? baseModelMapId = null,
             Action<BsonClassMap<TModel>>? modelMapInitializer = null,
-            IBsonSerializer<TModel>? customSerializer = null) =>
-            AddSecondaryMap(new ModelMap<TModel>(
+            IBsonSerializer<TModel>? customSerializer = null)
+        {
+            // Verify if needs a default serializer.
+            if (!typeof(TModel).IsAbstract)
+                customSerializer ??= ModelMap.GetDefaultSerializer<TModel>(DbContext);
+
+            // Create model map.
+            var modelMap = new ModelMap<TModel>(
                 id,
                 new BsonClassMap<TModel>(modelMapInitializer ?? (cm => cm.AutoMap())),
-                DbContext,
                 baseModelMapId,
-                customSerializer));
+                customSerializer);
+
+            return AddSecondaryMap(modelMap);
+        }
 
         public IModelMapsSchema<TModel> AddSecondaryMap(ModelMap<TModel> modelMap)
         {
