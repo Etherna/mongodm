@@ -40,7 +40,7 @@ namespace Etherna.ExecContext
         }
 
         // Proeprties.
-        public IDictionary<object, object>? Items
+        public IDictionary<object, object?>? Items
         {
             get
             {

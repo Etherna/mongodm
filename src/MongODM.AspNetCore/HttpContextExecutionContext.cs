@@ -30,6 +30,6 @@ namespace Etherna.MongODM.AspNetCore
         }
 
         // Properties.
-        public IDictionary<object, object>? Items => httpContextAccessor?.HttpContext?.Items;
+        public IDictionary<object, object?>? Items => httpContextAccessor?.HttpContext?.Items;
     }
 }

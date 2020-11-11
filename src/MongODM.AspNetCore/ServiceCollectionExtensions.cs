@@ -59,7 +59,7 @@ namespace Microsoft.Extensions.DependencyInjection
             services.TryAddSingleton<IExecutionContext>(serviceProvider =>
                new ExecutionContextSelector(new IExecutionContext[] //default
                {
-                    new HttpContextExecutionContext(serviceProvider.GetService<IHttpContextAccessor>()),
+                    new HttpContextExecutionContext(serviceProvider.GetRequiredService<IHttpContextAccessor>()),
                     AsyncLocalContext.Instance
                }));
             services.TryAddSingleton<IProxyGenerator, TProxyGenerator>();

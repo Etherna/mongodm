@@ -31,10 +31,10 @@ namespace Etherna.ExecContext.AsyncLocal
     public class AsyncLocalContext : IAsyncLocalContext, IHandledAsyncLocalContext
     {
         // Fields.
-        private static readonly AsyncLocal<IDictionary<object, object>?> asyncLocalContext = new AsyncLocal<IDictionary<object, object>?>();
+        private static readonly AsyncLocal<IDictionary<object, object?>?> asyncLocalContext = new AsyncLocal<IDictionary<object, object?>?>();
 
         // Properties.
-        public IDictionary<object, object>? Items => asyncLocalContext.Value;
+        public IDictionary<object, object?>? Items => asyncLocalContext.Value;
 
         // Static properties.
         public static IAsyncLocalContext Instance { get; } = new AsyncLocalContext();
@@ -45,7 +45,7 @@ namespace Etherna.ExecContext.AsyncLocal
             if (asyncLocalContext.Value != null)
                 throw new InvalidOperationException("Only one context at time is supported");
 
-            asyncLocalContext.Value = new Dictionary<object, object>();
+            asyncLocalContext.Value = new Dictionary<object, object?>();
 
             return new AsyncLocalContextHandler(this);
         }
