@@ -18,7 +18,10 @@ namespace Etherna.MongODM.Core.Serialization.Mapping
             BsonClassMap bsonClassMap,
             IBsonSerializer? serializer)
         {
-            Id = id ?? throw new ArgumentNullException(nameof(id));
+            if (string.IsNullOrEmpty(id))
+                throw new ArgumentException($"'{nameof(id)}' cannot be null or empty", nameof(id));
+
+            Id = id;
             BaseModelMapId = baseModelMapId;
             BsonClassMap = bsonClassMap ?? throw new ArgumentNullException(nameof(bsonClassMap));
             Serializer = serializer;
