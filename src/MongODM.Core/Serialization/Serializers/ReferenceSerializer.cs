@@ -108,7 +108,7 @@ namespace Etherna.MongODM.Core.Serialization.Serializers
             var actualType = DiscriminatorConvention.GetActualType(bsonReader, args.NominalType);
 
             //get model map id
-            var modelMapId = bsonReader.IdempotentFindStringElement(dbContext.ModelMapVersionOptions.ElementName);
+            var modelMapId = bsonReader.FindStringElementInDocument(dbContext.ModelMapVersionOptions.ElementName);
 
             // Deserialize object.
             var serializer = configuration.GetSerializer(actualType, modelMapId);
@@ -252,18 +252,16 @@ namespace Etherna.MongODM.Core.Serialization.Serializers
                 builder => builder.IsDynamicType = context.IsDynamicType);
 
             // Serialize.
-            var serializer = configuration.Schemas[value.GetType()].ActiveSerializer;
-
-            if (serializer is null)
-                throw new InvalidOperationException($"Can't identify a valid serializer for type {value.GetType().Name}");
-
+            var serializer = configuration.Schemas[value.GetType()].ActiveBsonClassMapSerializer;
             serializer.Serialize(localContext, args, value);
 
             // Add additional data.
             //add model map id
             if (bsonDocument.Contains(dbContext.ModelMapVersionOptions.ElementName))
                 bsonDocument.Remove(dbContext.ModelMapVersionOptions.ElementName);
-            bsonDocument.InsertAt(0, configuration.GetActiveModelMapIdBsonElement(value.GetType()));
+            var modelMapIdElement = configuration.GetActiveModelMapIdBsonElement(
+                dbContext.ProxyGenerator.PurgeProxyType(value.GetType()));
+            bsonDocument.InsertAt(0, modelMapIdElement);
 
             // Serialize document.
             BsonDocumentSerializer.Instance.Serialize(context, args, bsonDocument);

@@ -136,13 +136,26 @@ namespace Etherna.MongODM.Core.Serialization.Mapping
             StringBuilder strBuilder = new StringBuilder();
 
             // Member dependencies.
+            //memberInfoToMemberMapsDictionary
             strBuilder.AppendLine("Member dependencies:");
             foreach (var dependencies in from dependency in memberInfoToMemberMapsDictionary
                                          orderby $"{dependency.Key.DeclaringType.Name}.{dependency.Key.Name}"
                                          select dependency)
             {
                 strBuilder.AppendLine($"{dependencies.Key.DeclaringType.Name}.{dependencies.Key.Name}");
-                foreach (var dependency in dependencies.Value)
+                foreach (var dependency in dependencies.Value.OrderBy(d => d.FullPathToString()))
+                    strBuilder.AppendLine($"  {dependency}");
+            }
+            strBuilder.AppendLine();
+
+            //modelTypeToReferencedIdMemberMapsDictionary
+            strBuilder.AppendLine("Models to referenced Ids:");
+            foreach (var dependencies in from dependency in modelTypeToReferencedIdMemberMapsDictionary
+                                         orderby $"{dependency.Key.Name}"
+                                         select dependency)
+            {
+                strBuilder.AppendLine($"{dependencies.Key.Name}");
+                foreach (var dependency in dependencies.Value.OrderBy(d => d.FullPathToString()))
                     strBuilder.AppendLine($"  {dependency}");
             }
 
@@ -164,18 +177,23 @@ namespace Etherna.MongODM.Core.Serialization.Mapping
                 // Register active serializer.
                 if (schema.ActiveSerializer != null)
                     BsonSerializer.RegisterSerializer(schema.ModelType, schema.ActiveSerializer);
+            }
 
-                // Compile dependency registers.
-                /* Only model map based schemas can be analyzed for document dependencies.
-                 * Schemas based on custom serializers can't be explored.
-                 */
-                if (schema is IModelMapsSchema modelMapSchema)
-                    foreach (var modelMap in modelMapSchema.AllMapsDictionary.Values)
-                        CompileDependencyRegisters(
-                            modelMap,
-                            modelMap.BsonClassMap,
-                            default,
-                            Array.Empty<BsonMemberMap>());
+            // Compile dependency registers.
+
+            /* Only model map based schemas can be analyzed for document dependencies.
+             * Schemas based on custom serializers can't be explored.
+             * 
+             * This operation needs to be executed AFTER that all serializers have been registered.
+             */
+            foreach (var schema in _schemas.Values.OfType<IModelMapsSchema>())
+            {
+                foreach (var modelMap in schema.AllMapsDictionary.Values)
+                    CompileDependencyRegisters(
+                        modelMap,
+                        modelMap.BsonClassMap,
+                        default,
+                        Array.Empty<BsonMemberMap>());
             }
         }
 
@@ -189,6 +207,9 @@ namespace Etherna.MongODM.Core.Serialization.Mapping
         {
             // Ignore class maps of abstract types. (child classes will map all their members)
             if (currentClassMap.ClassType.IsAbstract)
+                return;
+            // Ignore class maps of proxy types. (they are not useful in dependency context)
+            if (dbContext.ProxyGenerator.IsProxyType(currentClassMap.ClassType))
                 return;
 
             // Identify last indented entity class maps.
@@ -215,7 +236,7 @@ namespace Etherna.MongODM.Core.Serialization.Mapping
                 var memberMap = new MemberDependency(
                     modelMap,
                     currentMemberPath,
-                    useCascadeDeleteSetting);
+                    useCascadeDeleteSetting ?? false);
 
                 // Add member dependency to registers.
                 //memberInfo to related member maps, for each different model maps version

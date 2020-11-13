@@ -33,7 +33,7 @@ namespace Etherna.MongODM.Core.Serialization.Mapping
         public MemberDependency(
             IModelMap rootModelMap,
             IEnumerable<BsonMemberMap> memberPath,
-            bool? useCascadeDelete)
+            bool useCascadeDelete)
         {
             MemberPath = memberPath ?? throw new ArgumentNullException(nameof(memberPath));
             if (!memberPath.Any())
@@ -120,7 +120,7 @@ namespace Etherna.MongODM.Core.Serialization.Mapping
         /// <summary>
         /// True if requested to apply cascade delete
         /// </summary>
-        public bool? UseCascadeDelete { get; }
+        public bool UseCascadeDelete { get; }
 
         // Methods.
         public string MemberPathToString() =>
@@ -134,10 +134,10 @@ namespace Etherna.MongODM.Core.Serialization.Mapping
             
             strBuilder.AppendLine(FullPathToString());
             strBuilder.AppendLine($"    modelMapId: {RootModelMap.Id}");
-            strBuilder.AppendLine($"    entity: {string.Join("->", EntityModelMapPath.Select(cm => cm.ClassType.Name))}");
-            strBuilder.AppendLine($"    isEntityRefMem: {IsEntityReferenceMember}");
-            strBuilder.AppendLine($"    isIdMem: {IsIdMember}");
-            strBuilder.AppendLine($"    cascadeDelete: {UseCascadeDelete?.ToString() ?? "null"}");
+            strBuilder.AppendLine($"    entityChain: {string.Join("->", EntityModelMapPath.Select(cm => cm.ClassType.Name))}");
+            strBuilder.AppendLine($"    isInEntityReference: {IsEntityReferenceMember}");
+            strBuilder.AppendLine($"    isId: {IsIdMember}");
+            strBuilder.AppendLine($"    cascadeDelete: {UseCascadeDelete}");
 
             return strBuilder.ToString();
         }

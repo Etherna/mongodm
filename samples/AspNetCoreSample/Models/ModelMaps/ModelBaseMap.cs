@@ -26,15 +26,13 @@ namespace Etherna.MongODM.AspNetCoreSample.Models.ModelMaps
         {
             dbContext.SchemaRegister.AddModelMapsSchema<ModelBase>("1252861f-82d9-4c72-975e-3571d5e1b6e6");
 
-            dbContext.SchemaRegister.AddModelMapsSchema<EntityModelBase<string>>(
-                "81dd8b35-a0af-44d9-80b4-ab7ae9844eb5",
-                modelMap =>
-                {
-                    modelMap.AutoMap();
+            dbContext.SchemaRegister.AddModelMapsSchema<EntityModelBase<string>>("81dd8b35-a0af-44d9-80b4-ab7ae9844eb5", modelMap =>
+            {
+                modelMap.AutoMap();
 
-                    modelMap.IdMemberMap.SetSerializer(new StringSerializer(BsonType.ObjectId))
-                                        .SetIdGenerator(new StringObjectIdGenerator());
-                });
+                modelMap.IdMemberMap.SetSerializer(new StringSerializer(BsonType.ObjectId))
+                                    .SetIdGenerator(new StringObjectIdGenerator());
+            });
         }
     }
 }

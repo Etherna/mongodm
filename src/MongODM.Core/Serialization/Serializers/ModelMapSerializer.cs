@@ -193,11 +193,16 @@ namespace Etherna.MongODM.Core.Serialization.Serializers
 
             // Add additional data.
             //add model map id
-            if (bsonDocument.Contains(modelMapVersionOptions.ElementName))
-                bsonDocument.Remove(modelMapVersionOptions.ElementName);
-            bsonDocument.InsertAt(0, new BsonElement(
-                modelMapVersionOptions.ElementName,
-                new BsonString(ModelMapsSchema.ActiveMap.Id)));
+
+            /* Verify if already exists, because if current model type is derived from the basic collection type,
+             * the basic type serializer is called before, and a more specific serializer as been already invoked
+             * from bson class map serializer. In that case, the right model map id is already be setted, and we
+             * don't have to replace it with the one wrong of the basic collection model type.
+             */
+            if (!bsonDocument.Contains(modelMapVersionOptions.ElementName))
+                bsonDocument.InsertAt(0, new BsonElement(
+                    modelMapVersionOptions.ElementName,
+                    new BsonString(ModelMapsSchema.ActiveMap.Id)));
 
             //add version
             if (documentSemVerOptions.WriteInDocuments && bsonWriter.IsRootDocument)

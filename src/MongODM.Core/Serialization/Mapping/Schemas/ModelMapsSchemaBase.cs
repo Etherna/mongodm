@@ -22,7 +22,8 @@ namespace Etherna.MongODM.Core.Serialization.Mapping.Schemas
             DbContext = dbContext ?? throw new ArgumentNullException(nameof(dbContext));
 
             // Verify if have to use proxy model.
-            if (!modelType.IsAbstract &&
+            if (modelType != typeof(object) &&
+                !modelType.IsAbstract &&
                 !dbContext.ProxyGenerator.IsProxyType(modelType))
             {
                 ProxyModelType = dbContext.ProxyGenerator.CreateInstance(modelType, dbContext).GetType();
@@ -31,6 +32,7 @@ namespace Etherna.MongODM.Core.Serialization.Mapping.Schemas
         }
 
         // Properties.
+        public IBsonSerializer ActiveBsonClassMapSerializer => ActiveMap.BsonClassMapSerializer;
         public IModelMap ActiveMap { get; }
         public override IBsonSerializer? ActiveSerializer => ActiveMap.Serializer;
         public IReadOnlyDictionary<string, IModelMap> AllMapsDictionary

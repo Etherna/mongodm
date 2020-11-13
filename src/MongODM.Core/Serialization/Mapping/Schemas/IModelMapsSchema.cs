@@ -20,6 +20,7 @@ namespace Etherna.MongODM.Core.Serialization.Mapping.Schemas
     public interface IModelMapsSchema : ISchema
     {
         // Properties.
+        IBsonSerializer ActiveBsonClassMapSerializer { get; }
         IModelMap ActiveMap { get; }
         IReadOnlyDictionary<string, IModelMap> AllMapsDictionary { get; }
         IDbContext DbContext { get; }
