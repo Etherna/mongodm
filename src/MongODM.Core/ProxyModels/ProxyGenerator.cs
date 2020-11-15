@@ -137,6 +137,7 @@ namespace Etherna.MongODM.Core.ProxyModels
         {
             modelConfigurationDictionaryLock.Dispose();
             proxyTypeDictionaryLock.Dispose();
+            GC.SuppressFinalize(this);
         }
 
         public bool IsProxyType(Type type)

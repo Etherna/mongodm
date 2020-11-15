@@ -67,6 +67,7 @@ namespace Etherna.MongODM.Core.Serialization
         public void Dispose()
         {
             configLock.Dispose();
+            GC.SuppressFinalize(this);
         }
 
         public void Freeze()

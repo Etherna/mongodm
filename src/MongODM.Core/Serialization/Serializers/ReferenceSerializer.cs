@@ -161,6 +161,7 @@ namespace Etherna.MongODM.Core.Serialization.Serializers
             configLockAdapters.Dispose();
             configLockClassMaps.Dispose();
             configLockSerializers.Dispose();
+            GC.SuppressFinalize(this);
         }
 
         public IBsonSerializer<TModel> GetAdapter<TModel>()

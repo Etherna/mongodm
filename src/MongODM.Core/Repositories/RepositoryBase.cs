@@ -164,9 +164,7 @@ namespace Etherna.MongODM.Core.Repositories
                 //cascade delete model
                 var repository = DbContext.RepositoryRegister.ModelRepositoryMap[currentModel.GetType().BaseType];
                 try { await repository.DeleteAsync((IEntityModel)currentModel).ConfigureAwait(false); }
-#pragma warning disable CA1031 // Do not catch general exception types. Internal exceptions thrown by MongoDB drivers
                 catch { }
-#pragma warning restore CA1031 // Do not catch general exception types
             }
             else
             {

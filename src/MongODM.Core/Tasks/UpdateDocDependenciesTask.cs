@@ -76,9 +76,7 @@ namespace Etherna.MongODM.Core.Tasks
                                     // Replace on db.
                                     await repository.ReplaceAsync(model, false).ConfigureAwait(false);
                                 }
-#pragma warning disable CA1031 // Do not catch general exception types. Internal exceptions thrown by MongoDB drivers
                                 catch { }
-#pragma warning restore CA1031 // Do not catch general exception types
 
                                 // Add id to upgraded list.
                                 upgradedDocumentsId.Add(model.Id);

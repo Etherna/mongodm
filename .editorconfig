@@ -16,35 +16,3 @@ indent_size = 2
 # C# files
 [*.cs]
 
-# CA1005: Avoid excessive parameters on generic types
-dotnet_diagnostic.CA1005.severity = none
-
-# CA1014: Mark assemblies with CLSCompliant
-dotnet_diagnostic.CA1014.severity = none    # Not interested in feature
-
-# CA1021: Avoid out parameters
-dotnet_diagnostic.CA1021.severity = none
-
-# CA1034: Nested types should not be visible
-dotnet_diagnostic.CA1034.severity = none
-
-# CA1063: Implement IDisposable Correctly
-dotnet_diagnostic.CA1063.severity = none
-
-# CA1303: Do not pass literals as localized parameters
-dotnet_diagnostic.CA1303.severity = none    # Don't need translated exceptions
-
-# CA1508: Avoid dead conditional code
-dotnet_diagnostic.CA1508.severity = none    # It's not reliable
-
-# CA1707: Identifiers should not contain underscores
-dotnet_diagnostic.CA1707.severity = none    # I want to use underscore in constants
-
-# CA1812: Avoid uninstantiated internal classes
-dotnet_diagnostic.CA1812.severity = none    # Doing extensive use of dependency injection
-
-# CA1816: Dispose methods should call SuppressFinalize
-dotnet_diagnostic.CA1816.severity = none
-
-# CA2225: Operator overloads have named alternates
-dotnet_diagnostic.CA2225.severity = none

@@ -28,6 +28,7 @@ namespace Etherna.MongODM.Core
         public void Dispose()
         {
             configLock.Dispose();
+            GC.SuppressFinalize(this);
         }
 
         // Properties.

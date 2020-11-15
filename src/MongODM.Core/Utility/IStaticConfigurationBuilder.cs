@@ -20,9 +20,7 @@ namespace Etherna.MongODM.Core.Utility
     /// For a proper use, implements it in a class where configuration is invoked by constructor.
     /// So configure it as a singleton on IoC system, and injectit as a dependency for DbContext.
     /// </summary>
-#pragma warning disable CA1040 // Avoid empty interfaces
     public interface IStaticConfigurationBuilder
     {
     }
-#pragma warning restore CA1040 // Avoid empty interfaces
 }
