@@ -22,7 +22,7 @@ using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.Threading.Tasks;
 
-namespace AspNetCoreSample.Pages
+namespace Etherna.MongODM.AspNetCoreSample.Pages
 {
     public class IndexModel : PageModel
     {

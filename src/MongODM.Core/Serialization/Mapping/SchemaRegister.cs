@@ -177,6 +177,11 @@ namespace Etherna.MongODM.Core.Serialization.Mapping
                 // Register active serializer.
                 if (schema.ActiveSerializer != null)
                     BsonSerializer.RegisterSerializer(schema.ModelType, schema.ActiveSerializer);
+
+                // Register discriminators for all bson class maps.
+                if (schema is IModelMapsSchema modelMapsSchema)
+                    foreach (var modelMap in modelMapsSchema.AllMapsDictionary.Values)
+                        BsonSerializer.RegisterDiscriminator(modelMapsSchema.ModelType, modelMap.BsonClassMap.Discriminator);
             }
 
             // Compile dependency registers.

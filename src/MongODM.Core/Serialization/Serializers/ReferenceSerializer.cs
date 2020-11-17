@@ -89,14 +89,13 @@ namespace Etherna.MongODM.Core.Serialization.Serializers
                 throw new ArgumentNullException(nameof(context));
 
             // Check bson type.
-            var bsonReader = context.Reader;
-            var bsonType = bsonReader.GetCurrentBsonType();
+            var bsonType = context.Reader.GetCurrentBsonType();
             switch (bsonType)
             {
                 case BsonType.Document:
                     break;
                 case BsonType.Null:
-                    bsonReader.ReadNull();
+                    context.Reader.ReadNull();
                     return null!;
                 default:
                     var message = $"Expected a nested document representing the serialized form of a {nameof(TModelBase)} value, but found a value of type {bsonType} instead.";
@@ -105,18 +104,35 @@ namespace Etherna.MongODM.Core.Serialization.Serializers
 
             // Find pre-deserialization informations.
             //get actual type
-            var actualType = DiscriminatorConvention.GetActualType(bsonReader, args.NominalType);
+            var actualType = DiscriminatorConvention.GetActualType(context.Reader, args.NominalType);
+
+            //deserialize on document
+            var bsonDocument = BsonDocumentSerializer.Instance.Deserialize(context, args);
 
             //get model map id
-            var modelMapId = bsonReader.FindStringElementInDocument(dbContext.ModelMapVersionOptions.ElementName);
+            string? modelMapId = null;
+            if (bsonDocument.TryGetElement(dbContext.ModelMapVersionOptions.ElementName, out BsonElement modelMapIdElement))
+            {
+                modelMapId = BsonValueToModelMapId(modelMapIdElement.Value);
+                bsonDocument.RemoveElement(modelMapIdElement); //don't report into extra elements
+            }
 
-            // Deserialize object.
+            // Initialize localContext.
+            using var bsonReader = new BsonDocumentReader(bsonDocument);
+            var localContext = BsonDeserializationContext.CreateRoot(bsonReader, builder =>
+            {
+                builder.AllowDuplicateElementNames = context.AllowDuplicateElementNames;
+                builder.DynamicArraySerializer = context.DynamicArraySerializer;
+                builder.DynamicDocumentSerializer = context.DynamicDocumentSerializer;
+            });
+
+            // Deserialize.
+            //get serializer
             var serializer = configuration.GetSerializer(actualType, modelMapId);
-
             if (serializer is null)
                 throw new InvalidOperationException($"Can't identify a valid serializer for type {actualType.Name}");
 
-            var model = serializer.Deserialize(context, args) as TModelBase;
+            var model = serializer.Deserialize(localContext, args) as TModelBase;
 
             // Process model.
             if (model != null)
@@ -294,5 +310,14 @@ namespace Etherna.MongODM.Core.Serialization.Serializers
             else
                 throw new InvalidOperationException("Can't find a valid serializer");
         }
+
+        // Helpers.
+        private static string? BsonValueToModelMapId(BsonValue bsonValue) =>
+            bsonValue switch
+            {
+                BsonNull _ => null,
+                BsonString bsonString => bsonString.AsString,
+                _ => throw new NotSupportedException(),
+            };
     }
 }
