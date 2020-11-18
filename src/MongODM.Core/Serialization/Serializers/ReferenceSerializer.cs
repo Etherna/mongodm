@@ -234,7 +234,7 @@ namespace Etherna.MongODM.Core.Serialization.Serializers
             if (document is null)
                 throw new ArgumentNullException(nameof(document));
 
-            var serializer = configuration.Schemas[document.GetType()].ActiveSerializer;
+            var serializer = configuration.Schemas[document.GetType()].ActiveBsonClassMapSerializer;
 
             if (serializer is IBsonIdProvider idProvider)
                 return idProvider.GetDocumentId(document, out id, out idNominalType, out idGenerator);
@@ -288,7 +288,7 @@ namespace Etherna.MongODM.Core.Serialization.Serializers
             if (document is null)
                 throw new ArgumentNullException(nameof(document));
 
-            var serializer = configuration.Schemas[document.GetType()].ActiveSerializer;
+            var serializer = configuration.Schemas[document.GetType()].ActiveBsonClassMapSerializer;
 
             if (serializer is IBsonIdProvider idProvider)
                 idProvider.SetDocumentId(document, id);
@@ -303,7 +303,7 @@ namespace Etherna.MongODM.Core.Serialization.Serializers
                 .Where(cm => cm.GetMemberMap(memberName) != null)
                 .First()
                 .ClassType;
-            var serializer = configuration.Schemas[modelType].ActiveSerializer;
+            var serializer = configuration.Schemas[modelType].ActiveBsonClassMapSerializer;
 
             if (serializer is IBsonDocumentSerializer documentSerializer)
                 return documentSerializer.TryGetMemberSerializationInfo(memberName, out serializationInfo);

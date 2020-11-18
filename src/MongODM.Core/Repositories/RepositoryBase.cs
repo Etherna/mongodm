@@ -78,7 +78,7 @@ namespace Etherna.MongODM.Core.Repositories
             // Process cascade delete.
             var referencesIdsPaths = DbContext.SchemaRegister.GetIdMemberDependenciesFromRootModel(typeof(TModel))
                 .Where(d => d.UseCascadeDelete)
-                .Where(d => d.EntityModelMapPath.Count() == 2) //ignore references of references
+                .Where(d => d.EntityClassMapPath.Count() == 2) //ignore references of references
                 .DistinctBy(d => d.FullPathToString())
                 .Select(d => d.MemberPath);
 
@@ -153,7 +153,7 @@ namespace Etherna.MongODM.Core.Repositories
         protected abstract Task<TModel> FindOneOnDBAsync(TKey id, CancellationToken cancellationToken = default);
 
         // Helpers.
-        private async Task CascadeDeleteMembersAsync(object currentModel, IEnumerable<BsonMemberMap> idPath)
+        private async Task CascadeDeleteMembersAsync(object currentModel, IEnumerable<OwnedBsonMemberMap> idPath)
         {
             if (!idPath.Any())
                 throw new ArgumentException("Member path can't be empty", nameof(idPath));
@@ -161,7 +161,7 @@ namespace Etherna.MongODM.Core.Repositories
             var currentMember = idPath.First();
             var memberTail = idPath.Skip(1);
 
-            if (currentMember.IsIdMember())
+            if (currentMember.Member.IsIdMember())
             {
                 //cascade delete model
                 var repository = DbContext.RepositoryRegister.ModelRepositoryMap[currentModel.GetType().BaseType];
@@ -173,7 +173,7 @@ namespace Etherna.MongODM.Core.Repositories
             else
             {
                 //recursion on value
-                var memberInfo = currentMember.MemberInfo;
+                var memberInfo = currentMember.Member.MemberInfo;
                 var memberValue = ReflectionHelper.GetValue(currentModel, memberInfo);
                 if (memberValue == null)
                     return;

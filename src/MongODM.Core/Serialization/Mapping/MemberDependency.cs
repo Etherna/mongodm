@@ -27,12 +27,12 @@ namespace Etherna.MongODM.Core.Serialization.Mapping
     public class MemberDependency
     {
         // Fields.
-        private IEnumerable<BsonMemberMap> _memberPathToLastEntityModelId = default!;
+        private IEnumerable<OwnedBsonMemberMap> _memberPathToLastEntityModelId = default!;
 
         // Constructors.
         public MemberDependency(
             IModelMap rootModelMap,
-            IEnumerable<BsonMemberMap> memberPath,
+            IEnumerable<OwnedBsonMemberMap> memberPath,
             bool useCascadeDelete)
         {
             MemberPath = memberPath ?? throw new ArgumentNullException(nameof(memberPath));
@@ -44,25 +44,25 @@ namespace Etherna.MongODM.Core.Serialization.Mapping
 
         // Properties.
         /// <summary>
-        /// Description of all encountered entity models in member path
+        /// Description of all encountered entity model classes in member path
         /// </summary>
-        public IEnumerable<BsonClassMap> EntityModelMapPath => MemberPath.Select(memberMap => memberMap.ClassMap)
+        public IEnumerable<BsonClassMap> EntityClassMapPath => MemberPath.Select(member => member.OwnerClass)
                                                                          .Where(classMap => classMap.IsEntity());
 
         /// <summary>
         /// True if member is an entity Id
         /// </summary>
-        public bool IsIdMember => MemberPath.Last().IsIdMember();
+        public bool IsIdMember => MemberPath.Last().Member.IsIdMember();
 
         /// <summary>
         /// True if member is contained into a referenced entity model
         /// </summary>
-        public bool IsEntityReferenceMember => EntityModelMapPath.Count() >= 2;
+        public bool IsEntityReferenceMember => EntityClassMapPath.Count() >= 2;
 
         /// <summary>
         /// The full path from root type to current member
         /// </summary>
-        public IEnumerable<BsonMemberMap> MemberPath { get; }
+        public IEnumerable<OwnedBsonMemberMap> MemberPath { get; }
 
         /// <summary>
         /// The member path from the root type, to the id member of the entity model that owns current member
@@ -90,7 +90,7 @@ namespace Etherna.MongODM.Core.Serialization.Mapping
         /// [ 0 , 1 , 2 , 3 ]
         /// return: members([{Ei>}])
         /// </example>
-        public IEnumerable<BsonMemberMap> MemberPathToLastEntityModelId
+        public IEnumerable<OwnedBsonMemberMap> MemberPathToLastEntityModelId
         {
             get
             {
@@ -99,14 +99,16 @@ namespace Etherna.MongODM.Core.Serialization.Mapping
                     int take = MemberPath.Count() - 1;
                     for (; take >= 0; take--)
                     {
-                        if (MemberPath.ElementAt(take).ClassMap.IsEntity())
+                        if (MemberPath.ElementAt(take).OwnerClass.IsEntity())
                             break;
                     }
 
                     _memberPathToLastEntityModelId = take >= 0 ? //if exists an entity
                         MemberPath.Take(take).Append(
-                            MemberPath.ElementAt(take).ClassMap.IdMemberMap) :
-                        Array.Empty<BsonMemberMap>();
+                            new OwnedBsonMemberMap(
+                                MemberPath.ElementAt(take).OwnerClass,
+                                MemberPath.ElementAt(take).OwnerClass.IdMemberMap)) :
+                        Array.Empty<OwnedBsonMemberMap>();
                 }
                 return _memberPathToLastEntityModelId;
             }
@@ -124,7 +126,7 @@ namespace Etherna.MongODM.Core.Serialization.Mapping
 
         // Methods.
         public string MemberPathToString() =>
-            string.Join(".", MemberPath.Select(member => member.MemberInfo.Name));
+            string.Join(".", MemberPath.Select(member => member.Member.MemberInfo.Name));
 
         public string FullPathToString() => $"{RootModelMap.ModelType.Name}.{MemberPathToString()}";
 
@@ -134,7 +136,7 @@ namespace Etherna.MongODM.Core.Serialization.Mapping
             
             strBuilder.AppendLine(FullPathToString());
             strBuilder.AppendLine($"    modelMapId: {RootModelMap.Id}");
-            strBuilder.AppendLine($"    entityChain: {string.Join("->", EntityModelMapPath.Select(cm => cm.ClassType.Name))}");
+            strBuilder.AppendLine($"    entityChain: {string.Join("->", EntityClassMapPath.Select(cm => cm.ClassType.Name))}");
             strBuilder.AppendLine($"    isInEntityReference: {IsEntityReferenceMember}");
             strBuilder.AppendLine($"    isId: {IsIdMember}");
             strBuilder.AppendLine($"    cascadeDelete: {UseCascadeDelete}");

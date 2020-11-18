@@ -200,15 +200,11 @@ namespace Etherna.MongODM.Core.Serialization.Serializers
                 builder => builder.IsDynamicType = context.IsDynamicType);
 
             // Get default schema.
-            /* If actual type is different, the BsonClassMapSerializer will search for correct
-             * registered serializer. It's fine to get the default serializer here, because this permits
-             * to handle also cases where a type is registered with a different type of serializer,
-             * or simply doesn't have a model map registered.
-             */
-            var modelMapsSchema = schemaRegister.GetModelMapsSchema(typeof(TModel));
+            var actualType = value.GetType();
+            var modelMapsSchema = schemaRegister.GetModelMapsSchema(actualType);
 
             // Serialize.
-            modelMapsSchema.ActiveMap.BsonClassMapSerializer.Serialize(localContext, args, value);
+            modelMapsSchema.ActiveBsonClassMapSerializer.Serialize(localContext, args, value);
 
             // Add additional data.
             //add model map id

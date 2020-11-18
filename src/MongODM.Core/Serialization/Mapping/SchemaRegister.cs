@@ -123,8 +123,10 @@ namespace Etherna.MongODM.Core.Serialization.Mapping
         {
             Freeze(); //needed for initialization
 
-            if (memberInfoToMemberMapsDictionary.TryGetValue(memberInfo, out List<MemberDependency> dependencies))
-                return dependencies;
+            foreach (var pair in memberInfoToMemberMapsDictionary)
+                if (pair.Key.IsSameAs(memberInfo))
+                    return pair.Value;
+
             return Array.Empty<MemberDependency>();
         }
 
@@ -198,7 +200,7 @@ namespace Etherna.MongODM.Core.Serialization.Mapping
                         modelMap,
                         modelMap.BsonClassMap,
                         default,
-                        Array.Empty<BsonMemberMap>());
+                        Array.Empty<OwnedBsonMemberMap>());
             }
         }
 
@@ -207,7 +209,7 @@ namespace Etherna.MongODM.Core.Serialization.Mapping
             IModelMap modelMap,
             BsonClassMap currentClassMap,
             BsonClassMap? lastEntityClassMap,
-            IEnumerable<BsonMemberMap> bsonMemberPath,
+            IEnumerable<OwnedBsonMemberMap> ownedBsonMemberPath,
             bool? useCascadeDeleteSetting = null)
         {
             // Ignore class maps of abstract types. (child classes will map all their members)
@@ -222,43 +224,58 @@ namespace Etherna.MongODM.Core.Serialization.Mapping
                 lastEntityClassMap = currentClassMap;
 
             // Explore recursively members.
-            foreach (var bsonMemberMap in currentClassMap.AllMemberMaps)
+            foreach (var ownedBsonMemberMap in currentClassMap.AllMemberMaps.Select(member => new OwnedBsonMemberMap(currentClassMap, member)))
             {
                 // Identify if exists a cyclicity with member path.
-                if (bsonMemberPath.Contains(bsonMemberMap))
+                if (ownedBsonMemberPath.Contains(ownedBsonMemberMap))
                 {
                     var memberPathString = string.Join("->",
-                        bsonMemberPath.Append(bsonMemberMap)
-                            .Select(m => $"[{m.ClassMap.ClassType.Name}]{m.MemberName}"));
+                        ownedBsonMemberPath.Append(ownedBsonMemberMap)
+                            .Select(m => $"[{m.OwnerClass.ClassType.Name}]{m.Member.MemberName}"));
 
                     throw new InvalidOperationException("Invalid cyclicity identified with model map definition:\n" + memberPathString);
                 }
 
                 // Update path.
-                var currentMemberPath = bsonMemberPath.Append(bsonMemberMap);
+                var currentMemberPath = ownedBsonMemberPath.Append(ownedBsonMemberMap);
 
                 // Identify current member with its root model map, the path from current model map, and cascade delete information.
-                var memberMap = new MemberDependency(
+                var memberDependency = new MemberDependency(
                     modelMap,
                     currentMemberPath,
                     useCascadeDeleteSetting ?? false);
 
                 // Add member dependency to registers.
-                //memberInfo to related member maps, for each different model maps version
-                if (!memberInfoToMemberMapsDictionary.ContainsKey(bsonMemberMap.MemberInfo))
-                    memberInfoToMemberMapsDictionary[bsonMemberMap.MemberInfo] = new List<MemberDependency>();
 
-                memberInfoToMemberMapsDictionary[bsonMemberMap.MemberInfo].Add(memberMap);
+                //memberInfo to related member dependencies, for each different model maps version
+                /*
+                 * MemberInfo comparison has to be performed with extension method "IsSameAs". If an equal member info
+                 * is found with this equality comparer, it has to be taken as key also for current memberinfo
+                 */
+                List<MemberDependency>? memberDependencyList = default;
+                foreach (var pair in memberInfoToMemberMapsDictionary)
+                    if (pair.Key.IsSameAs(ownedBsonMemberMap.Member.MemberInfo))
+                    {
+                        memberDependencyList = memberInfoToMemberMapsDictionary[pair.Key];
+                        break;
+                    }
+                if (memberDependencyList is null)
+                {
+                    memberDependencyList = new List<MemberDependency>();
+                    memberInfoToMemberMapsDictionary[ownedBsonMemberMap.Member.MemberInfo] = memberDependencyList;
+                }
+
+                memberDependencyList.Add(memberDependency);
 
                 //model type to each referenced id member maps, for each different model maps version
                 if (!modelTypeToReferencedIdMemberMapsDictionary.ContainsKey(modelMap.ModelType))
                     modelTypeToReferencedIdMemberMapsDictionary[modelMap.ModelType] = new List<MemberDependency>();
 
-                if (memberMap.IsEntityReferenceMember && memberMap.IsIdMember)
-                    modelTypeToReferencedIdMemberMapsDictionary[modelMap.ModelType].Add(memberMap);
+                if (memberDependency.IsEntityReferenceMember && memberDependency.IsIdMember)
+                    modelTypeToReferencedIdMemberMapsDictionary[modelMap.ModelType].Add(memberDependency);
 
                 // Analize recursion on member.
-                var memberSerializer = bsonMemberMap.GetSerializer();
+                var memberSerializer = ownedBsonMemberMap.Member.GetSerializer();
 
                 //model maps schema serializers
                 if (memberSerializer is IModelMapsContainerSerializer schemaSerializer)
