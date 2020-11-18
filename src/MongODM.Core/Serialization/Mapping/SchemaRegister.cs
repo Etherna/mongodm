@@ -226,16 +226,6 @@ namespace Etherna.MongODM.Core.Serialization.Mapping
             // Explore recursively members.
             foreach (var ownedBsonMemberMap in currentClassMap.AllMemberMaps.Select(member => new OwnedBsonMemberMap(currentClassMap, member)))
             {
-                // Identify if exists a cyclicity with member path.
-                if (ownedBsonMemberPath.Contains(ownedBsonMemberMap))
-                {
-                    var memberPathString = string.Join("->",
-                        ownedBsonMemberPath.Append(ownedBsonMemberMap)
-                            .Select(m => $"[{m.OwnerClass.ClassType.Name}]{m.Member.MemberName}"));
-
-                    throw new InvalidOperationException("Invalid cyclicity identified with model map definition:\n" + memberPathString);
-                }
-
                 // Update path.
                 var currentMemberPath = ownedBsonMemberPath.Append(ownedBsonMemberMap);
 
