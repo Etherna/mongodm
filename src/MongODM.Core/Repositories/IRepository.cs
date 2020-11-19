@@ -12,14 +12,14 @@
 //   See the License for the specific language governing permissions and
 //   limitations under the License.
 
-using Etherna.MongODM.Models;
-using Etherna.MongODM.Serialization;
+using Etherna.MongODM.Core.Domain.Models;
+using Etherna.MongODM.Core.Serialization.Mapping;
 using System;
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace Etherna.MongODM.Repositories
+namespace Etherna.MongODM.Core.Repositories
 {
     public interface IRepository : IDbContextInitializable
     {
@@ -29,7 +29,15 @@ namespace Etherna.MongODM.Repositories
         string Name { get; }
 
         Task BuildIndexesAsync(
-            IDocumentSchemaRegister schemaRegister,
+            ISchemaRegister schemaRegister,
+            CancellationToken cancellationToken = default);
+
+        Task CreateAsync(
+            object model,
+            CancellationToken cancellationToken = default);
+
+        Task CreateAsync(
+            IEnumerable<object> models,
             CancellationToken cancellationToken = default);
 
         Task DeleteAsync(

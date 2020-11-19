@@ -12,9 +12,9 @@
 //   See the License for the specific language governing permissions and
 //   limitations under the License.
 
-using Etherna.MongODM.Exceptions;
-using Etherna.MongODM.Models;
-using Etherna.MongODM.Serialization;
+using Etherna.MongODM.Core.Domain.Models;
+using Etherna.MongODM.Core.Exceptions;
+using Etherna.MongODM.Core.Serialization.Mapping;
 using MongoDB.Bson;
 using MongoDB.Driver;
 using MongoDB.Driver.GridFS;
@@ -24,7 +24,7 @@ using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace Etherna.MongODM.Repositories
+namespace Etherna.MongODM.Core.Repositories
 {
     public class GridFSRepository<TModel> :
         RepositoryBase<TModel, string>,
@@ -51,7 +51,7 @@ namespace Etherna.MongODM.Repositories
         public override string Name => options.Name;
 
         // Methods.
-        public override Task BuildIndexesAsync(IDocumentSchemaRegister schemaRegister, CancellationToken cancellationToken = default) => Task.CompletedTask;
+        public override Task BuildIndexesAsync(ISchemaRegister schemaRegister, CancellationToken cancellationToken = default) => Task.CompletedTask;
 
         public virtual Task<byte[]> DownloadAsBytesAsync(string id, CancellationToken cancellationToken = default) =>
             GridFSBucket.DownloadAsBytesAsync(ObjectId.Parse(id), null, cancellationToken);
@@ -79,7 +79,7 @@ namespace Etherna.MongODM.Repositories
             var id = await GridFSBucket.UploadFromStreamAsync(model.Name, model.Stream, new GridFSUploadOptions
             {
                 Metadata = options.MetadataSerializer?.Invoke(model)
-            }).ConfigureAwait(false);
+            }, cancellationToken).ConfigureAwait(false);
             ReflectionHelper.SetValue(model, m => m.Id, id.ToString());
         }
 
@@ -97,9 +97,10 @@ namespace Etherna.MongODM.Repositories
                 throw new ArgumentNullException(nameof(id));
 
             var filter = Builders<GridFSFileInfo>.Filter.Eq("_id", ObjectId.Parse(id));
-            var mongoFile = await GridFSBucket.Find(filter).SingleOrDefaultAsync(cancellationToken).ConfigureAwait(false);
+            var mongoFile = await GridFSBucket.Find(filter, cancellationToken: cancellationToken)
+                                              .SingleOrDefaultAsync(cancellationToken).ConfigureAwait(false);
             if (mongoFile == null)
-                throw new EntityNotFoundException($"Can't find key {id}");
+                throw new MongodmEntityNotFoundException($"Can't find key {id}");
 
             var file = DbContext.ProxyGenerator.CreateInstance<TModel>(DbContext);
             ReflectionHelper.SetValue(file, m => m.Id, mongoFile.Id.ToString());

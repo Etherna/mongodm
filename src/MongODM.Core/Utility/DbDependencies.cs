@@ -12,12 +12,12 @@
 //   See the License for the specific language governing permissions and
 //   limitations under the License.
 
-using Etherna.MongODM.ProxyModels;
-using Etherna.MongODM.Repositories;
-using Etherna.MongODM.Serialization;
-using Etherna.MongODM.Serialization.Modifiers;
+using Etherna.MongODM.Core.ProxyModels;
+using Etherna.MongODM.Core.Repositories;
+using Etherna.MongODM.Core.Serialization.Mapping;
+using Etherna.MongODM.Core.Serialization.Modifiers;
 
-namespace Etherna.MongODM.Utility
+namespace Etherna.MongODM.Core.Utility
 {
     public class DbDependencies : IDbDependencies
     {
@@ -25,20 +25,18 @@ namespace Etherna.MongODM.Utility
             IDbCache dbCache,
             IDbMaintainer dbMaintainer,
             IDbMigrationManager dbContextMigrationManager,
-            IDocumentSchemaRegister documentSchemaRegister,
             IProxyGenerator proxyGenerator,
             IRepositoryRegister repositoryRegister,
+            ISchemaRegister schemaRegister,
             ISerializerModifierAccessor serializerModifierAccessor,
 #pragma warning disable IDE0060 // Remove unused parameter. It's needed for run static configurations
-#pragma warning disable CA1801 // Review unused parameters. Same of above
             IStaticConfigurationBuilder staticConfigurationBuilder)
-#pragma warning restore CA1801 // Review unused parameters
 #pragma warning restore IDE0060 // Remove unused parameter
         {
             DbCache = dbCache;
             DbMaintainer = dbMaintainer;
             DbMigrationManager = dbContextMigrationManager;
-            DocumentSchemaRegister = documentSchemaRegister;
+            SchemaRegister = schemaRegister;
             ProxyGenerator = proxyGenerator;
             RepositoryRegister = repositoryRegister;
             SerializerModifierAccessor = serializerModifierAccessor;
@@ -47,9 +45,9 @@ namespace Etherna.MongODM.Utility
         public IDbCache DbCache { get; }
         public IDbMaintainer DbMaintainer { get; }
         public IDbMigrationManager DbMigrationManager { get; }
-        public IDocumentSchemaRegister DocumentSchemaRegister { get; }
         public IProxyGenerator ProxyGenerator { get; }
         public IRepositoryRegister RepositoryRegister { get; }
+        public ISchemaRegister SchemaRegister { get; }
         public ISerializerModifierAccessor SerializerModifierAccessor { get; }
     }
 }

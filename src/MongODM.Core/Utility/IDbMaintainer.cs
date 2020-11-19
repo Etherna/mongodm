@@ -12,9 +12,9 @@
 //   See the License for the specific language governing permissions and
 //   limitations under the License.
 
-using Etherna.MongODM.ProxyModels;
+using Etherna.MongODM.Core.ProxyModels;
 
-namespace Etherna.MongODM.Utility
+namespace Etherna.MongODM.Core.Utility
 {
     /// <summary>
     /// Interface for <see cref="DbMaintainer"/> implementation.
@@ -26,8 +26,8 @@ namespace Etherna.MongODM.Utility
         /// Method to invoke when an auditable model is changed.
         /// </summary>
         /// <typeparam name="TKey">The model type</typeparam>
-        /// <param name="auditableModel">The changed model</param>
+        /// <param name="updatedModel">The changed model</param>
         /// <param name="modelId">The model id</param>
-        void OnUpdatedModel<TKey>(IAuditable auditableModel, TKey modelId);
+        void OnUpdatedModel<TKey>(IAuditable updatedModel, TKey modelId);
     }
 }

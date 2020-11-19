@@ -18,7 +18,7 @@ using MongoDB.Bson.Serialization.Serializers;
 using System;
 using System.Collections.Generic;
 
-namespace Etherna.MongODM.Serialization.Serializers
+namespace Etherna.MongODM.Core.Serialization.Serializers
 {
     public class DictionarySerializer<TKey, TValue> :
         DictionarySerializerBase<IDictionary<TKey, TValue>, TKey, TValue>,
@@ -43,14 +43,14 @@ namespace Etherna.MongODM.Serialization.Serializers
         { }
 
         // Properties.
-        public IBsonSerializer ChildSerializer => ValueSerializer;
+        public IEnumerable<BsonClassMap> AllChildClassMaps =>
+            (ValueSerializer as IModelMapsContainerSerializer)?.AllChildClassMaps ??
+            Array.Empty<BsonClassMap>();
 
-        public IEnumerable<BsonClassMap> ContainedClassMaps =>
-            ValueSerializer is IClassMapContainerSerializer classMapContainer ?
-            classMapContainer.ContainedClassMaps : Array.Empty<BsonClassMap>();
+        public IBsonSerializer ChildSerializer => ValueSerializer;
         
-        public bool? UseCascadeDelete =>
-            (ValueSerializer as IReferenceContainerSerializer)?.UseCascadeDelete;
+        public bool UseCascadeDelete =>
+            (ValueSerializer as IReferenceContainerSerializer)?.UseCascadeDelete ?? false;
 
         // Public methods.
         public override void Serialize(BsonSerializationContext context, BsonSerializationArgs args, IDictionary<TKey, TValue> value)

@@ -12,11 +12,11 @@
 //   See the License for the specific language governing permissions and
 //   limitations under the License.
 
-using Etherna.MongODM.Models.Internal;
+using Etherna.MongODM.Core.Domain.Models;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 
-namespace Etherna.MongODM.Utility
+namespace Etherna.MongODM.Core.Utility
 {
     public interface IDbMigrationManager : IDbContextInitializable
     {
@@ -29,7 +29,6 @@ namespace Etherna.MongODM.Utility
         /// <summary>
         /// Start a db context migration process.
         /// </summary>
-        /// <param name="authorId">Id of user requiring the migration</param>
-        Task StartDbContextMigrationAsync(string authorId);
+        Task StartDbContextMigrationAsync();
     }
 }

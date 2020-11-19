@@ -19,7 +19,7 @@ using System.Linq.Expressions;
 using System.Reflection;
 using System.Threading;
 
-namespace Etherna.MongODM
+namespace Etherna.MongODM.Core
 {
     public static class ReflectionHelper
     {
@@ -37,9 +37,7 @@ namespace Etherna.MongODM
 
             while (!done)
             {
-#pragma warning disable CA1062 // Validate arguments of public methods. Suppressing for an issue in Microsoft.CodeAnalysis.FxCopAnalyzers v3.0.0
                 switch (expressionToCheck.NodeType)
-#pragma warning restore CA1062 // Validate arguments of public methods
                 {
                     case ExpressionType.Convert:
                         expressionToCheck = ((UnaryExpression)expressionToCheck).Operand;

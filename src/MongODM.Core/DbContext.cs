@@ -12,15 +12,16 @@
 //   See the License for the specific language governing permissions and
 //   limitations under the License.
 
-using Etherna.MongODM.Migration;
-using Etherna.MongODM.Models;
-using Etherna.MongODM.Models.Internal;
-using Etherna.MongODM.Models.Internal.ModelMaps;
-using Etherna.MongODM.ProxyModels;
-using Etherna.MongODM.Repositories;
-using Etherna.MongODM.Serialization;
-using Etherna.MongODM.Serialization.Modifiers;
-using Etherna.MongODM.Utility;
+using Etherna.MongODM.Core.Domain.ModelMaps;
+using Etherna.MongODM.Core.Domain.Models;
+using Etherna.MongODM.Core.Migration;
+using Etherna.MongODM.Core.Options;
+using Etherna.MongODM.Core.ProxyModels;
+using Etherna.MongODM.Core.Repositories;
+using Etherna.MongODM.Core.Serialization;
+using Etherna.MongODM.Core.Serialization.Mapping;
+using Etherna.MongODM.Core.Serialization.Modifiers;
+using Etherna.MongODM.Core.Utility;
 using MongoDB.Driver;
 using MongoDB.Driver.Linq;
 using System;
@@ -30,15 +31,12 @@ using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace Etherna.MongODM
+namespace Etherna.MongODM.Core
 {
     public abstract class DbContext : IDbContext
     {
-        // Consts.
-        public const string DocumentVersionElementName = "v";
-
         // Constructors and initialization.
-        public DbContext(
+        protected DbContext(
             IDbDependencies dependencies,
             DbContextOptions options)
         {
@@ -47,21 +45,22 @@ namespace Etherna.MongODM
             if (options is null)
                 throw new ArgumentNullException(nameof(options));
 
-            ApplicationVersion = options.ApplicationVersion;
             DbCache = dependencies.DbCache;
             DbMaintainer = dependencies.DbMaintainer;
             DbMigrationManager = dependencies.DbMigrationManager;
             DbOperations = new CollectionRepository<OperationBase, string>(options.DbOperationsCollectionName);
-            DocumentSchemaRegister = dependencies.DocumentSchemaRegister;
+            DocumentSemVerOptions = options.DocumentSemVer;
             Identifier = options.Identifier ?? GetType().Name;
-            LibraryVersion = GetType()
+            LibraryVersion = typeof(DbContext)
                 .GetTypeInfo()
                 .Assembly
                 .GetCustomAttribute<AssemblyInformationalVersionAttribute>()
                 ?.InformationalVersion
                 ?.Split('+')[0] ?? "1.0.0";
+            ModelMapVersionOptions = options.ModelMapVersion;
             ProxyGenerator = dependencies.ProxyGenerator;
             RepositoryRegister = dependencies.RepositoryRegister;
+            SchemaRegister = dependencies.SchemaRegister;
             SerializerModifierAccessor = dependencies.SerializerModifierAccessor;
 
             // Initialize MongoDB driver.
@@ -71,8 +70,8 @@ namespace Etherna.MongODM
             // Initialize internal dependencies.
             DbMaintainer.Initialize(this);
             DbMigrationManager.Initialize(this);
-            DocumentSchemaRegister.Initialize(this);
             RepositoryRegister.Initialize(this);
+            SchemaRegister.Initialize(this);
 
             // Initialize repositories.
             foreach (var repository in RepositoryRegister.ModelRepositoryMap.Values)
@@ -89,12 +88,11 @@ namespace Etherna.MongODM
             foreach (var maps in ModelMapsCollectors)
                 maps.Register(this);
 
-            // Build and freeze document schema register.
-            DocumentSchemaRegister.Freeze();
+            // Build and freeze schemas register.
+            SchemaRegister.Freeze();
         }
 
         // Public properties.
-        public SemanticVersion ApplicationVersion { get; }
         public IReadOnlyCollection<IEntityModel> ChangedModelsList =>
             DbCache.LoadedModels.Values
                 .Where(model => (model as IAuditable)?.IsChanged == true)
@@ -105,12 +103,14 @@ namespace Etherna.MongODM
         public IDbMaintainer DbMaintainer { get; }
         public IDbMigrationManager DbMigrationManager { get; }
         public ICollectionRepository<OperationBase, string> DbOperations { get; }
-        public virtual IEnumerable<MongoMigrationBase> DocumentMigrationList { get; } = Array.Empty<MongoMigrationBase>();
-        public IDocumentSchemaRegister DocumentSchemaRegister { get; }
+        public virtual IEnumerable<DocumentMigration> DocumentMigrationList { get; } = Array.Empty<DocumentMigration>();
+        public DocumentSemVerOptions DocumentSemVerOptions { get; }
         public string Identifier { get; }
         public SemanticVersion LibraryVersion { get; }
+        public ModelMapVersionOptions ModelMapVersionOptions { get; }
         public IProxyGenerator ProxyGenerator { get; }
         public IRepositoryRegister RepositoryRegister { get; }
+        public ISchemaRegister SchemaRegister { get; }
         public ISerializerModifierAccessor SerializerModifierAccessor { get; }
 
         // Protected properties.
@@ -158,7 +158,7 @@ namespace Etherna.MongODM
                     if (RepositoryRegister.ModelCollectionRepositoryMap.ContainsKey(modelType))
                     {
                         var repository = RepositoryRegister.ModelCollectionRepositoryMap[modelType];
-                        await repository.ReplaceAsync(model).ConfigureAwait(false);
+                        await repository.ReplaceAsync(model, cancellationToken: cancellationToken).ConfigureAwait(false);
                         break;
                     }
                     else

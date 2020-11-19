@@ -17,13 +17,13 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 
-namespace Etherna.MongODM.ProxyModels
+namespace Etherna.MongODM.Core.ProxyModels
 {
     public abstract class ModelInterceptorBase<TModel> : IInterceptor
     {
         private readonly IEnumerable<Type> additionalInterfaces;
 
-        public ModelInterceptorBase(IEnumerable<Type> additionalInterfaces)
+        protected ModelInterceptorBase(IEnumerable<Type> additionalInterfaces)
         {
             this.additionalInterfaces = additionalInterfaces;
         }

@@ -12,10 +12,10 @@
 //   See the License for the specific language governing permissions and
 //   limitations under the License.
 
-using Etherna.MongODM.Exceptions;
-using Etherna.MongODM.Models;
-using Etherna.MongODM.ProxyModels;
-using Etherna.MongODM.Serialization;
+using Etherna.MongODM.Core.Domain.Models;
+using Etherna.MongODM.Core.Exceptions;
+using Etherna.MongODM.Core.ProxyModels;
+using Etherna.MongODM.Core.Serialization.Mapping;
 using MongoDB.Bson;
 using MongoDB.Driver;
 using MongoDB.Driver.Linq;
@@ -26,7 +26,7 @@ using System.Linq.Expressions;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace Etherna.MongODM.Repositories
+namespace Etherna.MongODM.Core.Repositories
 {
     public class CollectionRepository<TModel, TKey> :
         RepositoryBase<TModel, TKey>,
@@ -52,7 +52,7 @@ namespace Etherna.MongODM.Repositories
         public override string Name => options.Name;
 
         // Public methods.
-        public override async Task BuildIndexesAsync(IDocumentSchemaRegister schemaRegister, CancellationToken cancellationToken = default)
+        public override async Task BuildIndexesAsync(ISchemaRegister schemaRegister, CancellationToken cancellationToken = default)
         {
             var newIndexes = new List<(string name, CreateIndexModel<TModel> createIndex)>();
 
@@ -70,15 +70,8 @@ namespace Etherna.MongODM.Repositories
                 return (options.Name, new CreateIndexModel<TModel>(keys, options));
             }));
 
-            //root document
-            newIndexes.Add(
-                ("ver",
-                 new CreateIndexModel<TModel>(
-                    Builders<TModel>.IndexKeys.Ascending(MongODM.DbContext.DocumentVersionElementName),
-                    new CreateIndexOptions { Name = "ver" })));
-
             //referenced documents
-            var dependencies = DbContext.DocumentSchemaRegister.GetModelEntityReferencesIds(typeof(TModel));
+            var dependencies = DbContext.SchemaRegister.GetIdMemberDependenciesFromRootModel(typeof(TModel));
 
             var idPaths = dependencies
                 .Select(dependency => dependency.MemberPathToString())
@@ -97,7 +90,7 @@ namespace Etherna.MongODM.Repositories
             // Get current indexes.
             var currentIndexes = new List<BsonDocument>();
             using (var indexList = await Collection.Indexes.ListAsync(cancellationToken).ConfigureAwait(false))
-                while (indexList.MoveNext())
+                while (indexList.MoveNext(cancellationToken))
                     currentIndexes.AddRange(indexList.Current);
 
             // Remove old indexes.
@@ -111,7 +104,8 @@ namespace Etherna.MongODM.Repositories
             }
 
             // Build new indexes.
-            await Collection.Indexes.CreateManyAsync(newIndexes.Select(i => i.createIndex), cancellationToken).ConfigureAwait(false);
+            if (newIndexes.Any())
+                await Collection.Indexes.CreateManyAsync(newIndexes.Select(i => i.createIndex), cancellationToken).ConfigureAwait(false);
         }
 
         public virtual Task<IAsyncCursor<TProjection>> FindAsync<TProjection>(
@@ -170,7 +164,7 @@ namespace Etherna.MongODM.Repositories
             {
                 return await FindOneAsync(predicate, cancellationToken).ConfigureAwait(false);
             }
-            catch (EntityNotFoundException)
+            catch (MongodmEntityNotFoundException)
             {
                 return null;
             }
@@ -202,9 +196,9 @@ namespace Etherna.MongODM.Repositories
             {
                 return await FindOneOnDBAsync(m => m.Id!.Equals(id), cancellationToken: cancellationToken).ConfigureAwait(false);
             }
-            catch (EntityNotFoundException)
+            catch (MongodmEntityNotFoundException)
             {
-                throw new EntityNotFoundException($"Can't find key {id}");
+                throw new MongodmEntityNotFoundException($"Can't find key {id}");
             }
         }
 
@@ -216,11 +210,11 @@ namespace Etherna.MongODM.Repositories
             if (predicate is null)
                 throw new ArgumentNullException(nameof(predicate));
 
-            var element = await Collection.AsQueryable()
-                                          .Where(predicate)
-                                          .SingleOrDefaultAsync(cancellationToken).ConfigureAwait(false);
+            using var cursor = await Collection.FindAsync(predicate, cancellationToken: cancellationToken).ConfigureAwait(false);
+            var element = await cursor.FirstOrDefaultAsync(cancellationToken).ConfigureAwait(false);
+
             if (element == default(TModel))
-                throw new EntityNotFoundException("Can't find element");
+                throw new MongodmEntityNotFoundException("Can't find element");
 
             return element;
         }
@@ -256,7 +250,7 @@ namespace Etherna.MongODM.Repositories
                 DbContext.DbMaintainer.OnUpdatedModel((IAuditable)model, model.Id);
 
             // Reset changed members.
-            (model as IAuditable)?.ResetChangedMembers();
+            ((IAuditable)model).ResetChangedMembers();
         }
     }
 }

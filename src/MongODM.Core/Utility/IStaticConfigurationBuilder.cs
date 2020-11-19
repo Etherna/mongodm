@@ -12,7 +12,7 @@
 //   See the License for the specific language governing permissions and
 //   limitations under the License.
 
-namespace Etherna.MongODM.Utility
+namespace Etherna.MongODM.Core.Utility
 {
     /// <summary>
     /// This interface has the scope to inizialize only one time static configurations, when IoC system
@@ -20,9 +20,7 @@ namespace Etherna.MongODM.Utility
     /// For a proper use, implements it in a class where configuration is invoked by constructor.
     /// So configure it as a singleton on IoC system, and injectit as a dependency for DbContext.
     /// </summary>
-#pragma warning disable CA1040 // Avoid empty interfaces
     public interface IStaticConfigurationBuilder
     {
     }
-#pragma warning restore CA1040 // Avoid empty interfaces
 }

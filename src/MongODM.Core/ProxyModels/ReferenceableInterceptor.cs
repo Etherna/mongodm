@@ -13,16 +13,16 @@
 //   limitations under the License.
 
 using Castle.DynamicProxy;
-using Etherna.MongODM.Attributes;
-using Etherna.MongODM.Models;
-using Etherna.MongODM.Repositories;
+using Etherna.MongODM.Core.Attributes;
+using Etherna.MongODM.Core.Domain.Models;
+using Etherna.MongODM.Core.Repositories;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using System.Threading.Tasks;
 
-namespace Etherna.MongODM.ProxyModels
+namespace Etherna.MongODM.Core.ProxyModels
 {
     public class ReferenceableInterceptor<TModel, TKey> : ModelInterceptorBase<TModel>
         where TModel : class, IEntityModel<TKey>

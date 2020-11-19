@@ -12,15 +12,15 @@
 //   See the License for the specific language governing permissions and
 //   limitations under the License.
 
-using Etherna.MongODM.Models;
-using Etherna.MongODM.Repositories;
-using Etherna.MongODM.Serialization.Modifiers;
+using Etherna.MongODM.Core.Domain.Models;
+using Etherna.MongODM.Core.Repositories;
+using Etherna.MongODM.Core.Serialization.Modifiers;
 using MongoDB.Driver;
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 
-namespace Etherna.MongODM.Tasks
+namespace Etherna.MongODM.Core.Tasks
 {
     public class UpdateDocDependenciesTask : IUpdateDocDependenciesTask
     {
@@ -50,10 +50,13 @@ namespace Etherna.MongODM.Tasks
             var dbContext = (TDbContext)serviceProvider.GetService(typeof(TDbContext));
 
             // Get repository.
+            /* Ignore document update if doesn't exists a collection that can handle its type. */
             if (!dbContext.RepositoryRegister.ModelCollectionRepositoryMap.ContainsKey(typeof(TModel)))
                 return;
+
             var repository = (ICollectionRepository<TModel, TKey>)dbContext.RepositoryRegister.ModelCollectionRepositoryMap[typeof(TModel)];
 
+            // Update models.
             HashSet<TKey> upgradedDocumentsId = new HashSet<TKey>();
             using (serializerModifierAccessor.EnableReferenceSerializerModifier(true))
             using (serializerModifierAccessor.EnableCacheSerializerModifier(true))
@@ -76,9 +79,7 @@ namespace Etherna.MongODM.Tasks
                                     // Replace on db.
                                     await repository.ReplaceAsync(model, false).ConfigureAwait(false);
                                 }
-#pragma warning disable CA1031 // Do not catch general exception types. Internal exceptions thrown by MongoDB drivers
                                 catch { }
-#pragma warning restore CA1031 // Do not catch general exception types
 
                                 // Add id to upgraded list.
                                 upgradedDocumentsId.Add(model.Id);

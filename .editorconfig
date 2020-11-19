@@ -1,28 +1,18 @@
 # Remove the line below if you want to inherit .editorconfig settings from higher directories
 root = true
 
-# C# files
-[*.cs]
+#### Define style ####
+
+# All files
+[*]
+indent_style = space
+
+# C# Project files
+[*.csproj]
+indent_size = 2
 
 #### Suppress warnings ####
 
-# CA1034: Nested types should not be visible
-dotnet_diagnostic.CA1034.severity = none
+# C# files
+[*.cs]
 
-# CA1063: Implement IDisposable Correctly
-dotnet_diagnostic.CA1063.severity = none
-
-# CA1303: Do not pass literals as localized parameters
-dotnet_diagnostic.CA1303.severity = none    # Don't need translated exceptions
-
-# CA1707: Identifiers should not contain underscores
-dotnet_diagnostic.CA1707.severity = none	# I want to use underscore in constants
-
-# CA1812: Avoid uninstantiated internal classes
-dotnet_diagnostic.CA1812.severity = none	# Doing extensive use of dependency injection
-
-# CA1816: Dispose methods should call SuppressFinalize
-dotnet_diagnostic.CA1816.severity = none
-
-# CA2225: Operator overloads have named alternates
-dotnet_diagnostic.CA2225.severity = none

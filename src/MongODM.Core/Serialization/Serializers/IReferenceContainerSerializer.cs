@@ -12,10 +12,10 @@
 //   See the License for the specific language governing permissions and
 //   limitations under the License.
 
-namespace Etherna.MongODM.Serialization.Serializers
+namespace Etherna.MongODM.Core.Serialization.Serializers
 {
-    public interface IReferenceContainerSerializer : IClassMapContainerSerializer
+    public interface IReferenceContainerSerializer : IModelMapsContainerSerializer
     {
-        bool? UseCascadeDelete { get; }
+        bool UseCascadeDelete { get; }
     }
 }

@@ -16,7 +16,7 @@ using Moq;
 using System;
 using System.Linq.Expressions;
 
-namespace Etherna.MongODM.MockHelpers
+namespace Etherna.MongODM.Core.MockHelpers
 {
     public static class InterceptorMockHelper
     {
@@ -98,7 +98,7 @@ namespace Etherna.MongODM.MockHelpers
             TMember returnValue = default)
             where TProxy : class
         {
-            return GetExternalPropertyGetInvocationMock(memberLambda, proxyModel, returnValue);
+            return GetExternalPropertyGetInvocationMock(memberLambda, proxyModel, returnValue!);
         }
 
         public static Mock<Castle.DynamicProxy.IInvocation> GetPropertySetInvocationMock<TProxy, TMember>(

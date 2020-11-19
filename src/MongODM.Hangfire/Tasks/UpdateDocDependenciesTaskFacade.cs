@@ -12,8 +12,7 @@
 //   See the License for the specific language governing permissions and
 //   limitations under the License.
 
-using Etherna.MongODM.Tasks;
-using Hangfire;
+using Etherna.MongODM.Core.Tasks;
 using System;
 using System.Collections.Generic;
 using System.Reflection;
@@ -33,7 +32,6 @@ namespace Etherna.MongODM.HF.Tasks
         }
 
         // Methods.
-        [Queue(Queues.DB_MAINTENANCE)]
         public Task RunAsync(Type dbContextType, Type modelType, Type keyType, IEnumerable<string> idPaths, object modelId)
         {
             var method = typeof(UpdateDocDependenciesTask).GetMethod(

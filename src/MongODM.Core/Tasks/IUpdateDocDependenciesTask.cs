@@ -12,11 +12,11 @@
 //   See the License for the specific language governing permissions and
 //   limitations under the License.
 
-using Etherna.MongODM.Models;
+using Etherna.MongODM.Core.Domain.Models;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 
-namespace Etherna.MongODM.Tasks
+namespace Etherna.MongODM.Core.Tasks
 {
     public interface IUpdateDocDependenciesTask
     {

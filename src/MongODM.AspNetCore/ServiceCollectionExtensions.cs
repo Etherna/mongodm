@@ -14,56 +14,54 @@
 
 using Etherna.ExecContext;
 using Etherna.ExecContext.AsyncLocal;
-using Etherna.MongODM;
 using Etherna.MongODM.AspNetCore;
-using Etherna.MongODM.Models;
-using Etherna.MongODM.ProxyModels;
-using Etherna.MongODM.Repositories;
-using Etherna.MongODM.Serialization;
-using Etherna.MongODM.Serialization.Modifiers;
-using Etherna.MongODM.Tasks;
-using Etherna.MongODM.Utility;
+using Etherna.MongODM.Core;
+using Etherna.MongODM.Core.Domain.Models;
+using Etherna.MongODM.Core.Options;
+using Etherna.MongODM.Core.ProxyModels;
+using Etherna.MongODM.Core.Repositories;
+using Etherna.MongODM.Core.Serialization.Mapping;
+using Etherna.MongODM.Core.Serialization.Modifiers;
+using Etherna.MongODM.Core.Tasks;
+using Etherna.MongODM.Core.Utility;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using System;
-using System.Collections.Generic;
-using System.Linq;
 
 namespace Microsoft.Extensions.DependencyInjection
 {
     public static class ServiceCollectionExtensions
     {
-        public static MongODMConfiguration UseMongODM<TTaskRunner, TModelBase>(
+        public static IMongODMConfiguration AddMongODM<TTaskRunner, TModelBase>(
             this IServiceCollection services,
-            IEnumerable<IExecutionContext>? executionContexts = null)
+            Action<MongODMOptions>? configureOptions = null)
             where TTaskRunner : class, ITaskRunner
             where TModelBase : class, IModel => //needed because of this https://jira.mongodb.org/browse/CSHARP-3154
-            UseMongODM<ProxyGenerator, TTaskRunner, TModelBase>(
-                services,
-                executionContexts);
+            AddMongODM<ProxyGenerator, TTaskRunner, TModelBase>(services, configureOptions);
 
-        public static MongODMConfiguration UseMongODM<TProxyGenerator, TTaskRunner, TModelBase>(
+        public static IMongODMConfiguration AddMongODM<TProxyGenerator, TTaskRunner, TModelBase>(
             this IServiceCollection services,
-            IEnumerable<IExecutionContext>? executionContexts = null)
+            Action<MongODMOptions>? configureOptions = null)
             where TProxyGenerator : class, IProxyGenerator
-            where TTaskRunner: class, ITaskRunner
-            where TModelBase: class, IModel //needed because of this https://jira.mongodb.org/browse/CSHARP-3154
+            where TTaskRunner : class, ITaskRunner
+            where TModelBase : class, IModel //needed because of this https://jira.mongodb.org/browse/CSHARP-3154
         {
+            // MongODM generic configuration.
+            var configuration = new AspNetCoreMongODMConfiguration(services);
+            services.TryAddSingleton<IMongODMConfiguration>(configuration);
+
+            var mongODMOptions = new MongODMOptions();
+            configureOptions?.Invoke(mongODMOptions);
+            services.TryAddSingleton(mongODMOptions);
+
             services.TryAddSingleton<IHttpContextAccessor, HttpContextAccessor>();
 
-            services.TryAddSingleton(serviceProvider =>
-            {
-                if (executionContexts is null || !executionContexts.Any())
-                    executionContexts = new IExecutionContext[] //default
-                    {
-                        new HttpContextExecutionContext(serviceProvider.GetService<IHttpContextAccessor>()),
-                        AsyncLocalContext.Instance
-                    };
-
-                return executionContexts.Count() == 1 ?
-                    executionContexts.First() :
-                    new ExecutionContextSelector(executionContexts);
-            });
+            services.TryAddSingleton<IExecutionContext>(serviceProvider =>
+               new ExecutionContextSelector(new IExecutionContext[] //default
+               {
+                    new HttpContextExecutionContext(serviceProvider.GetRequiredService<IHttpContextAccessor>()),
+                    AsyncLocalContext.Instance
+               }));
             services.TryAddSingleton<IProxyGenerator, TProxyGenerator>();
             services.TryAddSingleton<ITaskRunner, TTaskRunner>();
 
@@ -78,8 +76,8 @@ namespace Microsoft.Extensions.DependencyInjection
             services.TryAddTransient<IDbDependencies, DbDependencies>();
             services.TryAddTransient<IDbMaintainer, DbMaintainer>();
             services.TryAddTransient<IDbMigrationManager, DbMigrationManager>();
-            services.TryAddTransient<IDocumentSchemaRegister, DocumentSchemaRegister>();
             services.TryAddTransient<IRepositoryRegister, RepositoryRegister>();
+            services.TryAddTransient<ISchemaRegister, SchemaRegister>();
             services.TryAddSingleton<ISerializerModifierAccessor, SerializerModifierAccessor>();
 
             //tasks
@@ -92,47 +90,7 @@ namespace Microsoft.Extensions.DependencyInjection
             //static configurations
             services.TryAddSingleton<IStaticConfigurationBuilder, StaticConfigurationBuilder<TModelBase>>();
 
-            return new MongODMConfiguration(services);
-        }
-
-        public static MongODMConfiguration AddDbContext<TDbContext>(
-            this MongODMConfiguration config,
-            Action<DbContextOptions<TDbContext>>? dbContextConfig = null)
-            where TDbContext : class, IDbContext
-        {
-            if (config is null)
-                throw new ArgumentNullException(nameof(config));
-
-            // Register dbContext.
-            config.Services.AddSingleton<TDbContext>();
-
-            // Register options.
-            var contextOptions = new DbContextOptions<TDbContext>();
-            dbContextConfig?.Invoke(contextOptions);
-            config.Services.AddSingleton(contextOptions);
-
-            return config;
-        }
-
-        public static MongODMConfiguration AddDbContext<TDbContext, TDbContextImpl>(
-            this MongODMConfiguration config,
-            Action<DbContextOptions<TDbContextImpl>>? dbContextConfig = null)
-            where TDbContext : class, IDbContext
-            where TDbContextImpl : class, TDbContext
-        {
-            if (config is null)
-                throw new ArgumentNullException(nameof(config));
-
-            // Register dbContext.
-            config.Services.AddSingleton<TDbContext, TDbContextImpl>();
-            config.Services.AddSingleton(sp => sp.GetService<TDbContext>() as TDbContextImpl);
-
-            // Register options.
-            var contextOptions = new DbContextOptions<TDbContextImpl>();
-            dbContextConfig?.Invoke(contextOptions);
-            config.Services.AddSingleton(contextOptions);
-
-            return config;
+            return configuration;
         }
     }
 }

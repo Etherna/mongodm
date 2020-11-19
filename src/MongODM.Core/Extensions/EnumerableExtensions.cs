@@ -18,7 +18,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
 
-namespace Etherna.MongODM.Extensions
+namespace Etherna.MongODM.Core.Extensions
 {
     public static class EnumerableExtensions
     {

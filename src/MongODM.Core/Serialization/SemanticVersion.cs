@@ -12,12 +12,13 @@
 //   See the License for the specific language governing permissions and
 //   limitations under the License.
 
+using MongoDB.Bson;
 using System;
 using System.Globalization;
 using System.Text;
 using System.Text.RegularExpressions;
 
-namespace Etherna.MongODM.Serialization
+namespace Etherna.MongODM.Core.Serialization
 {
     public class SemanticVersion : IComparable<SemanticVersion>
     {
@@ -76,6 +77,23 @@ namespace Etherna.MongODM.Serialization
         public int MinorRelease { get; private set; }
         public int PatchRelease { get; private set; }
         public string? LabelRelease { get; private set; }
+
+        // Methods.
+        public BsonArray ToBsonArray()
+        {
+            var bsonArray = new BsonArray(new[]
+            {
+                new BsonInt32(MajorRelease),
+                new BsonInt32(MinorRelease),
+                new BsonInt32(PatchRelease)
+            });
+            if (LabelRelease != null)
+            {
+                bsonArray.Add(new BsonString(LabelRelease));
+            }
+
+            return bsonArray;
+        }
 
         // Overrides.
         public int CompareTo(SemanticVersion? other)

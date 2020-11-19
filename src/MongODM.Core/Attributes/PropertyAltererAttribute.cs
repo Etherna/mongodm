@@ -14,10 +14,10 @@
 
 using System;
 
-namespace Etherna.MongODM.Attributes
+namespace Etherna.MongODM.Core.Attributes
 {
     [AttributeUsage(AttributeTargets.Method, AllowMultiple = true)]
-    public class PropertyAltererAttribute : Attribute
+    public sealed class PropertyAltererAttribute : Attribute
     {
         /// <summary>
         /// The constructor

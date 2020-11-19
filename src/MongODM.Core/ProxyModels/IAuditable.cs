@@ -15,7 +15,7 @@
 using System.Collections.Generic;
 using System.Reflection;
 
-namespace Etherna.MongODM.ProxyModels
+namespace Etherna.MongODM.Core.ProxyModels
 {
     public interface IAuditable
     {

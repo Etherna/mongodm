@@ -12,9 +12,10 @@
 //   See the License for the specific language governing permissions and
 //   limitations under the License.
 
+using Etherna.MongODM.Core.Domain.Models;
 using System;
 
-namespace Etherna.MongODM.Models
+namespace Etherna.MongODM.Core.Models
 {
     public abstract class FakeEntityModelBase<TKey> : ModelBase, IEntityModel<TKey>
     {

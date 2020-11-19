@@ -13,13 +13,13 @@
 //   limitations under the License.
 
 using Castle.DynamicProxy;
-using Etherna.MongODM.Models;
+using Etherna.MongODM.Core.Domain.Models;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 
-namespace Etherna.MongODM.ProxyModels
+namespace Etherna.MongODM.Core.ProxyModels
 {
     public class ProxyGenerator : IProxyGenerator, IDisposable
     {
@@ -43,8 +43,8 @@ namespace Etherna.MongODM.ProxyModels
 
         // Methods.
         public object CreateInstance(
-            IDbContext dbContext,
             Type type,
+            IDbContext dbContext,
             params object[] constructorArguments)
         {
             if (dbContext is null)
@@ -131,12 +131,13 @@ namespace Etherna.MongODM.ProxyModels
         }
 
         public TModel CreateInstance<TModel>(IDbContext dbContext, params object[] constructorArguments) =>
-            (TModel)CreateInstance(dbContext, typeof(TModel), constructorArguments);
+            (TModel)CreateInstance(typeof(TModel), dbContext, constructorArguments);
 
         public void Dispose()
         {
             modelConfigurationDictionaryLock.Dispose();
             proxyTypeDictionaryLock.Dispose();
+            GC.SuppressFinalize(this);
         }
 
         public bool IsProxyType(Type type)

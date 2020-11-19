@@ -13,11 +13,11 @@
 //   limitations under the License.
 
 using Etherna.ExecContext;
-using Etherna.MongODM.Models;
+using Etherna.MongODM.Core.Domain.Models;
 using System;
 using System.Collections.Generic;
 
-namespace Etherna.MongODM.Utility
+namespace Etherna.MongODM.Core.Utility
 {
     public class DbCache : IDbCache
     {
@@ -88,7 +88,7 @@ namespace Etherna.MongODM.Utility
             if (!executionContext.Items.ContainsKey(CacheKey))
                 executionContext.Items.Add(CacheKey, new Dictionary<object, IEntityModel>());
 
-            return (Dictionary<object, IEntityModel>)executionContext.Items[CacheKey];
+            return (Dictionary<object, IEntityModel>)executionContext.Items[CacheKey]!;
         }
     }
 }
