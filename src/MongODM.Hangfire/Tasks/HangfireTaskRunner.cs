@@ -13,7 +13,7 @@
 //   limitations under the License.
 
 using Etherna.ExecContext.AsyncLocal;
-using Etherna.MongODM.Core;
+using Etherna.MongODM.Core.Options;
 using Etherna.MongODM.Core.Tasks;
 using Etherna.MongODM.HF.Filters;
 using Hangfire;

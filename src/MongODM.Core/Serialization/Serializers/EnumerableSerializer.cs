@@ -48,14 +48,14 @@ namespace Etherna.MongODM.Core.Serialization.Serializers
         { }
 
         // Properties.
+        public IEnumerable<BsonClassMap> AllChildClassMaps =>
+            (ItemSerializer as IModelMapsContainerSerializer)?.AllChildClassMaps ??
+            Array.Empty<BsonClassMap>();
+
         public IBsonSerializer ChildSerializer => ItemSerializer;
 
-        public IEnumerable<BsonClassMap> ContainedClassMaps =>
-            ItemSerializer is IClassMapContainerSerializer classMapContainer ?
-            classMapContainer.ContainedClassMaps : Array.Empty<BsonClassMap>();
-
-        public bool? UseCascadeDelete =>
-            (ItemSerializer as IReferenceContainerSerializer)?.UseCascadeDelete;
+        public bool UseCascadeDelete =>
+            (ItemSerializer as IReferenceContainerSerializer)?.UseCascadeDelete ?? false;
 
         // Public methods.
         public override void Serialize(BsonSerializationContext context, BsonSerializationArgs args, IEnumerable<TItem> value)

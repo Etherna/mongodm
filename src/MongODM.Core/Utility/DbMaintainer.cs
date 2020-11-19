@@ -53,14 +53,18 @@ namespace Etherna.MongODM.Core.Utility
             if (modelId is null)
                 throw new ArgumentNullException(nameof(modelId));
 
+            // Find all possible coinvolted member maps with changes. Keep only referenced members
             var updatedMembers = updatedModel.ChangedMembers;
-            var dependencies = updatedMembers.SelectMany(member => dbContext.DocumentSchemaRegister.GetMemberDependencies(member))
-                                             .Where(d => d.IsEntityReferenceMember);
+            var referenceMemberMaps = updatedMembers.SelectMany(memberInfo => dbContext.SchemaRegister.GetMemberDependenciesFromMemberInfo(memberInfo))
+                                                    .Where(memberMap => memberMap.IsEntityReferenceMember);
 
-            foreach (var dependencyGroup in dependencies.GroupBy(d => d.RootModelType))
+            // Group by root model type, and select only model types related to a collections.
+            foreach (var dependencyGroup in referenceMemberMaps.GroupBy(memberMap => memberMap.RootModelMap.ModelType)
+                                                               .Where(group => dbContext.RepositoryRegister.ModelCollectionRepositoryMap.ContainsKey(group.Key)))
             {
+                // Extract only id paths to referenced entities.
                 var idPaths = dependencyGroup
-                    .Select(dependency => string.Join(".", dependency.MemberPathToId.Select(member => member.MemberMap.MemberInfo.Name)))
+                    .Select(memberMap => string.Join(".", memberMap.MemberPathToLastEntityModelId.Select(idMember => idMember.Member.MemberInfo.Name)))
                     .Distinct();
 
                 // Enqueue call for background job.

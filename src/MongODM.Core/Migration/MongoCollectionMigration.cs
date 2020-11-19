@@ -12,7 +12,7 @@
 //   See the License for the specific language governing permissions and
 //   limitations under the License.
 
-using Etherna.MongODM.Core.Models;
+using Etherna.MongODM.Core.Domain.Models;
 using Etherna.MongODM.Core.Repositories;
 using MongoDB.Driver;
 using System;
@@ -43,9 +43,7 @@ namespace Etherna.MongODM.Core.Migration
             ICollectionRepository<TModelSource, TKeySource> sourceCollection,
             ICollectionRepository<TModelDest, TKeyDest> destinationCollection,
             Func<TModelSource, TModelDest> converter,
-            Func<TModelSource, bool> discriminator,
-            string id)
-            : base(id)
+            Func<TModelSource, bool> discriminator)
         {
             if (sourceCollection is null)
                 throw new ArgumentNullException(nameof(sourceCollection));
@@ -63,20 +61,20 @@ namespace Etherna.MongODM.Core.Migration
 
         // Methods.
         public override async Task<MigrationResult> MigrateAsync(
-            int callbackEveryDocuments = 0,
+            int callbackEveryTotDocuments = 0,
             Func<long, Task>? callbackAsync = null,
             CancellationToken cancellationToken = default)
         {
-            if (callbackEveryDocuments < 0)
-                throw new ArgumentOutOfRangeException(nameof(callbackEveryDocuments), "Value can't be negative");
+            if (callbackEveryTotDocuments < 0)
+                throw new ArgumentOutOfRangeException(nameof(callbackEveryTotDocuments), "Value can't be negative");
 
             // Migrate documents.
             var totMigratedDocuments = 0L;
             await _sourceCollection.Collection.Find(Builders<TModelSource>.Filter.Empty, new FindOptions { NoCursorTimeout = true })
                 .ForEachAsync(async model =>
                 {
-                    if (callbackEveryDocuments > 0 &&
-                        totMigratedDocuments % callbackEveryDocuments == 0 &&
+                    if (callbackEveryTotDocuments > 0 &&
+                        totMigratedDocuments % callbackEveryTotDocuments == 0 &&
                         callbackAsync != null)
                         await callbackAsync.Invoke(totMigratedDocuments).ConfigureAwait(false);
 

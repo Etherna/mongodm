@@ -12,10 +12,8 @@
 //   See the License for the specific language governing permissions and
 //   limitations under the License.
 
-using Etherna.MongODM.Core.Models;
+using Etherna.MongODM.Core.Domain.Models;
 using Etherna.MongODM.Core.Repositories;
-using Etherna.MongODM.Core.Serialization;
-using MongoDB.Bson;
 using MongoDB.Driver;
 using System;
 using System.Threading;
@@ -32,21 +30,15 @@ namespace Etherna.MongODM.Core.Migration
         where TModel : class, IEntityModel<TKey>
     {
         // Fields.
-        private readonly SemanticVersion minimumDocumentVersion;
         private readonly ICollectionRepository<TModel, TKey> _sourceCollection;
 
         // Constructors.
-        public MongoDocumentMigration(
-            ICollectionRepository<TModel, TKey> sourceCollection,
-            SemanticVersion minimumDocumentVersion,
-            string id)
-            : base(id)
+        public MongoDocumentMigration(ICollectionRepository<TModel, TKey> sourceCollection)
         {
             if (sourceCollection is null)
                 throw new ArgumentNullException(nameof(sourceCollection));
 
             _sourceCollection = sourceCollection;
-            this.minimumDocumentVersion = minimumDocumentVersion;
         }
 
         // Properties.
@@ -54,45 +46,20 @@ namespace Etherna.MongODM.Core.Migration
 
         // Methods.
         public override async Task<MigrationResult> MigrateAsync(
-            int callbackEveryDocuments = 0,
+            int callbackEveryTotDocuments = 0,
             Func<long, Task>? callbackAsync = null,
             CancellationToken cancellationToken = default)
         {
-            if (callbackEveryDocuments < 0)
-                throw new ArgumentOutOfRangeException(nameof(callbackEveryDocuments), "Value can't be negative");
+            if (callbackEveryTotDocuments < 0)
+                throw new ArgumentOutOfRangeException(nameof(callbackEveryTotDocuments), "Value can't be negative");
 
-            // Building filter.
-            var filterBuilder = Builders<TModel>.Filter;
-            var filter = filterBuilder.Or(
-                // No version in document (very old).
-                filterBuilder.Exists(DbContext.DocumentVersionElementName, false),
-
-                // Version as string (doc.Version < "0.12.0").
-                //(can't query directly for string because https://docs.mongodb.com/v3.2/reference/operator/query/type/#arrays)
-                filterBuilder.Not(filterBuilder.Type(DbContext.DocumentVersionElementName, BsonType.Int32)),
-
-                // Version is an array with values ("0.12.0" <= doc.Version).
-                //doc.Major < min.Major
-                filterBuilder.Lt($"{DbContext.DocumentVersionElementName}.0", minimumDocumentVersion.MajorRelease),
-
-                //doc.Major == min.Major && doc.Minor < min.Minor
-                filterBuilder.And(
-                    filterBuilder.Eq($"{DbContext.DocumentVersionElementName}.0", minimumDocumentVersion.MajorRelease),
-                    filterBuilder.Lt($"{DbContext.DocumentVersionElementName}.1", minimumDocumentVersion.MinorRelease)),
-
-                //doc.Major == min.Major && doc.Minor == min.Minor && doc.Patch < min.Patch
-                filterBuilder.And(
-                    filterBuilder.Eq($"{DbContext.DocumentVersionElementName}.0", minimumDocumentVersion.MajorRelease),
-                    filterBuilder.Eq($"{DbContext.DocumentVersionElementName}.1", minimumDocumentVersion.MinorRelease),
-                    filterBuilder.Lt($"{DbContext.DocumentVersionElementName}.2", minimumDocumentVersion.PatchRelease)));
-
-            // Migrate documents.
+            // Migrate all documents.
             var totMigratedDocuments = 0L;
-            await _sourceCollection.Collection.Find(filter, new FindOptions { NoCursorTimeout = true })
+            await _sourceCollection.Collection.Find(FilterDefinition<TModel>.Empty, new FindOptions { NoCursorTimeout = true })
                 .ForEachAsync(async model =>
                 {
-                    if (callbackEveryDocuments > 0 &&
-                        totMigratedDocuments % callbackEveryDocuments == 0 &&
+                    if (callbackEveryTotDocuments > 0 &&
+                        totMigratedDocuments % callbackEveryTotDocuments == 0 &&
                         callbackAsync != null)
                         await callbackAsync.Invoke(totMigratedDocuments).ConfigureAwait(false);
 

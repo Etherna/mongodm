@@ -15,6 +15,7 @@
 using Etherna.MongODM.AspNetCoreSample.Models;
 using Etherna.MongODM.AspNetCoreSample.Models.ModelMaps;
 using Etherna.MongODM.Core;
+using Etherna.MongODM.Core.Options;
 using Etherna.MongODM.Core.Repositories;
 using Etherna.MongODM.Core.Serialization;
 using System.Collections.Generic;

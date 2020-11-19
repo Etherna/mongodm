@@ -14,7 +14,8 @@
 
 using Etherna.MongODM;
 using Etherna.MongODM.Core;
-using Etherna.MongODM.Core.Models;
+using Etherna.MongODM.Core.Domain.Models;
+using Etherna.MongODM.Core.Options;
 using Etherna.MongODM.Core.ProxyModels;
 using Etherna.MongODM.HF.Tasks;
 using Hangfire;

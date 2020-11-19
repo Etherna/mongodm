@@ -16,10 +16,11 @@ using Etherna.ExecContext;
 using Etherna.ExecContext.AsyncLocal;
 using Etherna.MongODM.AspNetCore;
 using Etherna.MongODM.Core;
-using Etherna.MongODM.Core.Models;
+using Etherna.MongODM.Core.Domain.Models;
+using Etherna.MongODM.Core.Options;
 using Etherna.MongODM.Core.ProxyModels;
 using Etherna.MongODM.Core.Repositories;
-using Etherna.MongODM.Core.Serialization;
+using Etherna.MongODM.Core.Serialization.Mapping;
 using Etherna.MongODM.Core.Serialization.Modifiers;
 using Etherna.MongODM.Core.Tasks;
 using Etherna.MongODM.Core.Utility;
@@ -75,8 +76,8 @@ namespace Microsoft.Extensions.DependencyInjection
             services.TryAddTransient<IDbDependencies, DbDependencies>();
             services.TryAddTransient<IDbMaintainer, DbMaintainer>();
             services.TryAddTransient<IDbMigrationManager, DbMigrationManager>();
-            services.TryAddTransient<IDocumentSchemaRegister, DocumentSchemaRegister>();
             services.TryAddTransient<IRepositoryRegister, RepositoryRegister>();
+            services.TryAddTransient<ISchemaRegister, SchemaRegister>();
             services.TryAddSingleton<ISerializerModifierAccessor, SerializerModifierAccessor>();
 
             //tasks

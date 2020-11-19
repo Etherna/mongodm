@@ -12,11 +12,13 @@
 //   See the License for the specific language governing permissions and
 //   limitations under the License.
 
+using Etherna.MongODM.Core.Domain.Models;
 using Etherna.MongODM.Core.Migration;
-using Etherna.MongODM.Core.Models;
+using Etherna.MongODM.Core.Options;
 using Etherna.MongODM.Core.ProxyModels;
 using Etherna.MongODM.Core.Repositories;
 using Etherna.MongODM.Core.Serialization;
+using Etherna.MongODM.Core.Serialization.Mapping;
 using Etherna.MongODM.Core.Serialization.Modifiers;
 using Etherna.MongODM.Core.Utility;
 using MongoDB.Driver;
@@ -31,11 +33,6 @@ namespace Etherna.MongODM.Core
     /// </summary>
     public interface IDbContext
     {
-        /// <summary>
-        /// Current application version.
-        /// </summary>
-        SemanticVersion ApplicationVersion { get; }
-
         // Properties.
         /// <summary>
         /// Current MongoDB client.
@@ -72,10 +69,7 @@ namespace Etherna.MongODM.Core
         /// </summary>
         IEnumerable<MongoMigrationBase> DocumentMigrationList { get; }
 
-        /// <summary>
-        /// Container for model serialization and document schema information.
-        /// </summary>
-        IDocumentSchemaRegister DocumentSchemaRegister { get; }
+        DocumentSemVerOptions DocumentSemVerOptions { get; }
 
         /// <summary>
         /// DbContext unique identifier.
@@ -87,6 +81,8 @@ namespace Etherna.MongODM.Core
         /// </summary>
         SemanticVersion LibraryVersion { get; }
 
+        ModelMapVersionOptions ModelMapVersionOptions { get; }
+
         /// <summary>
         /// Current model proxy generator.
         /// </summary>
@@ -96,6 +92,11 @@ namespace Etherna.MongODM.Core
         /// Register of available repositories.
         /// </summary>
         IRepositoryRegister RepositoryRegister { get; }
+
+        /// <summary>
+        /// Register for model serialization and schema information.
+        /// </summary>
+        ISchemaRegister SchemaRegister { get; }
 
         /// <summary>
         /// Serializer modifier accessor.

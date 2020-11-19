@@ -12,8 +12,8 @@
 //   See the License for the specific language governing permissions and
 //   limitations under the License.
 
-using Etherna.MongODM.Core.Models;
-using Etherna.MongODM.Core.Serialization;
+using Etherna.MongODM.Core.Domain.Models;
+using Etherna.MongODM.Core.Serialization.Mapping;
 using System;
 using System.Collections.Generic;
 using System.Threading;
@@ -29,7 +29,7 @@ namespace Etherna.MongODM.Core.Repositories
         string Name { get; }
 
         Task BuildIndexesAsync(
-            IDocumentSchemaRegister schemaRegister,
+            ISchemaRegister schemaRegister,
             CancellationToken cancellationToken = default);
 
         Task DeleteAsync(

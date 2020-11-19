@@ -12,9 +12,9 @@
 //   See the License for the specific language governing permissions and
 //   limitations under the License.
 
+using Etherna.MongODM.Core.Domain.Models;
 using Etherna.MongODM.Core.Exceptions;
-using Etherna.MongODM.Core.Models;
-using Etherna.MongODM.Core.Serialization;
+using Etherna.MongODM.Core.Serialization.Mapping;
 using MongoDB.Bson;
 using MongoDB.Driver;
 using MongoDB.Driver.GridFS;
@@ -51,7 +51,7 @@ namespace Etherna.MongODM.Core.Repositories
         public override string Name => options.Name;
 
         // Methods.
-        public override Task BuildIndexesAsync(IDocumentSchemaRegister schemaRegister, CancellationToken cancellationToken = default) => Task.CompletedTask;
+        public override Task BuildIndexesAsync(ISchemaRegister schemaRegister, CancellationToken cancellationToken = default) => Task.CompletedTask;
 
         public virtual Task<byte[]> DownloadAsBytesAsync(string id, CancellationToken cancellationToken = default) =>
             GridFSBucket.DownloadAsBytesAsync(ObjectId.Parse(id), null, cancellationToken);

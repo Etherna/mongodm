@@ -12,7 +12,7 @@
 //   See the License for the specific language governing permissions and
 //   limitations under the License.
 
-using Etherna.MongODM.Core.Models;
+using Etherna.MongODM.Core.Domain.Models;
 using MongoDB.Bson.Serialization;
 using MongoDB.Bson.Serialization.Serializers;
 using System;
@@ -21,7 +21,11 @@ using System.Collections.Generic;
 namespace Etherna.MongODM.Core.Serialization.Serializers
 {
     class ReferenceSerializerAdapter<TInModel, TOutModel, TKey> :
-        SerializerBase<TOutModel>, IBsonSerializer<TOutModel>, IBsonDocumentSerializer, IBsonIdProvider, IReferenceContainerSerializer
+        SerializerBase<TOutModel>,
+        IBsonSerializer<TOutModel>,
+        IBsonDocumentSerializer,
+        IBsonIdProvider,
+        IReferenceContainerSerializer
         where TInModel : class, IEntityModel<TKey>
         where TOutModel : class, TInModel
     {
@@ -35,8 +39,9 @@ namespace Etherna.MongODM.Core.Serialization.Serializers
         }
 
         // Properties.
-        public IEnumerable<BsonClassMap> ContainedClassMaps => serializerBase.ContainedClassMaps;
-        public bool? UseCascadeDelete => serializerBase.UseCascadeDelete;
+        public IEnumerable<BsonClassMap> AllChildClassMaps => serializerBase.AllChildClassMaps;
+
+        public bool UseCascadeDelete => serializerBase.UseCascadeDelete;
 
         // Methods.
         public override TOutModel Deserialize(BsonDeserializationContext context, BsonDeserializationArgs args)

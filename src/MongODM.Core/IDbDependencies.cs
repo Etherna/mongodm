@@ -14,7 +14,7 @@
 
 using Etherna.MongODM.Core.ProxyModels;
 using Etherna.MongODM.Core.Repositories;
-using Etherna.MongODM.Core.Serialization;
+using Etherna.MongODM.Core.Serialization.Mapping;
 using Etherna.MongODM.Core.Serialization.Modifiers;
 using Etherna.MongODM.Core.Utility;
 
@@ -25,9 +25,9 @@ namespace Etherna.MongODM.Core
         IDbCache DbCache { get; }
         IDbMaintainer DbMaintainer { get; }
         IDbMigrationManager DbMigrationManager { get; }
-        IDocumentSchemaRegister DocumentSchemaRegister { get; }
         IProxyGenerator ProxyGenerator { get; }
         IRepositoryRegister RepositoryRegister { get; }
+        ISchemaRegister SchemaRegister { get; }
         ISerializerModifierAccessor SerializerModifierAccessor { get; }
     }
 }

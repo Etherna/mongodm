@@ -12,8 +12,8 @@
 //   See the License for the specific language governing permissions and
 //   limitations under the License.
 
-using Etherna.MongODM.Core.Models;
-using Etherna.MongODM.Core.Models.DbMigrationOpAgg;
+using Etherna.MongODM.Core.Domain.Models;
+using Etherna.MongODM.Core.Domain.Models.DbMigrationOpAgg;
 using System;
 using System.Threading.Tasks;
 
@@ -51,7 +51,6 @@ namespace Etherna.MongODM.Core.Tasks
                     {
                         dbMigrationOp.AddLog(new DocumentMigrationLog(
                             docMigration.SourceCollection.Name,
-                            docMigration.Id,
                             MigrationLogBase.ExecutionState.Executing,
                             procDocs));
 
@@ -61,7 +60,6 @@ namespace Etherna.MongODM.Core.Tasks
                 //ended document migration log
                 dbMigrationOp.AddLog(new DocumentMigrationLog(
                     docMigration.SourceCollection.Name,
-                    docMigration.Id,
                     result.Succeded ?
                         MigrationLogBase.ExecutionState.Succeded :
                         MigrationLogBase.ExecutionState.Failed,
@@ -78,7 +76,7 @@ namespace Etherna.MongODM.Core.Tasks
                     MigrationLogBase.ExecutionState.Executing));
                 await dbContext.SaveChangesAsync().ConfigureAwait(false);
 
-                await repository.BuildIndexesAsync(dbContext.DocumentSchemaRegister).ConfigureAwait(false);
+                await repository.BuildIndexesAsync(dbContext.SchemaRegister).ConfigureAwait(false);
 
                 dbMigrationOp.AddLog(new IndexMigrationLog(
                     repository.Name,

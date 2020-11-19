@@ -12,10 +12,10 @@
 //   See the License for the specific language governing permissions and
 //   limitations under the License.
 
+using Etherna.MongODM.Core.Domain.Models;
 using Etherna.MongODM.Core.Exceptions;
-using Etherna.MongODM.Core.Models;
 using Etherna.MongODM.Core.ProxyModels;
-using Etherna.MongODM.Core.Serialization;
+using Etherna.MongODM.Core.Serialization.Mapping;
 using MongoDB.Bson;
 using MongoDB.Driver;
 using MongoDB.Driver.Linq;
@@ -52,7 +52,7 @@ namespace Etherna.MongODM.Core.Repositories
         public override string Name => options.Name;
 
         // Public methods.
-        public override async Task BuildIndexesAsync(IDocumentSchemaRegister schemaRegister, CancellationToken cancellationToken = default)
+        public override async Task BuildIndexesAsync(ISchemaRegister schemaRegister, CancellationToken cancellationToken = default)
         {
             var newIndexes = new List<(string name, CreateIndexModel<TModel> createIndex)>();
 
@@ -70,15 +70,8 @@ namespace Etherna.MongODM.Core.Repositories
                 return (options.Name, new CreateIndexModel<TModel>(keys, options));
             }));
 
-            //root document
-            newIndexes.Add(
-                ("ver",
-                 new CreateIndexModel<TModel>(
-                    Builders<TModel>.IndexKeys.Ascending(Core.DbContext.DocumentVersionElementName),
-                    new CreateIndexOptions { Name = "ver" })));
-
             //referenced documents
-            var dependencies = DbContext.DocumentSchemaRegister.GetModelEntityReferencesIds(typeof(TModel));
+            var dependencies = DbContext.SchemaRegister.GetIdMemberDependenciesFromRootModel(typeof(TModel));
 
             var idPaths = dependencies
                 .Select(dependency => dependency.MemberPathToString())
@@ -111,7 +104,8 @@ namespace Etherna.MongODM.Core.Repositories
             }
 
             // Build new indexes.
-            await Collection.Indexes.CreateManyAsync(newIndexes.Select(i => i.createIndex), cancellationToken).ConfigureAwait(false);
+            if (newIndexes.Any())
+                await Collection.Indexes.CreateManyAsync(newIndexes.Select(i => i.createIndex), cancellationToken).ConfigureAwait(false);
         }
 
         public virtual Task<IAsyncCursor<TProjection>> FindAsync<TProjection>(

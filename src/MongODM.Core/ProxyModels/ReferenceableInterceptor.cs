@@ -14,7 +14,7 @@
 
 using Castle.DynamicProxy;
 using Etherna.MongODM.Core.Attributes;
-using Etherna.MongODM.Core.Models;
+using Etherna.MongODM.Core.Domain.Models;
 using Etherna.MongODM.Core.Repositories;
 using System;
 using System.Collections.Generic;

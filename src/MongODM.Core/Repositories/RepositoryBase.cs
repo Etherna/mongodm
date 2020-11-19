@@ -12,10 +12,11 @@
 //   See the License for the specific language governing permissions and
 //   limitations under the License.
 
+using Etherna.MongODM.Core.Domain.Models;
 using Etherna.MongODM.Core.Exceptions;
-using Etherna.MongODM.Core.Models;
+using Etherna.MongODM.Core.Extensions;
 using Etherna.MongODM.Core.ProxyModels;
-using Etherna.MongODM.Core.Serialization;
+using Etherna.MongODM.Core.Serialization.Mapping;
 using MoreLinq;
 using System;
 using System.Collections;
@@ -48,7 +49,7 @@ namespace Etherna.MongODM.Core.Repositories
         public abstract string Name { get; }
 
         // Methods.
-        public abstract Task BuildIndexesAsync(IDocumentSchemaRegister schemaRegister, CancellationToken cancellationToken = default);
+        public abstract Task BuildIndexesAsync(ISchemaRegister schemaRegister, CancellationToken cancellationToken = default);
 
         public virtual async Task CreateAsync(IEnumerable<TModel> models, CancellationToken cancellationToken = default)
         {
@@ -74,8 +75,8 @@ namespace Etherna.MongODM.Core.Repositories
                 throw new ArgumentNullException(nameof(model));
 
             // Process cascade delete.
-            var referencesIdsPaths = DbContext.DocumentSchemaRegister.GetModelEntityReferencesIds(typeof(TModel))
-                .Where(d => d.UseCascadeDelete == true)
+            var referencesIdsPaths = DbContext.SchemaRegister.GetIdMemberDependenciesFromRootModel(typeof(TModel))
+                .Where(d => d.UseCascadeDelete)
                 .Where(d => d.EntityClassMapPath.Count() == 2) //ignore references of references
                 .DistinctBy(d => d.FullPathToString())
                 .Select(d => d.MemberPath);
@@ -151,7 +152,7 @@ namespace Etherna.MongODM.Core.Repositories
         protected abstract Task<TModel> FindOneOnDBAsync(TKey id, CancellationToken cancellationToken = default);
 
         // Helpers.
-        private async Task CascadeDeleteMembersAsync(object currentModel, IEnumerable<EntityMember> idPath)
+        private async Task CascadeDeleteMembersAsync(object currentModel, IEnumerable<OwnedBsonMemberMap> idPath)
         {
             if (!idPath.Any())
                 throw new ArgumentException("Member path can't be empty", nameof(idPath));
@@ -159,7 +160,7 @@ namespace Etherna.MongODM.Core.Repositories
             var currentMember = idPath.First();
             var memberTail = idPath.Skip(1);
 
-            if (currentMember.IsId)
+            if (currentMember.Member.IsIdMember())
             {
                 //cascade delete model
                 var repository = DbContext.RepositoryRegister.ModelRepositoryMap[currentModel.GetType().BaseType];
@@ -169,7 +170,7 @@ namespace Etherna.MongODM.Core.Repositories
             else
             {
                 //recursion on value
-                var memberInfo = currentMember.MemberMap.MemberInfo;
+                var memberInfo = currentMember.Member.MemberInfo;
                 var memberValue = ReflectionHelper.GetValue(currentModel, memberInfo);
                 if (memberValue == null)
                     return;
