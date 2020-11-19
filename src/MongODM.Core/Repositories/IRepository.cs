@@ -32,6 +32,14 @@ namespace Etherna.MongODM.Core.Repositories
             ISchemaRegister schemaRegister,
             CancellationToken cancellationToken = default);
 
+        Task CreateAsync(
+            object model,
+            CancellationToken cancellationToken = default);
+
+        Task CreateAsync(
+            IEnumerable<object> models,
+            CancellationToken cancellationToken = default);
+
         Task DeleteAsync(
             IEntityModel model,
             CancellationToken cancellationToken = default);

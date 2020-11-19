@@ -51,6 +51,12 @@ namespace Etherna.MongODM.Core.Repositories
         // Methods.
         public abstract Task BuildIndexesAsync(ISchemaRegister schemaRegister, CancellationToken cancellationToken = default);
 
+        public Task CreateAsync(object model, CancellationToken cancellationToken = default) =>
+            CreateAsync((TModel)model, cancellationToken);
+
+        public Task CreateAsync(IEnumerable<object> models, CancellationToken cancellationToken = default) =>
+            CreateAsync(models.Select(m => (TModel)m), cancellationToken);
+
         public virtual async Task CreateAsync(IEnumerable<TModel> models, CancellationToken cancellationToken = default)
         {
             await CreateOnDBAsync(models, cancellationToken).ConfigureAwait(false);
