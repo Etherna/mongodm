@@ -103,7 +103,7 @@ namespace Etherna.MongODM.Core
         public IDbMaintainer DbMaintainer { get; }
         public IDbMigrationManager DbMigrationManager { get; }
         public ICollectionRepository<OperationBase, string> DbOperations { get; }
-        public virtual IEnumerable<MongoMigrationBase> DocumentMigrationList { get; } = Array.Empty<MongoMigrationBase>();
+        public virtual IEnumerable<DocumentMigration> DocumentMigrationList { get; } = Array.Empty<DocumentMigration>();
         public DocumentSemVerOptions DocumentSemVerOptions { get; }
         public string Identifier { get; }
         public SemanticVersion LibraryVersion { get; }

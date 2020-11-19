@@ -67,7 +67,7 @@ namespace Etherna.MongODM.Core
         /// <summary>
         /// List of registered migration tasks
         /// </summary>
-        IEnumerable<MongoMigrationBase> DocumentMigrationList { get; }
+        IEnumerable<DocumentMigration> DocumentMigrationList { get; }
 
         DocumentSemVerOptions DocumentSemVerOptions { get; }
 
