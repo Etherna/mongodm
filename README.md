@@ -46,6 +46,8 @@ Documentation
 
 For specific documentation on how to install and use MongODM, visit our [Wiki](https://github.com/Etherna/mongodm/wiki).
 
+Graphic documentation is maintained with https://www.diagrams.net/ software.
+
 Issue reports
 -------------
 
