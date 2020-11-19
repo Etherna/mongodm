@@ -14,6 +14,7 @@
 
 using Etherna.MongODM.Core.Serialization.Mapping.Schemas;
 using Etherna.MongODM.Core.Utility;
+using MongoDB.Bson;
 using MongoDB.Bson.Serialization;
 using System;
 using System.Collections.Generic;
@@ -66,6 +67,13 @@ namespace Etherna.MongODM.Core.Serialization.Mapping
         IModelMapsSchemaBuilder<TModel> AddModelMapsSchema<TModel>(
             ModelMap<TModel> activeModelMap)
             where TModel : class;
+
+        /// <summary>
+        /// Return bson element for represent a model map id
+        /// </summary>
+        /// <param name="modelType">The model type</param>
+        /// <returns>The model map id bson element</returns>
+        BsonElement GetActiveModelMapIdBsonElement(Type modelType);
 
         /// <summary>
         /// Get all id member dependencies from a root model type

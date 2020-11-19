@@ -215,9 +215,7 @@ namespace Etherna.MongODM.Core.Serialization.Serializers
              * don't have to replace it with the one wrong of the basic collection model type.
              */
             if (!bsonDocument.Contains(modelMapVersionOptions.ElementName))
-                bsonDocument.InsertAt(0, new BsonElement(
-                    modelMapVersionOptions.ElementName,
-                    new BsonString(modelMapsSchema.ActiveMap.Id)));
+                bsonDocument.InsertAt(0, schemaRegister.GetActiveModelMapIdBsonElement(actualType));
 
             //add version
             if (documentSemVerOptions.WriteInDocuments && bsonWriter.IsRootDocument)

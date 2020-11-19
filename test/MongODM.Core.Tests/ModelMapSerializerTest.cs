@@ -257,6 +257,8 @@ namespace Etherna.MongODM.Core
                             {
                                 new BsonDocument(new BsonElement[]
                                 {
+                                    /*commented because serializer is not registered*/
+                                    //new BsonElement("_m", new BsonString("mapId")),
                                     new BsonElement("_id", BsonNull.Value),
                                     new BsonElement("CreationDateTime", new BsonDateTime(new DateTime())),
                                     new BsonElement("EnumerableProp", BsonNull.Value),
@@ -269,6 +271,8 @@ namespace Etherna.MongODM.Core
                             new BsonElement("IntegerProp", new BsonInt32(42)),
                             new BsonElement("ObjectProp", new BsonDocument(new BsonElement[]
                             {
+                                /*commented because serializer is not registered*/
+                                //new BsonElement("_m", new BsonString("mapId")),
                                 new BsonElement("_id", BsonNull.Value),
                                 new BsonElement("CreationDateTime", new BsonDateTime(new DateTime())),
                                 new BsonElement("EnumerableProp", BsonNull.Value),
@@ -296,10 +300,13 @@ namespace Etherna.MongODM.Core
                 schemaRegisterMock.Object,
                 serializerModifierAccessorMock.Object);
 
-            modelMapsSchemaMock.Setup(s => s.ActiveMap.BsonClassMapSerializer)
+            modelMapsSchemaMock.Setup(s => s.ActiveBsonClassMapSerializer)
                 .Returns(bsonClassMapSerializer);
             modelMapsSchemaMock.Setup(s => s.ActiveMap.Id)
                 .Returns("mapId");
+
+            schemaRegisterMock.Setup(sr => sr.GetActiveModelMapIdBsonElement(typeof(FakeModel)))
+                .Returns(new BsonElement("_m", new BsonString("mapId")));
 
             // Action
             test.PreAction(test.BsonWriter);

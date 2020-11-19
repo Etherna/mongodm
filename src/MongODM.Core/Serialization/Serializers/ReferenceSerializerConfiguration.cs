@@ -13,10 +13,10 @@ namespace Etherna.MongODM.Core.Serialization.Serializers
     public class ReferenceSerializerConfiguration : FreezableConfig
     {
         // Fields.
-        private readonly Dictionary<Type, IModelMapsSchema> _schemas = new Dictionary<Type, IModelMapsSchema>();
+        private readonly Dictionary<Type, IModelMapsSchema> _schemas = new();
         private bool _useCascadeDelete;
 
-        private readonly IDictionary<Type, BsonElement> activeModelMapIdBsonElement = new Dictionary<Type, BsonElement>();
+        private readonly Dictionary<Type, BsonElement> activeModelMapIdBsonElement = new();
         private readonly IDbContext dbContext;
 
         // Constructor.
@@ -75,6 +75,10 @@ namespace Etherna.MongODM.Core.Serialization.Serializers
 
             Freeze(); //needed for initialization
 
+            /*
+             * Use of this cache dictionary avoids checks and creation of new bson elements
+             * for each serialization.
+             */
             return activeModelMapIdBsonElement[modelType];
         }
 
@@ -102,18 +106,25 @@ namespace Etherna.MongODM.Core.Serialization.Serializers
             // Link model maps with their base map.
             LinkBaseModelMaps();
 
-            // Freeze and register serializers.
+            // Freeze and register bson elements.
             foreach (var schema in _schemas.Values)
             {
                 // Freeze schemas.
                 schema.Freeze();
 
                 // Generate active model maps id bson elements.
+                /*
+                 * If current model type is proxy, we need to use id of its base type. This because
+                 * when we serialize a proxy model, we don't want that in the proxy's model map id
+                 * will be reported on document, but we want to serialize its original type's id.
+                 */
+                var notProxySchema = _schemas[dbContext.ProxyGenerator.PurgeProxyType(schema.ModelType)];
+
                 activeModelMapIdBsonElement.Add(
                     schema.ModelType,
                     new BsonElement(
                         dbContext.ModelMapVersionOptions.ElementName,
-                        new BsonString(schema.ActiveMap.Id)));
+                        new BsonString(notProxySchema.ActiveMap.Id)));
             }
         }
 

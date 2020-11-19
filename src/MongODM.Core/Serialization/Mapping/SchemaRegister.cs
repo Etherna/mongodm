@@ -16,6 +16,7 @@ using Etherna.MongODM.Core.Extensions;
 using Etherna.MongODM.Core.Serialization.Mapping.Schemas;
 using Etherna.MongODM.Core.Serialization.Serializers;
 using Etherna.MongODM.Core.Utility;
+using MongoDB.Bson;
 using MongoDB.Bson.Serialization;
 using System;
 using System.Collections.Generic;
@@ -29,12 +30,11 @@ namespace Etherna.MongODM.Core.Serialization.Mapping
     public class SchemaRegister : FreezableConfig, ISchemaRegister
     {
         // Fields.
-        private readonly Dictionary<Type, ISchema> _schemas = new Dictionary<Type, ISchema>();
+        private readonly Dictionary<Type, ISchema> _schemas = new();
 
-        private readonly Dictionary<MemberInfo, List<MemberDependency>> memberInfoToMemberMapsDictionary =
-            new Dictionary<MemberInfo, List<MemberDependency>>();
-        private readonly Dictionary<Type, List<MemberDependency>> modelTypeToReferencedIdMemberMapsDictionary =
-            new Dictionary<Type, List<MemberDependency>>();
+        private readonly Dictionary<Type, BsonElement> activeModelMapIdBsonElement = new();
+        private readonly Dictionary<MemberInfo, List<MemberDependency>> memberInfoToMemberMapsDictionary = new();
+        private readonly Dictionary<Type, List<MemberDependency>> modelTypeToReferencedIdMemberMapsDictionary = new();
 
         private IDbContext dbContext = default!;
 
@@ -110,6 +110,20 @@ namespace Etherna.MongODM.Core.Serialization.Mapping
                 return modelSchemaConfiguration;
             });
 
+        public BsonElement GetActiveModelMapIdBsonElement(Type modelType)
+        {
+            if (modelType is null)
+                throw new ArgumentNullException(nameof(modelType));
+
+            Freeze(); //needed for initialization
+
+            /*
+             * Use of this cache dictionary avoids checks and creation of new bson elements
+             * for each serialization.
+             */
+            return activeModelMapIdBsonElement[modelType];
+        }
+
         public IEnumerable<MemberDependency> GetIdMemberDependenciesFromRootModel(Type modelType)
         {
             Freeze(); //needed for initialization
@@ -130,8 +144,20 @@ namespace Etherna.MongODM.Core.Serialization.Mapping
             return Array.Empty<MemberDependency>();
         }
 
-        public IModelMapsSchema GetModelMapsSchema(Type modelType) =>
-            (IModelMapsSchema)Schemas[modelType];
+        public IModelMapsSchema GetModelMapsSchema(Type modelType)
+        {
+            if (modelType is null)
+                throw new ArgumentNullException(nameof(modelType));
+            if (!_schemas.ContainsKey(modelType))
+                throw new InvalidOperationException(modelType.Name + " schema is not registered");
+
+            var schema = _schemas[modelType];
+
+            if (schema is not IModelMapsSchema modelMapSchema)
+                throw new InvalidOperationException(modelType.Name + " schema is not a model maps schema");
+
+            return modelMapSchema;
+        }
 
         public override string ToString()
         {
@@ -186,21 +212,36 @@ namespace Etherna.MongODM.Core.Serialization.Mapping
                         BsonSerializer.RegisterDiscriminator(modelMapsSchema.ModelType, modelMap.BsonClassMap.Discriminator);
             }
 
-            // Compile dependency registers.
-
-            /* Only model map based schemas can be analyzed for document dependencies.
-             * Schemas based on custom serializers can't be explored.
-             * 
-             * This operation needs to be executed AFTER that all serializers have been registered.
-             */
+            // Specific for model maps schemas.
             foreach (var schema in _schemas.Values.OfType<IModelMapsSchema>())
             {
+                // Compile dependency registers.
+                /*
+                 * Only model map based schemas can be analyzed for document dependencies.
+                 * Schemas based on custom serializers can't be explored.
+                 * 
+                 * This operation needs to be executed AFTER that all serializers have been registered.
+                 */
                 foreach (var modelMap in schema.AllMapsDictionary.Values)
                     CompileDependencyRegisters(
                         modelMap,
                         modelMap.BsonClassMap,
                         default,
                         Array.Empty<OwnedBsonMemberMap>());
+
+                // Generate active model maps id bson elements.
+                /*
+                 * If current model type is proxy, we need to use id of its base type. This because
+                 * when we serialize a proxy model, we don't want that in the proxy's model map id
+                 * will be reported on document, but we want to serialize its original type's id.
+                 */
+                var notProxySchema = GetModelMapsSchema(dbContext.ProxyGenerator.PurgeProxyType(schema.ModelType));
+
+                activeModelMapIdBsonElement.Add(
+                    schema.ModelType,
+                    new BsonElement(
+                        dbContext.ModelMapVersionOptions.ElementName,
+                        new BsonString(notProxySchema.ActiveMap.Id)));
             }
         }
 
