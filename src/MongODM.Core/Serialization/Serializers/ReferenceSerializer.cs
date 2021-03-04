@@ -38,7 +38,7 @@ namespace Etherna.MongODM.Core.Serialization.Serializers
         // Fields.
         private IDiscriminatorConvention _discriminatorConvention = default!;
 
-        private readonly ReaderWriterLockSlim configLockAdapters = new ReaderWriterLockSlim(LockRecursionPolicy.SupportsRecursion);
+        private readonly ReaderWriterLockSlim configLockAdapters = new(LockRecursionPolicy.SupportsRecursion);
         private readonly IDbContext dbContext;
         private readonly ReferenceSerializerConfiguration configuration;
         private readonly IDictionary<Type, IBsonSerializer> registeredAdapters = new Dictionary<Type, IBsonSerializer>();
@@ -138,8 +138,10 @@ namespace Etherna.MongODM.Core.Serialization.Serializers
             if (model != null)
             {
                 var id = model.Id;
+#pragma warning disable CA1508 // Avoid dead conditional code
                 if (id == null) //ignore refered instances without id
                     return null!;
+#pragma warning restore CA1508 // Avoid dead conditional code
 
                 // Check if model as been loaded in cache.
                 if (dbContext.DbCache.LoadedModels.ContainsKey(id) &&

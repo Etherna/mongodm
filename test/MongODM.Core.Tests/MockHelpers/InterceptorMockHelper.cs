@@ -45,7 +45,7 @@ namespace Etherna.MongODM.Core.MockHelpers
         public static Mock<Castle.DynamicProxy.IInvocation> GetExternalPropertyGetInvocationMock<TProxy, TDeclaring, TMember>(
             Expression<Func<TDeclaring, TMember>> memberLambda,
             TProxy? proxyModel = null,
-            TMember returnValue = default)
+            TMember? returnValue = default)
             where TProxy : class
         {
             var invocation = GetInvocationMock<TProxy, TDeclaring>(proxyModel);
@@ -95,7 +95,7 @@ namespace Etherna.MongODM.Core.MockHelpers
         public static Mock<Castle.DynamicProxy.IInvocation> GetPropertyGetInvocationMock<TProxy, TMember>(
             Expression<Func<TProxy, TMember>> memberLambda,
             TProxy? proxyModel = null,
-            TMember returnValue = default)
+            TMember? returnValue = default)
             where TProxy : class
         {
             return GetExternalPropertyGetInvocationMock(memberLambda, proxyModel, returnValue!);

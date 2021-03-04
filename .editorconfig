@@ -16,3 +16,17 @@ indent_size = 2
 # C# files
 [*.cs]
 
+# CA1014: Mark assemblies with CLSCompliant
+dotnet_diagnostic.CA1014.severity = none    # Not interested in feature
+
+# CA1031: Do not catch general exception types
+dotnet_diagnostic.CA1031.severity = none
+
+# CA1040: Avoid empty interfaces
+dotnet_diagnostic.CA1040.severity = none    # Sometime they are needed
+
+# CA1063: Implement IDisposable Correctly
+dotnet_diagnostic.CA1063.severity = none
+
+# CA1812: Avoid uninstantiated internal classes
+dotnet_diagnostic.CA1812.severity = none    # Doing extensive use of dependency injection

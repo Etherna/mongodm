@@ -57,7 +57,7 @@ namespace Etherna.MongODM.Core.Tasks
             var repository = (ICollectionRepository<TModel, TKey>)dbContext.RepositoryRegister.ModelCollectionRepositoryMap[typeof(TModel)];
 
             // Update models.
-            HashSet<TKey> upgradedDocumentsId = new HashSet<TKey>();
+            HashSet<TKey> upgradedDocumentsId = new();
             using (serializerModifierAccessor.EnableReferenceSerializerModifier(true))
             using (serializerModifierAccessor.EnableCacheSerializerModifier(true))
             {

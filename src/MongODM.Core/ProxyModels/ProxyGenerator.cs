@@ -27,12 +27,11 @@ namespace Etherna.MongODM.Core.ProxyModels
         private readonly Castle.DynamicProxy.IProxyGenerator proxyGeneratorCore;
 
         private readonly Dictionary<Type,
-            (Type[] AdditionalInterfaces, Func<IDbContext, IInterceptor[]> InterceptorInstancerSelector)> modelConfigurationDictionary =
-            new Dictionary<Type, (Type[] AdditionalInterfaces, Func<IDbContext, IInterceptor[]> InterceptorInstancerSelector)>();
-        private readonly ReaderWriterLockSlim modelConfigurationDictionaryLock = new ReaderWriterLockSlim(LockRecursionPolicy.SupportsRecursion);
+            (Type[] AdditionalInterfaces, Func<IDbContext, IInterceptor[]> InterceptorInstancerSelector)> modelConfigurationDictionary = new();
+        private readonly ReaderWriterLockSlim modelConfigurationDictionaryLock = new(LockRecursionPolicy.SupportsRecursion);
 
-        private readonly Dictionary<Type, Type> proxyTypeDictionary = new Dictionary<Type, Type>();
-        private readonly ReaderWriterLockSlim proxyTypeDictionaryLock = new ReaderWriterLockSlim(LockRecursionPolicy.SupportsRecursion);
+        private readonly Dictionary<Type, Type> proxyTypeDictionary = new();
+        private readonly ReaderWriterLockSlim proxyTypeDictionaryLock = new(LockRecursionPolicy.SupportsRecursion);
 
         // Constructors.
         public ProxyGenerator(
