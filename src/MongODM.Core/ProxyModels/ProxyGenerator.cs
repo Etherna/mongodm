@@ -24,6 +24,7 @@ namespace Etherna.MongODM.Core.ProxyModels
     public class ProxyGenerator : IProxyGenerator, IDisposable
     {
         // Fields.
+        private bool disposed;
         private readonly Castle.DynamicProxy.IProxyGenerator proxyGeneratorCore;
 
         private readonly Dictionary<Type,
@@ -38,6 +39,27 @@ namespace Etherna.MongODM.Core.ProxyModels
             Castle.DynamicProxy.IProxyGenerator proxyGeneratorCore)
         {
             this.proxyGeneratorCore = proxyGeneratorCore;
+        }
+
+        // Dispose.
+        public void Dispose()
+        {
+            Dispose(true);
+            GC.SuppressFinalize(this);
+        }
+
+        protected virtual void Dispose(bool disposing)
+        {
+            if (disposed) return;
+
+            // Dispose managed resources.
+            if (disposing)
+            {
+                modelConfigurationDictionaryLock.Dispose();
+                proxyTypeDictionaryLock.Dispose();
+            }
+
+            disposed = true;
         }
 
         // Methods.
@@ -131,13 +153,6 @@ namespace Etherna.MongODM.Core.ProxyModels
 
         public TModel CreateInstance<TModel>(IDbContext dbContext, params object[] constructorArguments) =>
             (TModel)CreateInstance(typeof(TModel), dbContext, constructorArguments);
-
-        public void Dispose()
-        {
-            modelConfigurationDictionaryLock.Dispose();
-            proxyTypeDictionaryLock.Dispose();
-            GC.SuppressFinalize(this);
-        }
 
         public bool IsProxyType(Type type)
         {

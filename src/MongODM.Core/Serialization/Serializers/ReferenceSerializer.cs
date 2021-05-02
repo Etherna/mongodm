@@ -40,10 +40,11 @@ namespace Etherna.MongODM.Core.Serialization.Serializers
 
         private readonly ReaderWriterLockSlim configLockAdapters = new(LockRecursionPolicy.SupportsRecursion);
         private readonly IDbContext dbContext;
+        private bool disposed;
         private readonly ReferenceSerializerConfiguration configuration;
         private readonly IDictionary<Type, IBsonSerializer> registeredAdapters = new Dictionary<Type, IBsonSerializer>();
 
-        // Constructor and dispose.
+        // Constructor.
         public ReferenceSerializer(
             IDbContext dbContext,
             Action<ReferenceSerializerConfiguration> configure)
@@ -58,11 +59,25 @@ namespace Etherna.MongODM.Core.Serialization.Serializers
             configuration.Freeze();
         }
 
+        // Dispose.
         public void Dispose()
         {
-            configLockAdapters.Dispose();
-            configuration.Dispose();
+            Dispose(true);
             GC.SuppressFinalize(this);
+        }
+
+        protected virtual void Dispose(bool disposing)
+        {
+            if (disposed) return;
+
+            // Dispose managed resources.
+            if (disposing)
+            {
+                configLockAdapters.Dispose();
+                configuration.Dispose();
+            }
+
+            disposed = true;
         }
 
         // Properties.

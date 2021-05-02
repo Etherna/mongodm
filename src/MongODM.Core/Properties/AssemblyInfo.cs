@@ -1,4 +1,4 @@
-﻿//   Copyright 2020-present Etherna Sagl
+//   Copyright 2020-present Etherna Sagl
 //
 //   Licensed under the Apache License, Version 2.0 (the "License");
 //   you may not use this file except in compliance with the License.
@@ -13,8 +13,5 @@
 //   limitations under the License.
 
 using System;
-using System.Runtime.CompilerServices;
 
 [assembly: CLSCompliant(false)]
-[assembly: InternalsVisibleTo("DynamicProxyGenAssembly2")]
-[assembly: InternalsVisibleTo("ExecutionContext.Tests")]
