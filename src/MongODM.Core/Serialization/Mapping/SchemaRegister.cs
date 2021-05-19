@@ -73,16 +73,12 @@ namespace Etherna.MongODM.Core.Serialization.Mapping
             Action<BsonClassMap<TModel>>? activeModelMapInitializer = null,
             IBsonSerializer<TModel>? customSerializer = null) where TModel : class
         {
-            // Verify if needs a default serializer.
-            if (!typeof(TModel).IsAbstract)
-                customSerializer ??= ModelMap.GetDefaultSerializer<TModel>(dbContext);
-
             // Create model map.
             var modelMap = new ModelMap<TModel>(
                 activeModelMapId,
                 new BsonClassMap<TModel>(activeModelMapInitializer ?? (cm => cm.AutoMap())),
                 null,
-                customSerializer);
+                customSerializer ?? ModelMap.GetDefaultSerializer<TModel>(dbContext));
 
             return AddModelMapsSchema(modelMap);
         }
