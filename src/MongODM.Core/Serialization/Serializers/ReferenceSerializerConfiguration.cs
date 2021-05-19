@@ -19,6 +19,7 @@ using MongoDB.Bson;
 using MongoDB.Bson.Serialization;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 
 namespace Etherna.MongODM.Core.Serialization.Serializers
@@ -48,6 +49,7 @@ namespace Etherna.MongODM.Core.Serialization.Serializers
         }
 
         // Methods.
+        [SuppressMessage("Reliability", "CA2000:Dispose objects before losing scope", Justification = "The new model map instance can't be disposed")]
         public IReferenceModelMapsSchemaBuilder<TModel> AddModelMapsSchema<TModel>(
             string activeModelMapId,
             Action<BsonClassMap<TModel>>? activeModelMapInitializer = null,

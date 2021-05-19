@@ -22,14 +22,26 @@ namespace Etherna.MongODM.Core
     public abstract class MongODMConfiguration : IMongODMConfiguration, IDisposable
     {
         // Fields.
-        private readonly ReaderWriterLockSlim configLock = new ReaderWriterLockSlim(LockRecursionPolicy.SupportsRecursion);
-        private readonly List<Type> _dbContextTypes = new List<Type>();
+        private readonly ReaderWriterLockSlim configLock = new(LockRecursionPolicy.SupportsRecursion);
+        private bool disposed;
+        private readonly List<Type> _dbContextTypes = new();
 
-        // Constructor and dispose.
+        // Dispose.
         public void Dispose()
         {
-            configLock.Dispose();
+            Dispose(true);
             GC.SuppressFinalize(this);
+        }
+
+        protected virtual void Dispose(bool disposing)
+        {
+            if (disposed) return;
+
+            // Dispose managed resources.
+            if (disposing)
+                configLock.Dispose();
+
+            disposed = true;
         }
 
         // Properties.

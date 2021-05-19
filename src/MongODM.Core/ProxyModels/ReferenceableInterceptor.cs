@@ -29,7 +29,7 @@ namespace Etherna.MongODM.Core.ProxyModels
     {
         // Fields.
         private bool isSummary;
-        private readonly Dictionary<string, bool> settedMemberNames = new Dictionary<string, bool>(); //<memberName, isFromSummary>
+        private readonly Dictionary<string, bool> settedMemberNames = new(); //<memberName, isFromSummary>
         private readonly IRepository repository;
 
         // Constructors.

@@ -31,7 +31,7 @@ namespace Etherna.MongODM.Core.Domain.Models
         }
 
         // Fields.
-        private List<MigrationLogBase> _logs = new List<MigrationLogBase>();
+        private List<MigrationLogBase> _logs = new();
 
         // Constructors.
         public DbMigrationOperation(IDbContext dbContext)

@@ -20,13 +20,25 @@ namespace Etherna.MongODM.Core.Utility
     public abstract class FreezableConfig : IFreezableConfig, IDisposable
     {
         // Fields.
-        private readonly ReaderWriterLockSlim configLock = new ReaderWriterLockSlim(LockRecursionPolicy.SupportsRecursion);
+        private readonly ReaderWriterLockSlim configLock = new(LockRecursionPolicy.SupportsRecursion);
+        private bool disposed;
 
         // Dispose.
         public void Dispose()
         {
-            configLock.Dispose();
+            Dispose(true);
             GC.SuppressFinalize(this);
+        }
+
+        protected virtual void Dispose(bool disposing)
+        {
+            if (disposed) return;
+
+            // Dispose managed resources.
+            if (disposing)
+                configLock.Dispose();
+
+            disposed = true;
         }
 
         // Properties.

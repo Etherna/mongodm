@@ -25,13 +25,13 @@ namespace Etherna.MongODM.Core.Migration
 
         // Methods.
         public static MigrationResult Failed() =>
-            new MigrationResult
+            new()
             {
                 Succeded = false
             };
 
         public static MigrationResult Succeeded(long migratedDocuments) =>
-            new MigrationResult
+            new()
             {
                 Succeded = true,
                 MigratedDocuments = migratedDocuments
