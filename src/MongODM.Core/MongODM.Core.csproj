@@ -23,7 +23,7 @@
 
   <ItemGroup>
     <PackageReference Include="Castle.Core" Version="4.4.1" />
-    <PackageReference Include="GitVersionTask" Version="5.5.1">
+    <PackageReference Include="GitVersion.MsBuild" Version="5.6.9">
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
