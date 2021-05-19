@@ -132,7 +132,7 @@ namespace Etherna.MongODM.Core.Serialization.Mapping
 
         public override string ToString()
         {
-            StringBuilder strBuilder = new StringBuilder();
+            StringBuilder strBuilder = new();
             
             strBuilder.AppendLine(FullPathToString());
             strBuilder.AppendLine($"    modelMapId: {RootModelMap.Id}");

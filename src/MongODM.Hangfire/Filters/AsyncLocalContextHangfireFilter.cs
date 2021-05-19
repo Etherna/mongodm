@@ -22,7 +22,7 @@ namespace Etherna.MongODM.HF.Filters
     public class AsyncLocalContextHangfireFilter : IServerFilter
     {
         // Fields.
-        private readonly Dictionary<string, IAsyncLocalContextHandler> contextHandlers = new Dictionary<string, IAsyncLocalContextHandler>();
+        private readonly Dictionary<string, IAsyncLocalContextHandler> contextHandlers = new();
         private readonly IAsyncLocalContext asyncLocalContext;
 
         // Constructors.

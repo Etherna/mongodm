@@ -13,11 +13,13 @@
 //   limitations under the License.
 
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 
 namespace Etherna.MongODM.Core.Domain.Models
 {
     public abstract class ModelBase : IModel
     {
+        [SuppressMessage("Usage", "CA2227:Collection properties should be read only", Justification = "This is needed by MongoDB drivers")]
         public virtual IDictionary<string, object>? ExtraElements { get; protected set; }
     }
 }
