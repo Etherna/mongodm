@@ -36,10 +36,6 @@ namespace Etherna.MongODM.HF.Tasks
         {
             this.backgroundJobClient = backgroundJobClient;
             this.mongODMOptions = mongODMOptions;
-
-            // Add a default execution context running with any Hangfire task.
-            // Added because with asyncronous task, unrelated to requestes, there is no an alternative context to use with MongODM.
-            GlobalJobFilters.Filters.Add(new AsyncLocalContextHangfireFilter(AsyncLocalContext.Instance));
         }
 
         // Methods.
