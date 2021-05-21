@@ -25,7 +25,7 @@ namespace Etherna.MongODM.Core.ProxyModels
     {
         // Fields.
         private bool isAuditingEnabled;
-        private readonly HashSet<MemberInfo> changedMembers = new HashSet<MemberInfo>();
+        private readonly HashSet<MemberInfo> changedMembers = new();
 
         // Constructors.
         public AuditableInterceptor(IEnumerable<Type> additionalInterfaces)

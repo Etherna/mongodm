@@ -70,6 +70,7 @@ namespace Microsoft.Extensions.DependencyInjection
             // Add hangfire.
             services.AddHangfire(options =>
             {
+                options.UseMongODM();
                 options.UseMongoStorage(hangfireOptions.ConnectionString, hangfireOptions.StorageOptions);
             });
         }

@@ -23,8 +23,8 @@ namespace Etherna.MongODM.Core
 {
     public static class ReflectionHelper
     {
-        private static readonly Dictionary<Type, IEnumerable<PropertyInfo>> propertyRegister = new Dictionary<Type, IEnumerable<PropertyInfo>>();
-        private static readonly ReaderWriterLockSlim propertyRegisterLock = new ReaderWriterLockSlim();
+        private static readonly Dictionary<Type, IEnumerable<PropertyInfo>> propertyRegister = new();
+        private static readonly ReaderWriterLockSlim propertyRegisterLock = new();
 
         public static MemberInfo FindProperty(LambdaExpression lambdaExpression)
         {

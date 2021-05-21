@@ -173,6 +173,8 @@ namespace Etherna.MongODM.Core.Serialization
 
         public static bool operator >=(SemanticVersion x, SemanticVersion y) => y <= x;
 
-        public static implicit operator SemanticVersion(string version) => new SemanticVersion(version);
+        public static implicit operator SemanticVersion(string version) => new(version);
+
+        public static SemanticVersion FromString(string version) => new(version);
     }
 }

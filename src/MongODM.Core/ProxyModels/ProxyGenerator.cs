@@ -24,21 +24,42 @@ namespace Etherna.MongODM.Core.ProxyModels
     public class ProxyGenerator : IProxyGenerator, IDisposable
     {
         // Fields.
+        private bool disposed;
         private readonly Castle.DynamicProxy.IProxyGenerator proxyGeneratorCore;
 
         private readonly Dictionary<Type,
-            (Type[] AdditionalInterfaces, Func<IDbContext, IInterceptor[]> InterceptorInstancerSelector)> modelConfigurationDictionary =
-            new Dictionary<Type, (Type[] AdditionalInterfaces, Func<IDbContext, IInterceptor[]> InterceptorInstancerSelector)>();
-        private readonly ReaderWriterLockSlim modelConfigurationDictionaryLock = new ReaderWriterLockSlim(LockRecursionPolicy.SupportsRecursion);
+            (Type[] AdditionalInterfaces, Func<IDbContext, IInterceptor[]> InterceptorInstancerSelector)> modelConfigurationDictionary = new();
+        private readonly ReaderWriterLockSlim modelConfigurationDictionaryLock = new(LockRecursionPolicy.SupportsRecursion);
 
-        private readonly Dictionary<Type, Type> proxyTypeDictionary = new Dictionary<Type, Type>();
-        private readonly ReaderWriterLockSlim proxyTypeDictionaryLock = new ReaderWriterLockSlim(LockRecursionPolicy.SupportsRecursion);
+        private readonly Dictionary<Type, Type> proxyTypeDictionary = new();
+        private readonly ReaderWriterLockSlim proxyTypeDictionaryLock = new(LockRecursionPolicy.SupportsRecursion);
 
         // Constructors.
         public ProxyGenerator(
             Castle.DynamicProxy.IProxyGenerator proxyGeneratorCore)
         {
             this.proxyGeneratorCore = proxyGeneratorCore;
+        }
+
+        // Dispose.
+        public void Dispose()
+        {
+            Dispose(true);
+            GC.SuppressFinalize(this);
+        }
+
+        protected virtual void Dispose(bool disposing)
+        {
+            if (disposed) return;
+
+            // Dispose managed resources.
+            if (disposing)
+            {
+                modelConfigurationDictionaryLock.Dispose();
+                proxyTypeDictionaryLock.Dispose();
+            }
+
+            disposed = true;
         }
 
         // Methods.
@@ -132,13 +153,6 @@ namespace Etherna.MongODM.Core.ProxyModels
 
         public TModel CreateInstance<TModel>(IDbContext dbContext, params object[] constructorArguments) =>
             (TModel)CreateInstance(typeof(TModel), dbContext, constructorArguments);
-
-        public void Dispose()
-        {
-            modelConfigurationDictionaryLock.Dispose();
-            proxyTypeDictionaryLock.Dispose();
-            GC.SuppressFinalize(this);
-        }
 
         public bool IsProxyType(Type type)
         {

@@ -31,7 +31,7 @@ namespace Etherna.ExecContext.AsyncLocal
     public class AsyncLocalContext : IAsyncLocalContext, IHandledAsyncLocalContext
     {
         // Fields.
-        private static readonly AsyncLocal<IDictionary<object, object?>?> asyncLocalContext = new AsyncLocal<IDictionary<object, object?>?>();
+        private static readonly AsyncLocal<IDictionary<object, object?>?> asyncLocalContext = new();
 
         // Properties.
         public IDictionary<object, object?>? Items => asyncLocalContext.Value;

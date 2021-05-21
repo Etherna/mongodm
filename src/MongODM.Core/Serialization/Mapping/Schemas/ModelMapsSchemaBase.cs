@@ -23,7 +23,7 @@ namespace Etherna.MongODM.Core.Serialization.Mapping.Schemas
     {
         // Fields.
         private Dictionary<string, IModelMap> _allMapsDictionary = default!;
-        protected readonly List<IModelMap> _secondaryMaps = new List<IModelMap>();
+        protected readonly List<IModelMap> _secondaryMaps = new();
 
         // Constructor.
         protected ModelMapsSchemaBase(

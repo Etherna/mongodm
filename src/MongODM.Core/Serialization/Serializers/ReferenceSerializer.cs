@@ -38,12 +38,13 @@ namespace Etherna.MongODM.Core.Serialization.Serializers
         // Fields.
         private IDiscriminatorConvention _discriminatorConvention = default!;
 
-        private readonly ReaderWriterLockSlim configLockAdapters = new ReaderWriterLockSlim(LockRecursionPolicy.SupportsRecursion);
+        private readonly ReaderWriterLockSlim configLockAdapters = new(LockRecursionPolicy.SupportsRecursion);
         private readonly IDbContext dbContext;
+        private bool disposed;
         private readonly ReferenceSerializerConfiguration configuration;
         private readonly IDictionary<Type, IBsonSerializer> registeredAdapters = new Dictionary<Type, IBsonSerializer>();
 
-        // Constructor and dispose.
+        // Constructor.
         public ReferenceSerializer(
             IDbContext dbContext,
             Action<ReferenceSerializerConfiguration> configure)
@@ -58,11 +59,25 @@ namespace Etherna.MongODM.Core.Serialization.Serializers
             configuration.Freeze();
         }
 
+        // Dispose.
         public void Dispose()
         {
-            configLockAdapters.Dispose();
-            configuration.Dispose();
+            Dispose(true);
             GC.SuppressFinalize(this);
+        }
+
+        protected virtual void Dispose(bool disposing)
+        {
+            if (disposed) return;
+
+            // Dispose managed resources.
+            if (disposing)
+            {
+                configLockAdapters.Dispose();
+                configuration.Dispose();
+            }
+
+            disposed = true;
         }
 
         // Properties.
@@ -138,8 +153,10 @@ namespace Etherna.MongODM.Core.Serialization.Serializers
             if (model != null)
             {
                 var id = model.Id;
+#pragma warning disable CA1508 // Avoid dead conditional code
                 if (id == null) //ignore refered instances without id
                     return null!;
+#pragma warning restore CA1508 // Avoid dead conditional code
 
                 // Check if model as been loaded in cache.
                 if (dbContext.DbCache.LoadedModels.ContainsKey(id) &&

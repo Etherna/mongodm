@@ -20,6 +20,7 @@ using MongoDB.Bson;
 using MongoDB.Bson.Serialization;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Reflection;
 using System.Text;
@@ -66,21 +67,18 @@ namespace Etherna.MongODM.Core.Serialization.Mapping
                 return modelSchemaConfiguration;
             });
 
+        [SuppressMessage("Reliability", "CA2000:Dispose objects before losing scope", Justification = "The new model map instance can't be disposed")]
         public IModelMapsSchemaBuilder<TModel> AddModelMapsSchema<TModel>(
             string activeModelMapId,
             Action<BsonClassMap<TModel>>? activeModelMapInitializer = null,
             IBsonSerializer<TModel>? customSerializer = null) where TModel : class
         {
-            // Verify if needs a default serializer.
-            if (!typeof(TModel).IsAbstract)
-                customSerializer ??= ModelMap.GetDefaultSerializer<TModel>(dbContext);
-
             // Create model map.
             var modelMap = new ModelMap<TModel>(
                 activeModelMapId,
                 new BsonClassMap<TModel>(activeModelMapInitializer ?? (cm => cm.AutoMap())),
                 null,
-                customSerializer);
+                customSerializer ?? ModelMap.GetDefaultSerializer<TModel>(dbContext));
 
             return AddModelMapsSchema(modelMap);
         }
@@ -158,7 +156,7 @@ namespace Etherna.MongODM.Core.Serialization.Mapping
 
         public override string ToString()
         {
-            StringBuilder strBuilder = new StringBuilder();
+            StringBuilder strBuilder = new();
 
             // Member dependencies.
             //memberInfoToMemberMapsDictionary
@@ -308,7 +306,9 @@ namespace Etherna.MongODM.Core.Serialization.Mapping
                 //model maps schema serializers
                 if (memberSerializer is IModelMapsContainerSerializer schemaSerializer)
                 {
-                    var useCascadeDelete = (memberSerializer as IReferenceContainerSerializer)?.UseCascadeDelete;
+#pragma warning disable CA1508 // Avoid dead conditional code. Here code analyzer is wrong
+                    bool? useCascadeDelete = (memberSerializer as IReferenceContainerSerializer)?.UseCascadeDelete;
+#pragma warning restore CA1508 // Avoid dead conditional code
                     foreach (var childClassMap in schemaSerializer.AllChildClassMaps)
                         CompileDependencyRegisters(modelMap, childClassMap, lastEntityClassMap, currentMemberPath, useCascadeDelete);
                 }

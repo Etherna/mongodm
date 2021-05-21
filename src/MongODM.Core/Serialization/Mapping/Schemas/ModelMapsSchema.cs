@@ -14,6 +14,7 @@
 
 using MongoDB.Bson.Serialization;
 using System;
+using System.Diagnostics.CodeAnalysis;
 
 namespace Etherna.MongODM.Core.Serialization.Mapping.Schemas
 {
@@ -34,6 +35,7 @@ namespace Etherna.MongODM.Core.Serialization.Mapping.Schemas
             return this;
         }
 
+        [SuppressMessage("Reliability", "CA2000:Dispose objects before losing scope", Justification = "The new model map instance can't be disposed")]
         public IModelMapsSchemaBuilder<TModel> AddSecondaryMap(
             string id,
             Action<BsonClassMap<TModel>>? modelMapInitializer = null,

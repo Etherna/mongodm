@@ -32,8 +32,8 @@ namespace Etherna.ExecContext
             string expectedResult)
         {
             // Setup.
-            Mock<IExecutionContext> context0 = new Mock<IExecutionContext>();
-            Mock<IExecutionContext> context1 = new Mock<IExecutionContext>();
+            Mock<IExecutionContext> context0 = new();
+            Mock<IExecutionContext> context1 = new();
             context0.SetupGet(c => c.Items)
                 .Returns(enableContext1 ? new Dictionary<object, object?> { { "val", "0" } } : null);
             context1.SetupGet(c => c.Items)
