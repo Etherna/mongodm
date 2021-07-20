@@ -3,7 +3,7 @@ name: Stable release deploy to NuGet
 on:
   push:
     branches:
-    - master
+    - main
 
 jobs:
   build-test-package:
