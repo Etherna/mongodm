@@ -12,6 +12,7 @@
 //   See the License for the specific language governing permissions and
 //   limitations under the License.
 
+using Etherna.MongODM.AspNetCore.UI;
 using Etherna.MongODM.AspNetCoreSample.Models;
 using Etherna.MongODM.AspNetCoreSample.Persistence;
 using Hangfire;

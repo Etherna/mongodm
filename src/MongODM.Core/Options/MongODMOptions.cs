@@ -12,10 +12,19 @@
 //   See the License for the specific language governing permissions and
 //   limitations under the License.
 
+using System;
+using System.Collections.Generic;
+
 namespace Etherna.MongODM.Core.Options
 {
-    public class MongODMOptions
+    public sealed class MongODMOptions : IMongODMOptionsBuilder
     {
+        // Properties.
+        public IEnumerable<Type> DbContextTypes { get; private set; } = Array.Empty<Type>();
         public string DbMaintenanceQueueName { get; set; } = "default";
+
+        // Explicit methods.
+        void IMongODMOptionsBuilder.SetDbContextTypes(IEnumerable<Type> dbContextTypes) =>
+            DbContextTypes = dbContextTypes;
     }
 }
