@@ -12,17 +12,17 @@
 //   See the License for the specific language governing permissions and
 //   limitations under the License.
 
-using Etherna.MongODM;
-using Etherna.MongODM.Core;
+using Etherna.MongODM.AspNetCore;
 using Etherna.MongODM.Core.Domain.Models;
 using Etherna.MongODM.Core.Options;
 using Etherna.MongODM.Core.ProxyModels;
 using Etherna.MongODM.HF.Tasks;
 using Hangfire;
 using Hangfire.Mongo;
+using Microsoft.Extensions.DependencyInjection;
 using System;
 
-namespace Microsoft.Extensions.DependencyInjection
+namespace Etherna.MongODM
 {
     public static class ServiceCollectionExtensions
     {

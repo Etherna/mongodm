@@ -12,10 +12,8 @@
 //   See the License for the specific language governing permissions and
 //   limitations under the License.
 
-using Etherna.ExecContext.AsyncLocal;
 using Etherna.MongODM.Core.Options;
 using Etherna.MongODM.Core.Tasks;
-using Etherna.MongODM.HF.Filters;
 using Hangfire;
 using Hangfire.States;
 using System;
@@ -23,19 +21,17 @@ using System.Collections.Generic;
 
 namespace Etherna.MongODM.HF.Tasks
 {
-    public class HangfireTaskRunner : ITaskRunner
+    public sealed class HangfireTaskRunner : ITaskRunner, ITaskRunnerBuilder
     {
         // Fields.
         private readonly IBackgroundJobClient backgroundJobClient;
-        private readonly MongODMOptions mongODMOptions;
+        private MongODMOptions mongODMOptions = default!;
 
         // Constructors.
         public HangfireTaskRunner(
-            IBackgroundJobClient backgroundJobClient,
-            MongODMOptions mongODMOptions)
+            IBackgroundJobClient backgroundJobClient)
         {
             this.backgroundJobClient = backgroundJobClient;
-            this.mongODMOptions = mongODMOptions;
         }
 
         // Methods.
@@ -48,5 +44,9 @@ namespace Etherna.MongODM.HF.Tasks
             backgroundJobClient.Create<UpdateDocDependenciesTaskFacade>(
                 task => task.RunAsync(dbContextType, modelType, keyType, idPaths, modelId),
                 new EnqueuedState(mongODMOptions.DbMaintenanceQueueName));
+
+        // Explicit methods.
+        void ITaskRunnerBuilder.SetMongODMOptions(MongODMOptions options) =>
+            mongODMOptions = options;
     }
 }

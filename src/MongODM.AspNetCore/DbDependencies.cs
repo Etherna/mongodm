@@ -12,12 +12,17 @@
 //   See the License for the specific language governing permissions and
 //   limitations under the License.
 
+using Etherna.MongODM.Core;
+using Etherna.MongODM.Core.Options;
 using Etherna.MongODM.Core.ProxyModels;
 using Etherna.MongODM.Core.Repositories;
 using Etherna.MongODM.Core.Serialization.Mapping;
 using Etherna.MongODM.Core.Serialization.Modifiers;
+using Etherna.MongODM.Core.Utility;
+using Microsoft.Extensions.Options;
+using System;
 
-namespace Etherna.MongODM.Core.Utility
+namespace Etherna.MongODM.AspNetCore
 {
     public class DbDependencies : IDbDependencies
     {
@@ -25,19 +30,19 @@ namespace Etherna.MongODM.Core.Utility
             IDbCache dbCache,
             IDbMaintainer dbMaintainer,
             IDbMigrationManager dbContextMigrationManager,
+            IOptions<MongODMOptions> mongODMOptions,
             IProxyGenerator proxyGenerator,
             IRepositoryRegister repositoryRegister,
             ISchemaRegister schemaRegister,
-            ISerializerModifierAccessor serializerModifierAccessor,
-#pragma warning disable IDE0060 // Remove unused parameter. It's needed for run static configurations
-#pragma warning disable CA1801 // Review unused parameters
-            IStaticConfigurationBuilder staticConfigurationBuilder)
-#pragma warning restore CA1801 // Review unused parameters
-#pragma warning restore IDE0060 // Remove unused parameter
+            ISerializerModifierAccessor serializerModifierAccessor)
         {
+            if (mongODMOptions is null)
+                throw new ArgumentNullException(nameof(mongODMOptions));
+
             DbCache = dbCache;
             DbMaintainer = dbMaintainer;
             DbMigrationManager = dbContextMigrationManager;
+            MongODMOptions = mongODMOptions.Value;
             SchemaRegister = schemaRegister;
             ProxyGenerator = proxyGenerator;
             RepositoryRegister = repositoryRegister;
@@ -47,6 +52,7 @@ namespace Etherna.MongODM.Core.Utility
         public IDbCache DbCache { get; }
         public IDbMaintainer DbMaintainer { get; }
         public IDbMigrationManager DbMigrationManager { get; }
+        public MongODMOptions MongODMOptions { get; }
         public IProxyGenerator ProxyGenerator { get; }
         public IRepositoryRegister RepositoryRegister { get; }
         public ISchemaRegister SchemaRegister { get; }

@@ -12,28 +12,35 @@
 //   See the License for the specific language governing permissions and
 //   limitations under the License.
 
-using Etherna.MongODM.Core.Extensions;
-using System.Linq;
+using System;
 
 namespace Etherna.MongODM.Core.Options
 {
     public class DbContextOptions
     {
-        public string ConnectionString { get; set; } = "mongodb://localhost/localDb";
-        public string DbName => ConnectionString.Split('?')[0]
-                                                .Split('/').Last();
+        // Fields.
+        private string _connectionString = default!;
+
+        // Properties.
+        public string ConnectionString
+        {
+            get
+            {
+                if (_connectionString is null)
+                    _connectionString = $"mongodb://localhost/{DbName}";
+                return _connectionString;
+            }
+            set
+            {
+                if (value is null)
+                    throw new ArgumentNullException(nameof(ConnectionString));
+                _connectionString = value;
+            }
+        }
+        public string DbName { get; set; } = "localDb";
         public string DbOperationsCollectionName { get; set; } = "_db_ops";
         public DocumentSemVerOptions DocumentSemVer { get; set; } = new DocumentSemVerOptions();
         public string? Identifier { get; set; }
         public ModelMapVersionOptions ModelMapVersion { get; set; } = new ModelMapVersionOptions();
-    }
-
-    public class DbContextOptions<TDbContext> : DbContextOptions
-        where TDbContext : class, IDbContext
-    {
-        public DbContextOptions()
-        {
-            ConnectionString = $"mongodb://localhost/{typeof(TDbContext).Name.ToLowerFirstChar()}";
-        }
     }
 }

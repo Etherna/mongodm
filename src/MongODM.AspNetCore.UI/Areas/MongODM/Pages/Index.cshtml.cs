@@ -13,8 +13,10 @@
 //   limitations under the License.
 
 using Etherna.MongODM.Core;
+using Etherna.MongODM.Core.Options;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Options;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -25,16 +27,19 @@ namespace Etherna.MongODM.AspNetCore.UI.Areas.MongODM.Pages
     public class IndexModel : PageModel
     {
         // Fields.
-        private readonly IMongODMConfiguration configuration;
+        private readonly MongODMOptions options;
         private readonly IServiceProvider serviceProvider;
 
         // Constructor.
         public IndexModel(
-            IMongODMConfiguration configuration,
+            IOptions<MongODMOptions> options,
             IServiceProvider serviceProvider)
         {
-            this.configuration = configuration ?? throw new ArgumentNullException(nameof(configuration));
-            this.serviceProvider = serviceProvider ?? throw new ArgumentNullException(nameof(serviceProvider));
+            if (options is null)
+                throw new ArgumentNullException(nameof(options));
+
+            this.options = options.Value;
+            this.serviceProvider = serviceProvider;
         }
 
         // Properties.
@@ -61,7 +66,7 @@ namespace Etherna.MongODM.AspNetCore.UI.Areas.MongODM.Pages
         private void InitializePage()
         {
             // Get dbcontext instances.
-            var dbContextTypes = configuration.DbContextTypes;
+            var dbContextTypes = options.DbContextTypes;
             DbContexts = dbContextTypes.Select(type => (IDbContext)serviceProvider.GetRequiredService(type));
         }
     }

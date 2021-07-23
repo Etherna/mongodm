@@ -18,6 +18,7 @@ using Etherna.MongODM.Core;
 using Etherna.MongODM.Core.Options;
 using Etherna.MongODM.Core.Repositories;
 using Etherna.MongODM.Core.Serialization;
+using Microsoft.Extensions.Options;
 using System.Collections.Generic;
 
 namespace Etherna.MongODM.AspNetCoreSample.Persistence
@@ -26,8 +27,8 @@ namespace Etherna.MongODM.AspNetCoreSample.Persistence
     {
         public SampleDbContext(
             IDbDependencies dependencies,
-            DbContextOptions<SampleDbContext> options)
-            : base(dependencies, options)
+            IOptionsMonitor<DbContextOptions> options)
+            : base(dependencies, options.Get(nameof(ISampleDbContext)))
         { }
 
         public ICollectionRepository<Cat, string> Cats { get; } = new CollectionRepository<Cat, string>("cats");

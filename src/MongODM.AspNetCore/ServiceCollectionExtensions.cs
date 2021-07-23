@@ -14,8 +14,8 @@
 
 using Etherna.ExecContext;
 using Etherna.ExecContext.AsyncLocal;
-using Etherna.MongODM.AspNetCore;
 using Etherna.MongODM.Core;
+using Etherna.MongODM.Core.Conventions;
 using Etherna.MongODM.Core.Domain.Models;
 using Etherna.MongODM.Core.Options;
 using Etherna.MongODM.Core.ProxyModels;
@@ -25,17 +25,21 @@ using Etherna.MongODM.Core.Serialization.Modifiers;
 using Etherna.MongODM.Core.Tasks;
 using Etherna.MongODM.Core.Utility;
 using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
+using MongoDB.Bson;
+using MongoDB.Bson.Serialization;
+using MongoDB.Bson.Serialization.Conventions;
 using System;
 
-namespace Microsoft.Extensions.DependencyInjection
+namespace Etherna.MongODM.AspNetCore
 {
     public static class ServiceCollectionExtensions
     {
         public static IMongODMConfiguration AddMongODM<TTaskRunner, TModelBase>(
             this IServiceCollection services,
             Action<MongODMOptions>? configureOptions = null)
-            where TTaskRunner : class, ITaskRunner
+            where TTaskRunner : class, ITaskRunner, ITaskRunnerBuilder
             where TModelBase : class, IModel => //needed because of this https://jira.mongodb.org/browse/CSHARP-3154
             AddMongODM<ProxyGenerator, TTaskRunner, TModelBase>(services, configureOptions);
 
@@ -43,16 +47,33 @@ namespace Microsoft.Extensions.DependencyInjection
             this IServiceCollection services,
             Action<MongODMOptions>? configureOptions = null)
             where TProxyGenerator : class, IProxyGenerator
-            where TTaskRunner : class, ITaskRunner
+            where TTaskRunner : class, ITaskRunner, ITaskRunnerBuilder
             where TModelBase : class, IModel //needed because of this https://jira.mongodb.org/browse/CSHARP-3154
         {
             // MongODM generic configuration.
-            var configuration = new AspNetCoreMongODMConfiguration(services);
-            services.TryAddSingleton<IMongODMConfiguration>(configuration);
+            var configuration = new MongODMConfiguration(services);
 
-            var mongODMOptions = new MongODMOptions();
-            configureOptions?.Invoke(mongODMOptions);
-            services.TryAddSingleton(mongODMOptions);
+            services.AddOptions<MongODMOptions>()
+                .Configure(configureOptions ?? (_ => { }))
+                .PostConfigure<IProxyGenerator, ITaskRunnerBuilder>((options, proxyGenerator, taskRunner) =>
+                {
+                    // Register global conventions.
+                    ConventionRegistry.Register("Enum string", new ConventionPack
+                    {
+                        new EnumRepresentationConvention(BsonType.String)
+                    }, c => true);
+
+                    BsonSerializer.RegisterDiscriminatorConvention(typeof(TModelBase),
+                        new HierarchicalProxyTolerantDiscriminatorConvention("_t", proxyGenerator));
+                    BsonSerializer.RegisterDiscriminatorConvention(typeof(EntityModelBase),
+                        new HierarchicalProxyTolerantDiscriminatorConvention("_t", proxyGenerator));
+
+                    // Freeze configuration into mongodm options.
+                    configuration.Freeze(options);
+
+                    // Link options to services.
+                    taskRunner.SetMongODMOptions(options);
+                });
 
             services.TryAddSingleton<IHttpContextAccessor, HttpContextAccessor>();
 
@@ -64,6 +85,7 @@ namespace Microsoft.Extensions.DependencyInjection
                }));
             services.TryAddSingleton<IProxyGenerator, TProxyGenerator>();
             services.TryAddSingleton<ITaskRunner, TTaskRunner>();
+            services.TryAddSingleton<ITaskRunnerBuilder, TTaskRunner>();
 
             // DbContext internal.
             //dependencies
@@ -86,9 +108,6 @@ namespace Microsoft.Extensions.DependencyInjection
 
             //castle proxy generator
             services.TryAddSingleton<Castle.DynamicProxy.IProxyGenerator>(new Castle.DynamicProxy.ProxyGenerator());
-
-            //static configurations
-            services.TryAddSingleton<IStaticConfigurationBuilder, StaticConfigurationBuilder<TModelBase>>();
 
             return configuration;
         }

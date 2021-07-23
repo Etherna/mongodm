@@ -12,19 +12,29 @@
 //   See the License for the specific language governing permissions and
 //   limitations under the License.
 
+using Etherna.MongODM.Core;
 using Etherna.MongODM.Core.Options;
+using Microsoft.Extensions.DependencyInjection;
 using System;
 using System.Collections.Generic;
 using System.Threading;
 
-namespace Etherna.MongODM.Core
+namespace Etherna.MongODM.AspNetCore
 {
-    public abstract class MongODMConfiguration : IMongODMConfiguration, IDisposable
+    public class MongODMConfiguration : IMongODMConfiguration, IDisposable
     {
         // Fields.
         private readonly ReaderWriterLockSlim configLock = new(LockRecursionPolicy.SupportsRecursion);
+        private readonly List<Type> dbContextTypes = new();
         private bool disposed;
-        private readonly List<Type> _dbContextTypes = new();
+        private readonly IServiceCollection services;
+
+        // Constructor.
+        public MongODMConfiguration(
+            IServiceCollection services)
+        {
+            this.services = services;
+        }
 
         // Dispose.
         public void Dispose()
@@ -45,21 +55,11 @@ namespace Etherna.MongODM.Core
         }
 
         // Properties.
-        public IEnumerable<Type> DbContextTypes
-        {
-            get
-            {
-                Freeze();
-                return _dbContextTypes;
-            }
-        }
-
         public bool IsFrozen { get; private set; }
 
         // Methods.
-
         public IMongODMConfiguration AddDbContext<TDbContext>(
-            Action<DbContextOptions<TDbContext>>? dbContextConfig = null)
+            Action<DbContextOptions>? dbContextConfig = null)
             where TDbContext : class, IDbContext
         {
             configLock.EnterWriteLock();
@@ -69,15 +69,14 @@ namespace Etherna.MongODM.Core
                     throw new InvalidOperationException("Configuration is frozen");
 
                 // Register dbContext.
-                RegisterSingleton<TDbContext>();
+                services.AddSingleton<TDbContext>();
 
                 // Register options.
-                var contextOptions = new DbContextOptions<TDbContext>();
-                dbContextConfig?.Invoke(contextOptions);
-                RegisterSingleton(contextOptions);
+                services.AddOptions<DbContextOptions>(typeof(TDbContext).Name)
+                    .Configure(dbContextConfig ?? (_ => { }));
 
                 // Add db context type.
-                _dbContextTypes.Add(typeof(TDbContext));
+                dbContextTypes.Add(typeof(TDbContext));
 
                 return this;
             }
@@ -88,7 +87,7 @@ namespace Etherna.MongODM.Core
         }
 
         public IMongODMConfiguration AddDbContext<TDbContext, TDbContextImpl>(
-            Action<DbContextOptions<TDbContextImpl>>? dbContextConfig = null)
+            Action<DbContextOptions>? dbContextConfig = null)
             where TDbContext : class, IDbContext
             where TDbContextImpl : class, TDbContext
         {
@@ -99,16 +98,14 @@ namespace Etherna.MongODM.Core
                     throw new InvalidOperationException("Configuration is frozen");
 
                 // Register dbContext.
-                RegisterSingleton<TDbContext, TDbContextImpl>();
-                RegisterSingleton(sp => (TDbContextImpl)sp.GetService(typeof(TDbContext)));
+                services.AddSingleton<TDbContext, TDbContextImpl>();
 
                 // Register options.
-                var contextOptions = new DbContextOptions<TDbContextImpl>();
-                dbContextConfig?.Invoke(contextOptions);
-                RegisterSingleton(contextOptions);
+                services.AddOptions<DbContextOptions>(typeof(TDbContext).Name)
+                    .Configure(dbContextConfig ?? (_ => { }));
 
                 // Add db context type.
-                _dbContextTypes.Add(typeof(TDbContext));
+                dbContextTypes.Add(typeof(TDbContext));
 
                 return this;
             }
@@ -118,8 +115,11 @@ namespace Etherna.MongODM.Core
             }
         }
 
-        public void Freeze()
+        public void Freeze(IMongODMOptionsBuilder mongODMOptionsBuilder)
         {
+            if (mongODMOptionsBuilder is null)
+                throw new ArgumentNullException(nameof(mongODMOptionsBuilder));
+
             configLock.EnterReadLock();
             try
             {
@@ -135,25 +135,14 @@ namespace Etherna.MongODM.Core
             {
                 // Freeze.
                 IsFrozen = true;
+
+                // Report configuration to options.
+                mongODMOptionsBuilder.SetDbContextTypes(dbContextTypes);
             }
             finally
             {
                 configLock.ExitWriteLock();
             }
         }
-
-        // Abstract protected methods.
-        protected abstract void RegisterSingleton<TService>()
-             where TService : class;
-
-        protected abstract void RegisterSingleton<TService>(TService instance)
-             where TService : class;
-
-        protected abstract void RegisterSingleton<TService, TImplementation>()
-            where TService : class
-            where TImplementation : class, TService;
-
-        protected abstract void RegisterSingleton<TService>(Func<IServiceProvider, TService> implementationFactory)
-            where TService : class;
     }
 }

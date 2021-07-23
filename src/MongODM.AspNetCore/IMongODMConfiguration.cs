@@ -12,30 +12,29 @@
 //   See the License for the specific language governing permissions and
 //   limitations under the License.
 
+using Etherna.MongODM.Core;
 using Etherna.MongODM.Core.Options;
 using System;
-using System.Collections.Generic;
 
-namespace Etherna.MongODM.Core
+namespace Etherna.MongODM.AspNetCore
 {
     public interface IMongODMConfiguration
     {
-        IEnumerable<Type> DbContextTypes { get; }
         bool IsFrozen { get; }
 
         // Methods.
         IMongODMConfiguration AddDbContext<TDbContext>(
-            Action<DbContextOptions<TDbContext>>? dbContextConfig = null)
+            Action<DbContextOptions>? dbContextConfig = null)
             where TDbContext : class, IDbContext;
 
         IMongODMConfiguration AddDbContext<TDbContext, TDbContextImpl>(
-            Action<DbContextOptions<TDbContextImpl>>? dbContextConfig = null)
+            Action<DbContextOptions>? dbContextConfig = null)
             where TDbContext : class, IDbContext
             where TDbContextImpl : class, TDbContext;
 
         /// <summary>
         /// Freeze configuration.
         /// </summary>
-        void Freeze();
+        void Freeze(IMongODMOptionsBuilder mongODMOptionsBuilder);
     }
 }

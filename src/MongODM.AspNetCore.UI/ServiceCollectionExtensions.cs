@@ -12,14 +12,14 @@
 //   See the License for the specific language governing permissions and
 //   limitations under the License.
 
-using Etherna.MongODM.AspNetCore.UI;
 using Etherna.MongODM.AspNetCore.UI.Auth.Handlers;
 using Etherna.MongODM.AspNetCore.UI.Auth.Requirements;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc.RazorPages;
+using Microsoft.Extensions.DependencyInjection;
 using System;
 
-namespace Microsoft.Extensions.DependencyInjection
+namespace Etherna.MongODM.AspNetCore.UI
 {
     public static class ServiceCollectionExtensions
     {
