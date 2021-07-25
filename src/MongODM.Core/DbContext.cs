@@ -33,31 +33,36 @@ using System.Threading.Tasks;
 
 namespace Etherna.MongODM.Core
 {
-    public abstract class DbContext : IDbContext
+    public abstract class DbContext : IDbContext, IDbContextBuilder
     {
-        // Constructors and initialization.
-        protected DbContext(
+        // Fields.
+        private bool isInitialized;
+
+        // Constructor and initializer.
+        protected DbContext() { }
+        public async Task InitializeAsync(
             IDbDependencies dependencies,
             DbContextOptions options)
         {
+            if (isInitialized)
+                throw new InvalidOperationException("DbContext already initialized");
             if (dependencies is null)
                 throw new ArgumentNullException(nameof(dependencies));
             if (options is null)
                 throw new ArgumentNullException(nameof(options));
 
+            // Set dependencies.
             DbCache = dependencies.DbCache;
             DbMaintainer = dependencies.DbMaintainer;
             DbMigrationManager = dependencies.DbMigrationManager;
             DbOperations = new CollectionRepository<OperationBase, string>(options.DbOperationsCollectionName);
-            DocumentSemVerOptions = options.DocumentSemVer;
-            Identifier = options.Identifier ?? GetType().Name;
             LibraryVersion = typeof(DbContext)
                 .GetTypeInfo()
                 .Assembly
                 .GetCustomAttribute<AssemblyInformationalVersionAttribute>()
                 ?.InformationalVersion
                 ?.Split('+')[0] ?? "1.0.0";
-            ModelMapVersionOptions = options.ModelMapVersion;
+            Options = options;
             ProxyGenerator = dependencies.ProxyGenerator;
             RepositoryRegister = dependencies.RepositoryRegister;
             SchemaRegister = dependencies.SchemaRegister;
@@ -90,6 +95,13 @@ namespace Etherna.MongODM.Core
 
             // Build and freeze schemas register.
             SchemaRegister.Freeze();
+
+            // Initialize data.
+            if (!Options.DisableAutomaticSeed)
+                await SeedIfNeededAsync().ConfigureAwait(false);
+
+            // Set as initialized.
+            isInitialized = true;
         }
 
         // Public properties.
@@ -97,21 +109,20 @@ namespace Etherna.MongODM.Core
             DbCache.LoadedModels.Values
                 .Where(model => (model as IAuditable)?.IsChanged == true)
                 .ToList();
-        public IMongoClient Client { get; }
-        public IMongoDatabase Database { get; }
-        public IDbCache DbCache { get; }
-        public IDbMaintainer DbMaintainer { get; }
-        public IDbMigrationManager DbMigrationManager { get; }
-        public ICollectionRepository<OperationBase, string> DbOperations { get; }
+        public IMongoClient Client { get; private set; } = default!;
+        public IMongoDatabase Database { get; private set; } = default!;
+        public IDbCache DbCache { get; private set; } = default!;
+        public IDbMaintainer DbMaintainer { get; private set; } = default!;
+        public IDbMigrationManager DbMigrationManager { get; private set; } = default!;
+        public ICollectionRepository<OperationBase, string> DbOperations { get; private set; } = default!;
         public virtual IEnumerable<DocumentMigration> DocumentMigrationList { get; } = Array.Empty<DocumentMigration>();
-        public DocumentSemVerOptions DocumentSemVerOptions { get; }
-        public string Identifier { get; }
-        public SemanticVersion LibraryVersion { get; }
-        public ModelMapVersionOptions ModelMapVersionOptions { get; }
-        public IProxyGenerator ProxyGenerator { get; }
-        public IRepositoryRegister RepositoryRegister { get; }
-        public ISchemaRegister SchemaRegister { get; }
-        public ISerializerModifierAccessor SerializerModifierAccessor { get; }
+        public string Identifier => Options?.Identifier ?? GetType().Name;
+        public SemanticVersion LibraryVersion { get; private set; } = default!;
+        public DbContextOptions Options { get; private set; } = default!;
+        public IProxyGenerator ProxyGenerator { get; private set; } = default!;
+        public IRepositoryRegister RepositoryRegister { get; private set; } = default!;
+        public ISchemaRegister SchemaRegister { get; private set; } = default!;
+        public ISerializerModifierAccessor SerializerModifierAccessor { get; private set; } = default!;
 
         // Protected properties.
         protected abstract IEnumerable<IModelMapsCollector> ModelMapsCollectors { get; }

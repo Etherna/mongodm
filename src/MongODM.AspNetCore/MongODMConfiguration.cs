@@ -60,31 +60,8 @@ namespace Etherna.MongODM.AspNetCore
         // Methods.
         public IMongODMConfiguration AddDbContext<TDbContext>(
             Action<DbContextOptions>? dbContextConfig = null)
-            where TDbContext : class, IDbContext
-        {
-            configLock.EnterWriteLock();
-            try
-            {
-                if (IsFrozen)
-                    throw new InvalidOperationException("Configuration is frozen");
-
-                // Register dbContext.
-                services.AddSingleton<TDbContext>();
-
-                // Register options.
-                services.AddOptions<DbContextOptions>(typeof(TDbContext).Name)
-                    .Configure(dbContextConfig ?? (_ => { }));
-
-                // Add db context type.
-                dbContextTypes.Add(typeof(TDbContext));
-
-                return this;
-            }
-            finally
-            {
-                configLock.ExitWriteLock();
-            }
-        }
+            where TDbContext : class, IDbContext =>
+            AddDbContext<TDbContext, TDbContext>(dbContextConfig);
 
         public IMongODMConfiguration AddDbContext<TDbContext, TDbContextImpl>(
             Action<DbContextOptions>? dbContextConfig = null)
@@ -98,11 +75,23 @@ namespace Etherna.MongODM.AspNetCore
                     throw new InvalidOperationException("Configuration is frozen");
 
                 // Register dbContext.
-                services.AddSingleton<TDbContext, TDbContextImpl>();
+                services.AddSingleton<TDbContext, TDbContextImpl>(sp =>
+                {
+                    // Get dependencies.
+                    var dependencies = sp.GetRequiredService<IDbDependencies>();
+                    var options = new DbContextOptions();
+                    dbContextConfig?.Invoke(options);
 
-                // Register options.
-                services.AddOptions<DbContextOptions>(typeof(TDbContext).Name)
-                    .Configure(dbContextConfig ?? (_ => { }));
+                    // Initialize instance.
+                    var dbContext = Activator.CreateInstance<TDbContextImpl>();
+                    if (dbContext is not IDbContextBuilder dbContextBuilder)
+                        throw new InvalidOperationException($"DbContext doesn't implement {nameof(IDbContextBuilder)}");
+
+                    var task = dbContextBuilder.InitializeAsync(dependencies, options);
+                    task.Wait();
+
+                    return dbContext;
+                });
 
                 // Add db context type.
                 dbContextTypes.Add(typeof(TDbContext));

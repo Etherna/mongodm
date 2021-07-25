@@ -55,7 +55,8 @@ namespace Etherna.MongODM.AspNetCore
 
             services.AddOptions<MongODMOptions>()
                 .Configure(configureOptions ?? (_ => { }))
-                .PostConfigure<IProxyGenerator, ITaskRunnerBuilder>((options, proxyGenerator, taskRunner) =>
+                .PostConfigure<IProxyGenerator, ITaskRunnerBuilder>(
+                (options, proxyGenerator, taskRunnerBuilder) =>
                 {
                     // Register global conventions.
                     ConventionRegistry.Register("Enum string", new ConventionPack
@@ -72,7 +73,7 @@ namespace Etherna.MongODM.AspNetCore
                     configuration.Freeze(options);
 
                     // Link options to services.
-                    taskRunner.SetMongODMOptions(options);
+                    taskRunnerBuilder.SetMongODMOptions(options);
                 });
 
             services.TryAddSingleton<IHttpContextAccessor, HttpContextAccessor>();
