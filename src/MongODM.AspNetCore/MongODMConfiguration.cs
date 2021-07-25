@@ -59,14 +59,29 @@ namespace Etherna.MongODM.AspNetCore
 
         // Methods.
         public IMongODMConfiguration AddDbContext<TDbContext>(
-            Action<DbContextOptions>? dbContextConfig = null)
-            where TDbContext : class, IDbContext =>
-            AddDbContext<TDbContext, TDbContext>(dbContextConfig);
+            Action<DbContextOptions>? dbContextOptionsConfig = null)
+            where TDbContext : DbContext, new() =>
+            AddDbContext<TDbContext, TDbContext>(dbContextOptionsConfig);
+
+        public IMongODMConfiguration AddDbContext<TDbContext>(
+            TDbContext dbContext,
+            Action<DbContextOptions>? dbContextOptionsConfig = null)
+            where TDbContext : DbContext =>
+            AddDbContext<TDbContext, TDbContext>(dbContext, dbContextOptionsConfig);
 
         public IMongODMConfiguration AddDbContext<TDbContext, TDbContextImpl>(
-            Action<DbContextOptions>? dbContextConfig = null)
+            Action<DbContextOptions>? dbContextOptionsConfig = null)
             where TDbContext : class, IDbContext
-            where TDbContextImpl : class, TDbContext
+            where TDbContextImpl : DbContext, TDbContext, new() =>
+            AddDbContext<TDbContext, TDbContextImpl>(
+                Activator.CreateInstance<TDbContextImpl>(),
+                dbContextOptionsConfig);
+
+        public IMongODMConfiguration AddDbContext<TDbContext, TDbContextImpl>(
+            TDbContextImpl dbContext,
+            Action<DbContextOptions>? dbContextOptionsConfig = null)
+            where TDbContext : class, IDbContext
+            where TDbContextImpl : DbContext, TDbContext
         {
             configLock.EnterWriteLock();
             try
@@ -80,14 +95,10 @@ namespace Etherna.MongODM.AspNetCore
                     // Get dependencies.
                     var dependencies = sp.GetRequiredService<IDbDependencies>();
                     var options = new DbContextOptions();
-                    dbContextConfig?.Invoke(options);
+                    dbContextOptionsConfig?.Invoke(options);
 
                     // Initialize instance.
-                    var dbContext = Activator.CreateInstance<TDbContextImpl>();
-                    if (dbContext is not IDbContextBuilder dbContextBuilder)
-                        throw new InvalidOperationException($"DbContext doesn't implement {nameof(IDbContextBuilder)}");
-
-                    var task = dbContextBuilder.InitializeAsync(dependencies, options);
+                    var task = dbContext.InitializeAsync(dependencies, options);
                     task.Wait();
 
                     return dbContext;

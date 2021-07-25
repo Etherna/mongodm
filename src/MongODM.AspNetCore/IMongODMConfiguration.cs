@@ -24,13 +24,24 @@ namespace Etherna.MongODM.AspNetCore
 
         // Methods.
         IMongODMConfiguration AddDbContext<TDbContext>(
-            Action<DbContextOptions>? dbContextConfig = null)
-            where TDbContext : class, IDbContext;
+            Action<DbContextOptions>? dbContextOptionsConfig = null)
+            where TDbContext : DbContext, new();
+
+        IMongODMConfiguration AddDbContext<TDbContext>(
+            TDbContext dbContext,
+            Action<DbContextOptions>? dbContextOptionsConfig = null)
+            where TDbContext : DbContext;
 
         IMongODMConfiguration AddDbContext<TDbContext, TDbContextImpl>(
-            Action<DbContextOptions>? dbContextConfig = null)
+            Action<DbContextOptions>? dbContextOptionsConfig = null)
             where TDbContext : class, IDbContext
-            where TDbContextImpl : class, TDbContext;
+            where TDbContextImpl : DbContext, TDbContext, new();
+
+        IMongODMConfiguration AddDbContext<TDbContext, TDbContextImpl>(
+            TDbContextImpl dbContext,
+            Action<DbContextOptions>? dbContextOptionsConfig = null)
+            where TDbContext : class, IDbContext
+            where TDbContextImpl : DbContext, TDbContext;
 
         /// <summary>
         /// Freeze configuration.
