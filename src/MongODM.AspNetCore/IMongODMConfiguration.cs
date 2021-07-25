@@ -32,6 +32,11 @@ namespace Etherna.MongODM.AspNetCore
             Action<DbContextOptions>? dbContextOptionsConfig = null)
             where TDbContext : DbContext;
 
+        IMongODMConfiguration AddDbContext<TDbContext>(
+            Func<IServiceProvider, TDbContext> dbContextCreator,
+            Action<DbContextOptions>? dbContextOptionsConfig = null)
+            where TDbContext : DbContext;
+
         IMongODMConfiguration AddDbContext<TDbContext, TDbContextImpl>(
             Action<DbContextOptions>? dbContextOptionsConfig = null)
             where TDbContext : class, IDbContext
@@ -39,6 +44,12 @@ namespace Etherna.MongODM.AspNetCore
 
         IMongODMConfiguration AddDbContext<TDbContext, TDbContextImpl>(
             TDbContextImpl dbContext,
+            Action<DbContextOptions>? dbContextOptionsConfig = null)
+            where TDbContext : class, IDbContext
+            where TDbContextImpl : DbContext, TDbContext;
+
+        IMongODMConfiguration AddDbContext<TDbContext, TDbContextImpl>(
+            Func<IServiceProvider, TDbContextImpl> dbContextCreator,
             Action<DbContextOptions>? dbContextOptionsConfig = null)
             where TDbContext : class, IDbContext
             where TDbContextImpl : DbContext, TDbContext;

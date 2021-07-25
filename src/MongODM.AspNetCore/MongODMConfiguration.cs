@@ -67,19 +67,32 @@ namespace Etherna.MongODM.AspNetCore
             TDbContext dbContext,
             Action<DbContextOptions>? dbContextOptionsConfig = null)
             where TDbContext : DbContext =>
-            AddDbContext<TDbContext, TDbContext>(dbContext, dbContextOptionsConfig);
+            AddDbContext<TDbContext, TDbContext>(_ => dbContext, dbContextOptionsConfig);
+
+        public IMongODMConfiguration AddDbContext<TDbContext>(
+            Func<IServiceProvider, TDbContext> dbContextCreator,
+            Action<DbContextOptions>? dbContextOptionsConfig = null)
+            where TDbContext : DbContext =>
+            AddDbContext<TDbContext, TDbContext>(dbContextCreator, dbContextOptionsConfig);
 
         public IMongODMConfiguration AddDbContext<TDbContext, TDbContextImpl>(
             Action<DbContextOptions>? dbContextOptionsConfig = null)
             where TDbContext : class, IDbContext
             where TDbContextImpl : DbContext, TDbContext, new() =>
             AddDbContext<TDbContext, TDbContextImpl>(
-                Activator.CreateInstance<TDbContextImpl>(),
+                _ => Activator.CreateInstance<TDbContextImpl>(),
                 dbContextOptionsConfig);
 
         public IMongODMConfiguration AddDbContext<TDbContext, TDbContextImpl>(
             TDbContextImpl dbContext,
             Action<DbContextOptions>? dbContextOptionsConfig = null)
+            where TDbContext : class, IDbContext
+            where TDbContextImpl : DbContext, TDbContext =>
+            AddDbContext<TDbContext, TDbContextImpl>(_ => dbContext, dbContextOptionsConfig);
+
+        public IMongODMConfiguration AddDbContext<TDbContext, TDbContextImpl>(
+            Func<IServiceProvider, TDbContextImpl> dbContextCreator,
+            Action<DbContextOptions>? dbContextOptionsConfig)
             where TDbContext : class, IDbContext
             where TDbContextImpl : DbContext, TDbContext
         {
@@ -96,6 +109,9 @@ namespace Etherna.MongODM.AspNetCore
                     var dependencies = sp.GetRequiredService<IDbDependencies>();
                     var options = new DbContextOptions();
                     dbContextOptionsConfig?.Invoke(options);
+
+                    // Get dbcontext.
+                    var dbContext = dbContextCreator(sp);
 
                     // Initialize instance.
                     var task = dbContext.InitializeAsync(dependencies, options);
