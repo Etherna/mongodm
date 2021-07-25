@@ -16,7 +16,7 @@ using System;
 
 namespace Etherna.MongODM.Core.Options
 {
-    public class DbContextOptions
+    public class DbContextOptions : IDbContextOptions
     {
         // Fields.
         private string _connectionString = default!;
@@ -39,6 +39,7 @@ namespace Etherna.MongODM.Core.Options
         }
         public string DbName { get; set; } = "localDb";
         public string DbOperationsCollectionName { get; set; } = "_db_ops";
+        public bool DisableAutomaticSeed { get; set; }
         public DocumentSemVerOptions DocumentSemVer { get; set; } = new DocumentSemVerOptions();
         public string? Identifier { get; set; }
         public ModelMapVersionOptions ModelMapVersion { get; set; } = new ModelMapVersionOptions();

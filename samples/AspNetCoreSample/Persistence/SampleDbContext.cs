@@ -15,22 +15,14 @@
 using Etherna.MongODM.AspNetCoreSample.Models;
 using Etherna.MongODM.AspNetCoreSample.Models.ModelMaps;
 using Etherna.MongODM.Core;
-using Etherna.MongODM.Core.Options;
 using Etherna.MongODM.Core.Repositories;
 using Etherna.MongODM.Core.Serialization;
-using Microsoft.Extensions.Options;
 using System.Collections.Generic;
 
 namespace Etherna.MongODM.AspNetCoreSample.Persistence
 {
     public class SampleDbContext : DbContext, ISampleDbContext
     {
-        public SampleDbContext(
-            IDbDependencies dependencies,
-            IOptionsMonitor<DbContextOptions> options)
-            : base(dependencies, options.Get(nameof(ISampleDbContext)))
-        { }
-
         public ICollectionRepository<Cat, string> Cats { get; } = new CollectionRepository<Cat, string>("cats");
 
         protected override IEnumerable<IModelMapsCollector> ModelMapsCollectors =>

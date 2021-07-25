@@ -126,7 +126,7 @@ namespace Etherna.MongODM.Core.Serialization.Serializers
 
             //get model map id
             string? modelMapId = null;
-            if (bsonDocument.TryGetElement(dbContext.ModelMapVersionOptions.ElementName, out BsonElement modelMapIdElement))
+            if (bsonDocument.TryGetElement(dbContext.Options.ModelMapVersion.ElementName, out BsonElement modelMapIdElement))
             {
                 modelMapId = BsonValueToModelMapId(modelMapIdElement.Value);
                 bsonDocument.RemoveElement(modelMapIdElement); //don't report into extra elements
@@ -290,8 +290,8 @@ namespace Etherna.MongODM.Core.Serialization.Serializers
 
             // Add additional data.
             //add model map id
-            if (bsonDocument.Contains(dbContext.ModelMapVersionOptions.ElementName))
-                bsonDocument.Remove(dbContext.ModelMapVersionOptions.ElementName);
+            if (bsonDocument.Contains(dbContext.Options.ModelMapVersion.ElementName))
+                bsonDocument.Remove(dbContext.Options.ModelMapVersion.ElementName);
             var modelMapIdElement = configuration.GetActiveModelMapIdBsonElement(
                 dbContext.ProxyGenerator.PurgeProxyType(value.GetType()));
             bsonDocument.InsertAt(0, modelMapIdElement);

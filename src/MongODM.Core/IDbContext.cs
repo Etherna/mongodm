@@ -69,19 +69,20 @@ namespace Etherna.MongODM.Core
         /// </summary>
         IEnumerable<DocumentMigration> DocumentMigrationList { get; }
 
-        DocumentSemVerOptions DocumentSemVerOptions { get; }
-
         /// <summary>
         /// DbContext unique identifier.
         /// </summary>
         string Identifier { get; }
 
         /// <summary>
-        /// Current MongODM library version
+        /// Current MongODM library version.
         /// </summary>
         SemanticVersion LibraryVersion { get; }
 
-        ModelMapVersionOptions ModelMapVersionOptions { get; }
+        /// <summary>
+        /// Db context options.
+        /// </summary>
+        IDbContextOptions Options { get; }
 
         /// <summary>
         /// Current model proxy generator.

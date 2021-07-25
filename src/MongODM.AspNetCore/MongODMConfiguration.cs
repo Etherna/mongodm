@@ -59,37 +59,29 @@ namespace Etherna.MongODM.AspNetCore
 
         // Methods.
         public IMongODMConfiguration AddDbContext<TDbContext>(
-            Action<DbContextOptions>? dbContextConfig = null)
-            where TDbContext : class, IDbContext
-        {
-            configLock.EnterWriteLock();
-            try
-            {
-                if (IsFrozen)
-                    throw new InvalidOperationException("Configuration is frozen");
+            Action<DbContextOptions>? dbContextOptionsConfig = null)
+            where TDbContext : DbContext, new() =>
+            AddDbContext<TDbContext, TDbContext>(dbContextOptionsConfig);
 
-                // Register dbContext.
-                services.AddSingleton<TDbContext>();
-
-                // Register options.
-                services.AddOptions<DbContextOptions>(typeof(TDbContext).Name)
-                    .Configure(dbContextConfig ?? (_ => { }));
-
-                // Add db context type.
-                dbContextTypes.Add(typeof(TDbContext));
-
-                return this;
-            }
-            finally
-            {
-                configLock.ExitWriteLock();
-            }
-        }
+        public IMongODMConfiguration AddDbContext<TDbContext>(
+            TDbContext dbContext,
+            Action<DbContextOptions>? dbContextOptionsConfig = null)
+            where TDbContext : DbContext =>
+            AddDbContext<TDbContext, TDbContext>(dbContext, dbContextOptionsConfig);
 
         public IMongODMConfiguration AddDbContext<TDbContext, TDbContextImpl>(
-            Action<DbContextOptions>? dbContextConfig = null)
+            Action<DbContextOptions>? dbContextOptionsConfig = null)
             where TDbContext : class, IDbContext
-            where TDbContextImpl : class, TDbContext
+            where TDbContextImpl : DbContext, TDbContext, new() =>
+            AddDbContext<TDbContext, TDbContextImpl>(
+                Activator.CreateInstance<TDbContextImpl>(),
+                dbContextOptionsConfig);
+
+        public IMongODMConfiguration AddDbContext<TDbContext, TDbContextImpl>(
+            TDbContextImpl dbContext,
+            Action<DbContextOptions>? dbContextOptionsConfig = null)
+            where TDbContext : class, IDbContext
+            where TDbContextImpl : DbContext, TDbContext
         {
             configLock.EnterWriteLock();
             try
@@ -98,11 +90,19 @@ namespace Etherna.MongODM.AspNetCore
                     throw new InvalidOperationException("Configuration is frozen");
 
                 // Register dbContext.
-                services.AddSingleton<TDbContext, TDbContextImpl>();
+                services.AddSingleton<TDbContext, TDbContextImpl>(sp =>
+                {
+                    // Get dependencies.
+                    var dependencies = sp.GetRequiredService<IDbDependencies>();
+                    var options = new DbContextOptions();
+                    dbContextOptionsConfig?.Invoke(options);
 
-                // Register options.
-                services.AddOptions<DbContextOptions>(typeof(TDbContext).Name)
-                    .Configure(dbContextConfig ?? (_ => { }));
+                    // Initialize instance.
+                    var task = dbContext.InitializeAsync(dependencies, options);
+                    task.Wait();
+
+                    return dbContext;
+                });
 
                 // Add db context type.
                 dbContextTypes.Add(typeof(TDbContext));

@@ -31,7 +31,7 @@ namespace Etherna.MongODM.Core.Domain.ModelMaps
                         CurrentVersion = dbContext.LibraryVersion,
                         WriteInDocuments = false
                     },
-                    dbContext.ModelMapVersionOptions,
+                    dbContext.Options.ModelMapVersion,
                     dbContext.SchemaRegister,
                     dbContext.SerializerModifierAccessor));
         }
