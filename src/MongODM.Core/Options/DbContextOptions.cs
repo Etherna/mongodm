@@ -16,7 +16,7 @@ using System;
 
 namespace Etherna.MongODM.Core.Options
 {
-    public class DbContextOptions
+    public class DbContextOptions : IDbContextOptions
     {
         // Fields.
         private string _connectionString = default!;

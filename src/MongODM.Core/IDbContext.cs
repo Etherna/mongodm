@@ -82,7 +82,7 @@ namespace Etherna.MongODM.Core
         /// <summary>
         /// Db context options.
         /// </summary>
-        DbContextOptions Options { get; }
+        IDbContextOptions Options { get; }
 
         /// <summary>
         /// Current model proxy generator.

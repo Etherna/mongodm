@@ -42,7 +42,7 @@ namespace Etherna.MongODM.Core
         protected DbContext() { }
         public async Task InitializeAsync(
             IDbDependencies dependencies,
-            DbContextOptions options)
+            IDbContextOptions options)
         {
             if (isInitialized)
                 throw new InvalidOperationException("DbContext already initialized");
@@ -118,7 +118,7 @@ namespace Etherna.MongODM.Core
         public virtual IEnumerable<DocumentMigration> DocumentMigrationList { get; } = Array.Empty<DocumentMigration>();
         public string Identifier => Options?.Identifier ?? GetType().Name;
         public SemanticVersion LibraryVersion { get; private set; } = default!;
-        public DbContextOptions Options { get; private set; } = default!;
+        public IDbContextOptions Options { get; private set; } = default!;
         public IProxyGenerator ProxyGenerator { get; private set; } = default!;
         public IRepositoryRegister RepositoryRegister { get; private set; } = default!;
         public ISchemaRegister SchemaRegister { get; private set; } = default!;

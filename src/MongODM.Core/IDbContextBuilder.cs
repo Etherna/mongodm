@@ -5,6 +5,6 @@ namespace Etherna.MongODM.Core
 {
     public interface IDbContextBuilder
     {
-        Task InitializeAsync(IDbDependencies dependencies, DbContextOptions options);
+        Task InitializeAsync(IDbDependencies dependencies, IDbContextOptions options);
     }
 }
