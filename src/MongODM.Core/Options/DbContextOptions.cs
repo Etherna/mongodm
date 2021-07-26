@@ -12,32 +12,16 @@
 //   See the License for the specific language governing permissions and
 //   limitations under the License.
 
-using System;
+using System.Linq;
 
 namespace Etherna.MongODM.Core.Options
 {
     public class DbContextOptions : IDbContextOptions
     {
-        // Fields.
-        private string _connectionString = default!;
-
         // Properties.
-        public string ConnectionString
-        {
-            get
-            {
-                if (_connectionString is null)
-                    _connectionString = $"mongodb://localhost/{DbName}";
-                return _connectionString;
-            }
-            set
-            {
-                if (value is null)
-                    throw new ArgumentNullException(nameof(ConnectionString));
-                _connectionString = value;
-            }
-        }
-        public string DbName { get; set; } = "localDb";
+        public string ConnectionString { get; set; } = "mongodb://localhost/localDb";
+        public string DbName => ConnectionString.Split('?')[0]
+                                                .Split('/').Last();
         public string DbOperationsCollectionName { get; set; } = "_db_ops";
         public bool DisableAutomaticSeed { get; set; }
         public DocumentSemVerOptions DocumentSemVer { get; set; } = new DocumentSemVerOptions();
