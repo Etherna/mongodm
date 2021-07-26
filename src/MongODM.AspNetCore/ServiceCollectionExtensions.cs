@@ -12,8 +12,7 @@
 //   See the License for the specific language governing permissions and
 //   limitations under the License.
 
-using Etherna.ExecContext;
-using Etherna.ExecContext.AsyncLocal;
+using Etherna.ExecContext.AspNetCore;
 using Etherna.MongODM.Core;
 using Etherna.MongODM.Core.Conventions;
 using Etherna.MongODM.Core.Domain.Models;
@@ -24,7 +23,6 @@ using Etherna.MongODM.Core.Serialization.Mapping;
 using Etherna.MongODM.Core.Serialization.Modifiers;
 using Etherna.MongODM.Core.Tasks;
 using Etherna.MongODM.Core.Utility;
-using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using MongoDB.Bson;
@@ -76,14 +74,8 @@ namespace Etherna.MongODM.AspNetCore
                     taskRunnerBuilder.SetMongODMOptions(options);
                 });
 
-            services.TryAddSingleton<IHttpContextAccessor, HttpContextAccessor>();
+            services.AddExecutionContext();
 
-            services.TryAddSingleton<IExecutionContext>(serviceProvider =>
-               new ExecutionContextSelector(new IExecutionContext[] //default
-               {
-                    new HttpContextExecutionContext(serviceProvider.GetRequiredService<IHttpContextAccessor>()),
-                    AsyncLocalContext.Instance
-               }));
             services.TryAddSingleton<IProxyGenerator, TProxyGenerator>();
             services.TryAddSingleton<ITaskRunner, TTaskRunner>();
             services.TryAddSingleton<ITaskRunnerBuilder, TTaskRunner>();
