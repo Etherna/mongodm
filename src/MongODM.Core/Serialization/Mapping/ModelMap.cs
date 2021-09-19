@@ -17,6 +17,8 @@ using Etherna.MongODM.Core.Serialization.Serializers;
 using Etherna.MongODM.Core.Utility;
 using MongoDB.Bson.Serialization;
 using System;
+using System.Linq;
+using System.Reflection;
 
 namespace Etherna.MongODM.Core.Serialization.Mapping
 {
@@ -80,6 +82,22 @@ namespace Etherna.MongODM.Core.Serialization.Mapping
                     throw new ArgumentNullException(nameof(dbContext));
                 if (ModelType.IsAbstract)
                     throw new InvalidOperationException("Can't generate proxy of an abstract model");
+
+                // Remove CreatorMaps.
+                while (BsonClassMap.CreatorMaps.Any())
+                {
+                    var memberInfo = BsonClassMap.CreatorMaps.First().MemberInfo;
+                    switch (memberInfo)
+                    {
+                        case ConstructorInfo constructorInfo:
+                            BsonClassMap.UnmapConstructor(constructorInfo);
+                            break;
+                        case MethodInfo methodInfo:
+                            BsonClassMap.UnmapFactoryMethod(methodInfo);
+                            break;
+                        default: throw new InvalidOperationException();
+                    }
+                }
 
                 // Set creator.
                 BsonClassMap.SetCreator(() => dbContext.ProxyGenerator.CreateInstance(ModelType, dbContext));
