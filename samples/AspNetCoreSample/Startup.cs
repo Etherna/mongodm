@@ -36,6 +36,8 @@ namespace Etherna.MongODM.AspNetCoreSample
         {
             services.AddRazorPages();
 
+            services.AddHangfireServer();
+
             services.AddMongODMWithHangfire<ModelBase>()
                 .AddDbContext<ISampleDbContext, SampleDbContext>();
 
@@ -53,7 +55,6 @@ namespace Etherna.MongODM.AspNetCoreSample
 
             app.UseAuthorization();
 
-            app.UseHangfireServer();
             app.UseHangfireDashboard();
 
             app.UseEndpoints(endpoints =>

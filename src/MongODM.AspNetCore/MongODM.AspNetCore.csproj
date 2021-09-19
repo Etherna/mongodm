@@ -31,7 +31,7 @@
 
   <ItemGroup>
     <PackageReference Include="ExecutionContext.AspNetCore" Version="1.0.0" />
-    <PackageReference Include="GitVersion.MsBuild" Version="5.6.10">
+    <PackageReference Include="GitVersion.MsBuild" Version="5.7.0">
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
