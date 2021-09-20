@@ -14,6 +14,7 @@
 
 using Etherna.MongODM.Core.Domain.Models;
 using Etherna.MongODM.Core.Exceptions;
+using Etherna.MongODM.Core.Extensions;
 using Etherna.MongODM.Core.ProxyModels;
 using Etherna.MongODM.Core.Serialization.Mapping;
 using MongoDB.Bson;
@@ -127,6 +128,27 @@ namespace Etherna.MongODM.Core.Repositories
                 throw new ArgumentNullException(nameof(query));
 
             return query(Collection.AsQueryable(aggregateOptions));
+        }
+
+        public async Task<PaginatedEnumerable<TResult>> QueryPaginatedElementsAsync<TResult, TResultKey>(
+            Func<IMongoQueryable<TModel>, IMongoQueryable<TResult>> filter,
+            Expression<Func<TResult, TResultKey>> orderKeySelector,
+            int page,
+            int take,
+            CancellationToken cancellationToken = default)
+        {
+            var elements = await QueryElementsAsync(elements => filter(elements)
+                .Paginate(orderKeySelector, page, take)
+                .ToListAsync(cancellationToken)).ConfigureAwait(false);
+
+            var maxPage = (await QueryElementsAsync(elements => filter(elements)
+                .CountAsync(cancellationToken)).ConfigureAwait(false) - 1) / take;
+
+            return new PaginatedEnumerable<TResult>(
+                elements,
+                page,
+                take,
+                maxPage);
         }
 
         public virtual Task ReplaceAsync(
