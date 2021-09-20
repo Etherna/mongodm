@@ -54,6 +54,13 @@ namespace Etherna.MongODM.Core.Repositories
             Func<IMongoQueryable<TModel>, Task<TResult>> query,
             AggregateOptions? aggregateOptions = null);
 
+        Task<PaginatedEnumerable<TResult>> QueryPaginatedElementsAsync<TResult, TResultKey>(
+            Func<IMongoQueryable<TModel>, IMongoQueryable<TResult>> filter,
+            Expression<Func<TResult, TResultKey>> orderKeySelector,
+            int page,
+            int take,
+            CancellationToken cancellationToken = default);
+
         Task ReplaceAsync(
             TModel model,
             bool updateDependentDocuments = true,
