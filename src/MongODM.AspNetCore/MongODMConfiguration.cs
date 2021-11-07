@@ -103,7 +103,7 @@ namespace Etherna.MongODM.AspNetCore
                     throw new InvalidOperationException("Configuration is frozen");
 
                 // Register dbContext.
-                services.AddSingleton<TDbContext, TDbContextImpl>(sp =>
+                services.AddSingleton(sp =>
                 {
                     // Get dependencies.
                     var dependencies = sp.GetRequiredService<IDbDependencies>();
@@ -119,6 +119,7 @@ namespace Etherna.MongODM.AspNetCore
 
                     return dbContext;
                 });
+                services.AddSingleton<TDbContext, TDbContextImpl>(sp => sp.GetRequiredService<TDbContextImpl>());
 
                 // Add db context type.
                 dbContextTypes.Add(typeof(TDbContext));

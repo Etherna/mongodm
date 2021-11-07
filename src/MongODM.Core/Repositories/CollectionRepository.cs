@@ -64,8 +64,15 @@ namespace Etherna.MongODM.Core.Repositories
                 var (keys, options) = pair;
                 if (options.Name == null)
                 {
-                    var renderedKeys = keys.Render(Collection.DocumentSerializer, Collection.Settings.SerializerRegistry);
-                    options.Name = $"doc_{ string.Join("_", renderedKeys.Names) }";
+                    try
+                    {
+                        var renderedKeys = keys.Render(Collection.DocumentSerializer, Collection.Settings.SerializerRegistry);
+                        options.Name = $"doc_{ string.Join("_", renderedKeys.Names) }";
+                    }
+                    catch (InvalidOperationException)
+                    {
+                        throw new MongodmIndexBuildingException($"Can't build custom index in collection \"{Name}\"");
+                    }
                 }
 
                 return (options.Name, new CreateIndexModel<TModel>(keys, options));
