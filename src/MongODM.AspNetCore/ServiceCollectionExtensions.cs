@@ -78,7 +78,7 @@ namespace Etherna.MongODM.AspNetCore
 
             services.TryAddSingleton<IProxyGenerator, TProxyGenerator>();
             services.TryAddSingleton<ITaskRunner, TTaskRunner>();
-            services.TryAddSingleton<ITaskRunnerBuilder, TTaskRunner>();
+            services.TryAddSingleton<ITaskRunnerBuilder>(sp => (TTaskRunner)sp.GetRequiredService<ITaskRunner>());
 
             // DbContext internal.
             //dependencies
