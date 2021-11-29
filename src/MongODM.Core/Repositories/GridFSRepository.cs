@@ -97,7 +97,7 @@ namespace Etherna.MongODM.Core.Repositories
                 throw new ArgumentNullException(nameof(id));
 
             var filter = Builders<GridFSFileInfo>.Filter.Eq("_id", ObjectId.Parse(id));
-            var mongoFile = await GridFSBucket.Find(filter, cancellationToken: cancellationToken)
+            var mongoFile = await(await GridFSBucket.FindAsync(filter, cancellationToken: cancellationToken).ConfigureAwait(false))
                                               .SingleOrDefaultAsync(cancellationToken).ConfigureAwait(false);
             if (mongoFile == null)
                 throw new MongodmEntityNotFoundException($"Can't find key {id}");

@@ -98,7 +98,7 @@ namespace Etherna.MongODM.Core.Repositories
             // Get current indexes.
             var currentIndexes = new List<BsonDocument>();
             using (var indexList = await Collection.Indexes.ListAsync(cancellationToken).ConfigureAwait(false))
-                while (indexList.MoveNext(cancellationToken))
+                while (await indexList.MoveNextAsync(cancellationToken).ConfigureAwait(false))
                     currentIndexes.AddRange(indexList.Current);
 
             // Remove old indexes.

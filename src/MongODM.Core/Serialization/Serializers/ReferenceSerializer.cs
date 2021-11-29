@@ -153,10 +153,8 @@ namespace Etherna.MongODM.Core.Serialization.Serializers
             if (model != null)
             {
                 var id = model.Id;
-#pragma warning disable CA1508 // Avoid dead conditional code
                 if (id == null) //ignore refered instances without id
                     return null!;
-#pragma warning restore CA1508 // Avoid dead conditional code
 
                 // Check if model as been loaded in cache.
                 if (dbContext.DbCache.LoadedModels.ContainsKey(id) &&

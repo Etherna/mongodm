@@ -306,9 +306,7 @@ namespace Etherna.MongODM.Core.Serialization.Mapping
                 //model maps schema serializers
                 if (memberSerializer is IModelMapsContainerSerializer schemaSerializer)
                 {
-#pragma warning disable CA1508 // Avoid dead conditional code. Here code analyzer is wrong
                     bool? useCascadeDelete = (memberSerializer as IReferenceContainerSerializer)?.UseCascadeDelete;
-#pragma warning restore CA1508 // Avoid dead conditional code
                     foreach (var childClassMap in schemaSerializer.AllChildClassMaps)
                         CompileDependencyRegisters(modelMap, childClassMap, lastEntityClassMap, currentMemberPath, useCascadeDelete);
                 }
