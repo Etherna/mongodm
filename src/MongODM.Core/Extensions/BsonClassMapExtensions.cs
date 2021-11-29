@@ -41,7 +41,6 @@ namespace Etherna.MongODM.Core.Extensions
             this BsonClassMap<TModel> classMap,
             Expression<Func<TModel, TMember>> memberLambda,
             IBsonSerializer<TMember> serializer)
-        where TMember : class
         {
             if (classMap is null)
                 throw new ArgumentNullException(nameof(classMap));
