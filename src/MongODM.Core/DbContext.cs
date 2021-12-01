@@ -95,10 +95,6 @@ namespace Etherna.MongODM.Core
             foreach (var maps in ModelMapsCollectors)
                 maps.Register(this);
 
-            // Initialize conventions.
-            DiscriminatorRegister.AddDiscriminatorConvention(typeof(object),
-                new HierarchicalProxyTolerantDiscriminatorConvention("_t", ProxyGenerator));
-
             // Build and freeze schemas register.
             SchemaRegister.Freeze();
 

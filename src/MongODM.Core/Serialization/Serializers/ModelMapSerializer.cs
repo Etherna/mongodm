@@ -15,9 +15,6 @@
 using Etherna.MongODM.Core.Domain.Models;
 using Etherna.MongODM.Core.Options;
 using Etherna.MongODM.Core.ProxyModels;
-using Etherna.MongODM.Core.Serialization.Mapping;
-using Etherna.MongODM.Core.Serialization.Modifiers;
-using Etherna.MongODM.Core.Utility;
 using MongoDB.Bson;
 using MongoDB.Bson.IO;
 using MongoDB.Bson.Serialization;
@@ -35,26 +32,24 @@ namespace Etherna.MongODM.Core.Serialization.Serializers
     {
         // Fields.
         private IDiscriminatorConvention _discriminatorConvention = default!;
-        private readonly IDbCache dbCache;
         private readonly BsonElement documentSemVerElement;
+        private readonly IDbContext dbContext;
         private readonly DocumentSemVerOptions documentSemVerOptions;
         private readonly ModelMapVersionOptions modelMapVersionOptions;
-        private readonly ISchemaRegister schemaRegister;
-        private readonly ISerializerModifierAccessor serializerModifierAccessor;
 
         // Constructor.
         public ModelMapSerializer(
-            IDbCache dbCache,
-            DocumentSemVerOptions documentSemVerOptions,
-            ModelMapVersionOptions modelMapVersionOptions,
-            ISchemaRegister schemaRegister,
-            ISerializerModifierAccessor serializerModifierAccessor)
+            IDbContext dbContext,
+            DocumentSemVerOptions? overrideDocumentSemVerOptions = null,
+            ModelMapVersionOptions? overrideModelMapVersionOptions = null)
         {
-            this.dbCache = dbCache ?? throw new ArgumentNullException(nameof(dbCache));
-            this.documentSemVerOptions = documentSemVerOptions ?? throw new ArgumentNullException(nameof(documentSemVerOptions));
-            this.modelMapVersionOptions = modelMapVersionOptions ?? throw new ArgumentNullException(nameof(modelMapVersionOptions));
-            this.schemaRegister = schemaRegister ?? throw new ArgumentNullException(nameof(schemaRegister));
-            this.serializerModifierAccessor = serializerModifierAccessor ?? throw new ArgumentNullException(nameof(serializerModifierAccessor));
+            if (dbContext is null)
+                throw new ArgumentNullException(nameof(dbContext));
+
+            this.dbContext = dbContext;
+
+            documentSemVerOptions = overrideDocumentSemVerOptions ?? dbContext.Options.DocumentSemVer;
+            modelMapVersionOptions = overrideModelMapVersionOptions ?? dbContext.Options.ModelMapVersion;
 
             documentSemVerElement = new BsonElement(
                 documentSemVerOptions.ElementName,
@@ -62,18 +57,18 @@ namespace Etherna.MongODM.Core.Serialization.Serializers
         }
 
         // Properties.
-        public IEnumerable<BsonClassMap> AllChildClassMaps => schemaRegister.GetModelMapsSchema(typeof(TModel))
+        public IEnumerable<BsonClassMap> AllChildClassMaps => dbContext.SchemaRegister.GetModelMapsSchema(typeof(TModel))
             .AllMapsDictionary.Values.Select(map => map.BsonClassMap);
 
         public BsonClassMapSerializer<TModel> DefaultBsonClassMapSerializer =>
-            (BsonClassMapSerializer<TModel>)schemaRegister.GetModelMapsSchema(typeof(TModel)).ActiveMap.BsonClassMapSerializer;
+            (BsonClassMapSerializer<TModel>)dbContext.SchemaRegister.GetModelMapsSchema(typeof(TModel)).ActiveMap.BsonClassMapSerializer;
 
         public IDiscriminatorConvention DiscriminatorConvention
         {
             get
             {
                 if (_discriminatorConvention == null)
-                    _discriminatorConvention = BsonSerializer.LookupDiscriminatorConvention(typeof(TModel));
+                    _discriminatorConvention = dbContext.DiscriminatorRegister.LookupDiscriminatorConvention(typeof(TModel));
                 return _discriminatorConvention;
             }
         }
@@ -94,7 +89,7 @@ namespace Etherna.MongODM.Core.Serialization.Serializers
             // Find pre-deserialization informations.
             //get actual type and schema
             var actualType = DiscriminatorConvention.GetActualType(context.Reader, args.NominalType);
-            var actualTypeSchema = schemaRegister.GetModelMapsSchema(actualType);
+            var actualTypeSchema = dbContext.SchemaRegister.GetModelMapsSchema(actualType);
 
             //deserialize on document
             var bsonDocument = BsonDocumentSerializer.Instance.Deserialize(context, args);
@@ -147,20 +142,20 @@ namespace Etherna.MongODM.Core.Serialization.Serializers
             }
 
             // Add model to cache.
-            if (!serializerModifierAccessor.IsNoCacheEnabled &&
+            if (!dbContext.SerializerModifierAccessor.IsNoCacheEnabled &&
                 GetDocumentId(model, out var id, out _, out _) && id != null)
             {
-                if (dbCache.LoadedModels.ContainsKey(id))
+                if (dbContext.DbCache.LoadedModels.ContainsKey(id))
                 {
                     var fullModel = model;
-                    model = (TModel)dbCache.LoadedModels[id];
+                    model = (TModel)dbContext.DbCache.LoadedModels[id];
 
                     if (((IReferenceable)model).IsSummary)
                         ((IReferenceable)model).MergeFullModel(fullModel);
                 }
                 else
                 {
-                    dbCache.AddModel(id, (IEntityModel)model);
+                    dbContext.DbCache.AddModel(id, (IEntityModel)model);
                 }
             }
 
@@ -201,7 +196,7 @@ namespace Etherna.MongODM.Core.Serialization.Serializers
 
             // Get default schema.
             var actualType = value.GetType();
-            var modelMapsSchema = schemaRegister.GetModelMapsSchema(actualType);
+            var modelMapsSchema = dbContext.SchemaRegister.GetModelMapsSchema(actualType);
 
             // Serialize.
             modelMapsSchema.ActiveBsonClassMapSerializer.Serialize(localContext, args, value);
@@ -215,7 +210,7 @@ namespace Etherna.MongODM.Core.Serialization.Serializers
              * don't have to replace it with the one wrong of the basic collection model type.
              */
             if (!bsonDocument.Contains(modelMapVersionOptions.ElementName))
-                bsonDocument.InsertAt(0, schemaRegister.GetActiveModelMapIdBsonElement(actualType));
+                bsonDocument.InsertAt(0, dbContext.SchemaRegister.GetActiveModelMapIdBsonElement(actualType));
 
             //add version
             if (documentSemVerOptions.WriteInDocuments && bsonWriter.IsRootDocument)

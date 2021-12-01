@@ -25,15 +25,12 @@ namespace Etherna.MongODM.Core.Domain.ModelMaps
         {
             dbContext.SchemaRegister.AddModelMapsSchema("ee726d4f-6e6a-44b0-bf3e-45322534c36d",
                 customSerializer: new ModelMapSerializer<OperationBase>(
-                    dbContext.DbCache,
+                    dbContext,
                     new DocumentSemVerOptions
                     {
                         CurrentVersion = dbContext.LibraryVersion,
                         WriteInDocuments = false
-                    },
-                    dbContext.Options.ModelMapVersion,
-                    dbContext.SchemaRegister,
-                    dbContext.SerializerModifierAccessor));
+                    }));
         }
     }
 }
