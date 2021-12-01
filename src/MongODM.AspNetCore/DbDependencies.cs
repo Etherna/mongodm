@@ -30,6 +30,7 @@ namespace Etherna.MongODM.AspNetCore
             IDbCache dbCache,
             IDbMaintainer dbMaintainer,
             IDbMigrationManager dbContextMigrationManager,
+            IDiscriminatorRegister discriminatorRegister,
             IOptions<MongODMOptions> mongODMOptions,
             IProxyGenerator proxyGenerator,
             IRepositoryRegister repositoryRegister,
@@ -42,6 +43,7 @@ namespace Etherna.MongODM.AspNetCore
             DbCache = dbCache;
             DbMaintainer = dbMaintainer;
             DbMigrationManager = dbContextMigrationManager;
+            DiscriminatorRegister = discriminatorRegister;
             MongODMOptions = mongODMOptions.Value;
             SchemaRegister = schemaRegister;
             ProxyGenerator = proxyGenerator;
@@ -52,6 +54,7 @@ namespace Etherna.MongODM.AspNetCore
         public IDbCache DbCache { get; }
         public IDbMaintainer DbMaintainer { get; }
         public IDbMigrationManager DbMigrationManager { get; }
+        public IDiscriminatorRegister DiscriminatorRegister { get; }
         public MongODMOptions MongODMOptions { get; }
         public IProxyGenerator ProxyGenerator { get; }
         public IRepositoryRegister RepositoryRegister { get; }

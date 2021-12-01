@@ -56,6 +56,7 @@ namespace Etherna.MongODM.Core
             DbMaintainer = dependencies.DbMaintainer;
             DbMigrationManager = dependencies.DbMigrationManager;
             DbOperations = new CollectionRepository<OperationBase, string>(options.DbOperationsCollectionName);
+            DiscriminatorRegister = dependencies.DiscriminatorRegister;
             LibraryVersion = typeof(DbContext)
                 .GetTypeInfo()
                 .Assembly
@@ -115,6 +116,7 @@ namespace Etherna.MongODM.Core
         public IDbMaintainer DbMaintainer { get; private set; } = default!;
         public IDbMigrationManager DbMigrationManager { get; private set; } = default!;
         public ICollectionRepository<OperationBase, string> DbOperations { get; private set; } = default!;
+        public IDiscriminatorRegister DiscriminatorRegister { get; private set; } = default!;
         public virtual IEnumerable<DocumentMigration> DocumentMigrationList { get; } = Array.Empty<DocumentMigration>();
         public string Identifier => Options?.Identifier ?? GetType().Name;
         public SemanticVersion LibraryVersion { get; private set; } = default!;

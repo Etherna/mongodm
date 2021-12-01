@@ -204,7 +204,7 @@ namespace Etherna.MongODM.Core.Serialization.Mapping
                 // Register discriminators for all bson class maps.
                 if (schema is IModelMapsSchema modelMapsSchema)
                     foreach (var modelMap in modelMapsSchema.AllMapsDictionary.Values)
-                        BsonSerializer.RegisterDiscriminator(modelMapsSchema.ModelType, modelMap.BsonClassMap.Discriminator);
+                        dbContext.DiscriminatorRegister.AddDiscriminator(modelMapsSchema.ModelType, modelMap.BsonClassMap.Discriminator);
             }
 
             // Specific for model maps schemas.

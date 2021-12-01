@@ -65,6 +65,11 @@ namespace Etherna.MongODM.Core
         ICollectionRepository<OperationBase, string> DbOperations { get; }
 
         /// <summary>
+        /// Register for discriminator configuration.
+        /// </summary>
+        IDiscriminatorRegister DiscriminatorRegister { get; }
+
+        /// <summary>
         /// List of registered migration tasks
         /// </summary>
         IEnumerable<DocumentMigration> DocumentMigrationList { get; }
