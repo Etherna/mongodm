@@ -12,6 +12,7 @@
 //   See the License for the specific language governing permissions and
 //   limitations under the License.
 
+using Etherna.MongODM.Core.Conventions;
 using Etherna.MongODM.Core.Domain.ModelMaps;
 using Etherna.MongODM.Core.Domain.Models;
 using Etherna.MongODM.Core.Migration;
@@ -93,6 +94,10 @@ namespace Etherna.MongODM.Core
             //application maps
             foreach (var maps in ModelMapsCollectors)
                 maps.Register(this);
+
+            // Initialize conventions.
+            DiscriminatorRegister.AddDiscriminatorConvention(typeof(object),
+                new HierarchicalProxyTolerantDiscriminatorConvention("_t", ProxyGenerator));
 
             // Build and freeze schemas register.
             SchemaRegister.Freeze();

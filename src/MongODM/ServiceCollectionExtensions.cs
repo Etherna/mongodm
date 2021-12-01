@@ -13,7 +13,6 @@
 //   limitations under the License.
 
 using Etherna.MongODM.AspNetCore;
-using Etherna.MongODM.Core.Domain.Models;
 using Etherna.MongODM.Core.Options;
 using Etherna.MongODM.Core.ProxyModels;
 using Etherna.MongODM.HF.Tasks;
@@ -27,14 +26,13 @@ namespace Etherna.MongODM
     public static class ServiceCollectionExtensions
     {
         // Methods.
-        public static IMongODMConfiguration AddMongODMWithHangfire<TModelBase>(
+        public static IMongODMConfiguration AddMongODMWithHangfire(
             this IServiceCollection services,
             Action<HangfireOptions>? configureHangfireOptions = null,
             Action<MongODMOptions>? configureMongODMOptions = null)
-            where TModelBase : class, IModel
         {
             // Configure MongODM.
-            var conf = services.AddMongODM<HangfireTaskRunner, TModelBase>(configureMongODMOptions);
+            var conf = services.AddMongODM<HangfireTaskRunner>(configureMongODMOptions);
 
             // Configure Hangfire.
             AddHangfire(services, configureHangfireOptions);
@@ -42,15 +40,14 @@ namespace Etherna.MongODM
             return conf;
         }
 
-        public static IMongODMConfiguration AddMongODMWithHangfire<TProxyGenerator, TModelBase>(
+        public static IMongODMConfiguration AddMongODMWithHangfire<TProxyGenerator>(
             this IServiceCollection services,
             Action<HangfireOptions>? configureHangfireOptions = null,
             Action<MongODMOptions>? configureMongODMOptions = null)
             where TProxyGenerator : class, IProxyGenerator
-            where TModelBase : class, IModel
         {
             // Configure MongODM.
-            var conf = services.AddMongODM<TProxyGenerator, HangfireTaskRunner, TModelBase>(configureMongODMOptions);
+            var conf = services.AddMongODM<TProxyGenerator, HangfireTaskRunner>(configureMongODMOptions);
 
             // Configure Hangfire.
             AddHangfire(services, configureHangfireOptions);

@@ -38,7 +38,7 @@ namespace Etherna.MongODM.AspNetCoreSample
 
             services.AddHangfireServer();
 
-            services.AddMongODMWithHangfire<ModelBase>()
+            services.AddMongODMWithHangfire()
                 .AddDbContext<ISampleDbContext, SampleDbContext>();
 
             services.AddMongODMAdminDashboard();

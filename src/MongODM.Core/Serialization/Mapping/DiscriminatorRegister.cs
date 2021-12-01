@@ -1,4 +1,5 @@
 ﻿using MongoDB.Bson;
+using MongoDB.Bson.Serialization.Conventions;
 using System;
 using System.Collections.Generic;
 using System.Reflection;
@@ -10,6 +11,7 @@ namespace Etherna.MongODM.Core.Serialization.Mapping
     {
         // Fields.
         private readonly ReaderWriterLockSlim configLock = new(LockRecursionPolicy.SupportsRecursion);
+        private readonly Dictionary<Type, IDiscriminatorConvention> discriminatorConventions = new();
         private readonly Dictionary<BsonValue, HashSet<Type>> discriminators = new();
         private readonly HashSet<Type> discriminatedTypes = new();
 
@@ -44,6 +46,27 @@ namespace Etherna.MongODM.Core.Serialization.Mapping
                     for (var baseType = typeInfo.BaseType; baseType != null; baseType = baseType.GetTypeInfo().BaseType)
                         discriminatedTypes.Add(baseType);
                 }
+            }
+            finally
+            {
+                configLock.ExitWriteLock();
+            }
+        }
+
+        public void AddDiscriminatorConvention(Type type, IDiscriminatorConvention convention)
+        {
+            if (type is null)
+                throw new ArgumentNullException(nameof(type));
+            if (convention is null)
+                throw new ArgumentNullException(nameof(convention));
+
+            configLock.EnterWriteLock();
+            try
+            {
+                if (!discriminatorConventions.ContainsKey(type))
+                    discriminatorConventions.Add(type, convention);
+                else
+                    throw new BsonSerializationException($"There is already a discriminator convention registered for type {type.FullName}.");
             }
             finally
             {
