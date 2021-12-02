@@ -1,5 +1,4 @@
 ﻿using Etherna.MongODM.Core.Conventions;
-using Etherna.MongODM.Core.Utility;
 using MongoDB.Bson;
 using MongoDB.Bson.Serialization.Conventions;
 using System;
@@ -9,7 +8,7 @@ using System.Threading;
 
 namespace Etherna.MongODM.Core.Serialization.Mapping
 {
-    public class DiscriminatorRegister : FreezableConfig, IDiscriminatorRegister //TODO: Set to work as as FreezableConfig
+    public class DiscriminatorRegister : IDiscriminatorRegister
     {
         // Fields.
         private readonly ReaderWriterLockSlim configLock = new(LockRecursionPolicy.SupportsRecursion);

@@ -12,7 +12,6 @@
 //   See the License for the specific language governing permissions and
 //   limitations under the License.
 
-using Etherna.MongODM.Core.Conventions;
 using Etherna.MongODM.Core.Domain.ModelMaps;
 using Etherna.MongODM.Core.Domain.Models;
 using Etherna.MongODM.Core.Migration;
@@ -23,6 +22,7 @@ using Etherna.MongODM.Core.Serialization;
 using Etherna.MongODM.Core.Serialization.Mapping;
 using Etherna.MongODM.Core.Serialization.Modifiers;
 using Etherna.MongODM.Core.Utility;
+using MongoDB.Bson.Serialization;
 using MongoDB.Driver;
 using MongoDB.Driver.Linq;
 using System;
@@ -67,6 +67,7 @@ namespace Etherna.MongODM.Core
             Options = options;
             ProxyGenerator = dependencies.ProxyGenerator;
             RepositoryRegister = dependencies.RepositoryRegister;
+            SerializerRegister = dependencies.BsonSerializerRegistry;
             SchemaRegister = dependencies.SchemaRegister;
             SerializerModifierAccessor = dependencies.SerializerModifierAccessor;
 
@@ -79,6 +80,7 @@ namespace Etherna.MongODM.Core
             DbMigrationManager.Initialize(this);
             RepositoryRegister.Initialize(this);
             SchemaRegister.Initialize(this);
+            CreateSerializerRegistry();
 
             // Initialize repositories.
             foreach (var repository in RepositoryRegister.ModelRepositoryMap.Values)
@@ -124,6 +126,7 @@ namespace Etherna.MongODM.Core
         public IDbContextOptions Options { get; private set; } = default!;
         public IProxyGenerator ProxyGenerator { get; private set; } = default!;
         public IRepositoryRegister RepositoryRegister { get; private set; } = default!;
+        public IBsonSerializerRegistry SerializerRegister { get; private set; } = default!;
         public ISchemaRegister SchemaRegister { get; private set; } = default!;
         public ISerializerModifierAccessor SerializerModifierAccessor { get; private set; } = default!;
 
@@ -207,5 +210,21 @@ namespace Etherna.MongODM.Core
         // Protected methods.
         protected virtual Task SeedAsync() =>
             Task.CompletedTask;
+
+        // Helpers.
+        private void CreateSerializerRegistry()
+        {
+            var register = (BsonSerializerRegistry)SerializerRegister;
+            __typeMappingSerializationProvider = new TypeMappingSerializationProvider();
+
+            // order matters. It's in reverse order of how they'll get consumed
+            register.RegisterSerializationProvider(new BsonClassMapSerializationProvider());
+            register.RegisterSerializationProvider(new DiscriminatedInterfaceSerializationProvider());
+            register.RegisterSerializationProvider(new CollectionsSerializationProvider());
+            register.RegisterSerializationProvider(new PrimitiveSerializationProvider());
+            register.RegisterSerializationProvider(new AttributedSerializationProvider());
+            register.RegisterSerializationProvider(__typeMappingSerializationProvider);
+            register.RegisterSerializationProvider(new BsonObjectModelSerializationProvider());
+        }
     }
 }

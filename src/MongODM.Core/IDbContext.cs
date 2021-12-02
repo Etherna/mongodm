@@ -21,6 +21,7 @@ using Etherna.MongODM.Core.Serialization;
 using Etherna.MongODM.Core.Serialization.Mapping;
 using Etherna.MongODM.Core.Serialization.Modifiers;
 using Etherna.MongODM.Core.Utility;
+using MongoDB.Bson.Serialization;
 using MongoDB.Driver;
 using System.Collections.Generic;
 using System.Threading;
@@ -98,6 +99,11 @@ namespace Etherna.MongODM.Core
         /// Register of available repositories.
         /// </summary>
         IRepositoryRegister RepositoryRegister { get; }
+
+        /// <summary>
+        /// Local instance of a serializer register.
+        /// </summary>
+        IBsonSerializerRegistry SerializerRegister { get; }
 
         /// <summary>
         /// Register for model serialization and schema information.

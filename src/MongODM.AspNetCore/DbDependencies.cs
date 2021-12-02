@@ -20,6 +20,7 @@ using Etherna.MongODM.Core.Serialization.Mapping;
 using Etherna.MongODM.Core.Serialization.Modifiers;
 using Etherna.MongODM.Core.Utility;
 using Microsoft.Extensions.Options;
+using MongoDB.Bson.Serialization;
 using System;
 
 namespace Etherna.MongODM.AspNetCore
@@ -27,6 +28,7 @@ namespace Etherna.MongODM.AspNetCore
     public class DbDependencies : IDbDependencies
     {
         public DbDependencies(
+            IBsonSerializerRegistry bsonSerializerRegistry,
             IDbCache dbCache,
             IDbMaintainer dbMaintainer,
             IDbMigrationManager dbContextMigrationManager,
@@ -39,7 +41,7 @@ namespace Etherna.MongODM.AspNetCore
         {
             if (mongODMOptions is null)
                 throw new ArgumentNullException(nameof(mongODMOptions));
-
+            BsonSerializerRegistry = bsonSerializerRegistry;
             DbCache = dbCache;
             DbMaintainer = dbMaintainer;
             DbMigrationManager = dbContextMigrationManager;
@@ -51,6 +53,7 @@ namespace Etherna.MongODM.AspNetCore
             SerializerModifierAccessor = serializerModifierAccessor;
         }
 
+        public IBsonSerializerRegistry BsonSerializerRegistry { get; }
         public IDbCache DbCache { get; }
         public IDbMaintainer DbMaintainer { get; }
         public IDbMigrationManager DbMigrationManager { get; }

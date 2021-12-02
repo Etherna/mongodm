@@ -24,6 +24,7 @@ using Etherna.MongODM.Core.Utility;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using MongoDB.Bson;
+using MongoDB.Bson.Serialization;
 using MongoDB.Bson.Serialization.Conventions;
 using System;
 
@@ -77,6 +78,7 @@ namespace Etherna.MongODM.AspNetCore
              * and passed to other with Initialize() method. This because otherwise inside
              * the same dbContext different components could have different instances of the same component.
              */
+            services.TryAddTransient<IBsonSerializerRegistry, BsonSerializerRegistry>();
             services.TryAddTransient<IDbCache, DbCache>();
             services.TryAddTransient<IDbDependencies, DbDependencies>();
             services.TryAddTransient<IDbMaintainer, DbMaintainer>();

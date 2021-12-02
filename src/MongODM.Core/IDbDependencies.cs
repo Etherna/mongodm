@@ -17,11 +17,13 @@ using Etherna.MongODM.Core.Repositories;
 using Etherna.MongODM.Core.Serialization.Mapping;
 using Etherna.MongODM.Core.Serialization.Modifiers;
 using Etherna.MongODM.Core.Utility;
+using MongoDB.Bson.Serialization;
 
 namespace Etherna.MongODM.Core
 {
     public interface IDbDependencies
     {
+        IBsonSerializerRegistry BsonSerializerRegistry { get; }
         IDbCache DbCache { get; }
         IDbMaintainer DbMaintainer { get; }
         IDbMigrationManager DbMigrationManager { get; }
