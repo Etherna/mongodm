@@ -80,7 +80,7 @@ namespace Etherna.MongODM.Core
             DbMigrationManager.Initialize(this);
             RepositoryRegister.Initialize(this);
             SchemaRegister.Initialize(this);
-            CreateSerializerRegistry();
+            InitializeSerializerRegister();
 
             // Initialize repositories.
             foreach (var repository in RepositoryRegister.ModelRepositoryMap.Values)
@@ -212,18 +212,15 @@ namespace Etherna.MongODM.Core
             Task.CompletedTask;
 
         // Helpers.
-        private void CreateSerializerRegistry()
+        private void InitializeSerializerRegister()
         {
             var register = (BsonSerializerRegistry)SerializerRegister;
-            __typeMappingSerializationProvider = new TypeMappingSerializationProvider();
 
-            // order matters. It's in reverse order of how they'll get consumed
-            register.RegisterSerializationProvider(new BsonClassMapSerializationProvider());
+            //order matters. It's in reverse order of how they'll get consumed
             register.RegisterSerializationProvider(new DiscriminatedInterfaceSerializationProvider());
             register.RegisterSerializationProvider(new CollectionsSerializationProvider());
             register.RegisterSerializationProvider(new PrimitiveSerializationProvider());
             register.RegisterSerializationProvider(new AttributedSerializationProvider());
-            register.RegisterSerializationProvider(__typeMappingSerializationProvider);
             register.RegisterSerializationProvider(new BsonObjectModelSerializationProvider());
         }
     }
