@@ -37,6 +37,7 @@ namespace Etherna.MongODM.Core
     public abstract class DbContext : IDbContext, IDbContextBuilder
     {
         // Fields.
+        private BsonSerializerRegistry _serializerRegister = default!;
         private bool isInitialized;
 
         // Constructor and initializer.
@@ -67,9 +68,9 @@ namespace Etherna.MongODM.Core
             Options = options;
             ProxyGenerator = dependencies.ProxyGenerator;
             RepositoryRegister = dependencies.RepositoryRegister;
-            SerializerRegister = dependencies.BsonSerializerRegistry;
             SchemaRegister = dependencies.SchemaRegister;
             SerializerModifierAccessor = dependencies.SerializerModifierAccessor;
+            _serializerRegister = (BsonSerializerRegistry)dependencies.BsonSerializerRegistry;
 
             // Initialize MongoDB driver.
             Client = new MongoClient(options.ConnectionString);
@@ -126,7 +127,7 @@ namespace Etherna.MongODM.Core
         public IDbContextOptions Options { get; private set; } = default!;
         public IProxyGenerator ProxyGenerator { get; private set; } = default!;
         public IRepositoryRegister RepositoryRegister { get; private set; } = default!;
-        public IBsonSerializerRegistry SerializerRegister { get; private set; } = default!;
+        public IBsonSerializerRegistry SerializerRegister => _serializerRegister;
         public ISchemaRegister SchemaRegister { get; private set; } = default!;
         public ISerializerModifierAccessor SerializerModifierAccessor { get; private set; } = default!;
 
@@ -214,14 +215,12 @@ namespace Etherna.MongODM.Core
         // Helpers.
         private void InitializeSerializerRegister()
         {
-            var register = (BsonSerializerRegistry)SerializerRegister;
-
             //order matters. It's in reverse order of how they'll get consumed
-            register.RegisterSerializationProvider(new DiscriminatedInterfaceSerializationProvider());
-            register.RegisterSerializationProvider(new CollectionsSerializationProvider());
-            register.RegisterSerializationProvider(new PrimitiveSerializationProvider());
-            register.RegisterSerializationProvider(new AttributedSerializationProvider());
-            register.RegisterSerializationProvider(new BsonObjectModelSerializationProvider());
+            _serializerRegister.RegisterSerializationProvider(new DiscriminatedInterfaceSerializationProvider());
+            _serializerRegister.RegisterSerializationProvider(new CollectionsSerializationProvider());
+            _serializerRegister.RegisterSerializationProvider(new PrimitiveSerializationProvider());
+            _serializerRegister.RegisterSerializationProvider(new AttributedSerializationProvider());
+            _serializerRegister.RegisterSerializationProvider(new BsonObjectModelSerializationProvider());
         }
     }
 }

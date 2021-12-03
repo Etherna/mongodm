@@ -1,5 +1,4 @@
-﻿using Etherna.MongODM.Core.Utility;
-using MongoDB.Bson;
+﻿using MongoDB.Bson;
 using MongoDB.Bson.Serialization.Conventions;
 using System;
 

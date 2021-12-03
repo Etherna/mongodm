@@ -113,7 +113,7 @@ namespace Etherna.MongODM.Core.Serialization.Mapping
                     if (type == typeof(object))
                     {
                         //if there is no convention registered for object register the default one
-                        convention = new HierarchicalProxyTolerantDiscriminatorConvention("_t", dbContext.ProxyGenerator);
+                        convention = new HierarchicalProxyTolerantDiscriminatorConvention(dbContext, "_t");
                         AddDiscriminatorConvention(typeof(object), convention);
                     }
                     else if (typeInfo.IsInterface)

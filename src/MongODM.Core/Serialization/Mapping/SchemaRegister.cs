@@ -19,6 +19,7 @@ using Etherna.MongODM.Core.Utility;
 using MongoDB.Bson;
 using MongoDB.Bson.Serialization;
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
@@ -33,6 +34,7 @@ namespace Etherna.MongODM.Core.Serialization.Mapping
         private readonly Dictionary<Type, ISchema> _schemas = new();
 
         private readonly Dictionary<Type, BsonElement> activeModelMapIdBsonElement = new();
+        private readonly ConcurrentDictionary<Type, BsonClassMap> defaultClassMapsCache = new();
         private readonly Dictionary<MemberInfo, List<MemberDependency>> memberInfoToMemberMapsDictionary = new();
         private readonly Dictionary<Type, List<MemberDependency>> modelTypeToReferencedIdMemberMapsDictionary = new();
 
@@ -105,6 +107,29 @@ namespace Etherna.MongODM.Core.Serialization.Mapping
                 return modelSchemaConfiguration;
             });
 
+        public BsonClassMap GetActiveClassMap(Type modelType)
+        {
+            // If a schema is registered.
+            if (_schemas.ContainsKey(modelType) &&
+                _schemas[modelType] is IModelMapsSchema modelMapSchema)
+                return modelMapSchema.ActiveMap.BsonClassMap;
+
+            // If we don't have a model schema, look for a default classmap, or create it.
+            if (defaultClassMapsCache.ContainsKey(modelType))
+                return defaultClassMapsCache[modelType];
+
+            var classMapDefinition = typeof(BsonClassMap<>);
+            var classMapType = classMapDefinition.MakeGenericType(modelType);
+            var classMap = (BsonClassMap)Activator.CreateInstance(classMapType);
+            classMap.AutoMap();
+
+            // Register classMap (if doesn't exist) with discriminator.
+            defaultClassMapsCache.TryAdd(modelType, classMap);
+            dbContext.DiscriminatorRegister.AddDiscriminator(modelType, classMap.Discriminator);
+
+            return classMap;
+        }
+
         public BsonElement GetActiveModelMapIdBsonElement(Type modelType)
         {
             if (modelType is null)
@@ -144,7 +169,7 @@ namespace Etherna.MongODM.Core.Serialization.Mapping
             if (modelType is null)
                 throw new ArgumentNullException(nameof(modelType));
             if (!_schemas.ContainsKey(modelType))
-                throw new InvalidOperationException(modelType.Name + " schema is not registered");
+                throw new KeyNotFoundException(modelType.Name + " schema is not registered");
 
             var schema = _schemas[modelType];
 
@@ -199,7 +224,7 @@ namespace Etherna.MongODM.Core.Serialization.Mapping
 
                 // Register active serializer.
                 if (schema.ActiveSerializer != null)
-                    BsonSerializer.RegisterSerializer(schema.ModelType, schema.ActiveSerializer);
+                    ((BsonSerializerRegistry)dbContext.SerializerRegister).RegisterSerializer(schema.ModelType, schema.ActiveSerializer);
 
                 // Register discriminators for all bson class maps.
                 if (schema is IModelMapsSchema modelMapsSchema)
