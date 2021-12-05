@@ -16,6 +16,7 @@ using MongoDB.Bson;
 using MongoDB.Bson.IO;
 using MongoDB.Bson.Serialization;
 using MongoDB.Bson.Serialization.Conventions;
+using MongoDB.Bson.Serialization.Serializers;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -44,15 +45,15 @@ namespace Etherna.MongODM.Core.Conventions
         // Methods.
         public Type GetActualType(IBsonReader bsonReader, Type nominalType)
         {
-            // the BsonReader is sitting at the value whose actual type needs to be found
+            if (bsonReader is null)
+                throw new ArgumentNullException(nameof(bsonReader));
+
+            //the BsonReader is sitting at the value whose actual type needs to be found
             var bsonType = bsonReader.GetCurrentBsonType();
             if (bsonType == BsonType.Document)
             {
-                // ensure KnownTypes of nominalType are registered (so IsTypeDiscriminated returns correct answer)
-                BsonSerializer.EnsureKnownTypesAreRegistered(nominalType);
-
-                // we can skip looking for a discriminator if nominalType has no discriminated sub types
-                if (BsonSerializer.IsTypeDiscriminated(nominalType))
+                //we can skip looking for a discriminator if nominalType has no discriminated sub types
+                if (dbContext.DiscriminatorRegister.IsTypeDiscriminated(nominalType))
                 {
                     var bookmark = bsonReader.GetBookmark();
                     bsonReader.ReadStartDocument();
@@ -63,9 +64,9 @@ namespace Etherna.MongODM.Core.Conventions
                         var discriminator = BsonValueSerializer.Instance.Deserialize(context);
                         if (discriminator.IsBsonArray)
                         {
-                            discriminator = discriminator.AsBsonArray.Last(); // last item is leaf class discriminator
+                            discriminator = discriminator.AsBsonArray.Last(); //last item is leaf class discriminator
                         }
-                        actualType = BsonSerializer.LookupActualType(nominalType, discriminator);
+                        actualType = dbContext.DiscriminatorRegister.LookupActualType(nominalType, discriminator);
                     }
                     bsonReader.ReturnToBookmark(bookmark);
                     return actualType;

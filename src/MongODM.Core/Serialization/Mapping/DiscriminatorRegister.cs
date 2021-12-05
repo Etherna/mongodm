@@ -91,6 +91,48 @@ namespace Etherna.MongODM.Core.Serialization.Mapping
             }
         }
 
+        public bool IsTypeDiscriminated(Type type)
+        {
+            var typeInfo = type.GetTypeInfo();
+            return typeInfo.IsInterface || discriminatedTypes.Contains(type);
+        }
+
+        public Type LookupActualType(Type nominalType, BsonValue? discriminator)
+        {
+            if (discriminator == null)
+                return nominalType;
+
+            configLock.EnterReadLock();
+            try
+            {
+                Type? actualType = null;
+
+                var nominalTypeInfo = nominalType.GetTypeInfo();
+                if (discriminators.TryGetValue(discriminator, out HashSet<Type> hashSet))
+                {
+                    foreach (var type in hashSet)
+                    {
+                        if (nominalTypeInfo.IsAssignableFrom(type))
+                        {
+                            if (actualType == null)
+                                actualType = type;
+                            else
+                                throw new BsonSerializationException($"Ambiguous discriminator '{discriminator}'.");
+                        }
+                    }
+                }
+
+                if (actualType == null)
+                    throw new BsonSerializationException($"Unknown discriminator value '{discriminator}'.");
+
+                return actualType;
+            }
+            finally
+            {
+                configLock.ExitReadLock();
+            }
+        }
+
         public IDiscriminatorConvention LookupDiscriminatorConvention(Type type)
         {
             configLock.EnterReadLock();
