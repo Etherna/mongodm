@@ -12,7 +12,7 @@
 //   See the License for the specific language governing permissions and
 //   limitations under the License.
 
-using MongoDB.Bson;
+using Etherna.MongoDB.Bson;
 using System;
 using System.Globalization;
 using System.Text;

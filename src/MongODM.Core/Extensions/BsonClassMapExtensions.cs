@@ -12,9 +12,9 @@
 //   See the License for the specific language governing permissions and
 //   limitations under the License.
 
+using Etherna.MongoDB.Bson.Serialization;
 using Etherna.MongODM.Core.Domain.Models;
 using Etherna.MongODM.Core.Serialization.Serializers;
-using MongoDB.Bson.Serialization;
 using System;
 using System.Linq.Expressions;
 using System.Reflection;

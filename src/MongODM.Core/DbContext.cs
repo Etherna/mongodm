@@ -12,6 +12,8 @@
 //   See the License for the specific language governing permissions and
 //   limitations under the License.
 
+using Etherna.MongoDB.Driver;
+using Etherna.MongoDB.Driver.Linq;
 using Etherna.MongODM.Core.Domain.ModelMaps;
 using Etherna.MongODM.Core.Domain.Models;
 using Etherna.MongODM.Core.Migration;
@@ -22,8 +24,6 @@ using Etherna.MongODM.Core.Serialization;
 using Etherna.MongODM.Core.Serialization.Mapping;
 using Etherna.MongODM.Core.Serialization.Modifiers;
 using Etherna.MongODM.Core.Utility;
-using MongoDB.Driver;
-using MongoDB.Driver.Linq;
 using System;
 using System.Collections.Generic;
 using System.Linq;

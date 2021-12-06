@@ -12,11 +12,11 @@
 //   See the License for the specific language governing permissions and
 //   limitations under the License.
 
+using Etherna.MongoDB.Bson.Serialization;
+using Etherna.MongoDB.Bson.Serialization.Serializers;
+using Etherna.MongoDB.Driver.GeoJsonObjectModel;
+using Etherna.MongoDB.Driver.GeoJsonObjectModel.Serializers;
 using Etherna.MongODM.Core.ProxyModels;
-using MongoDB.Bson.Serialization;
-using MongoDB.Bson.Serialization.Serializers;
-using MongoDB.Driver.GeoJsonObjectModel;
-using MongoDB.Driver.GeoJsonObjectModel.Serializers;
 using System;
 using System.Linq.Expressions;
 using System.Reflection;

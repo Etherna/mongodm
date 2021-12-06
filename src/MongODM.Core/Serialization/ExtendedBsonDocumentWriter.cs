@@ -12,8 +12,8 @@
 //   See the License for the specific language governing permissions and
 //   limitations under the License.
 
-using MongoDB.Bson;
-using MongoDB.Bson.IO;
+using Etherna.MongoDB.Bson;
+using Etherna.MongoDB.Bson.IO;
 
 namespace Etherna.MongODM.Core.Serialization
 {

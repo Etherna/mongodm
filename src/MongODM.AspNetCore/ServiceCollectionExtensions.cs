@@ -13,6 +13,9 @@
 //   limitations under the License.
 
 using Etherna.ExecContext.AspNetCore;
+using Etherna.MongoDB.Bson;
+using Etherna.MongoDB.Bson.Serialization;
+using Etherna.MongoDB.Bson.Serialization.Conventions;
 using Etherna.MongODM.Core;
 using Etherna.MongODM.Core.Conventions;
 using Etherna.MongODM.Core.Domain.Models;
@@ -25,9 +28,6 @@ using Etherna.MongODM.Core.Tasks;
 using Etherna.MongODM.Core.Utility;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
-using MongoDB.Bson;
-using MongoDB.Bson.Serialization;
-using MongoDB.Bson.Serialization.Conventions;
 using System;
 
 namespace Etherna.MongODM.AspNetCore
