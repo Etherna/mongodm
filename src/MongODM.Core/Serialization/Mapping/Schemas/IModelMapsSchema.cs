@@ -12,7 +12,7 @@
 //   See the License for the specific language governing permissions and
 //   limitations under the License.
 
-using MongoDB.Bson.Serialization;
+using Etherna.MongoDB.Bson.Serialization;
 using System.Collections.Generic;
 
 namespace Etherna.MongODM.Core.Serialization.Mapping.Schemas

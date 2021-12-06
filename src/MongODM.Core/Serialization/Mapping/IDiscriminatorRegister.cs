@@ -1,5 +1,5 @@
-﻿using MongoDB.Bson;
-using MongoDB.Bson.Serialization.Conventions;
+﻿using Etherna.MongoDB.Bson;
+using Etherna.MongoDB.Bson.Serialization.Conventions;
 using System;
 
 namespace Etherna.MongODM.Core.Serialization.Mapping

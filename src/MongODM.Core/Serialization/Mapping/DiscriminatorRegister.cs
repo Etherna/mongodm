@@ -1,6 +1,6 @@
-﻿using Etherna.MongODM.Core.Conventions;
-using MongoDB.Bson;
-using MongoDB.Bson.Serialization.Conventions;
+﻿using Etherna.MongoDB.Bson;
+using Etherna.MongoDB.Bson.Serialization.Conventions;
+using Etherna.MongODM.Core.Conventions;
 using System;
 using System.Collections.Generic;
 using System.Reflection;
