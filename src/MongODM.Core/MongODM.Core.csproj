@@ -23,6 +23,8 @@
 
   <ItemGroup>
     <PackageReference Include="Castle.Core" Version="4.4.1" />
+    <PackageReference Include="Etherna.MongoDB.Driver" Version="2.14.101" />
+    <PackageReference Include="Etherna.MongoDB.Driver.GridFS" Version="2.14.101" />
     <PackageReference Include="ExecutionContext" Version="1.0.0" />
     <PackageReference Include="GitVersion.MsBuild" Version="5.8.1">
       <PrivateAssets>all</PrivateAssets>
@@ -32,8 +34,6 @@
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
-    <PackageReference Include="MongoDB.Driver" Version="2.14.0" />
-    <PackageReference Include="MongoDB.Driver.GridFS" Version="2.14.0" />
     <PackageReference Include="morelinq" Version="3.3.2" />
   </ItemGroup>
 

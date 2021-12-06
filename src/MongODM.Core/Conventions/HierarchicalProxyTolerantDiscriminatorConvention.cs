@@ -12,9 +12,9 @@
 //   See the License for the specific language governing permissions and
 //   limitations under the License.
 
+using Etherna.MongoDB.Bson;
+using Etherna.MongoDB.Bson.Serialization.Conventions;
 using Etherna.MongODM.Core.ProxyModels;
-using MongoDB.Bson;
-using MongoDB.Bson.Serialization.Conventions;
 using System;
 
 namespace Etherna.MongODM.Core.Conventions
