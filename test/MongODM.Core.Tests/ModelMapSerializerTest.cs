@@ -16,6 +16,7 @@ using Etherna.MongoDB.Bson;
 using Etherna.MongoDB.Bson.IO;
 using Etherna.MongoDB.Bson.Serialization;
 using Etherna.MongODM.Core.Comparers;
+using Etherna.MongODM.Core.Conventions;
 using Etherna.MongODM.Core.Models;
 using Etherna.MongODM.Core.Options;
 using Etherna.MongODM.Core.Serialization.Mapping;
@@ -79,6 +80,7 @@ namespace Etherna.MongODM.Core
         // Fields.
         private readonly Mock<IDbCache> dbCacheMock = new();
         private readonly Mock<IDbContext> dbContextMock = new();
+        private readonly Mock<IDiscriminatorRegister> discriminatorRegisterMock = new();
         private readonly DocumentSemVerOptions documentSemVerOptions = new();
         private readonly Mock<IModelMapsSchema> modelMapsSchemaMock = new();
         private readonly ModelMapVersionOptions modelMapVersionOptions = new();
@@ -88,11 +90,16 @@ namespace Etherna.MongODM.Core
         // Constructor.
         public ModelMapSerializerTest()
         {
+            discriminatorRegisterMock.Setup(r => r.LookupDiscriminatorConvention(It.IsAny<Type>()))
+                .Returns(() => new HierarchicalProxyTolerantDiscriminatorConvention(dbContextMock.Object, "_t"));
+
             dbCacheMock.Setup(c => c.LoadedModels.ContainsKey(It.IsAny<object>()))
                 .Returns(() => false);
 
             dbContextMock.Setup(c => c.DbCache)
                 .Returns(() => dbCacheMock.Object);
+            dbContextMock.Setup(c => c.DiscriminatorRegister)
+                .Returns(() => discriminatorRegisterMock.Object);
             dbContextMock.Setup(c => c.Options.DocumentSemVer)
                 .Returns(() => documentSemVerOptions);
             dbContextMock.Setup(c => c.Options.ModelMapVersion)
