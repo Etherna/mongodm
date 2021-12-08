@@ -74,11 +74,15 @@ namespace Etherna.MongODM.Core
 
             // Initialize MongoDB driver.
             Client = new MongoClient(options.ConnectionString);
-            Database = Client.GetDatabase(options.DbName);
+            Database = Client.GetDatabase(options.DbName, new MongoDatabaseSettings
+            {
+                SerializerRegistry = _serializerRegister
+            });
 
             // Initialize internal dependencies.
             DbMaintainer.Initialize(this);
             DbMigrationManager.Initialize(this);
+            DiscriminatorRegister.Initialize(this);
             RepositoryRegister.Initialize(this);
             SchemaRegister.Initialize(this);
             InitializeSerializerRegister();
