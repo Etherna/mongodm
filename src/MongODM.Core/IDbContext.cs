@@ -12,6 +12,7 @@
 //   See the License for the specific language governing permissions and
 //   limitations under the License.
 
+using Etherna.MongoDB.Bson.Serialization;
 using Etherna.MongoDB.Driver;
 using Etherna.MongODM.Core.Domain.Models;
 using Etherna.MongODM.Core.Migration;
@@ -65,6 +66,11 @@ namespace Etherna.MongODM.Core
         ICollectionRepository<OperationBase, string> DbOperations { get; }
 
         /// <summary>
+        /// Register for discriminator configuration.
+        /// </summary>
+        IDiscriminatorRegister DiscriminatorRegister { get; }
+
+        /// <summary>
         /// List of registered migration tasks
         /// </summary>
         IEnumerable<DocumentMigration> DocumentMigrationList { get; }
@@ -93,6 +99,11 @@ namespace Etherna.MongODM.Core
         /// Register of available repositories.
         /// </summary>
         IRepositoryRegister RepositoryRegister { get; }
+
+        /// <summary>
+        /// Local instance of a serializer register.
+        /// </summary>
+        IBsonSerializerRegistry SerializerRegister { get; }
 
         /// <summary>
         /// Register for model serialization and schema information.

@@ -12,6 +12,7 @@
 //   See the License for the specific language governing permissions and
 //   limitations under the License.
 
+using Etherna.MongoDB.Bson.Serialization;
 using Etherna.MongODM.Core.ProxyModels;
 using Etherna.MongODM.Core.Repositories;
 using Etherna.MongODM.Core.Serialization.Mapping;
@@ -22,9 +23,11 @@ namespace Etherna.MongODM.Core
 {
     public interface IDbDependencies
     {
+        IBsonSerializerRegistry BsonSerializerRegistry { get; }
         IDbCache DbCache { get; }
         IDbMaintainer DbMaintainer { get; }
         IDbMigrationManager DbMigrationManager { get; }
+        IDiscriminatorRegister DiscriminatorRegister { get; }
         IProxyGenerator ProxyGenerator { get; }
         IRepositoryRegister RepositoryRegister { get; }
         ISchemaRegister SchemaRegister { get; }

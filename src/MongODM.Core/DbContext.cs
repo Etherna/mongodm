@@ -12,6 +12,7 @@
 //   See the License for the specific language governing permissions and
 //   limitations under the License.
 
+using Etherna.MongoDB.Bson.Serialization;
 using Etherna.MongoDB.Driver;
 using Etherna.MongoDB.Driver.Linq;
 using Etherna.MongODM.Core.Domain.ModelMaps;
@@ -36,6 +37,7 @@ namespace Etherna.MongODM.Core
     public abstract class DbContext : IDbContext, IDbContextBuilder
     {
         // Fields.
+        private BsonSerializerRegistry _serializerRegister = default!;
         private bool isInitialized;
 
         // Constructor and initializer.
@@ -56,6 +58,7 @@ namespace Etherna.MongODM.Core
             DbMaintainer = dependencies.DbMaintainer;
             DbMigrationManager = dependencies.DbMigrationManager;
             DbOperations = new CollectionRepository<OperationBase, string>(options.DbOperationsCollectionName);
+            DiscriminatorRegister = dependencies.DiscriminatorRegister;
             LibraryVersion = typeof(DbContext)
                 .GetTypeInfo()
                 .Assembly
@@ -67,16 +70,22 @@ namespace Etherna.MongODM.Core
             RepositoryRegister = dependencies.RepositoryRegister;
             SchemaRegister = dependencies.SchemaRegister;
             SerializerModifierAccessor = dependencies.SerializerModifierAccessor;
+            _serializerRegister = (BsonSerializerRegistry)dependencies.BsonSerializerRegistry;
 
             // Initialize MongoDB driver.
             Client = new MongoClient(options.ConnectionString);
-            Database = Client.GetDatabase(options.DbName);
+            Database = Client.GetDatabase(options.DbName, new MongoDatabaseSettings
+            {
+                SerializerRegistry = _serializerRegister
+            });
 
             // Initialize internal dependencies.
             DbMaintainer.Initialize(this);
             DbMigrationManager.Initialize(this);
+            DiscriminatorRegister.Initialize(this);
             RepositoryRegister.Initialize(this);
             SchemaRegister.Initialize(this);
+            InitializeSerializerRegister();
 
             // Initialize repositories.
             foreach (var repository in RepositoryRegister.ModelRepositoryMap.Values)
@@ -115,12 +124,14 @@ namespace Etherna.MongODM.Core
         public IDbMaintainer DbMaintainer { get; private set; } = default!;
         public IDbMigrationManager DbMigrationManager { get; private set; } = default!;
         public ICollectionRepository<OperationBase, string> DbOperations { get; private set; } = default!;
+        public IDiscriminatorRegister DiscriminatorRegister { get; private set; } = default!;
         public virtual IEnumerable<DocumentMigration> DocumentMigrationList { get; } = Array.Empty<DocumentMigration>();
         public string Identifier => Options?.Identifier ?? GetType().Name;
         public SemanticVersion LibraryVersion { get; private set; } = default!;
         public IDbContextOptions Options { get; private set; } = default!;
         public IProxyGenerator ProxyGenerator { get; private set; } = default!;
         public IRepositoryRegister RepositoryRegister { get; private set; } = default!;
+        public IBsonSerializerRegistry SerializerRegister => _serializerRegister;
         public ISchemaRegister SchemaRegister { get; private set; } = default!;
         public ISerializerModifierAccessor SerializerModifierAccessor { get; private set; } = default!;
 
@@ -204,5 +215,16 @@ namespace Etherna.MongODM.Core
         // Protected methods.
         protected virtual Task SeedAsync() =>
             Task.CompletedTask;
+
+        // Helpers.
+        private void InitializeSerializerRegister()
+        {
+            //order matters. It's in reverse order of how they'll get consumed
+            _serializerRegister.RegisterSerializationProvider(new DiscriminatedInterfaceSerializationProvider());
+            _serializerRegister.RegisterSerializationProvider(new CollectionsSerializationProvider());
+            _serializerRegister.RegisterSerializationProvider(new PrimitiveSerializationProvider());
+            _serializerRegister.RegisterSerializationProvider(new AttributedSerializationProvider());
+            _serializerRegister.RegisterSerializationProvider(new BsonObjectModelSerializationProvider());
+        }
     }
 }

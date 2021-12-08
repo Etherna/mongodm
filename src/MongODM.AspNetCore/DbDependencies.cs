@@ -12,6 +12,7 @@
 //   See the License for the specific language governing permissions and
 //   limitations under the License.
 
+using Etherna.MongoDB.Bson.Serialization;
 using Etherna.MongODM.Core;
 using Etherna.MongODM.Core.Options;
 using Etherna.MongODM.Core.ProxyModels;
@@ -27,9 +28,11 @@ namespace Etherna.MongODM.AspNetCore
     public class DbDependencies : IDbDependencies
     {
         public DbDependencies(
+            IBsonSerializerRegistry bsonSerializerRegistry,
             IDbCache dbCache,
             IDbMaintainer dbMaintainer,
             IDbMigrationManager dbContextMigrationManager,
+            IDiscriminatorRegister discriminatorRegister,
             IOptions<MongODMOptions> mongODMOptions,
             IProxyGenerator proxyGenerator,
             IRepositoryRegister repositoryRegister,
@@ -38,10 +41,11 @@ namespace Etherna.MongODM.AspNetCore
         {
             if (mongODMOptions is null)
                 throw new ArgumentNullException(nameof(mongODMOptions));
-
+            BsonSerializerRegistry = bsonSerializerRegistry;
             DbCache = dbCache;
             DbMaintainer = dbMaintainer;
             DbMigrationManager = dbContextMigrationManager;
+            DiscriminatorRegister = discriminatorRegister;
             MongODMOptions = mongODMOptions.Value;
             SchemaRegister = schemaRegister;
             ProxyGenerator = proxyGenerator;
@@ -49,9 +53,11 @@ namespace Etherna.MongODM.AspNetCore
             SerializerModifierAccessor = serializerModifierAccessor;
         }
 
+        public IBsonSerializerRegistry BsonSerializerRegistry { get; }
         public IDbCache DbCache { get; }
         public IDbMaintainer DbMaintainer { get; }
         public IDbMigrationManager DbMigrationManager { get; }
+        public IDiscriminatorRegister DiscriminatorRegister { get; }
         public MongODMOptions MongODMOptions { get; }
         public IProxyGenerator ProxyGenerator { get; }
         public IRepositoryRegister RepositoryRegister { get; }

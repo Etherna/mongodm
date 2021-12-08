@@ -13,28 +13,101 @@
 //   limitations under the License.
 
 using Etherna.MongoDB.Bson;
+using Etherna.MongoDB.Bson.IO;
+using Etherna.MongoDB.Bson.Serialization;
 using Etherna.MongoDB.Bson.Serialization.Conventions;
-using Etherna.MongODM.Core.ProxyModels;
+using Etherna.MongoDB.Bson.Serialization.Serializers;
 using System;
+using System.Collections.Generic;
+using System.Linq;
 
 namespace Etherna.MongODM.Core.Conventions
 {
-    public class HierarchicalProxyTolerantDiscriminatorConvention : HierarchicalDiscriminatorConvention
+    public class HierarchicalProxyTolerantDiscriminatorConvention : IDiscriminatorConvention
     {
         // Fields.
-        private readonly IProxyGenerator proxyGenerator;
+        private readonly IDbContext dbContext;
 
         // Constructors.
         public HierarchicalProxyTolerantDiscriminatorConvention(
-            string elementName,
-            IProxyGenerator proxyGenerator)
-            : base(elementName)
+            IDbContext dbContext,
+            string elementName)
         {
-            this.proxyGenerator = proxyGenerator ?? throw new ArgumentNullException(nameof(proxyGenerator));
+            this.dbContext = dbContext;
+
+            ElementName = elementName ?? throw new ArgumentNullException(nameof(elementName));
+            if (elementName.IndexOf('\0') != -1)
+                throw new ArgumentException("Element names cannot contain nulls.", nameof(elementName));
         }
 
+        public string ElementName { get; }
+
         // Methods.
-        public override BsonValue GetDiscriminator(Type nominalType, Type actualType) =>
-            base.GetDiscriminator(nominalType, proxyGenerator.PurgeProxyType(actualType));
+        public Type GetActualType(IBsonReader bsonReader, Type nominalType)
+        {
+            if (bsonReader is null)
+                throw new ArgumentNullException(nameof(bsonReader));
+
+            //the BsonReader is sitting at the value whose actual type needs to be found
+            var bsonType = bsonReader.GetCurrentBsonType();
+            if (bsonType == BsonType.Document)
+            {
+                //we can skip looking for a discriminator if nominalType has no discriminated sub types
+                if (dbContext.DiscriminatorRegister.IsTypeDiscriminated(nominalType))
+                {
+                    var bookmark = bsonReader.GetBookmark();
+                    bsonReader.ReadStartDocument();
+                    var actualType = nominalType;
+                    if (bsonReader.FindElement(ElementName))
+                    {
+                        var context = BsonDeserializationContext.CreateRoot(bsonReader);
+                        var discriminator = BsonValueSerializer.Instance.Deserialize(context);
+                        if (discriminator.IsBsonArray)
+                        {
+                            discriminator = discriminator.AsBsonArray.Last(); //last item is leaf class discriminator
+                        }
+                        actualType = dbContext.DiscriminatorRegister.LookupActualType(nominalType, discriminator);
+                    }
+                    bsonReader.ReturnToBookmark(bookmark);
+                    return actualType;
+                }
+            }
+
+            return nominalType;
+        }
+
+        /// <summary>
+        /// Gets the discriminator value for an actual type.
+        /// </summary>
+        /// <param name="nominalType">The nominal type.</param>
+        /// <param name="actualType">The actual type.</param>
+        /// <returns>The discriminator value.</returns>
+        public BsonValue? GetDiscriminator(Type nominalType, Type actualType)
+        {
+            // Remove proxy type.
+            actualType = dbContext.ProxyGenerator.PurgeProxyType(actualType);
+
+            // Find active class map for model type.
+            var classMap = dbContext.SchemaRegister.GetActiveClassMap(actualType);
+
+            // Get discriminator from class map.
+            if (actualType != nominalType || classMap.DiscriminatorIsRequired || classMap.HasRootClass)
+            {
+                if (classMap.HasRootClass && !classMap.IsRootClass)
+                {
+                    var values = new List<BsonValue>();
+                    for (; !classMap.IsRootClass; classMap = classMap.BaseClassMap)
+                    {
+                        values.Add(classMap.Discriminator);
+                    }
+                    values.Add(classMap.Discriminator); //add the root class's discriminator
+                    return new BsonArray(values.Reverse<BsonValue>()); //reverse to put leaf class last
+                }
+                else
+                    return classMap.Discriminator;
+            }
+
+            return null;
+        }
     }
 }

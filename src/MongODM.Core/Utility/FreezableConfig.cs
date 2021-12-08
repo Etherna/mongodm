@@ -76,12 +76,17 @@ namespace Etherna.MongODM.Core.Utility
         }
 
         // Protected methods.
-        protected void ExecuteConfigAction(Action configAction) =>
+        protected void ExecuteConfigAction(Action configAction)
+        {
+            if (configAction is null)
+                throw new ArgumentNullException(nameof(configAction));
+
             ExecuteConfigAction(() =>
             {
                 configAction();
                 return 0;
             });
+        }
 
         protected TReturn ExecuteConfigAction<TReturn>(Func<TReturn> configAction)
         {

@@ -90,7 +90,7 @@ namespace Etherna.MongODM.Core.Serialization.Serializers
             get
             {
                 if (_discriminatorConvention == null)
-                    _discriminatorConvention = BsonSerializer.LookupDiscriminatorConvention(typeof(TModelBase));
+                    _discriminatorConvention = dbContext.DiscriminatorRegister.LookupDiscriminatorConvention(typeof(TModelBase));
                 return _discriminatorConvention;
             }
         }

@@ -17,8 +17,6 @@ using Etherna.MongoDB.Bson;
 using Etherna.MongoDB.Bson.Serialization;
 using Etherna.MongoDB.Bson.Serialization.Conventions;
 using Etherna.MongODM.Core;
-using Etherna.MongODM.Core.Conventions;
-using Etherna.MongODM.Core.Domain.Models;
 using Etherna.MongODM.Core.Options;
 using Etherna.MongODM.Core.ProxyModels;
 using Etherna.MongODM.Core.Repositories;
@@ -34,19 +32,17 @@ namespace Etherna.MongODM.AspNetCore
 {
     public static class ServiceCollectionExtensions
     {
-        public static IMongODMConfiguration AddMongODM<TTaskRunner, TModelBase>(
+        public static IMongODMConfiguration AddMongODM<TTaskRunner>(
             this IServiceCollection services,
             Action<MongODMOptions>? configureOptions = null)
-            where TTaskRunner : class, ITaskRunner, ITaskRunnerBuilder
-            where TModelBase : class, IModel => //needed because of this https://jira.mongodb.org/browse/CSHARP-3154
-            AddMongODM<ProxyGenerator, TTaskRunner, TModelBase>(services, configureOptions);
+            where TTaskRunner : class, ITaskRunner, ITaskRunnerBuilder =>
+            AddMongODM<ProxyGenerator, TTaskRunner>(services, configureOptions);
 
-        public static IMongODMConfiguration AddMongODM<TProxyGenerator, TTaskRunner, TModelBase>(
+        public static IMongODMConfiguration AddMongODM<TProxyGenerator, TTaskRunner>(
             this IServiceCollection services,
             Action<MongODMOptions>? configureOptions = null)
             where TProxyGenerator : class, IProxyGenerator
             where TTaskRunner : class, ITaskRunner, ITaskRunnerBuilder
-            where TModelBase : class, IModel //needed because of this https://jira.mongodb.org/browse/CSHARP-3154
         {
             // MongODM generic configuration.
             var configuration = new MongODMConfiguration(services);
@@ -61,11 +57,6 @@ namespace Etherna.MongODM.AspNetCore
                     {
                         new EnumRepresentationConvention(BsonType.String)
                     }, c => true);
-
-                    BsonSerializer.RegisterDiscriminatorConvention(typeof(TModelBase),
-                        new HierarchicalProxyTolerantDiscriminatorConvention("_t", proxyGenerator));
-                    BsonSerializer.RegisterDiscriminatorConvention(typeof(EntityModelBase),
-                        new HierarchicalProxyTolerantDiscriminatorConvention("_t", proxyGenerator));
 
                     // Freeze configuration into mongodm options.
                     configuration.Freeze(options);
@@ -87,10 +78,12 @@ namespace Etherna.MongODM.AspNetCore
              * and passed to other with Initialize() method. This because otherwise inside
              * the same dbContext different components could have different instances of the same component.
              */
+            services.TryAddTransient<IBsonSerializerRegistry, BsonSerializerRegistry>();
             services.TryAddTransient<IDbCache, DbCache>();
             services.TryAddTransient<IDbDependencies, DbDependencies>();
             services.TryAddTransient<IDbMaintainer, DbMaintainer>();
             services.TryAddTransient<IDbMigrationManager, DbMigrationManager>();
+            services.TryAddTransient<IDiscriminatorRegister, DiscriminatorRegister>();
             services.TryAddTransient<IRepositoryRegister, RepositoryRegister>();
             services.TryAddTransient<ISchemaRegister, SchemaRegister>();
             services.TryAddSingleton<ISerializerModifierAccessor, SerializerModifierAccessor>();
