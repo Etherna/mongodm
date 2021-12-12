@@ -69,14 +69,14 @@ namespace Etherna.MongODM.Core.Tasks
             }
 
             // Build indexes.
-            foreach (var repository in dbContext.RepositoryRegister.ModelCollectionRepositoryMap.Values)
+            foreach (var repository in dbContext.RepositoryRegistry.ModelCollectionRepositoryMap.Values)
             {
                 dbMigrationOp.AddLog(new IndexMigrationLog(
                     repository.Name,
                     MigrationLogBase.ExecutionState.Executing));
                 await dbContext.SaveChangesAsync().ConfigureAwait(false);
 
-                await repository.BuildIndexesAsync(dbContext.SchemaRegister).ConfigureAwait(false);
+                await repository.BuildIndexesAsync(dbContext.SchemaRegistry).ConfigureAwait(false);
 
                 dbMigrationOp.AddLog(new IndexMigrationLog(
                     repository.Name,

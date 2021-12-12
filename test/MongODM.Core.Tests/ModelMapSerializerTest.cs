@@ -80,17 +80,17 @@ namespace Etherna.MongODM.Core
         // Fields.
         private readonly Mock<IDbCache> dbCacheMock = new();
         private readonly Mock<IDbContext> dbContextMock = new();
-        private readonly Mock<IDiscriminatorRegister> discriminatorRegisterMock = new();
+        private readonly Mock<IDiscriminatorRegistry> discriminatorRegistryMock = new();
         private readonly DocumentSemVerOptions documentSemVerOptions = new();
         private readonly Mock<IModelMapsSchema> modelMapsSchemaMock = new();
         private readonly ModelMapVersionOptions modelMapVersionOptions = new();
-        private readonly Mock<ISchemaRegister> schemaRegisterMock = new();
+        private readonly Mock<ISchemaRegistry> schemaRegistryMock = new();
         private readonly Mock<ISerializerModifierAccessor> serializerModifierAccessorMock = new();
 
         // Constructor.
         public ModelMapSerializerTest()
         {
-            discriminatorRegisterMock.Setup(r => r.LookupDiscriminatorConvention(It.IsAny<Type>()))
+            discriminatorRegistryMock.Setup(r => r.LookupDiscriminatorConvention(It.IsAny<Type>()))
                 .Returns(() => new HierarchicalProxyTolerantDiscriminatorConvention(dbContextMock.Object, "_t"));
 
             dbCacheMock.Setup(c => c.LoadedModels.ContainsKey(It.IsAny<object>()))
@@ -98,18 +98,18 @@ namespace Etherna.MongODM.Core
 
             dbContextMock.Setup(c => c.DbCache)
                 .Returns(() => dbCacheMock.Object);
-            dbContextMock.Setup(c => c.DiscriminatorRegister)
-                .Returns(() => discriminatorRegisterMock.Object);
+            dbContextMock.Setup(c => c.DiscriminatorRegistry)
+                .Returns(() => discriminatorRegistryMock.Object);
             dbContextMock.Setup(c => c.Options.DocumentSemVer)
                 .Returns(() => documentSemVerOptions);
             dbContextMock.Setup(c => c.Options.ModelMapVersion)
                 .Returns(() => modelMapVersionOptions);
-            dbContextMock.Setup(c => c.SchemaRegister)
-                .Returns(() => schemaRegisterMock.Object);
+            dbContextMock.Setup(c => c.SchemaRegistry)
+                .Returns(() => schemaRegistryMock.Object);
             dbContextMock.Setup(c => c.SerializerModifierAccessor)
                 .Returns(() => serializerModifierAccessorMock.Object);
 
-            schemaRegisterMock.Setup(sr => sr.GetModelMapsSchema(typeof(FakeModel)))
+            schemaRegistryMock.Setup(sr => sr.GetModelMapsSchema(typeof(FakeModel)))
                 .Returns(() => modelMapsSchemaMock.Object);
         }
 
@@ -304,7 +304,7 @@ namespace Etherna.MongODM.Core
             modelMapsSchemaMock.Setup(s => s.ActiveMap.Id)
                 .Returns("mapId");
 
-            schemaRegisterMock.Setup(sr => sr.GetActiveModelMapIdBsonElement(typeof(FakeModel)))
+            schemaRegistryMock.Setup(sr => sr.GetActiveModelMapIdBsonElement(typeof(FakeModel)))
                 .Returns(new BsonElement("_m", new BsonString("mapId")));
 
             // Action

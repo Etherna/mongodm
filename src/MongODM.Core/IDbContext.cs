@@ -66,9 +66,9 @@ namespace Etherna.MongODM.Core
         ICollectionRepository<OperationBase, string> DbOperations { get; }
 
         /// <summary>
-        /// Register for discriminator configuration.
+        /// Registry for discriminator configuration.
         /// </summary>
-        IDiscriminatorRegister DiscriminatorRegister { get; }
+        IDiscriminatorRegistry DiscriminatorRegistry { get; }
 
         /// <summary>
         /// List of registered migration tasks
@@ -96,19 +96,19 @@ namespace Etherna.MongODM.Core
         IProxyGenerator ProxyGenerator { get; }
 
         /// <summary>
-        /// Register of available repositories.
+        /// Registry of available repositories.
         /// </summary>
-        IRepositoryRegister RepositoryRegister { get; }
+        IRepositoryRegistry RepositoryRegistry { get; }
 
         /// <summary>
-        /// Local instance of a serializer register.
+        /// Local instance of a serializer registry.
         /// </summary>
-        IBsonSerializerRegistry SerializerRegister { get; }
+        IBsonSerializerRegistry SerializerRegistry { get; }
 
         /// <summary>
-        /// Register for model serialization and schema information.
+        /// Registry for model serialization and schema information.
         /// </summary>
-        ISchemaRegister SchemaRegister { get; }
+        ISchemaRegistry SchemaRegistry { get; }
 
         /// <summary>
         /// Serializer modifier accessor.

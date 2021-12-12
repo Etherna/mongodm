@@ -49,7 +49,7 @@ namespace Etherna.MongODM.Core.Repositories
         public abstract string Name { get; }
 
         // Methods.
-        public abstract Task BuildIndexesAsync(ISchemaRegister schemaRegister, CancellationToken cancellationToken = default);
+        public abstract Task BuildIndexesAsync(ISchemaRegistry schemaRegistry, CancellationToken cancellationToken = default);
 
         public Task CreateAsync(object model, CancellationToken cancellationToken = default) =>
             CreateAsync((TModel)model, cancellationToken);
@@ -81,7 +81,7 @@ namespace Etherna.MongODM.Core.Repositories
                 throw new ArgumentNullException(nameof(model));
 
             // Process cascade delete.
-            var referencesIdsPaths = DbContext.SchemaRegister.GetIdMemberDependenciesFromRootModel(typeof(TModel))
+            var referencesIdsPaths = DbContext.SchemaRegistry.GetIdMemberDependenciesFromRootModel(typeof(TModel))
                 .Where(d => d.UseCascadeDelete)
                 .Where(d => d.EntityClassMapPath.Count() == 2) //ignore references of references
                 .DistinctBy(d => d.FullPathToString())
@@ -169,7 +169,7 @@ namespace Etherna.MongODM.Core.Repositories
             if (currentMember.Member.IsIdMember())
             {
                 //cascade delete model
-                var repository = DbContext.RepositoryRegister.ModelRepositoryMap[currentModel.GetType().BaseType];
+                var repository = DbContext.RepositoryRegistry.ModelRepositoryMap[currentModel.GetType().BaseType];
                 try { await repository.DeleteAsync((IEntityModel)currentModel).ConfigureAwait(false); }
                 catch { }
             }

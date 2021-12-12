@@ -17,7 +17,7 @@ using System.Collections.Generic;
 
 namespace Etherna.MongODM.Core.Repositories
 {
-    public interface IRepositoryRegister : IDbContextInitializable
+    public interface IRepositoryRegistry : IDbContextInitializable
     {
         /// <summary>
         /// Model-Repository map for collection types.

@@ -51,10 +51,10 @@ namespace Etherna.MongODM.Core.Tasks
 
             // Get repository.
             /* Ignore document update if doesn't exists a collection that can handle its type. */
-            if (!dbContext.RepositoryRegister.ModelCollectionRepositoryMap.ContainsKey(typeof(TModel)))
+            if (!dbContext.RepositoryRegistry.ModelCollectionRepositoryMap.ContainsKey(typeof(TModel)))
                 return;
 
-            var repository = (ICollectionRepository<TModel, TKey>)dbContext.RepositoryRegister.ModelCollectionRepositoryMap[typeof(TModel)];
+            var repository = (ICollectionRepository<TModel, TKey>)dbContext.RepositoryRegistry.ModelCollectionRepositoryMap[typeof(TModel)];
 
             // Update models.
             HashSet<TKey> upgradedDocumentsId = new();
