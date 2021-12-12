@@ -28,7 +28,7 @@ using System.Text;
 
 namespace Etherna.MongODM.Core.Serialization.Mapping
 {
-    public class SchemaRegister : FreezableConfig, ISchemaRegister
+    public class SchemaRegistry : FreezableConfig, ISchemaRegistry
     {
         // Fields.
         private readonly Dictionary<Type, ISchema> _schemas = new();
@@ -125,7 +125,7 @@ namespace Etherna.MongODM.Core.Serialization.Mapping
 
             // Register classMap (if doesn't exist) with discriminator.
             defaultClassMapsCache.TryAdd(modelType, classMap);
-            dbContext.DiscriminatorRegister.AddDiscriminator(modelType, classMap.Discriminator);
+            dbContext.DiscriminatorRegistry.AddDiscriminator(modelType, classMap.Discriminator);
 
             return classMap;
         }
@@ -224,12 +224,12 @@ namespace Etherna.MongODM.Core.Serialization.Mapping
 
                 // Register active serializer.
                 if (schema.ActiveSerializer != null)
-                    ((BsonSerializerRegistry)dbContext.SerializerRegister).RegisterSerializer(schema.ModelType, schema.ActiveSerializer);
+                    ((BsonSerializerRegistry)dbContext.SerializerRegistry).RegisterSerializer(schema.ModelType, schema.ActiveSerializer);
 
                 // Register discriminators for all bson class maps.
                 if (schema is IModelMapsSchema modelMapsSchema)
                     foreach (var modelMap in modelMapsSchema.AllMapsDictionary.Values)
-                        dbContext.DiscriminatorRegister.AddDiscriminator(modelMapsSchema.ModelType, modelMap.BsonClassMap.Discriminator);
+                        dbContext.DiscriminatorRegistry.AddDiscriminator(modelMapsSchema.ModelType, modelMap.BsonClassMap.Discriminator);
             }
 
             // Specific for model maps schemas.

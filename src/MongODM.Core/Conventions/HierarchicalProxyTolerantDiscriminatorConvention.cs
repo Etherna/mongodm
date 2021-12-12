@@ -53,7 +53,7 @@ namespace Etherna.MongODM.Core.Conventions
             if (bsonType == BsonType.Document)
             {
                 //we can skip looking for a discriminator if nominalType has no discriminated sub types
-                if (dbContext.DiscriminatorRegister.IsTypeDiscriminated(nominalType))
+                if (dbContext.DiscriminatorRegistry.IsTypeDiscriminated(nominalType))
                 {
                     var bookmark = bsonReader.GetBookmark();
                     bsonReader.ReadStartDocument();
@@ -66,7 +66,7 @@ namespace Etherna.MongODM.Core.Conventions
                         {
                             discriminator = discriminator.AsBsonArray.Last(); //last item is leaf class discriminator
                         }
-                        actualType = dbContext.DiscriminatorRegister.LookupActualType(nominalType, discriminator);
+                        actualType = dbContext.DiscriminatorRegistry.LookupActualType(nominalType, discriminator);
                     }
                     bsonReader.ReturnToBookmark(bookmark);
                     return actualType;
@@ -88,7 +88,7 @@ namespace Etherna.MongODM.Core.Conventions
             actualType = dbContext.ProxyGenerator.PurgeProxyType(actualType);
 
             // Find active class map for model type.
-            var classMap = dbContext.SchemaRegister.GetActiveClassMap(actualType);
+            var classMap = dbContext.SchemaRegistry.GetActiveClassMap(actualType);
 
             // Get discriminator from class map.
             if (actualType != nominalType || classMap.DiscriminatorIsRequired || classMap.HasRootClass)

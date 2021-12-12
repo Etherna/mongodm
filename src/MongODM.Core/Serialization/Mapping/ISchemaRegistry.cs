@@ -23,9 +23,9 @@ using System.Reflection;
 namespace Etherna.MongODM.Core.Serialization.Mapping
 {
     /// <summary>
-    /// Interface for <see cref="SchemaRegister"/> implementation.
+    /// Interface for <see cref="SchemaRegistry"/> implementation.
     /// </summary>
-    public interface ISchemaRegister : IDbContextInitializable, IFreezableConfig
+    public interface ISchemaRegistry : IDbContextInitializable, IFreezableConfig
     {
         // Properties.
         /// <summary>

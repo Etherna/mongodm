@@ -4,7 +4,7 @@ using System;
 
 namespace Etherna.MongODM.Core.Serialization.Mapping
 {
-    public interface IDiscriminatorRegister : IDbContextInitializable
+    public interface IDiscriminatorRegistry : IDbContextInitializable
     {
         void AddDiscriminator(Type type, BsonValue discriminator);
 

@@ -8,7 +8,7 @@ using System.Threading;
 
 namespace Etherna.MongODM.Core.Serialization.Mapping
 {
-    public class DiscriminatorRegister : IDiscriminatorRegister
+    public class DiscriminatorRegistry : IDiscriminatorRegistry
     {
         // Fields.
         private readonly ReaderWriterLockSlim configLock = new(LockRecursionPolicy.SupportsRecursion);

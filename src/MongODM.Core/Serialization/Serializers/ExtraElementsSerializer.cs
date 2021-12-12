@@ -62,7 +62,7 @@ namespace Etherna.MongODM.Core.Serialization.Serializers
             }
             else
             {
-                var serializer = dbContext.SerializerRegister.GetSerializer<object>();
+                var serializer = dbContext.SerializerRegistry.GetSerializer<object>();
                 serializer.Serialize(context, value);
             }
         }
@@ -87,7 +87,7 @@ namespace Etherna.MongODM.Core.Serialization.Serializers
             // Lookup for a serializer.
             if (serializer == null)
             {
-                serializer = dbContext.SerializerRegister.GetSerializer<TValue>();
+                serializer = dbContext.SerializerRegistry.GetSerializer<TValue>();
             }
 
             // Deserialize.

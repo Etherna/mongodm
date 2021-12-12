@@ -32,11 +32,11 @@ namespace Etherna.MongODM.AspNetCore
             IDbCache dbCache,
             IDbMaintainer dbMaintainer,
             IDbMigrationManager dbContextMigrationManager,
-            IDiscriminatorRegister discriminatorRegister,
+            IDiscriminatorRegistry discriminatorRegistry,
             IOptions<MongODMOptions> mongODMOptions,
             IProxyGenerator proxyGenerator,
-            IRepositoryRegister repositoryRegister,
-            ISchemaRegister schemaRegister,
+            IRepositoryRegistry repositoryRegistry,
+            ISchemaRegistry schemaRegistry,
             ISerializerModifierAccessor serializerModifierAccessor)
         {
             if (mongODMOptions is null)
@@ -45,11 +45,11 @@ namespace Etherna.MongODM.AspNetCore
             DbCache = dbCache;
             DbMaintainer = dbMaintainer;
             DbMigrationManager = dbContextMigrationManager;
-            DiscriminatorRegister = discriminatorRegister;
+            DiscriminatorRegistry = discriminatorRegistry;
             MongODMOptions = mongODMOptions.Value;
-            SchemaRegister = schemaRegister;
+            SchemaRegistry = schemaRegistry;
             ProxyGenerator = proxyGenerator;
-            RepositoryRegister = repositoryRegister;
+            RepositoryRegistry = repositoryRegistry;
             SerializerModifierAccessor = serializerModifierAccessor;
         }
 
@@ -57,11 +57,11 @@ namespace Etherna.MongODM.AspNetCore
         public IDbCache DbCache { get; }
         public IDbMaintainer DbMaintainer { get; }
         public IDbMigrationManager DbMigrationManager { get; }
-        public IDiscriminatorRegister DiscriminatorRegister { get; }
+        public IDiscriminatorRegistry DiscriminatorRegistry { get; }
         public MongODMOptions MongODMOptions { get; }
         public IProxyGenerator ProxyGenerator { get; }
-        public IRepositoryRegister RepositoryRegister { get; }
-        public ISchemaRegister SchemaRegister { get; }
+        public IRepositoryRegistry RepositoryRegistry { get; }
+        public ISchemaRegistry SchemaRegistry { get; }
         public ISerializerModifierAccessor SerializerModifierAccessor { get; }
     }
 }

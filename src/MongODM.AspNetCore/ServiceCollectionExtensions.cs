@@ -83,9 +83,9 @@ namespace Etherna.MongODM.AspNetCore
             services.TryAddTransient<IDbDependencies, DbDependencies>();
             services.TryAddTransient<IDbMaintainer, DbMaintainer>();
             services.TryAddTransient<IDbMigrationManager, DbMigrationManager>();
-            services.TryAddTransient<IDiscriminatorRegister, DiscriminatorRegister>();
-            services.TryAddTransient<IRepositoryRegister, RepositoryRegister>();
-            services.TryAddTransient<ISchemaRegister, SchemaRegister>();
+            services.TryAddTransient<IDiscriminatorRegistry, DiscriminatorRegistry>();
+            services.TryAddTransient<IRepositoryRegistry, RepositoryRegistry>();
+            services.TryAddTransient<ISchemaRegistry, SchemaRegistry>();
             services.TryAddSingleton<ISerializerModifierAccessor, SerializerModifierAccessor>();
 
             //tasks

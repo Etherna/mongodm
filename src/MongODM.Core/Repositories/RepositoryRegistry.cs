@@ -19,7 +19,7 @@ using System.Reflection;
 
 namespace Etherna.MongODM.Core.Repositories
 {
-    public class RepositoryRegister : IRepositoryRegister
+    public class RepositoryRegistry : IRepositoryRegistry
     {
         // Fields.
         private IDbContext dbContext = default!;
@@ -67,7 +67,7 @@ namespace Etherna.MongODM.Core.Repositories
                             return false;
                         });
 
-                    // Initialize register.
+                    // Initialize registry.
                     _modelCollectionRepositoryMap = repos.ToDictionary(
                         prop => ((ICollectionRepository)prop.GetValue(dbContext)).GetModelType,
                         prop => (ICollectionRepository)prop.GetValue(dbContext));
@@ -103,7 +103,7 @@ namespace Etherna.MongODM.Core.Repositories
                             return false;
                         });
 
-                    //construct register
+                    //construct registry
                     _modelGridFSRepositoryMap = repos.ToDictionary(
                         prop => ((IGridFSRepository)prop.GetValue(dbContext)).GetModelType,
                         prop => (IGridFSRepository)prop.GetValue(dbContext));
