@@ -38,8 +38,10 @@ namespace Etherna.MongODM.Core
     public abstract class DbContext : IDbContext, IDbContextBuilder
     {
         // Fields.
+        private bool? _isSeeded;
         private BsonSerializerRegistry _serializerRegistry = default!;
         private bool isInitialized;
+        private readonly ReaderWriterLockSlim seedingLock = new(LockRecursionPolicy.SupportsRecursion);
 
         // Constructor and initializer.
         protected DbContext() { }
@@ -128,6 +130,55 @@ namespace Etherna.MongODM.Core
         public IDiscriminatorRegistry DiscriminatorRegistry { get; private set; } = default!;
         public virtual IEnumerable<DocumentMigration> DocumentMigrationList { get; } = Array.Empty<DocumentMigration>();
         public string Identifier => Options?.Identifier ?? GetType().Name;
+        public bool IsSeeded
+        {
+            get
+            {
+                // Try to read cached.
+                seedingLock.EnterReadLock();
+                try
+                {
+                    if (_isSeeded.HasValue)
+                        return _isSeeded.Value;
+                }
+                finally
+                {
+                    seedingLock.ExitReadLock();
+                }
+
+                // Get seeding state from db.
+                seedingLock.EnterWriteLock();
+                try
+                {
+                    if (!_isSeeded.HasValue)
+                    {
+                        var task = DbOperations.QueryElementsAsync(elements =>
+                                elements.OfType<SeedOperation>()
+                                        .AnyAsync(sop => sop.DbContextName == Identifier));
+                        task.Wait();
+                        _isSeeded = task.Result;
+                    }
+
+                    return _isSeeded.Value;
+                }
+                finally
+                {
+                    seedingLock.ExitWriteLock();
+                }
+            }
+            private set
+            {
+                seedingLock.EnterWriteLock();
+                try
+                {
+                    _isSeeded = value;
+                }
+                finally
+                {
+                    seedingLock.ExitWriteLock();
+                }
+            }
+        }
         public SemanticVersion LibraryVersion { get; private set; } = default!;
         public IDbContextOptions Options { get; private set; } = default!;
         public IProxyGenerator ProxyGenerator { get; private set; } = default!;
@@ -195,9 +246,7 @@ namespace Etherna.MongODM.Core
         public async Task<bool> SeedIfNeededAsync()
         {
             // Check if already seeded.
-            if (await DbOperations.QueryElementsAsync(elements =>
-                    elements.OfType<SeedOperation>()
-                            .AnyAsync(sop => sop.DbContextName == Identifier)).ConfigureAwait(false))
+            if (IsSeeded)
                 return false;
 
             // Seed.
@@ -207,6 +256,9 @@ namespace Etherna.MongODM.Core
             // Report operation.
             var seedOperation = new SeedOperation(this);
             await DbOperations.CreateAsync(seedOperation).ConfigureAwait(false);
+
+            // Cache as seeded.
+            IsSeeded = true;
 
             return true;
         }
