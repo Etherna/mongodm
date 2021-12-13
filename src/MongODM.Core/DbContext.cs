@@ -17,6 +17,7 @@ using Etherna.MongoDB.Driver;
 using Etherna.MongoDB.Driver.Linq;
 using Etherna.MongODM.Core.Domain.ModelMaps;
 using Etherna.MongODM.Core.Domain.Models;
+using Etherna.MongODM.Core.Exceptions;
 using Etherna.MongODM.Core.Migration;
 using Etherna.MongODM.Core.Options;
 using Etherna.MongODM.Core.ProxyModels;
@@ -200,7 +201,8 @@ namespace Etherna.MongODM.Core
                 return false;
 
             // Seed.
-            await SeedAsync().ConfigureAwait(false);
+            try { await SeedAsync().ConfigureAwait(false); }
+            catch (Exception e) { throw new MongodmDbSeedingException($"Error seeding {GetType().Name} dbContext", e); }
 
             // Report operation.
             var seedOperation = new SeedOperation(this);
