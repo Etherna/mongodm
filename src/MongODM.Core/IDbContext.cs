@@ -81,6 +81,11 @@ namespace Etherna.MongODM.Core
         string Identifier { get; }
 
         /// <summary>
+        /// True if it has been seeded.
+        /// </summary>
+        bool IsSeeded { get; }
+
+        /// <summary>
         /// Current MongODM library version.
         /// </summary>
         SemanticVersion LibraryVersion { get; }
