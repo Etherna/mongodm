@@ -41,11 +41,12 @@ namespace Etherna.MongODM.Core
         private bool? _isSeeded;
         private BsonSerializerRegistry _serializerRegistry = default!;
         private bool isInitialized;
-        private readonly ReaderWriterLockSlim seedingLock = new(LockRecursionPolicy.SupportsRecursion);
+        private readonly ReaderWriterLockSlim isSeededLock = new(); //support read/write locks
+        private readonly SemaphoreSlim seedingSemaphore = new(1, 1); //support async/await
 
         // Constructor and initializer.
         protected DbContext() { }
-        public async Task InitializeAsync(
+        public void Initialize(
             IDbDependencies dependencies,
             IDbContextOptions options)
         {
@@ -108,10 +109,6 @@ namespace Etherna.MongODM.Core
             // Build and freeze schema registry.
             SchemaRegistry.Freeze();
 
-            // Initialize data.
-            if (!Options.DisableAutomaticSeed)
-                await SeedIfNeededAsync().ConfigureAwait(false);
-
             // Set as initialized.
             isInitialized = true;
         }
@@ -135,7 +132,7 @@ namespace Etherna.MongODM.Core
             get
             {
                 // Try to read cached.
-                seedingLock.EnterReadLock();
+                isSeededLock.EnterReadLock();
                 try
                 {
                     if (_isSeeded.HasValue)
@@ -143,11 +140,11 @@ namespace Etherna.MongODM.Core
                 }
                 finally
                 {
-                    seedingLock.ExitReadLock();
+                    isSeededLock.ExitReadLock();
                 }
 
                 // Get seeding state from db.
-                seedingLock.EnterWriteLock();
+                isSeededLock.EnterWriteLock();
                 try
                 {
                     if (!_isSeeded.HasValue)
@@ -163,19 +160,19 @@ namespace Etherna.MongODM.Core
                 }
                 finally
                 {
-                    seedingLock.ExitWriteLock();
+                    isSeededLock.ExitWriteLock();
                 }
             }
             private set
             {
-                seedingLock.EnterWriteLock();
+                isSeededLock.EnterWriteLock();
                 try
                 {
                     _isSeeded = value;
                 }
                 finally
                 {
-                    seedingLock.ExitWriteLock();
+                    isSeededLock.ExitWriteLock();
                 }
             }
         }
@@ -249,18 +246,30 @@ namespace Etherna.MongODM.Core
             if (IsSeeded)
                 return false;
 
-            // Seed.
-            try { await SeedAsync().ConfigureAwait(false); }
-            catch (Exception e) { throw new MongodmDbSeedingException($"Error seeding {GetType().Name} dbContext", e); }
+            await seedingSemaphore.WaitAsync().ConfigureAwait(false);
+            try
+            {
+                // Check again if seeded.
+                if (IsSeeded)
+                    return false;
 
-            // Report operation.
-            var seedOperation = new SeedOperation(this);
-            await DbOperations.CreateAsync(seedOperation).ConfigureAwait(false);
+                // Seed.
+                try { await SeedAsync().ConfigureAwait(false); }
+                catch (Exception e) { throw new MongodmDbSeedingException($"Error seeding {GetType().Name} dbContext", e); }
 
-            // Cache as seeded.
-            IsSeeded = true;
+                // Report operation.
+                var seedOperation = new SeedOperation(this);
+                await DbOperations.CreateAsync(seedOperation).ConfigureAwait(false);
 
-            return true;
+                // Cache as seeded.
+                IsSeeded = true;
+
+                return true;
+            }
+            finally
+            {
+                seedingSemaphore.Release();
+            }
         }
 
         public Task<IClientSessionHandle> StartSessionAsync(CancellationToken cancellationToken = default) =>

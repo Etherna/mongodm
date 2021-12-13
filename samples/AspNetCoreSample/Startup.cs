@@ -13,7 +13,6 @@
 //   limitations under the License.
 
 using Etherna.MongODM.AspNetCore.UI;
-using Etherna.MongODM.AspNetCoreSample.Models;
 using Etherna.MongODM.AspNetCoreSample.Persistence;
 using Hangfire;
 using Microsoft.AspNetCore.Builder;
