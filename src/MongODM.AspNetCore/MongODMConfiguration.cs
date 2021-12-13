@@ -114,8 +114,7 @@ namespace Etherna.MongODM.AspNetCore
                     var dbContext = dbContextCreator(sp);
 
                     // Initialize instance.
-                    var task = dbContext.InitializeAsync(dependencies, options);
-                    task.Wait();
+                    dbContext.Initialize(dependencies, options);
 
                     return dbContext;
                 });

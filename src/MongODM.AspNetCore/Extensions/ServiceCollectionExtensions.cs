@@ -16,6 +16,7 @@ using Etherna.ExecContext.AspNetCore;
 using Etherna.MongoDB.Bson;
 using Etherna.MongoDB.Bson.Serialization;
 using Etherna.MongoDB.Bson.Serialization.Conventions;
+using Etherna.MongODM.AspNetCore;
 using Etherna.MongODM.Core;
 using Etherna.MongODM.Core.Options;
 using Etherna.MongODM.Core.ProxyModels;
@@ -28,7 +29,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using System;
 
-namespace Etherna.MongODM.AspNetCore
+namespace Etherna.MongODM
 {
     public static class ServiceCollectionExtensions
     {
