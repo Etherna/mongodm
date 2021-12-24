@@ -12,12 +12,14 @@
 //   See the License for the specific language governing permissions and
 //   limitations under the License.
 
+using Etherna.ExecContext;
 using Etherna.ExecContext.AspNetCore;
 using Etherna.MongoDB.Bson;
 using Etherna.MongoDB.Bson.Serialization;
 using Etherna.MongoDB.Bson.Serialization.Conventions;
 using Etherna.MongODM.AspNetCore;
 using Etherna.MongODM.Core;
+using Etherna.MongODM.Core.Conventions;
 using Etherna.MongODM.Core.Options;
 using Etherna.MongODM.Core.ProxyModels;
 using Etherna.MongODM.Core.Repositories;
@@ -65,6 +67,15 @@ namespace Etherna.MongODM
                     // Link options to services.
                     taskRunnerBuilder.SetMongODMOptions(options);
                 });
+
+            /* Register discriminator convention on typeof(object) because we need a method to handle
+             * default returned instance from static calls to BsonSerializer.LookupDiscriminatorConvention(Type).
+             * Several points internal to drivers invoke this method, and we can't avoid it. We need to set the default.
+             */
+            var sp = services.BuildServiceProvider();
+            var execContext = sp.GetRequiredService<IExecutionContext>();
+            BsonSerializer.RegisterDiscriminatorConvention(typeof(object),
+                new HierarchicalProxyTolerantDiscriminatorConvention("_t", execContext));
 
             services.AddExecutionContext();
 

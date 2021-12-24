@@ -12,6 +12,7 @@
 //   See the License for the specific language governing permissions and
 //   limitations under the License.
 
+using Etherna.ExecContext;
 using Etherna.MongoDB.Bson;
 using Etherna.MongoDB.Bson.IO;
 using Etherna.MongoDB.Bson.Serialization;
@@ -26,20 +27,52 @@ namespace Etherna.MongODM.Core.Conventions
     public class HierarchicalProxyTolerantDiscriminatorConvention : IDiscriminatorConvention
     {
         // Fields.
-        private readonly IDbContext dbContext;
+        private readonly IDbContext? _dbContext; //remove nullability with constructors that don't ask it, when will be possible
+        private readonly IExecutionContext? executionContext;
 
         // Constructors.
         public HierarchicalProxyTolerantDiscriminatorConvention(
             IDbContext dbContext,
             string elementName)
         {
-            this.dbContext = dbContext;
+            _dbContext = dbContext;
 
             ElementName = elementName ?? throw new ArgumentNullException(nameof(elementName));
             if (elementName.IndexOf('\0') != -1)
                 throw new ArgumentException("Element names cannot contain nulls.", nameof(elementName));
         }
 
+        /// <summary>
+        /// Only needed for static registration on <see cref="object"/>, used when dbcontext is not available.
+        /// Remove when <see cref="BsonSerializer.LookupDiscriminatorConvention(Type)"/> static call will be removed.
+        /// </summary>
+        /// <param name="elementName">Discriminator element name</param>
+        public HierarchicalProxyTolerantDiscriminatorConvention(
+            string elementName,
+            IExecutionContext executionContext)
+        {
+            ElementName = elementName ?? throw new ArgumentNullException(nameof(elementName));
+            if (elementName.IndexOf('\0') != -1)
+                throw new ArgumentException("Element names cannot contain nulls.", nameof(elementName));
+
+            this.executionContext = executionContext;
+        }
+
+        public IDbContext DbContext
+        {
+            get
+            {
+                if (_dbContext is not null)
+                    return _dbContext;
+
+                /* If we didn't injected a dbContext, this is an instance retrieved from a static invoke.
+                 * Try to find it from execution contenxt. */
+                if (executionContext is null)
+                    throw new InvalidOperationException();
+
+                return Core.DbContext.GetCurrentDbContext(executionContext);
+            }
+        }
         public string ElementName { get; }
 
         // Methods.
@@ -53,7 +86,7 @@ namespace Etherna.MongODM.Core.Conventions
             if (bsonType == BsonType.Document)
             {
                 //we can skip looking for a discriminator if nominalType has no discriminated sub types
-                if (dbContext.DiscriminatorRegistry.IsTypeDiscriminated(nominalType))
+                if (DbContext.DiscriminatorRegistry.IsTypeDiscriminated(nominalType))
                 {
                     var bookmark = bsonReader.GetBookmark();
                     bsonReader.ReadStartDocument();
@@ -66,7 +99,7 @@ namespace Etherna.MongODM.Core.Conventions
                         {
                             discriminator = discriminator.AsBsonArray.Last(); //last item is leaf class discriminator
                         }
-                        actualType = dbContext.DiscriminatorRegistry.LookupActualType(nominalType, discriminator);
+                        actualType = DbContext.DiscriminatorRegistry.LookupActualType(nominalType, discriminator);
                     }
                     bsonReader.ReturnToBookmark(bookmark);
                     return actualType;
@@ -85,10 +118,10 @@ namespace Etherna.MongODM.Core.Conventions
         public BsonValue? GetDiscriminator(Type nominalType, Type actualType)
         {
             // Remove proxy type.
-            actualType = dbContext.ProxyGenerator.PurgeProxyType(actualType);
+            actualType = DbContext.ProxyGenerator.PurgeProxyType(actualType);
 
             // Find active class map for model type.
-            var classMap = dbContext.SchemaRegistry.GetActiveClassMap(actualType);
+            var classMap = DbContext.SchemaRegistry.GetActiveClassMap(actualType);
 
             // Get discriminator from class map.
             if (actualType != nominalType || classMap.DiscriminatorIsRequired || classMap.HasRootClass)

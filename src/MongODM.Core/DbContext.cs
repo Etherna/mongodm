@@ -12,6 +12,7 @@
 //   See the License for the specific language governing permissions and
 //   limitations under the License.
 
+using Etherna.ExecContext;
 using Etherna.MongoDB.Bson.Serialization;
 using Etherna.MongoDB.Driver;
 using Etherna.MongoDB.Driver.Linq;
@@ -279,7 +280,13 @@ namespace Etherna.MongODM.Core
         protected virtual Task SeedAsync() =>
             Task.CompletedTask;
 
-        // Helpers.
+        // Internal static methods.
+        internal static IDbContext GetCurrentDbContext(IExecutionContext executionContext)
+        {
+            throw new NotImplementedException();
+        }
+
+        // Private helpers.
         private void InitializeSerializerRegistry()
         {
             //order matters. It's in reverse order of how they'll get consumed
