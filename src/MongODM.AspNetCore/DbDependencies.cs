@@ -12,6 +12,7 @@
 //   See the License for the specific language governing permissions and
 //   limitations under the License.
 
+using Etherna.ExecContext;
 using Etherna.MongoDB.Bson.Serialization;
 using Etherna.MongODM.Core;
 using Etherna.MongODM.Core.Options;
@@ -33,6 +34,7 @@ namespace Etherna.MongODM.AspNetCore
             IDbMaintainer dbMaintainer,
             IDbMigrationManager dbContextMigrationManager,
             IDiscriminatorRegistry discriminatorRegistry,
+            IExecutionContext executionContext,
             IOptions<MongODMOptions> mongODMOptions,
             IProxyGenerator proxyGenerator,
             IRepositoryRegistry repositoryRegistry,
@@ -46,6 +48,7 @@ namespace Etherna.MongODM.AspNetCore
             DbMaintainer = dbMaintainer;
             DbMigrationManager = dbContextMigrationManager;
             DiscriminatorRegistry = discriminatorRegistry;
+            ExecutionContext = executionContext;
             MongODMOptions = mongODMOptions.Value;
             SchemaRegistry = schemaRegistry;
             ProxyGenerator = proxyGenerator;
@@ -58,6 +61,7 @@ namespace Etherna.MongODM.AspNetCore
         public IDbMaintainer DbMaintainer { get; }
         public IDbMigrationManager DbMigrationManager { get; }
         public IDiscriminatorRegistry DiscriminatorRegistry { get; }
+        public IExecutionContext ExecutionContext { get; }
         public MongODMOptions MongODMOptions { get; }
         public IProxyGenerator ProxyGenerator { get; }
         public IRepositoryRegistry RepositoryRegistry { get; }

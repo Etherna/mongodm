@@ -12,6 +12,7 @@
 //   See the License for the specific language governing permissions and
 //   limitations under the License.
 
+using Etherna.ExecContext;
 using Etherna.MongoDB.Bson.Serialization;
 using Etherna.MongoDB.Driver;
 using Etherna.MongODM.Core.Domain.Models;
@@ -119,6 +120,11 @@ namespace Etherna.MongODM.Core
         /// Serializer modifier accessor.
         /// </summary>
         ISerializerModifierAccessor SerializerModifierAccessor { get; }
+
+        /// <summary>
+        /// ExecutionContext handler.
+        /// </summary>
+        IExecutionContext ExecutionContext { get; }
 
         // Methods.
         /// <summary>

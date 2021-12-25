@@ -64,6 +64,7 @@ namespace Etherna.MongODM.Core
             DbMigrationManager = dependencies.DbMigrationManager;
             DbOperations = new CollectionRepository<OperationBase, string>(options.DbOperationsCollectionName);
             DiscriminatorRegistry = dependencies.DiscriminatorRegistry;
+            ExecutionContext = dependencies.ExecutionContext;
             LibraryVersion = typeof(DbContext)
                 .GetTypeInfo()
                 .Assembly
@@ -127,6 +128,7 @@ namespace Etherna.MongODM.Core
         public ICollectionRepository<OperationBase, string> DbOperations { get; private set; } = default!;
         public IDiscriminatorRegistry DiscriminatorRegistry { get; private set; } = default!;
         public virtual IEnumerable<DocumentMigration> DocumentMigrationList { get; } = Array.Empty<DocumentMigration>();
+        public IExecutionContext ExecutionContext { get; private set; } = default!;
         public string Identifier => Options?.Identifier ?? GetType().Name;
         public bool IsSeeded
         {
@@ -279,12 +281,6 @@ namespace Etherna.MongODM.Core
         // Protected methods.
         protected virtual Task SeedAsync() =>
             Task.CompletedTask;
-
-        // Internal static methods.
-        internal static IDbContext GetCurrentDbContext(IExecutionContext executionContext)
-        {
-            throw new NotImplementedException();
-        }
 
         // Private helpers.
         private void InitializeSerializerRegistry()
