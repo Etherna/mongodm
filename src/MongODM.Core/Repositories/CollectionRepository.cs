@@ -20,6 +20,7 @@ using Etherna.MongODM.Core.Exceptions;
 using Etherna.MongODM.Core.Extensions;
 using Etherna.MongODM.Core.ProxyModels;
 using Etherna.MongODM.Core.Serialization.Mapping;
+using Etherna.MongODM.Core.Utility;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -59,12 +60,20 @@ namespace Etherna.MongODM.Core.Repositories
                 return 0;
             });
         
-        public Task<TResult> AccessToCollectionAsync<TResult>(Func<IMongoCollection<TModel>, Task<TResult>> func)
+        public async Task<TResult> AccessToCollectionAsync<TResult>(Func<IMongoCollection<TModel>, Task<TResult>> func)
         {
+            if (func is null)
+                throw new ArgumentNullException(nameof(func));
+
+            // Initialize collection cache.
             if (_collection is null)
                 _collection = DbContext.Database.GetCollection<TModel>(options.Name);
 
-            throw new NotImplementedException();
+            // Execute func into execution context.
+            using (new DbContextExecutionContextHandler(DbContext))
+            {
+                return await func(_collection).ConfigureAwait(false);
+            }
         }
 
         public override Task BuildIndexesAsync(ISchemaRegistry schemaRegistry, CancellationToken cancellationToken = default) =>

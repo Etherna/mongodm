@@ -18,6 +18,7 @@ using Etherna.MongoDB.Driver.GridFS;
 using Etherna.MongODM.Core.Domain.Models;
 using Etherna.MongODM.Core.Exceptions;
 using Etherna.MongODM.Core.Serialization.Mapping;
+using Etherna.MongODM.Core.Utility;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -56,12 +57,20 @@ namespace Etherna.MongODM.Core.Repositories
                 return 0;
             });
 
-        public Task<TResult> AccessToGridFSBucketAsync<TResult>(Func<IGridFSBucket, Task<TResult>> func)
+        public async Task<TResult> AccessToGridFSBucketAsync<TResult>(Func<IGridFSBucket, Task<TResult>> func)
         {
+            if (func is null)
+                throw new ArgumentNullException(nameof(func));
+
+            // Initialize bucket cache.
             if (_gridFSBucket is null)
                 _gridFSBucket = new GridFSBucket(DbContext.Database, new GridFSBucketOptions { BucketName = options.Name });
 
-            throw new NotImplementedException();
+            // Execute func into execution context.
+            using (new DbContextExecutionContextHandler(DbContext))
+            {
+                return await func(_gridFSBucket).ConfigureAwait(false);
+            }
         }
 
         public override Task BuildIndexesAsync(ISchemaRegistry schemaRegistry, CancellationToken cancellationToken = default) => Task.CompletedTask;
