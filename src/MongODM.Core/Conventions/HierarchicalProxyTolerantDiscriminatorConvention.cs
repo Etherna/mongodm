@@ -18,6 +18,7 @@ using Etherna.MongoDB.Bson.IO;
 using Etherna.MongoDB.Bson.Serialization;
 using Etherna.MongoDB.Bson.Serialization.Conventions;
 using Etherna.MongoDB.Bson.Serialization.Serializers;
+using Etherna.MongODM.Core.Utility;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -70,7 +71,11 @@ namespace Etherna.MongODM.Core.Conventions
                 if (executionContext is null)
                     throw new InvalidOperationException();
 
-                return Core.DbContext.GetCurrentDbContext(executionContext);
+                var dbContext = DbContextExecutionContextHandler.TryGetCurrentDbContext(executionContext);
+                if (dbContext is null)
+                    throw new InvalidOperationException();
+
+                return dbContext;
             }
         }
         public string ElementName { get; }

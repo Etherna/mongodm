@@ -39,7 +39,9 @@ namespace Etherna.MongODM.Core.Repositories
     public interface ICollectionRepository<TModel, TKey> : IRepository<TModel, TKey>, ICollectionRepository
         where TModel : class, IEntityModel<TKey>
     {
-        IMongoCollection<TModel> Collection { get; }
+        Task AccessToCollectionAsync(Func<IMongoCollection<TModel>, Task> action);
+
+        Task<TResult> AccessToCollectionAsync<TResult>(Func<IMongoCollection<TModel>, Task<TResult>> func);
 
         Task<IAsyncCursor<TProjection>> FindAsync<TProjection>(
             FilterDefinition<TModel> filter,
