@@ -68,6 +68,12 @@ namespace Etherna.MongODM
                     taskRunnerBuilder.SetMongODMOptions(options);
                 });
 
+            services.AddExecutionContext();
+
+            services.TryAddSingleton<IProxyGenerator, TProxyGenerator>();
+            services.TryAddSingleton<ITaskRunner, TTaskRunner>();
+            services.TryAddSingleton<ITaskRunnerBuilder>(sp => (TTaskRunner)sp.GetRequiredService<ITaskRunner>());
+
             /* Register discriminator convention on typeof(object) because we need a method to handle
              * default returned instance from static calls to BsonSerializer.LookupDiscriminatorConvention(Type).
              * Several points internal to drivers invoke this method, and we can't avoid it. We need to set the default.
@@ -76,12 +82,6 @@ namespace Etherna.MongODM
             var execContext = sp.GetRequiredService<IExecutionContext>();
             BsonSerializer.RegisterDiscriminatorConvention(typeof(object),
                 new HierarchicalProxyTolerantDiscriminatorConvention("_t", execContext));
-
-            services.AddExecutionContext();
-
-            services.TryAddSingleton<IProxyGenerator, TProxyGenerator>();
-            services.TryAddSingleton<ITaskRunner, TTaskRunner>();
-            services.TryAddSingleton<ITaskRunnerBuilder>(sp => (TTaskRunner)sp.GetRequiredService<ITaskRunner>());
 
             // DbContext internal.
             //dependencies
