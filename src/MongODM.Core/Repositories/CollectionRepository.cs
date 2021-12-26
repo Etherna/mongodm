@@ -70,7 +70,7 @@ namespace Etherna.MongODM.Core.Repositories
                 _collection = DbContext.Database.GetCollection<TModel>(options.Name);
 
             // Execute func into execution context.
-            using (new DbContextExecutionContextHandler(DbContext))
+            using (new DbExecutionContextHandler(DbContext))
             {
                 return await func(_collection).ConfigureAwait(false);
             }

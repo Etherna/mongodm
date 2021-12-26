@@ -7,16 +7,16 @@ using System.Linq;
 
 namespace Etherna.MongODM.Core.Utility
 {
-    internal class DbContextExecutionContextHandler : IDisposable
+    internal class DbExecutionContextHandler : IDisposable
     {
         // Consts.
         private const string HandlerKey = "DbContextExecutionContextHandler";
 
         // Fields.
-        private readonly ICollection<DbContextExecutionContextHandler> requestes;
+        private readonly ICollection<DbExecutionContextHandler> requestes;
 
         // Constructors and dispose.
-        public DbContextExecutionContextHandler(
+        public DbExecutionContextHandler(
             IDbContext dbContext)
         {
             DbContext = dbContext ?? throw new ArgumentNullException(nameof(dbContext));
@@ -26,9 +26,9 @@ namespace Etherna.MongODM.Core.Utility
                 throw new ExecutionContextNotFoundException();
 
             if (!executionContext.Items.ContainsKey(HandlerKey))
-                executionContext.Items.Add(HandlerKey, new List<DbContextExecutionContextHandler>());
+                executionContext.Items.Add(HandlerKey, new List<DbExecutionContextHandler>());
 
-            requestes = (ICollection<DbContextExecutionContextHandler>)executionContext.Items[HandlerKey]!;
+            requestes = (ICollection<DbExecutionContextHandler>)executionContext.Items[HandlerKey]!;
 
             lock (((ICollection)requestes).SyncRoot)
                 requestes.Add(this);
@@ -52,7 +52,7 @@ namespace Etherna.MongODM.Core.Utility
             if (!executionContext.Items.ContainsKey(HandlerKey))
                 return null;
 
-            var requestes = (ICollection<DbContextExecutionContextHandler>)executionContext.Items[HandlerKey]!;
+            var requestes = (ICollection<DbExecutionContextHandler>)executionContext.Items[HandlerKey]!;
 
             //get the last with a stack system, for recursing calls betweem different dbContexts
             lock (((ICollection)requestes).SyncRoot)

@@ -67,7 +67,7 @@ namespace Etherna.MongODM.Core.Repositories
                 _gridFSBucket = new GridFSBucket(DbContext.Database, new GridFSBucketOptions { BucketName = options.Name });
 
             // Execute func into execution context.
-            using (new DbContextExecutionContextHandler(DbContext))
+            using (new DbExecutionContextHandler(DbContext))
             {
                 return await func(_gridFSBucket).ConfigureAwait(false);
             }
