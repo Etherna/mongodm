@@ -20,7 +20,7 @@ namespace Etherna.MongODM.Core.Utility
     /// <summary>
     /// Interface for <see cref="DbCache"/> implementation.
     /// </summary>
-    public interface IDbCache
+    public interface IDbCache : IDbContextInitializable
     {
         // Properties.
         /// <summary>

@@ -89,6 +89,7 @@ namespace Etherna.MongODM.Core
             });
 
             // Initialize internal dependencies.
+            DbCache.Initialize(this);
             DbMaintainer.Initialize(this);
             DbMigrationManager.Initialize(this);
             DiscriminatorRegistry.Initialize(this);
