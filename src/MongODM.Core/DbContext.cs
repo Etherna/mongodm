@@ -41,6 +41,7 @@ namespace Etherna.MongODM.Core
         // Fields.
         private bool? _isSeeded;
         private BsonSerializerRegistry _serializerRegistry = default!;
+        private IEnumerable<IDbContext> childDbContexts = default!;
         private bool isInitialized;
         private readonly ReaderWriterLockSlim isSeededLock = new(); //support read/write locks
         private readonly SemaphoreSlim seedingSemaphore = new(1, 1); //support async/await
@@ -49,7 +50,8 @@ namespace Etherna.MongODM.Core
         protected DbContext() { }
         public void Initialize(
             IDbDependencies dependencies,
-            IDbContextOptions options)
+            IDbContextOptions options,
+            IEnumerable<IDbContext> childDbContexts)
         {
             if (isInitialized)
                 throw new InvalidOperationException("DbContext already initialized");
@@ -59,6 +61,7 @@ namespace Etherna.MongODM.Core
                 throw new ArgumentNullException(nameof(options));
 
             // Set dependencies.
+            this.childDbContexts = childDbContexts;
             DbCache = dependencies.DbCache;
             DbMaintainer = dependencies.DbMaintainer;
             DbMigrationManager = dependencies.DbMigrationManager;
@@ -240,6 +243,12 @@ namespace Etherna.MongODM.Core
                         modelType = modelType.BaseType;
                     }
                 }
+            }
+
+            // Save changes on child dbcontexts.
+            foreach (var child in childDbContexts)
+            {
+                await child.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
             }
         }
 

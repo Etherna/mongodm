@@ -17,6 +17,7 @@ using Etherna.MongODM.Core.Options;
 using Microsoft.Extensions.DependencyInjection;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading;
 
 namespace Etherna.MongODM.AspNetCore
@@ -114,7 +115,10 @@ namespace Etherna.MongODM.AspNetCore
                     var dbContext = dbContextCreator(sp);
 
                     // Initialize instance.
-                    dbContext.Initialize(dependencies, options);
+                    dbContext.Initialize(
+                        dependencies,
+                        options,
+                        options.ChildDbContextTypes.Select(dbContextType => (IDbContext)sp.GetRequiredService(dbContextType)));
 
                     return dbContext;
                 });
