@@ -12,12 +12,17 @@
 //   See the License for the specific language governing permissions and
 //   limitations under the License.
 
+using System;
+using System.Collections.Generic;
 using System.Linq;
 
 namespace Etherna.MongODM.Core.Options
 {
     public class DbContextOptions : IDbContextOptions
     {
+        // Fields.
+        private readonly List<Type> _childDbContextTypes = new();
+
         // Properties.
         public string ConnectionString { get; set; } = "mongodb://localhost/localDb";
         public string DbName => ConnectionString.Split('?')[0]
@@ -26,5 +31,14 @@ namespace Etherna.MongODM.Core.Options
         public DocumentSemVerOptions DocumentSemVer { get; set; } = new DocumentSemVerOptions();
         public string? Identifier { get; set; }
         public ModelMapVersionOptions ModelMapVersion { get; set; } = new ModelMapVersionOptions();
+        public IEnumerable<Type> ChildDbContextTypes => _childDbContextTypes;
+
+        // Methods.
+        public void ParentFor<TDbContext>() where
+            TDbContext : class, IDbContext
+        {
+            if (!_childDbContextTypes.Contains(typeof(TDbContext)))
+                _childDbContextTypes.Add(typeof(TDbContext));
+        }
     }
 }
