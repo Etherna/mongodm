@@ -167,11 +167,20 @@ namespace Etherna.MongODM.Core.Repositories
             Expression<Func<TResult, TResultKey>> orderKeySelector,
             int page,
             int take,
+            bool useDescendingOrder = false,
             CancellationToken cancellationToken = default)
         {
-            var elements = await QueryElementsAsync(elements => filter(elements)
-                .Paginate(orderKeySelector, page, take)
-                .ToListAsync(cancellationToken)).ConfigureAwait(false);
+            var elements = await QueryElementsAsync(elements =>
+
+                useDescendingOrder ?
+
+                filter(elements)
+                    .PaginateDescending(orderKeySelector, page, take)
+                    .ToListAsync(cancellationToken) :
+
+                filter(elements)
+                    .Paginate(orderKeySelector, page, take)
+                    .ToListAsync(cancellationToken)).ConfigureAwait(false);
 
             var maxPage = (await QueryElementsAsync(elements => filter(elements)
                 .CountAsync(cancellationToken)).ConfigureAwait(false) - 1) / take;
