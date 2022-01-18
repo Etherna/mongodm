@@ -61,6 +61,7 @@ namespace Etherna.MongODM.Core.Repositories
             Expression<Func<TResult, TResultKey>> orderKeySelector,
             int page,
             int take,
+            bool useDescendingOrder = false,
             CancellationToken cancellationToken = default);
 
         Task ReplaceAsync(
