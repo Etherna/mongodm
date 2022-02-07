@@ -1,4 +1,5 @@
 ﻿using Etherna.ExecContext;
+using Etherna.ExecContext.AsyncLocal;
 using Etherna.ExecContext.Exceptions;
 using System;
 using System.Collections;
@@ -13,6 +14,7 @@ namespace Etherna.MongODM.Core.Utility
         private const string HandlerKey = "DbContextExecutionContextHandler";
 
         // Fields.
+        private readonly IAsyncLocalContextHandler? asyncLocalContextHandler;
         private readonly ICollection<DbExecutionContextHandler> requestes;
 
         // Constructors and dispose.
@@ -22,10 +24,11 @@ namespace Etherna.MongODM.Core.Utility
             DbContext = dbContext ?? throw new ArgumentNullException(nameof(dbContext));
 
             var executionContext = dbContext.ExecutionContext;
-            if (executionContext.Items is null)
-                throw new ExecutionContextNotFoundException();
 
-            if (!executionContext.Items.ContainsKey(HandlerKey))
+            if (executionContext.Items is null) //if an execution context doesn't exist, create it
+                asyncLocalContextHandler = AsyncLocalContext.Instance.InitAsyncLocalContext();
+
+            if (!executionContext.Items!.ContainsKey(HandlerKey))
                 executionContext.Items.Add(HandlerKey, new List<DbExecutionContextHandler>());
 
             requestes = (ICollection<DbExecutionContextHandler>)executionContext.Items[HandlerKey]!;
@@ -38,6 +41,9 @@ namespace Etherna.MongODM.Core.Utility
         {
             lock (((ICollection)requestes).SyncRoot)
                 requestes.Remove(this);
+
+            if (asyncLocalContextHandler is not null)
+                asyncLocalContextHandler.Dispose();
         }
 
         // Properties.
