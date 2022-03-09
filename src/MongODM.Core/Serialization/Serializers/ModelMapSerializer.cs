@@ -188,7 +188,7 @@ namespace Etherna.MongODM.Core.Serialization.Serializers
             var bsonDocument = new BsonDocument();
             using var bsonWriter = new ExtendedBsonDocumentWriter(bsonDocument)
             {
-                IsRootDocument = !(context.Writer is ExtendedBsonDocumentWriter)
+                IsRootDocument = context.Writer is not ExtendedBsonDocumentWriter
             };
             var localContext = BsonSerializationContext.CreateRoot(
                 bsonWriter,
