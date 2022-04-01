@@ -19,6 +19,7 @@
     <PackageLicenseFile>LICENSE</PackageLicenseFile>
     <EmbedUntrackedSources>true</EmbedUntrackedSources>
     <ContinuousIntegrationBuild>true</ContinuousIntegrationBuild>
+    <GenerateDocumentationFile>True</GenerateDocumentationFile>
   </PropertyGroup>
 
   <ItemGroup Condition="'$(TargetFramework)'=='netcoreapp2.1'">

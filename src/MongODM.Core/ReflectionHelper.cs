@@ -169,7 +169,6 @@ namespace Etherna.MongODM.Core
         /// <summary>
         /// Return the list of writable instance property of a type
         /// </summary>
-        /// <typeparam name="TModel">The model type</typeparam>
         /// <returns>The list of properties</returns>
         public static IEnumerable<PropertyInfo> GetWritableInstanceProperties(Type objectType)
         {

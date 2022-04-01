@@ -71,7 +71,6 @@ namespace Etherna.MongODM.Core.Serialization.Mapping
         /// <summary>
         /// Get active class map from schemas, or create a default classMap for model type
         /// </summary>
-        /// <typeparam name="TModel">The model type</typeparam>
         /// <returns>The active model map</returns>
         BsonClassMap GetActiveClassMap(Type modelType);
 
