@@ -48,6 +48,7 @@ namespace Etherna.MongODM.Core.Conventions
         /// Remove when <see cref="BsonSerializer.LookupDiscriminatorConvention(Type)"/> static call will be removed.
         /// </summary>
         /// <param name="elementName">Discriminator element name</param>
+        /// <param name="executionContext">Execution context</param>
         public HierarchicalProxyTolerantDiscriminatorConvention(
             string elementName,
             IExecutionContext executionContext)

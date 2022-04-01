@@ -32,6 +32,7 @@ namespace Etherna.MongODM.Core.Migration
         /// </summary>
         /// <param name="callbackEveryTotDocuments">Interval of processed documents between callback invokations. 0 if ignore callback</param>
         /// <param name="callbackAsync">The async callback function. Parameter is number of processed documents</param>
+        /// <param name="cancellationToken"></param>
         /// <returns>The migration result</returns>
         public abstract Task<MigrationResult> MigrateAsync(int callbackEveryTotDocuments = 0, Func<long, Task>? callbackAsync = null, CancellationToken cancellationToken = default);
     }
