@@ -44,15 +44,14 @@ namespace Etherna.MongODM.AspNetCore.UI
                     routeModel =>
                     {
                         foreach (var selector in routeModel.Selectors)
-                        {
-                            var attributeRouteModel = selector.AttributeRouteModel;
+                            if (selector.AttributeRouteModel?.Template is not null)
+                            {
+                                var segments = selector.AttributeRouteModel.Template.Split('/');
+                                if (segments[0] == AreaName)
+                                    segments[0] = dashboardOptions.BasePath;
 
-                            var segments = selector.AttributeRouteModel.Template.Split('/');
-                            if (segments[0] == AreaName)
-                                segments[0] = dashboardOptions.BasePath;
-
-                            selector.AttributeRouteModel.Template = string.Join("/", segments);
-                        }
+                                selector.AttributeRouteModel.Template = string.Join("/", segments);
+                            }
                     });
             });
 
