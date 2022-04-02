@@ -23,6 +23,7 @@ using Etherna.MongODM.Core.ProxyModels;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
 
 namespace Etherna.MongODM.Core.Serialization.Serializers
 {
@@ -35,11 +36,13 @@ namespace Etherna.MongODM.Core.Serialization.Serializers
         private readonly BsonElement documentSemVerElement;
         private readonly IDbContext dbContext;
         private readonly DocumentSemVerOptions documentSemVerOptions;
+        private readonly Func<TModel, ModelMapDeserializationContext, Task<TModel>> fixDeserializedModelAsync;
         private readonly ModelMapVersionOptions modelMapVersionOptions;
 
         // Constructor.
         public ModelMapSerializer(
             IDbContext dbContext,
+            Func<TModel, ModelMapDeserializationContext, Task<TModel>>? fixDeserializedModelAsync = null,
             DocumentSemVerOptions? overrideDocumentSemVerOptions = null,
             ModelMapVersionOptions? overrideModelMapVersionOptions = null)
         {
@@ -47,6 +50,8 @@ namespace Etherna.MongODM.Core.Serialization.Serializers
                 throw new ArgumentNullException(nameof(dbContext));
 
             this.dbContext = dbContext;
+
+            this.fixDeserializedModelAsync = fixDeserializedModelAsync ?? ((m, _) => Task.FromResult(m));
 
             documentSemVerOptions = overrideDocumentSemVerOptions ?? dbContext.Options.DocumentSemVer;
             modelMapVersionOptions = overrideModelMapVersionOptions ?? dbContext.Options.ModelMapVersion;
@@ -125,7 +130,14 @@ namespace Etherna.MongODM.Core.Serialization.Serializers
             //if a correct model map is identified with its id
             if (modelMapId != null && actualTypeSchema.AllMapsDictionary.ContainsKey(modelMapId))
             {
-                var serializer = actualTypeSchema.AllMapsDictionary[modelMapId].BsonClassMapSerializer;
+                var modelMap = actualTypeSchema.AllMapsDictionary[modelMapId];
+
+                /* If is mapped a different serializer than the current one, choose it.
+                 * Otherwise, if doesn't exist or is already the current, deserialize with BsonClassMap
+                 */
+                var serializer = modelMap.Serializer is not null && modelMap.Serializer != this ?
+                    modelMap.Serializer :
+                    modelMap.BsonClassMapSerializer;
                 model = (TModel)serializer.Deserialize(localContext, args);
             }
 
@@ -158,6 +170,11 @@ namespace Etherna.MongODM.Core.Serialization.Serializers
                     dbContext.DbCache.AddModel(id, (IEntityModel)model);
                 }
             }
+
+            // Fix model.
+            var task = fixDeserializedModelAsync(model, new ModelMapDeserializationContext(modelMapId, documentSemVer));
+            task.Wait();
+            model = task.Result;
 
             // Enable auditing.
             (model as IAuditable)?.EnableAuditing();
