@@ -26,7 +26,7 @@ namespace Etherna.MongODM.Core.Domain.ModelMaps
             dbContext.SchemaRegistry.AddModelMapsSchema("ee726d4f-6e6a-44b0-bf3e-45322534c36d",
                 customSerializer: new ModelMapSerializer<OperationBase>(
                     dbContext,
-                    new DocumentSemVerOptions
+                    overrideDocumentSemVerOptions: new DocumentSemVerOptions
                     {
                         CurrentVersion = dbContext.LibraryVersion,
                         WriteInDocuments = false
