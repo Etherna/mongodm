@@ -28,7 +28,6 @@ namespace Etherna.MongODM.Core.Serialization.Mapping
             IsInitialized = true;
         }
 
-
         // Properties.
         public bool IsInitialized { get; private set; }
 

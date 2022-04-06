@@ -27,14 +27,9 @@ namespace Etherna.MongODM.Core.Utility
 
         // Fields.
         private string cacheKey = default!;
-        private readonly IExecutionContext executionContext;
+        private IExecutionContext executionContext = default!;
 
         // Constructors.
-        public DbCache(IExecutionContext executionContext)
-        {
-            this.executionContext = executionContext ?? throw new ArgumentNullException(nameof(executionContext));
-        }
-
         public void Initialize(IDbContext dbContext)
         {
             if (dbContext is null)
@@ -45,6 +40,7 @@ namespace Etherna.MongODM.Core.Utility
             var cacheKeyBuilder = new StringBuilder(CacheKeyPrefix);
             cacheKeyBuilder.Append(dbContext.Identifier);
             cacheKey = cacheKeyBuilder.ToString();
+            executionContext = dbContext.ExecutionContext;
 
             IsInitialized = true;
         }
