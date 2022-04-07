@@ -50,6 +50,7 @@ namespace Etherna.MongODM.Core
         protected DbContext() { }
         public void Initialize(
             IDbDependencies dependencies,
+            IMongoClient mongoClient,
             IDbContextOptions options,
             IEnumerable<IDbContext> childDbContexts)
         {
@@ -82,7 +83,7 @@ namespace Etherna.MongODM.Core
             _serializerRegistry = (BsonSerializerRegistry)dependencies.BsonSerializerRegistry;
 
             // Initialize MongoDB driver.
-            Client = new MongoClient(options.ConnectionString);
+            Client = mongoClient;
             Database = Client.GetDatabase(options.DbName, new MongoDatabaseSettings
             {
                 SerializerRegistry = _serializerRegistry

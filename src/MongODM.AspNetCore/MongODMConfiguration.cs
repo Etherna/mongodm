@@ -12,6 +12,7 @@
 //   See the License for the specific language governing permissions and
 //   limitations under the License.
 
+using Etherna.MongoDB.Driver;
 using Etherna.MongODM.Core;
 using Etherna.MongODM.Core.Options;
 using Microsoft.Extensions.DependencyInjection;
@@ -117,6 +118,7 @@ namespace Etherna.MongODM.AspNetCore
                     // Initialize instance.
                     dbContext.Initialize(
                         dependencies,
+                        new MongoClient(options.ConnectionString),
                         options,
                         options.ChildDbContextTypes.Select(dbContextType => (IDbContext)sp.GetRequiredService(dbContextType)));
 
