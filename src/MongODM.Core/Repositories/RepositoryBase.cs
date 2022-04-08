@@ -169,7 +169,7 @@ namespace Etherna.MongODM.Core.Repositories
             if (currentMember.Member.IsIdMember())
             {
                 //cascade delete model
-                var repository = DbContext.RepositoryRegistry.ModelRepositoryMap[currentModel.GetType().BaseType];
+                var repository = DbContext.RepositoryRegistry.RepositoriesByModelType[currentModel.GetType().BaseType];
                 try { await repository.DeleteAsync((IEntityModel)currentModel).ConfigureAwait(false); }
                 catch { }
             }

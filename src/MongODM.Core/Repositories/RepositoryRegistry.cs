@@ -23,9 +23,9 @@ namespace Etherna.MongODM.Core.Repositories
     {
         // Fields.
         private IDbContext dbContext = default!;
-        private IReadOnlyDictionary<Type, ICollectionRepository> _modelCollectionRepositoryMap = default!;
-        private IReadOnlyDictionary<Type, IGridFSRepository> _modelGridFSRepositoryMap = default!;
-        private IReadOnlyDictionary<Type, IRepository> _modelRepositoryMap = default!;
+        private IReadOnlyDictionary<Type, ICollectionRepository> _collectionRepositoriesByModelType = default!;
+        private IReadOnlyDictionary<Type, IGridFSRepository> _gridFSRepositoriesByModelType = default!;
+        private IReadOnlyDictionary<Type, IRepository> _repositoriesByModelType = default!;
 
         // Initializer.
         public void Initialize(IDbContext dbContext)
@@ -40,11 +40,11 @@ namespace Etherna.MongODM.Core.Repositories
         // Properties.
         public bool IsInitialized { get; private set; }
 
-        public IReadOnlyDictionary<Type, ICollectionRepository> ModelCollectionRepositoryMap
+        public IReadOnlyDictionary<Type, ICollectionRepository> CollectionRepositoriesByModelType
         {
             get
             {
-                if (_modelCollectionRepositoryMap is null)
+                if (_collectionRepositoriesByModelType is null)
                 {
                     var dbContextType = dbContext.GetType();
 
@@ -68,19 +68,19 @@ namespace Etherna.MongODM.Core.Repositories
                         });
 
                     // Initialize registry.
-                    _modelCollectionRepositoryMap = repos.ToDictionary(
+                    _collectionRepositoriesByModelType = repos.ToDictionary(
                         prop => ((ICollectionRepository)prop.GetValue(dbContext)).GetModelType,
                         prop => (ICollectionRepository)prop.GetValue(dbContext));
                 }
 
-                return _modelCollectionRepositoryMap;
+                return _collectionRepositoriesByModelType;
             }
         }
-        public IReadOnlyDictionary<Type, IGridFSRepository> ModelGridFSRepositoryMap
+        public IReadOnlyDictionary<Type, IGridFSRepository> GridFSRepositoriesByModelType
         {
             get
             {
-                if (_modelGridFSRepositoryMap is null)
+                if (_gridFSRepositoriesByModelType is null)
                 {
                     var dbContextType = dbContext.GetType();
 
@@ -104,32 +104,32 @@ namespace Etherna.MongODM.Core.Repositories
                         });
 
                     //construct registry
-                    _modelGridFSRepositoryMap = repos.ToDictionary(
+                    _gridFSRepositoriesByModelType = repos.ToDictionary(
                         prop => ((IGridFSRepository)prop.GetValue(dbContext)).GetModelType,
                         prop => (IGridFSRepository)prop.GetValue(dbContext));
                 }
 
-                return _modelGridFSRepositoryMap;
+                return _gridFSRepositoriesByModelType;
             }
         }
-        public IReadOnlyDictionary<Type, IRepository> ModelRepositoryMap
+        public IReadOnlyDictionary<Type, IRepository> RepositoriesByModelType
         {
             get
             {
-                if (_modelRepositoryMap is null)
+                if (_repositoriesByModelType is null)
                 {
                     var repoMap = new Dictionary<Type, IRepository>();
 
-                    foreach (var pair in ModelCollectionRepositoryMap)
+                    foreach (var pair in CollectionRepositoriesByModelType)
                         repoMap.Add(pair.Key, pair.Value);
 
-                    foreach (var pair in ModelGridFSRepositoryMap)
+                    foreach (var pair in GridFSRepositoriesByModelType)
                         repoMap.Add(pair.Key, pair.Value);
 
-                    _modelRepositoryMap = repoMap;
+                    _repositoriesByModelType = repoMap;
                 }
 
-                return _modelRepositoryMap;
+                return _repositoriesByModelType;
             }
         }
     }

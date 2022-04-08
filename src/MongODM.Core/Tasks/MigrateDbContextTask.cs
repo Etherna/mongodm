@@ -69,7 +69,7 @@ namespace Etherna.MongODM.Core.Tasks
             }
 
             // Build indexes.
-            foreach (var repository in dbContext.RepositoryRegistry.ModelCollectionRepositoryMap.Values)
+            foreach (var repository in dbContext.RepositoryRegistry.CollectionRepositoriesByModelType.Values)
             {
                 dbMigrationOp.AddLog(new IndexMigrationLog(
                     repository.Name,

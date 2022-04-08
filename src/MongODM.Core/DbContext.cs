@@ -92,7 +92,7 @@ namespace Etherna.MongODM.Core
             InitializeSerializerRegistry();
 
             // Initialize repositories.
-            foreach (var repository in RepositoryRegistry.ModelRepositoryMap.Values)
+            foreach (var repository in RepositoryRegistry.RepositoriesByModelType.Values)
                 repository.Initialize(this);
 
             // Register model maps.
@@ -234,9 +234,9 @@ namespace Etherna.MongODM.Core
                 var modelType = ProxyGenerator.PurgeProxyType(model.GetType());
                 while (modelType != typeof(object)) //try to find right collection. Can't replace model if it is stored on gridfs
                 {
-                    if (RepositoryRegistry.ModelCollectionRepositoryMap.ContainsKey(modelType))
+                    if (RepositoryRegistry.CollectionRepositoriesByModelType.ContainsKey(modelType))
                     {
-                        var repository = RepositoryRegistry.ModelCollectionRepositoryMap[modelType];
+                        var repository = RepositoryRegistry.CollectionRepositoriesByModelType[modelType];
                         await repository.ReplaceAsync(model, cancellationToken: cancellationToken).ConfigureAwait(false);
                         break;
                     }
