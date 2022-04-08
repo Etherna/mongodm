@@ -82,13 +82,6 @@ namespace Etherna.MongODM.Core
             SerializerModifierAccessor = dependencies.SerializerModifierAccessor;
             _serializerRegistry = (BsonSerializerRegistry)dependencies.BsonSerializerRegistry;
 
-            // Initialize MongoDB driver.
-            Client = mongoClient;
-            Database = Client.GetDatabase(options.DbName, new MongoDatabaseSettings
-            {
-                SerializerRegistry = _serializerRegistry
-            });
-
             // Initialize internal dependencies.
             DbCache.Initialize(this);
             DbMaintainer.Initialize(this);
@@ -115,6 +108,13 @@ namespace Etherna.MongODM.Core
 
             // Build and freeze schema registry.
             SchemaRegistry.Freeze();
+
+            // Initialize MongoDB database.
+            Client = mongoClient;
+            Database = Client.GetDatabase(options.DbName, new MongoDatabaseSettings
+            {
+                SerializerRegistry = _serializerRegistry
+            });
 
             // Set as initialized.
             isInitialized = true;
