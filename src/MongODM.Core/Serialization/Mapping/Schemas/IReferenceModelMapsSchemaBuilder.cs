@@ -21,7 +21,7 @@ namespace Etherna.MongODM.Core.Serialization.Mapping.Schemas
     {
         // Methods.
         /// <summary>
-        /// Add a fallback serializer invoked in case of undefined schema id
+        /// Add a fallback serializer invoked in case of unrecognized schema id
         /// </summary>
         /// <param name="fallbackSerializer">Fallback serializer</param>
         /// <returns>This same model schema</returns>
@@ -29,16 +29,34 @@ namespace Etherna.MongODM.Core.Serialization.Mapping.Schemas
             IBsonSerializer<TModel> fallbackSerializer);
 
         /// <summary>
+        /// Add a fallback model map invoked in case of unrecognized schema id, and absence of fallback serializer
+        /// </summary>
+        /// <param name="modelMapInitializer">The model map inizializer</param>
+        /// <param name="baseModelMapId">Id of the base model map for this model map</param>
+        /// <returns>This same model schema configuration</returns>
+        IReferenceModelMapsSchemaBuilder<TModel> AddFallbackModelMap(
+            Action<BsonClassMap<TModel>>? modelMapInitializer = null,
+            string? baseModelMapId = null);
+
+        /// <summary>
+        /// Add a fallback model map invoked in case of unrecognized schema id, and absence of fallback serializer
+        /// </summary>
+        /// <param name="modelMap">The model map</param>
+        /// <returns>This same model schema configuration</returns>
+        IReferenceModelMapsSchemaBuilder<TModel> AddFallbackModelMap(
+            ModelMap<TModel> modelMap);
+
+        /// <summary>
         /// Register a secondary model map
         /// </summary>
         /// <param name="id">The map Id</param>
-        /// <param name="baseModelMapId">Id of the base model map for this model map</param>
         /// <param name="modelMapInitializer">The model map inizializer</param>
+        /// <param name="baseModelMapId">Id of the base model map for this model map</param>
         /// <returns>This same model schema configuration</returns>
         IReferenceModelMapsSchemaBuilder<TModel> AddSecondaryMap(
             string id,
-            string? baseModelMapId = null,
-            Action<BsonClassMap<TModel>>? modelMapInitializer = null);
+            Action<BsonClassMap<TModel>>? modelMapInitializer = null,
+            string? baseModelMapId = null);
 
         /// <summary>
         /// Register a secondary model map

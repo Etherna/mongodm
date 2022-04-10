@@ -24,6 +24,7 @@ namespace Etherna.MongODM.Core.Serialization.Mapping.Schemas
         IModelMap ActiveMap { get; }
         IReadOnlyDictionary<string, IModelMap> AllMapsDictionary { get; }
         IDbContext DbContext { get; }
+        IModelMap? FallbackModelMap { get; }
         IBsonSerializer? FallbackSerializer { get; }
         IEnumerable<IModelMap> SecondaryMaps { get; }
     }
