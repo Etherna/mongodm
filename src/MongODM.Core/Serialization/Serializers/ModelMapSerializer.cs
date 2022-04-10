@@ -20,6 +20,7 @@ using Etherna.MongoDB.Bson.Serialization.Serializers;
 using Etherna.MongODM.Core.Domain.Models;
 using Etherna.MongODM.Core.Options;
 using Etherna.MongODM.Core.ProxyModels;
+using Etherna.MongODM.Core.Serialization.Mapping;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -130,15 +131,7 @@ namespace Etherna.MongODM.Core.Serialization.Serializers
             //if a correct model map is identified with its id
             if (modelMapId != null && actualTypeSchema.AllMapsDictionary.ContainsKey(modelMapId))
             {
-                var modelMap = actualTypeSchema.AllMapsDictionary[modelMapId];
-
-                /* If is mapped a different serializer than the current one, choose it.
-                 * Otherwise, if doesn't exist or is already the current, deserialize with BsonClassMap
-                 */
-                var serializer = modelMap.Serializer is not null && modelMap.Serializer != this ?
-                    modelMap.Serializer :
-                    modelMap.BsonClassMapSerializer;
-                model = (TModel)serializer.Deserialize(localContext, args);
+                model = DeserializeModelMapHelper(actualTypeSchema.AllMapsDictionary[modelMapId], localContext, args);
             }
 
             //else, if a fallback serializator exists
@@ -147,10 +140,16 @@ namespace Etherna.MongODM.Core.Serialization.Serializers
                 model = (TModel)actualTypeSchema.FallbackSerializer.Deserialize(localContext, args);
             }
 
+            //else, if a fallback model map exists
+            else if (actualTypeSchema.FallbackModelMap != null)
+            {
+                model = DeserializeModelMapHelper(actualTypeSchema.FallbackModelMap, localContext, args);
+            }
+
             //else, deserialize wih current active model map
             else
             {
-                model = (TModel)actualTypeSchema.ActiveMap.BsonClassMapSerializer.Deserialize(localContext, args);
+                model = DeserializeModelMapHelper(actualTypeSchema.ActiveMap, localContext, args);
             }
 
             // Add model to cache.
@@ -268,5 +267,17 @@ namespace Etherna.MongODM.Core.Serialization.Serializers
                     bsonArray.Count >= 4 ? bsonArray[3].AsString : null),
                 _ => throw new NotSupportedException(),
             };
+
+        private static TModel DeserializeModelMapHelper(IModelMap modelMap, BsonDeserializationContext context, BsonDeserializationArgs args)
+        {
+            /* If is mapped a different serializer than the current one, choose it.
+             * Otherwise, if doesn't exist or is already the current, deserialize with BsonClassMap
+             */
+            var serializer = modelMap.Serializer is not null && modelMap.Serializer.GetType() != typeof(ModelMapSerializer<TModel>) ?
+                modelMap.Serializer :
+                modelMap.BsonClassMapSerializer;
+
+            return (TModel)serializer.Deserialize(context, args);
+        }
     }
 }

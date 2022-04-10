@@ -36,6 +36,23 @@ namespace Etherna.MongODM.Core.Serialization.Mapping.Schemas
         }
 
         [SuppressMessage("Reliability", "CA2000:Dispose objects before losing scope", Justification = "The new model map instance can't be disposed")]
+        public IModelMapsSchemaBuilder<TModel> AddFallbackModelMap(
+            Action<BsonClassMap<TModel>>? modelMapInitializer = null,
+            string? baseModelMapId = null,
+            IBsonSerializer<TModel>? customSerializer = null) =>
+            AddFallbackModelMap(new ModelMap<TModel>(
+                "fallback",
+                new BsonClassMap<TModel>(modelMapInitializer ?? (cm => cm.AutoMap())),
+                baseModelMapId,
+                customSerializer));
+
+        public IModelMapsSchemaBuilder<TModel> AddFallbackModelMap(ModelMap<TModel> modelMap)
+        {
+            AddFallbackModelMapHelper(modelMap);
+            return this;
+        }
+
+        [SuppressMessage("Reliability", "CA2000:Dispose objects before losing scope", Justification = "The new model map instance can't be disposed")]
         public IModelMapsSchemaBuilder<TModel> AddSecondaryMap(
             string id,
             Action<BsonClassMap<TModel>>? modelMapInitializer = null,
