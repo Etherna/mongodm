@@ -19,7 +19,6 @@ using Etherna.MongODM.Core.Domain.Models;
 using Etherna.MongODM.Core.Exceptions;
 using Etherna.MongODM.Core.Extensions;
 using Etherna.MongODM.Core.ProxyModels;
-using Etherna.MongODM.Core.Serialization.Mapping;
 using Etherna.MongODM.Core.Utility;
 using System;
 using System.Collections.Generic;
@@ -76,7 +75,7 @@ namespace Etherna.MongODM.Core.Repositories
             }
         }
 
-        public override Task BuildIndexesAsync(ISchemaRegistry schemaRegistry, CancellationToken cancellationToken = default) =>
+        public override Task BuildIndexesAsync(CancellationToken cancellationToken = default) =>
             AccessToCollectionAsync(async collection =>
             {
                 var newIndexes = new List<(string name, CreateIndexModel<TModel> createIndex)>();

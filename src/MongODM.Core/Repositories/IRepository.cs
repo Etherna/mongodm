@@ -13,7 +13,6 @@
 //   limitations under the License.
 
 using Etherna.MongODM.Core.Domain.Models;
-using Etherna.MongODM.Core.Serialization.Mapping;
 using System;
 using System.Collections.Generic;
 using System.Threading;
@@ -29,7 +28,6 @@ namespace Etherna.MongODM.Core.Repositories
         string Name { get; }
 
         Task BuildIndexesAsync(
-            ISchemaRegistry schemaRegistry,
             CancellationToken cancellationToken = default);
 
         Task CreateAsync(

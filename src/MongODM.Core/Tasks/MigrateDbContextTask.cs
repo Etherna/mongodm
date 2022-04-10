@@ -76,7 +76,7 @@ namespace Etherna.MongODM.Core.Tasks
                     MigrationLogBase.ExecutionState.Executing));
                 await dbContext.SaveChangesAsync().ConfigureAwait(false);
 
-                await repository.BuildIndexesAsync(dbContext.SchemaRegistry).ConfigureAwait(false);
+                await repository.BuildIndexesAsync().ConfigureAwait(false);
 
                 dbMigrationOp.AddLog(new IndexMigrationLog(
                     repository.Name,

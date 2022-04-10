@@ -49,7 +49,7 @@ namespace Etherna.MongODM.Core.Repositories
         public abstract string Name { get; }
 
         // Methods.
-        public abstract Task BuildIndexesAsync(ISchemaRegistry schemaRegistry, CancellationToken cancellationToken = default);
+        public abstract Task BuildIndexesAsync(CancellationToken cancellationToken = default);
 
         public Task CreateAsync(object model, CancellationToken cancellationToken = default) =>
             CreateAsync((TModel)model, cancellationToken);

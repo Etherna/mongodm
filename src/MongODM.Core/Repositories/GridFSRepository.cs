@@ -17,7 +17,6 @@ using Etherna.MongoDB.Driver;
 using Etherna.MongoDB.Driver.GridFS;
 using Etherna.MongODM.Core.Domain.Models;
 using Etherna.MongODM.Core.Exceptions;
-using Etherna.MongODM.Core.Serialization.Mapping;
 using Etherna.MongODM.Core.Utility;
 using System;
 using System.Collections.Generic;
@@ -73,7 +72,7 @@ namespace Etherna.MongODM.Core.Repositories
             }
         }
 
-        public override Task BuildIndexesAsync(ISchemaRegistry schemaRegistry, CancellationToken cancellationToken = default) => Task.CompletedTask;
+        public override Task BuildIndexesAsync(CancellationToken cancellationToken = default) => Task.CompletedTask;
 
         public virtual Task<byte[]> DownloadAsBytesAsync(string id, CancellationToken cancellationToken = default) =>
             AccessToGridFSBucketAsync(bucket => bucket.DownloadAsBytesAsync(ObjectId.Parse(id), null, cancellationToken));
