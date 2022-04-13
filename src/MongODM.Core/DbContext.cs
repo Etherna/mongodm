@@ -26,6 +26,7 @@ using Etherna.MongODM.Core.Repositories;
 using Etherna.MongODM.Core.Serialization;
 using Etherna.MongODM.Core.Serialization.Mapping;
 using Etherna.MongODM.Core.Serialization.Modifiers;
+using Etherna.MongODM.Core.Serialization.Providers;
 using Etherna.MongODM.Core.Utility;
 using System;
 using System.Collections.Generic;
@@ -81,6 +82,9 @@ namespace Etherna.MongODM.Core
             SchemaRegistry = dependencies.SchemaRegistry;
             SerializerModifierAccessor = dependencies.SerializerModifierAccessor;
             _serializerRegistry = (BsonSerializerRegistry)dependencies.BsonSerializerRegistry;
+
+            // Execute initialization into execution context.
+            using var dbExecutionContext = new DbExecutionContextHandler(this);
 
             // Initialize internal dependencies.
             DbCache.Initialize(this);
@@ -297,10 +301,12 @@ namespace Etherna.MongODM.Core
         private void InitializeSerializerRegistry()
         {
             //order matters. It's in reverse order of how they'll get consumed
+            _serializerRegistry.RegisterSerializationProvider(new ModelMapSerializationProvider(this));
             _serializerRegistry.RegisterSerializationProvider(new DiscriminatedInterfaceSerializationProvider());
             _serializerRegistry.RegisterSerializationProvider(new CollectionsSerializationProvider());
             _serializerRegistry.RegisterSerializationProvider(new PrimitiveSerializationProvider());
             _serializerRegistry.RegisterSerializationProvider(new AttributedSerializationProvider());
+            _serializerRegistry.RegisterSerializationProvider(new TypeMappingSerializationProvider());
             _serializerRegistry.RegisterSerializationProvider(new BsonObjectModelSerializationProvider());
         }
     }

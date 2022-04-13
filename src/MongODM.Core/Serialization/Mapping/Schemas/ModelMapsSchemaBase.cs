@@ -116,8 +116,11 @@ namespace Etherna.MongODM.Core.Serialization.Mapping.Schemas
         {
             // Freeze model maps.
             ActiveMap.Freeze();
+
             foreach (var secondaryMap in _secondaryMaps)
                 secondaryMap.Freeze();
+
+            FallbackModelMap?.Freeze();
         }
     }
 }

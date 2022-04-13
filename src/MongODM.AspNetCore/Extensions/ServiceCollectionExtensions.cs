@@ -83,6 +83,12 @@ namespace Etherna.MongODM
             BsonSerializer.RegisterDiscriminatorConvention(typeof(object),
                 new HierarchicalProxyTolerantDiscriminatorConvention("_t", execContext));
 
+            /* For same motive of handle static calls to BsonSerializer.LookupSerializer(Type),
+             * we need a way to inject a current context accessor. This is a modification on official drivers,
+             * waiting an official implementation of serialization contexts.
+             */
+            BsonSerializer.SetSerializationContextAccessor(new SerializationContextAccessor(execContext));
+
             // DbContext internal.
             //dependencies
             /*****
