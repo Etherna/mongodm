@@ -152,9 +152,14 @@ namespace Etherna.MongODM.Core.Serialization.Serializers
                 model = DeserializeModelMapHelper(actualTypeSchema.ActiveMap, localContext, args);
             }
 
-            // Add model to cache.
+            // Add model to cache (if proxy).
+            /* Proxy models enable different features. Anyway, if the model as not been created as a proxy
+             * (for example for tests scope) these additional operations are not possible or required.
+             * In this case, don't add any not-proxy models in cache.
+             */
             if (!dbContext.SerializerModifierAccessor.IsNoCacheEnabled &&
-                GetDocumentId(model, out var id, out _, out _) && id != null)
+                GetDocumentId(model, out var id, out _, out _) && id != null &&
+                dbContext.ProxyGenerator.IsProxyType(model.GetType()))
             {
                 if (dbContext.DbCache.LoadedModels.ContainsKey(id))
                 {

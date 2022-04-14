@@ -149,8 +149,13 @@ namespace Etherna.MongODM.Core.Serialization.Serializers
 
             var model = serializer.Deserialize(localContext, args) as TModelBase;
 
-            // Process model.
-            if (model != null)
+            // Process model (if proxy).
+            /* Proxy models enable different features. Anyway, if the model as not been created as a proxy
+             * (for example for tests scope) these additional operations are not possible or required.
+             * In this case, simply return the model as is.
+             */
+            if (model != null &&
+                dbContext.ProxyGenerator.IsProxyType(model.GetType()))
             {
                 var id = model.Id;
                 if (id == null) //ignore refered instances without id
