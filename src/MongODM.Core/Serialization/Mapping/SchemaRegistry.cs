@@ -79,8 +79,7 @@ namespace Etherna.MongODM.Core.Serialization.Mapping
             var modelMap = new ModelMap<TModel>(
                 activeModelMapId,
                 new BsonClassMap<TModel>(activeModelMapInitializer ?? (cm => cm.AutoMap())),
-                null,
-                customSerializer ?? ModelMap.GetDefaultSerializer<TModel>(dbContext));
+                serializer: customSerializer ?? ModelMap.GetDefaultSerializer<TModel>(dbContext));
 
             return AddModelMapsSchema(modelMap);
         }
@@ -355,6 +354,7 @@ namespace Etherna.MongODM.Core.Serialization.Mapping
                 Guid.NewGuid().ToString(), //string id
                 classMap,                  //BsonClassMap<TModel> bsonClassMap
                 null,                      //string? baseModelMapId
+                null,                      //Func<TModel, Task<TModel>>? fixDeserializedModelFunc
                 null);                     //IBsonSerializer<TModel>? serializer
 
             //model maps schema

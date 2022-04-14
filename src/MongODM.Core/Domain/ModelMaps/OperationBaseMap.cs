@@ -13,7 +13,6 @@
 //   limitations under the License.
 
 using Etherna.MongODM.Core.Domain.Models;
-using Etherna.MongODM.Core.Options;
 using Etherna.MongODM.Core.Serialization;
 using Etherna.MongODM.Core.Serialization.Serializers;
 
@@ -25,12 +24,7 @@ namespace Etherna.MongODM.Core.Domain.ModelMaps
         {
             dbContext.SchemaRegistry.AddModelMapsSchema("ee726d4f-6e6a-44b0-bf3e-45322534c36d",
                 customSerializer: new ModelMapSerializer<OperationBase>(
-                    dbContext,
-                    overrideDocumentSemVerOptions: new DocumentSemVerOptions
-                    {
-                        CurrentVersion = dbContext.LibraryVersion,
-                        WriteInDocuments = false
-                    }));
+                    dbContext));
         }
     }
 }
