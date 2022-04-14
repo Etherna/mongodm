@@ -100,6 +100,8 @@ namespace Etherna.MongODM.Core
                 .Returns(() => dbCacheMock.Object);
             dbContextMock.Setup(c => c.DiscriminatorRegistry)
                 .Returns(() => discriminatorRegistryMock.Object);
+            dbContextMock.Setup(c => c.ProxyGenerator.IsProxyType(It.IsAny<Type>()))
+                .Returns(true);
             dbContextMock.Setup(c => c.Options.DocumentSemVer)
                 .Returns(() => documentSemVerOptions);
             dbContextMock.Setup(c => c.Options.ModelMapVersion)
