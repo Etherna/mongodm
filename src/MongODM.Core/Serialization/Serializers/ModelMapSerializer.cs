@@ -18,7 +18,6 @@ using Etherna.MongoDB.Bson.Serialization;
 using Etherna.MongoDB.Bson.Serialization.Conventions;
 using Etherna.MongoDB.Bson.Serialization.Serializers;
 using Etherna.MongODM.Core.Domain.Models;
-using Etherna.MongODM.Core.Options;
 using Etherna.MongODM.Core.ProxyModels;
 using Etherna.MongODM.Core.Serialization.Mapping;
 using System;
@@ -36,30 +35,19 @@ namespace Etherna.MongODM.Core.Serialization.Serializers
         private IDiscriminatorConvention _discriminatorConvention = default!;
         private readonly BsonElement documentSemVerElement;
         private readonly IDbContext dbContext;
-        private readonly DocumentSemVerOptions documentSemVerOptions;
-        private readonly Func<TModel, ModelMapDeserializationContext, Task<TModel>> fixDeserializedModelAsync;
-        private readonly ModelMapVersionOptions modelMapVersionOptions;
 
         // Constructor.
         public ModelMapSerializer(
-            IDbContext dbContext,
-            Func<TModel, ModelMapDeserializationContext, Task<TModel>>? fixDeserializedModelAsync = null,
-            DocumentSemVerOptions? overrideDocumentSemVerOptions = null,
-            ModelMapVersionOptions? overrideModelMapVersionOptions = null)
+            IDbContext dbContext)
         {
             if (dbContext is null)
                 throw new ArgumentNullException(nameof(dbContext));
 
             this.dbContext = dbContext;
 
-            this.fixDeserializedModelAsync = fixDeserializedModelAsync ?? ((m, _) => Task.FromResult(m));
-
-            documentSemVerOptions = overrideDocumentSemVerOptions ?? dbContext.Options.DocumentSemVer;
-            modelMapVersionOptions = overrideModelMapVersionOptions ?? dbContext.Options.ModelMapVersion;
-
             documentSemVerElement = new BsonElement(
-                documentSemVerOptions.ElementName,
-                documentSemVerOptions.CurrentVersion.ToBsonArray());
+                dbContext.Options.DocumentSemVer.ElementName,
+                dbContext.Options.DocumentSemVer.CurrentVersion.ToBsonArray());
         }
 
         // Properties.
@@ -102,7 +90,7 @@ namespace Etherna.MongODM.Core.Serialization.Serializers
 
             //get version
             SemanticVersion? documentSemVer = null;
-            if (bsonDocument.TryGetElement(documentSemVerOptions.ElementName, out BsonElement versionElement))
+            if (bsonDocument.TryGetElement(dbContext.Options.DocumentSemVer.ElementName, out BsonElement versionElement))
             {
                 documentSemVer = BsonValueToSemVer(versionElement.Value);
                 bsonDocument.RemoveElement(versionElement); //don't report into extra elements
@@ -110,7 +98,7 @@ namespace Etherna.MongODM.Core.Serialization.Serializers
 
             //get model map id
             string? modelMapId = null;
-            if (bsonDocument.TryGetElement(modelMapVersionOptions.ElementName, out BsonElement modelMapIdElement))
+            if (bsonDocument.TryGetElement(dbContext.Options.ModelMapVersion.ElementName, out BsonElement modelMapIdElement))
             {
                 modelMapId = BsonValueToModelMapId(modelMapIdElement.Value);
                 bsonDocument.RemoveElement(modelMapIdElement); //don't report into extra elements
@@ -131,7 +119,9 @@ namespace Etherna.MongODM.Core.Serialization.Serializers
             //if a correct model map is identified with its id
             if (modelMapId != null && actualTypeSchema.AllMapsDictionary.ContainsKey(modelMapId))
             {
-                model = DeserializeModelMapHelper(actualTypeSchema.AllMapsDictionary[modelMapId], localContext, args);
+                var task = DeserializeModelMapHelperAsync(actualTypeSchema.AllMapsDictionary[modelMapId], localContext, args);
+                task.Wait();
+                model = task.Result;
             }
 
             //else, if a fallback serializator exists
@@ -143,13 +133,17 @@ namespace Etherna.MongODM.Core.Serialization.Serializers
             //else, if a fallback model map exists
             else if (actualTypeSchema.FallbackModelMap != null)
             {
-                model = DeserializeModelMapHelper(actualTypeSchema.FallbackModelMap, localContext, args);
+                var task = DeserializeModelMapHelperAsync(actualTypeSchema.FallbackModelMap, localContext, args);
+                task.Wait();
+                model = task.Result;
             }
 
             //else, deserialize wih current active model map
             else
             {
-                model = DeserializeModelMapHelper(actualTypeSchema.ActiveMap, localContext, args);
+                var task = DeserializeModelMapHelperAsync(actualTypeSchema.ActiveMap, localContext, args);
+                task.Wait();
+                model = task.Result;
             }
 
             // Add model to cache (if proxy).
@@ -174,11 +168,6 @@ namespace Etherna.MongODM.Core.Serialization.Serializers
                     dbContext.DbCache.AddModel(id, (IEntityModel)model);
                 }
             }
-
-            // Fix model.
-            var task = fixDeserializedModelAsync(model, new ModelMapDeserializationContext(modelMapId, documentSemVer));
-            task.Wait();
-            model = task.Result;
 
             // Enable auditing.
             (model as IAuditable)?.EnableAuditing();
@@ -230,14 +219,14 @@ namespace Etherna.MongODM.Core.Serialization.Serializers
              * from bson class map serializer. In that case, the right model map id is already be setted, and we
              * don't have to replace it with the one wrong of the basic collection model type.
              */
-            if (!bsonDocument.Contains(modelMapVersionOptions.ElementName))
+            if (!bsonDocument.Contains(dbContext.Options.ModelMapVersion.ElementName))
                 bsonDocument.InsertAt(0, dbContext.SchemaRegistry.GetActiveModelMapIdBsonElement(actualType));
 
             //add version
-            if (documentSemVerOptions.WriteInDocuments && bsonWriter.IsRootDocument)
+            if (dbContext.Options.DocumentSemVer.WriteInDocuments && bsonWriter.IsRootDocument)
             {
-                if (bsonDocument.Contains(documentSemVerOptions.ElementName))
-                    bsonDocument.Remove(documentSemVerOptions.ElementName);
+                if (bsonDocument.Contains(dbContext.Options.DocumentSemVer.ElementName))
+                    bsonDocument.Remove(dbContext.Options.DocumentSemVer.ElementName);
                 bsonDocument.InsertAt(1, documentSemVerElement);
             }
 
@@ -273,7 +262,10 @@ namespace Etherna.MongODM.Core.Serialization.Serializers
                 _ => throw new NotSupportedException(),
             };
 
-        private static TModel DeserializeModelMapHelper(IModelMap modelMap, BsonDeserializationContext context, BsonDeserializationArgs args)
+        private static async Task<TModel> DeserializeModelMapHelperAsync(
+            IModelMap modelMap,
+            BsonDeserializationContext context,
+            BsonDeserializationArgs args)
         {
             /* If is mapped a different serializer than the current one, choose it.
              * Otherwise, if doesn't exist or is already the current, deserialize with BsonClassMap
@@ -282,7 +274,10 @@ namespace Etherna.MongODM.Core.Serialization.Serializers
                 modelMap.Serializer :
                 modelMap.BsonClassMapSerializer;
 
-            return (TModel)serializer.Deserialize(context, args);
+            var model = (TModel)serializer.Deserialize(context, args);
+
+            // Fix model.
+            return (TModel)await modelMap.FixDeserializedModelAsync(model).ConfigureAwait(false);
         }
     }
 }

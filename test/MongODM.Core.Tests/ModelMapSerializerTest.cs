@@ -28,6 +28,7 @@ using Moq;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
 using Xunit;
 
 namespace Etherna.MongODM.Core
@@ -162,6 +163,8 @@ namespace Etherna.MongODM.Core
 
             modelMapsSchemaMock.Setup(s => s.ActiveMap.BsonClassMapSerializer)
                 .Returns(bsonClassMapSerializer);
+            modelMapsSchemaMock.Setup(s => s.ActiveMap.FixDeserializedModelAsync(It.IsAny<object>()))
+                .Returns<object>(m => Task.FromResult(m));
 
             // Action
             test.PreAction(bsonReader);
