@@ -138,7 +138,7 @@ namespace Etherna.MongODM.Core.Serialization.Mapping
             string? baseModelMapId = null,
             Func<TModel, Task<TModel>>? fixDeserializedModelFunc = null,
             IBsonSerializer<TModel>? serializer = null)
-            : base(id, baseModelMapId, bsonClassMap ?? new BsonClassMap<TModel>(), serializer)
+            : base(id, baseModelMapId, bsonClassMap ?? new BsonClassMap<TModel>(cm => cm.AutoMap()), serializer)
         {
             this.fixDeserializedModelFunc = fixDeserializedModelFunc;
         }
