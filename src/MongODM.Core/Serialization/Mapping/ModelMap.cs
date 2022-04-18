@@ -134,11 +134,11 @@ namespace Etherna.MongODM.Core.Serialization.Mapping
         // Constructors.
         public ModelMap(
             string id,
-            BsonClassMap<TModel> bsonClassMap,
+            BsonClassMap<TModel>? bsonClassMap = null,
             string? baseModelMapId = null,
             Func<TModel, Task<TModel>>? fixDeserializedModelFunc = null,
             IBsonSerializer<TModel>? serializer = null)
-            : base(id, baseModelMapId, bsonClassMap, serializer)
+            : base(id, baseModelMapId, bsonClassMap ?? new BsonClassMap<TModel>(), serializer)
         {
             this.fixDeserializedModelFunc = fixDeserializedModelFunc;
         }
