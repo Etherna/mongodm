@@ -18,6 +18,7 @@ using Etherna.MongODM.Core;
 using Etherna.MongODM.Core.Repositories;
 using Etherna.MongODM.Core.Serialization;
 using System.Collections.Generic;
+using System.Threading.Tasks;
 
 namespace Etherna.MongODM.AspNetCoreSample.Persistence
 {
@@ -31,5 +32,12 @@ namespace Etherna.MongODM.AspNetCoreSample.Persistence
                 new ModelBaseMap(),
                 new CatMap()
             };
+
+        protected override Task SeedAsync()
+        {
+            // Seed here.
+
+            return base.SeedAsync();
+        }
     }
 }

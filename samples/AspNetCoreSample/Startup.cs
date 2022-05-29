@@ -60,6 +60,8 @@ namespace Etherna.MongODM.AspNetCoreSample
             {
                 endpoints.MapRazorPages();
             });
+
+            app.SeedDbContexts();
         }
     }
 }
