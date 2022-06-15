@@ -82,38 +82,45 @@ namespace Etherna.MongODM.Core.Migration
             CancellationToken cancellationToken = default) =>
             _sourceRepository.AccessToCollectionAsync(async sourceCollection =>
             {
-                if (callbackEveryTotDocuments < 0)
-                    throw new ArgumentOutOfRangeException(nameof(callbackEveryTotDocuments), "Value can't be negative");
-
-                // Migrate documents.
                 var totMigratedDocuments = 0L;
-                await sourceCollection.Find(FilterDefinition<TModel>.Empty, new FindOptions { NoCursorTimeout = true })
-                    .ForEachAsync(async model =>
-                    {
-                        var destinationRepository = destinationRepositorySelector(model);
+                try
+                {
+                    if (callbackEveryTotDocuments < 0)
+                        throw new ArgumentOutOfRangeException(nameof(callbackEveryTotDocuments), "Value can't be negative");
 
-                        // Verify if needs to skip this model.
-                        if (destinationRepository is null)
-                            return;
+                    // Migrate documents.
+                    await sourceCollection.Find(FilterDefinition<TModel>.Empty, new FindOptions { NoCursorTimeout = true })
+                        .ForEachAsync(async model =>
+                        {
+                            var destinationRepository = destinationRepositorySelector(model);
 
-                        // Replace if it's the same collection, insert one otherwise.
-                        if (SourceRepository == destinationRepository)
-                            await destinationRepository.ReplaceAsync(model, updateDependentDocuments: false).ConfigureAwait(false);
-                        else
-                            await destinationRepository.CreateAsync(modelConverter(model)).ConfigureAwait(false);
+                            // Verify if needs to skip this model.
+                            if (destinationRepository is null)
+                                return;
 
-                        // Increment counter.
-                        totMigratedDocuments++;
+                            // Replace if it's the same collection, insert one otherwise.
+                            if (SourceRepository == destinationRepository)
+                                await destinationRepository.ReplaceAsync(model, updateDependentDocuments: false).ConfigureAwait(false);
+                            else
+                                await destinationRepository.CreateAsync(modelConverter(model)).ConfigureAwait(false);
 
-                        // Execute callback.
-                        if (callbackEveryTotDocuments > 0 &&
-                                totMigratedDocuments % callbackEveryTotDocuments == 0 &&
-                                callbackAsync != null)
-                            await callbackAsync(totMigratedDocuments).ConfigureAwait(false);
+                            // Increment counter.
+                            totMigratedDocuments++;
 
-                    }, cancellationToken).ConfigureAwait(false);
+                            // Execute callback.
+                            if (callbackEveryTotDocuments > 0 &&
+                                    totMigratedDocuments % callbackEveryTotDocuments == 0 &&
+                                    callbackAsync != null)
+                                await callbackAsync(totMigratedDocuments).ConfigureAwait(false);
 
-                return MigrationResult.Succeeded(totMigratedDocuments);
+                        }, cancellationToken).ConfigureAwait(false);
+
+                    return MigrationResult.Succeeded(totMigratedDocuments);
+                }
+                catch (Exception e)
+                {
+                    return MigrationResult.Failed(totMigratedDocuments, e);
+                }
             });
     }
 }
