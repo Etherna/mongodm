@@ -102,7 +102,7 @@ namespace Etherna.MongODM.Core.Repositories
                 }));
 
                 //referenced documents
-                var dependencies = DbContext.SchemaRegistry.GetIdMemberDependenciesFromRootModel(typeof(TModel));
+                var dependencies = DbContext.SchemaRegistry.GetIdMemberDependenciesFromRootModel(typeof(TModel), true);
 
                 var idPaths = dependencies
                     .Select(dependency => dependency.MemberPathToString())

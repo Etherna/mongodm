@@ -85,8 +85,9 @@ namespace Etherna.MongODM.Core.Serialization.Mapping
         /// Get all id member dependencies from a root model type
         /// </summary>
         /// <param name="modelType">The model type</param>
+        /// <param name="onlyFromActiveModelMap">If true, ignore secondary model maps</param>
         /// <returns>The list of member dependencies</returns>
-        IEnumerable<MemberDependency> GetIdMemberDependenciesFromRootModel(Type modelType);
+        IEnumerable<MemberDependency> GetIdMemberDependenciesFromRootModel(Type modelType, bool onlyFromActiveModelMap = false);
 
         /// <summary>
         /// Get all member dependencies that points to a specific member definition

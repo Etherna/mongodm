@@ -143,12 +143,12 @@ namespace Etherna.MongODM.Core.Serialization.Mapping
             return activeModelMapIdBsonElement[modelType];
         }
 
-        public IEnumerable<MemberDependency> GetIdMemberDependenciesFromRootModel(Type modelType)
+        public IEnumerable<MemberDependency> GetIdMemberDependenciesFromRootModel(Type modelType, bool onlyFromActiveModelMap = false)
         {
             Freeze(); //needed for initialization
 
             if (modelTypeToReferencedIdMemberMapsDictionary.TryGetValue(modelType, out List<MemberDependency> dependencies))
-                return dependencies;
+                return dependencies.Where(d => !onlyFromActiveModelMap || d.RootModelMapIsActive);
             return Array.Empty<MemberDependency>();
         }
 
@@ -244,6 +244,7 @@ namespace Etherna.MongODM.Core.Serialization.Mapping
                 foreach (var modelMap in schema.AllMapsDictionary.Values)
                     CompileDependencyRegisters(
                         modelMap,
+                        modelMap == schema.ActiveMap,
                         modelMap.BsonClassMap,
                         default,
                         Array.Empty<OwnedBsonMemberMap>());
@@ -267,6 +268,7 @@ namespace Etherna.MongODM.Core.Serialization.Mapping
         // Helpers.
         private void CompileDependencyRegisters(
             IModelMap modelMap,
+            bool modelMapIsActive,
             BsonClassMap currentClassMap,
             BsonClassMap? lastEntityClassMap,
             IEnumerable<OwnedBsonMemberMap> ownedBsonMemberPath,
@@ -292,6 +294,7 @@ namespace Etherna.MongODM.Core.Serialization.Mapping
                 // Identify current member with its root model map, the path from current model map, and cascade delete information.
                 var memberDependency = new MemberDependency(
                     modelMap,
+                    modelMapIsActive,
                     currentMemberPath,
                     useCascadeDeleteSetting ?? false);
 
@@ -332,7 +335,7 @@ namespace Etherna.MongODM.Core.Serialization.Mapping
                 {
                     bool? useCascadeDelete = (memberSerializer as IReferenceContainerSerializer)?.UseCascadeDelete;
                     foreach (var childClassMap in schemaSerializer.AllChildClassMaps)
-                        CompileDependencyRegisters(modelMap, childClassMap, lastEntityClassMap, currentMemberPath, useCascadeDelete);
+                        CompileDependencyRegisters(modelMap, modelMapIsActive, childClassMap, lastEntityClassMap, currentMemberPath, useCascadeDelete);
                 }
             }
         }
