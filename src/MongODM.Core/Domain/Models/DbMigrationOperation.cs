@@ -27,6 +27,7 @@ namespace Etherna.MongODM.Core.Domain.Models
             New,
             Running,
             Completed,
+            Failed,
             Cancelled
         }
 
@@ -64,7 +65,8 @@ namespace Etherna.MongODM.Core.Domain.Models
         [PropertyAlterer(nameof(CurrentStatus))]
         public virtual void TaskCancelled()
         {
-            if (CurrentStatus == Status.Completed)
+            if (CurrentStatus == Status.Completed ||
+                CurrentStatus == Status.Failed)
                 throw new InvalidOperationException();
 
             CurrentStatus = Status.Cancelled;
@@ -79,6 +81,16 @@ namespace Etherna.MongODM.Core.Domain.Models
 
             CompletedDateTime = DateTime.Now;
             CurrentStatus = Status.Completed;
+        }
+
+        [PropertyAlterer(nameof(CurrentStatus))]
+        public virtual void TaskFailed()
+        {
+            if (CurrentStatus == Status.Completed ||
+                CurrentStatus == Status.Cancelled)
+                throw new InvalidOperationException();
+
+            CurrentStatus = Status.Failed;
         }
 
         [PropertyAlterer(nameof(CurrentStatus))]

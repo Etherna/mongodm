@@ -12,6 +12,8 @@
 //   See the License for the specific language governing permissions and
 //   limitations under the License.
 
+using System;
+
 namespace Etherna.MongODM.Core.Migration
 {
     public class MigrationResult
@@ -20,21 +22,24 @@ namespace Etherna.MongODM.Core.Migration
         private MigrationResult() { }
 
         // Properties.
-        public bool Succeded { get; private set; }
+        public Exception? Exception { get; private set; }
         public long MigratedDocuments { get; private set; }
+        public bool Succeded { get; private set; }
 
         // Methods.
-        public static MigrationResult Failed() =>
+        public static MigrationResult Failed(long migratedDocuments, Exception? e = null) =>
             new()
             {
+                Exception = e,
+                MigratedDocuments = migratedDocuments,
                 Succeded = false
             };
 
         public static MigrationResult Succeeded(long migratedDocuments) =>
             new()
             {
-                Succeded = true,
-                MigratedDocuments = migratedDocuments
+                MigratedDocuments = migratedDocuments,
+                Succeded = true
             };
     }
 }
