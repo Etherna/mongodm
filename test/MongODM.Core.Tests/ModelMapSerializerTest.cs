@@ -12,7 +12,11 @@
 //   See the License for the specific language governing permissions and
 //   limitations under the License.
 
+using Etherna.MongoDB.Bson;
+using Etherna.MongoDB.Bson.IO;
+using Etherna.MongoDB.Bson.Serialization;
 using Etherna.MongODM.Core.Comparers;
+using Etherna.MongODM.Core.Conventions;
 using Etherna.MongODM.Core.Models;
 using Etherna.MongODM.Core.Options;
 using Etherna.MongODM.Core.Serialization.Mapping;
@@ -20,13 +24,11 @@ using Etherna.MongODM.Core.Serialization.Mapping.Schemas;
 using Etherna.MongODM.Core.Serialization.Modifiers;
 using Etherna.MongODM.Core.Serialization.Serializers;
 using Etherna.MongODM.Core.Utility;
-using MongoDB.Bson;
-using MongoDB.Bson.IO;
-using MongoDB.Bson.Serialization;
 using Moq;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
 using Xunit;
 
 namespace Etherna.MongODM.Core
@@ -78,19 +80,39 @@ namespace Etherna.MongODM.Core
 
         // Fields.
         private readonly Mock<IDbCache> dbCacheMock = new();
+        private readonly Mock<IDbContext> dbContextMock = new();
+        private readonly Mock<IDiscriminatorRegistry> discriminatorRegistryMock = new();
         private readonly DocumentSemVerOptions documentSemVerOptions = new();
         private readonly Mock<IModelMapsSchema> modelMapsSchemaMock = new();
         private readonly ModelMapVersionOptions modelMapVersionOptions = new();
-        private readonly Mock<ISchemaRegister> schemaRegisterMock = new();
+        private readonly Mock<ISchemaRegistry> schemaRegistryMock = new();
         private readonly Mock<ISerializerModifierAccessor> serializerModifierAccessorMock = new();
 
         // Constructor.
         public ModelMapSerializerTest()
         {
+            discriminatorRegistryMock.Setup(r => r.LookupDiscriminatorConvention(It.IsAny<Type>()))
+                .Returns(() => new HierarchicalProxyTolerantDiscriminatorConvention(dbContextMock.Object, "_t"));
+
             dbCacheMock.Setup(c => c.LoadedModels.ContainsKey(It.IsAny<object>()))
                 .Returns(() => false);
 
-            schemaRegisterMock.Setup(sr => sr.GetModelMapsSchema(typeof(FakeModel)))
+            dbContextMock.Setup(c => c.DbCache)
+                .Returns(() => dbCacheMock.Object);
+            dbContextMock.Setup(c => c.DiscriminatorRegistry)
+                .Returns(() => discriminatorRegistryMock.Object);
+            dbContextMock.Setup(c => c.ProxyGenerator.IsProxyType(It.IsAny<Type>()))
+                .Returns(true);
+            dbContextMock.Setup(c => c.Options.DocumentSemVer)
+                .Returns(() => documentSemVerOptions);
+            dbContextMock.Setup(c => c.Options.ModelMapVersion)
+                .Returns(() => modelMapVersionOptions);
+            dbContextMock.Setup(c => c.SchemaRegistry)
+                .Returns(() => schemaRegistryMock.Object);
+            dbContextMock.Setup(c => c.SerializerModifierAccessor)
+                .Returns(() => serializerModifierAccessorMock.Object);
+
+            schemaRegistryMock.Setup(sr => sr.GetModelMapsSchema(typeof(FakeModel)))
                 .Returns(() => modelMapsSchemaMock.Object);
         }
 
@@ -137,15 +159,12 @@ namespace Etherna.MongODM.Core
             // Setup
             var bsonReader = new BsonDocumentReader(test.Document);
             var bsonClassMapSerializer = CreateBsonClassMapSerializer();
-            var serializer = new ModelMapSerializer<FakeModel>(
-                dbCacheMock.Object,
-                documentSemVerOptions,
-                modelMapVersionOptions,
-                schemaRegisterMock.Object,
-                serializerModifierAccessorMock.Object);
+            var serializer = new ModelMapSerializer<FakeModel>(dbContextMock.Object);
 
             modelMapsSchemaMock.Setup(s => s.ActiveMap.BsonClassMapSerializer)
                 .Returns(bsonClassMapSerializer);
+            modelMapsSchemaMock.Setup(s => s.ActiveMap.FixDeserializedModelAsync(It.IsAny<object>()))
+                .Returns<object>(m => Task.FromResult(m));
 
             // Action
             test.PreAction(bsonReader);
@@ -164,12 +183,7 @@ namespace Etherna.MongODM.Core
             // Setup
             var model = new FakeModel { Id = "idVal" };
             var bsonClassMapSerializer = CreateBsonClassMapSerializer();
-            var serializer = new ModelMapSerializer<FakeModel>(
-                dbCacheMock.Object,
-                documentSemVerOptions,
-                modelMapVersionOptions,
-                schemaRegisterMock.Object,
-                serializerModifierAccessorMock.Object);
+            var serializer = new ModelMapSerializer<FakeModel>(dbContextMock.Object);
 
             modelMapsSchemaMock.Setup(s => s.ActiveMap.BsonClassMapSerializer)
                 .Returns(bsonClassMapSerializer);
@@ -200,12 +214,7 @@ namespace Etherna.MongODM.Core
             // Setup
             var memberName = nameof(FakeModel.StringProp);
             var bsonClassMapSerializer = CreateBsonClassMapSerializer();
-            var serializer = new ModelMapSerializer<FakeModel>(
-                dbCacheMock.Object,
-                documentSemVerOptions,
-                modelMapVersionOptions,
-                schemaRegisterMock.Object,
-                serializerModifierAccessorMock.Object);
+            var serializer = new ModelMapSerializer<FakeModel>(dbContextMock.Object);
 
             modelMapsSchemaMock.Setup(s => s.ActiveMap.BsonClassMapSerializer)
                 .Returns(bsonClassMapSerializer);
@@ -293,19 +302,14 @@ namespace Etherna.MongODM.Core
         {
             // Setup
             var bsonClassMapSerializer = CreateBsonClassMapSerializer();
-            var serializer = new ModelMapSerializer<FakeModel>(
-                dbCacheMock.Object,
-                documentSemVerOptions,
-                modelMapVersionOptions,
-                schemaRegisterMock.Object,
-                serializerModifierAccessorMock.Object);
+            var serializer = new ModelMapSerializer<FakeModel>(dbContextMock.Object);
 
             modelMapsSchemaMock.Setup(s => s.ActiveBsonClassMapSerializer)
                 .Returns(bsonClassMapSerializer);
             modelMapsSchemaMock.Setup(s => s.ActiveMap.Id)
                 .Returns("mapId");
 
-            schemaRegisterMock.Setup(sr => sr.GetActiveModelMapIdBsonElement(typeof(FakeModel)))
+            schemaRegistryMock.Setup(sr => sr.GetActiveModelMapIdBsonElement(typeof(FakeModel)))
                 .Returns(new BsonElement("_m", new BsonString("mapId")));
 
             // Action
@@ -327,12 +331,7 @@ namespace Etherna.MongODM.Core
             var id = "idVal";
             var model = new FakeModel();
             var bsonClassMapSerializer = CreateBsonClassMapSerializer();
-            var serializer = new ModelMapSerializer<FakeModel>(
-                dbCacheMock.Object,
-                documentSemVerOptions,
-                modelMapVersionOptions,
-                schemaRegisterMock.Object,
-                serializerModifierAccessorMock.Object);
+            var serializer = new ModelMapSerializer<FakeModel>(dbContextMock.Object);
 
             modelMapsSchemaMock.Setup(s => s.ActiveMap.BsonClassMapSerializer)
                 .Returns(bsonClassMapSerializer);

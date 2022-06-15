@@ -12,11 +12,11 @@
 //   See the License for the specific language governing permissions and
 //   limitations under the License.
 
+using Etherna.MongoDB.Bson;
+using Etherna.MongoDB.Bson.Serialization.IdGenerators;
+using Etherna.MongoDB.Bson.Serialization.Serializers;
 using Etherna.MongODM.Core.Domain.Models;
 using Etherna.MongODM.Core.Serialization;
-using MongoDB.Bson;
-using MongoDB.Bson.Serialization.IdGenerators;
-using MongoDB.Bson.Serialization.Serializers;
 
 namespace Etherna.MongODM.Core.Domain.ModelMaps
 {
@@ -24,10 +24,10 @@ namespace Etherna.MongODM.Core.Domain.ModelMaps
     {
         public void Register(IDbContext dbContext)
         {
-            // register class maps.
-            dbContext.SchemaRegister.AddModelMapsSchema<ModelBase>("bff55d53-0517-4a93-8fda-7bd448181449");
+            // Register class maps.
+            dbContext.SchemaRegistry.AddModelMapsSchema<ModelBase>("bff55d53-0517-4a93-8fda-7bd448181449");
 
-            dbContext.SchemaRegister.AddModelMapsSchema<EntityModelBase<string>>("586b48f5-ba1f-45e3-a812-744f88c1c969",
+            dbContext.SchemaRegistry.AddModelMapsSchema<EntityModelBase<string>>("586b48f5-ba1f-45e3-a812-744f88c1c969",
                 modelMap =>
                 {
                     modelMap.AutoMap();

@@ -23,8 +23,8 @@ namespace Etherna.MongODM.Core
 {
     public static class ReflectionHelper
     {
-        private static readonly Dictionary<Type, IEnumerable<PropertyInfo>> propertyRegister = new();
-        private static readonly ReaderWriterLockSlim propertyRegisterLock = new();
+        private static readonly Dictionary<Type, IEnumerable<PropertyInfo>> propertyRegistry = new();
+        private static readonly ReaderWriterLockSlim propertyRegistryLock = new();
 
         public static MemberInfo FindProperty(LambdaExpression lambdaExpression)
         {
@@ -169,30 +169,29 @@ namespace Etherna.MongODM.Core
         /// <summary>
         /// Return the list of writable instance property of a type
         /// </summary>
-        /// <typeparam name="TModel">The model type</typeparam>
         /// <returns>The list of properties</returns>
         public static IEnumerable<PropertyInfo> GetWritableInstanceProperties(Type objectType)
         {
             if (objectType is null)
                 throw new ArgumentNullException(nameof(objectType));
 
-            propertyRegisterLock.EnterReadLock();
+            propertyRegistryLock.EnterReadLock();
             try
             {
-                if (propertyRegister.ContainsKey(objectType))
+                if (propertyRegistry.ContainsKey(objectType))
                 {
-                    return propertyRegister[objectType];
+                    return propertyRegistry[objectType];
                 }
             }
             finally
             {
-                propertyRegisterLock.ExitReadLock();
+                propertyRegistryLock.ExitReadLock();
             }
 
-            propertyRegisterLock.EnterWriteLock();
+            propertyRegistryLock.EnterWriteLock();
             try
             {
-                if (!propertyRegister.ContainsKey(objectType))
+                if (!propertyRegistry.ContainsKey(objectType))
                 {
                     var typeStack = new List<Type>();
                     var stackType = objectType;
@@ -202,15 +201,15 @@ namespace Etherna.MongODM.Core
                         stackType = stackType.BaseType;
                     } while (stackType != null);
 
-                    propertyRegister.Add(objectType, typeStack
+                    propertyRegistry.Add(objectType, typeStack
                         .SelectMany(type => type.GetProperties(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance))
                         .Where(prop => prop.CanWrite));
                 }
-                return propertyRegister[objectType];
+                return propertyRegistry[objectType];
             }
             finally
             {
-                propertyRegisterLock.ExitWriteLock();
+                propertyRegistryLock.ExitWriteLock();
             }
         }
 

@@ -12,11 +12,11 @@
 //   See the License for the specific language governing permissions and
 //   limitations under the License.
 
+using Etherna.MongoDB.Bson;
+using Etherna.MongoDB.Bson.Serialization.IdGenerators;
+using Etherna.MongoDB.Bson.Serialization.Serializers;
 using Etherna.MongODM.Core;
 using Etherna.MongODM.Core.Serialization;
-using MongoDB.Bson;
-using MongoDB.Bson.Serialization.IdGenerators;
-using MongoDB.Bson.Serialization.Serializers;
 
 namespace Etherna.MongODM.AspNetCoreSample.Models.ModelMaps
 {
@@ -24,9 +24,9 @@ namespace Etherna.MongODM.AspNetCoreSample.Models.ModelMaps
     {
         public void Register(IDbContext dbContext)
         {
-            dbContext.SchemaRegister.AddModelMapsSchema<ModelBase>("1252861f-82d9-4c72-975e-3571d5e1b6e6");
+            dbContext.SchemaRegistry.AddModelMapsSchema<ModelBase>("1252861f-82d9-4c72-975e-3571d5e1b6e6");
 
-            dbContext.SchemaRegister.AddModelMapsSchema<EntityModelBase<string>>("81dd8b35-a0af-44d9-80b4-ab7ae9844eb5", modelMap =>
+            dbContext.SchemaRegistry.AddModelMapsSchema<EntityModelBase<string>>("81dd8b35-a0af-44d9-80b4-ab7ae9844eb5", modelMap =>
             {
                 modelMap.AutoMap();
 

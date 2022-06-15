@@ -12,9 +12,11 @@
 //   See the License for the specific language governing permissions and
 //   limitations under the License.
 
+using Etherna.MongoDB.Bson.Serialization;
+using Etherna.MongODM.Core.Serialization.Serializers;
 using Etherna.MongODM.Core.Utility;
-using MongoDB.Bson.Serialization;
 using System;
+using System.Threading.Tasks;
 
 namespace Etherna.MongODM.Core.Serialization.Mapping
 {
@@ -25,12 +27,19 @@ namespace Etherna.MongODM.Core.Serialization.Mapping
         string? BaseModelMapId { get; }
         BsonClassMap BsonClassMap { get; }
         IBsonSerializer BsonClassMapSerializer { get; }
-        public bool IsEntity { get; }
-        public Type ModelType { get; }
-        public IBsonSerializer? Serializer { get; }
+        bool IsEntity { get; }
+        Type ModelType { get; }
+        IBsonSerializer? Serializer { get; }
 
         // Methods.
+        Task<object> FixDeserializedModelAsync(object model);
         void SetBaseModelMap(IModelMap baseModelMap);
         void UseProxyGenerator(IDbContext dbContext);
+    }
+
+    public interface IModelMap<TModel> : IModelMap
+    {
+        // Methods.
+        Task<TModel> FixDeserializedModelAsync(TModel model);
     }
 }

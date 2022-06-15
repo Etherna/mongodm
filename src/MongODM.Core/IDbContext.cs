@@ -12,6 +12,9 @@
 //   See the License for the specific language governing permissions and
 //   limitations under the License.
 
+using Etherna.ExecContext;
+using Etherna.MongoDB.Bson.Serialization;
+using Etherna.MongoDB.Driver;
 using Etherna.MongODM.Core.Domain.Models;
 using Etherna.MongODM.Core.Migration;
 using Etherna.MongODM.Core.Options;
@@ -21,7 +24,6 @@ using Etherna.MongODM.Core.Serialization;
 using Etherna.MongODM.Core.Serialization.Mapping;
 using Etherna.MongODM.Core.Serialization.Modifiers;
 using Etherna.MongODM.Core.Utility;
-using MongoDB.Driver;
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
@@ -65,11 +67,14 @@ namespace Etherna.MongODM.Core
         ICollectionRepository<OperationBase, string> DbOperations { get; }
 
         /// <summary>
+        /// Registry for discriminator configuration.
+        /// </summary>
+        IDiscriminatorRegistry DiscriminatorRegistry { get; }
+
+        /// <summary>
         /// List of registered migration tasks
         /// </summary>
         IEnumerable<DocumentMigration> DocumentMigrationList { get; }
-
-        DocumentSemVerOptions DocumentSemVerOptions { get; }
 
         /// <summary>
         /// DbContext unique identifier.
@@ -77,11 +82,19 @@ namespace Etherna.MongODM.Core
         string Identifier { get; }
 
         /// <summary>
-        /// Current MongODM library version
+        /// True if it has been seeded.
+        /// </summary>
+        bool IsSeeded { get; }
+
+        /// <summary>
+        /// Current MongODM library version.
         /// </summary>
         SemanticVersion LibraryVersion { get; }
 
-        ModelMapVersionOptions ModelMapVersionOptions { get; }
+        /// <summary>
+        /// Db context options.
+        /// </summary>
+        IDbContextOptions Options { get; }
 
         /// <summary>
         /// Current model proxy generator.
@@ -89,19 +102,29 @@ namespace Etherna.MongODM.Core
         IProxyGenerator ProxyGenerator { get; }
 
         /// <summary>
-        /// Register of available repositories.
+        /// Registry of available repositories.
         /// </summary>
-        IRepositoryRegister RepositoryRegister { get; }
+        IRepositoryRegistry RepositoryRegistry { get; }
 
         /// <summary>
-        /// Register for model serialization and schema information.
+        /// Local instance of a serializer registry.
         /// </summary>
-        ISchemaRegister SchemaRegister { get; }
+        IBsonSerializerRegistry SerializerRegistry { get; }
+
+        /// <summary>
+        /// Registry for model serialization and schema information.
+        /// </summary>
+        ISchemaRegistry SchemaRegistry { get; }
 
         /// <summary>
         /// Serializer modifier accessor.
         /// </summary>
         ISerializerModifierAccessor SerializerModifierAccessor { get; }
+
+        /// <summary>
+        /// ExecutionContext handler.
+        /// </summary>
+        IExecutionContext ExecutionContext { get; }
 
         // Methods.
         /// <summary>

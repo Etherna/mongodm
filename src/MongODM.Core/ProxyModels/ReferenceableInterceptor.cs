@@ -42,14 +42,14 @@ namespace Etherna.MongODM.Core.ProxyModels
                 throw new ArgumentNullException(nameof(dbContext));
 
             var repositoryModelType = typeof(TModel);
-            while (!dbContext.RepositoryRegister.ModelRepositoryMap.ContainsKey(repositoryModelType))
+            while (!dbContext.RepositoryRegistry.RepositoriesByModelType.ContainsKey(repositoryModelType))
             {
                 if (repositoryModelType == typeof(object))
                     throw new InvalidOperationException($"Cant find valid repository for model type {typeof(TModel)}");
                 repositoryModelType = repositoryModelType.BaseType;
             }
 
-            repository = dbContext.RepositoryRegister.ModelRepositoryMap[repositoryModelType];
+            repository = dbContext.RepositoryRegistry.RepositoriesByModelType[repositoryModelType];
         }
 
         // Protected methods.

@@ -12,14 +12,15 @@
 //   See the License for the specific language governing permissions and
 //   limitations under the License.
 
-using System;
-
-namespace Etherna.ExecContext.AsyncLocal
+namespace Etherna.MongODM.Core.Options
 {
-    /// <summary>
-    ///     A disposable interface for <see cref="AsyncLocalContextHandler"/>
-    /// </summary>
-    public interface IAsyncLocalContextHandler : IDisposable
+    public interface IDbContextOptions
     {
+        public string ConnectionString { get; }
+        public string DbName { get; }
+        public string DbOperationsCollectionName { get; }
+        public DocumentSemVerOptions DocumentSemVer { get; }
+        public string? Identifier { get; }
+        public ModelMapVersionOptions ModelMapVersion { get; }
     }
 }

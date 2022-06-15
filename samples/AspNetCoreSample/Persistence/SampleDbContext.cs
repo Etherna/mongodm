@@ -15,21 +15,15 @@
 using Etherna.MongODM.AspNetCoreSample.Models;
 using Etherna.MongODM.AspNetCoreSample.Models.ModelMaps;
 using Etherna.MongODM.Core;
-using Etherna.MongODM.Core.Options;
 using Etherna.MongODM.Core.Repositories;
 using Etherna.MongODM.Core.Serialization;
 using System.Collections.Generic;
+using System.Threading.Tasks;
 
 namespace Etherna.MongODM.AspNetCoreSample.Persistence
 {
     public class SampleDbContext : DbContext, ISampleDbContext
     {
-        public SampleDbContext(
-            IDbDependencies dependencies,
-            DbContextOptions<SampleDbContext> options)
-            : base(dependencies, options)
-        { }
-
         public ICollectionRepository<Cat, string> Cats { get; } = new CollectionRepository<Cat, string>("cats");
 
         protected override IEnumerable<IModelMapsCollector> ModelMapsCollectors =>
@@ -38,5 +32,12 @@ namespace Etherna.MongODM.AspNetCoreSample.Persistence
                 new ModelBaseMap(),
                 new CatMap()
             };
+
+        protected override Task SeedAsync()
+        {
+            // Seed here.
+
+            return base.SeedAsync();
+        }
     }
 }

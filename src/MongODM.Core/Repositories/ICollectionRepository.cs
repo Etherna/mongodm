@@ -12,9 +12,9 @@
 //   See the License for the specific language governing permissions and
 //   limitations under the License.
 
+using Etherna.MongoDB.Driver;
+using Etherna.MongoDB.Driver.Linq;
 using Etherna.MongODM.Core.Domain.Models;
-using MongoDB.Driver;
-using MongoDB.Driver.Linq;
 using System;
 using System.Linq.Expressions;
 using System.Threading;
@@ -39,7 +39,9 @@ namespace Etherna.MongODM.Core.Repositories
     public interface ICollectionRepository<TModel, TKey> : IRepository<TModel, TKey>, ICollectionRepository
         where TModel : class, IEntityModel<TKey>
     {
-        IMongoCollection<TModel> Collection { get; }
+        Task AccessToCollectionAsync(Func<IMongoCollection<TModel>, Task> action);
+
+        Task<TResult> AccessToCollectionAsync<TResult>(Func<IMongoCollection<TModel>, Task<TResult>> func);
 
         Task<IAsyncCursor<TProjection>> FindAsync<TProjection>(
             FilterDefinition<TModel> filter,
@@ -53,6 +55,14 @@ namespace Etherna.MongODM.Core.Repositories
         Task<TResult> QueryElementsAsync<TResult>(
             Func<IMongoQueryable<TModel>, Task<TResult>> query,
             AggregateOptions? aggregateOptions = null);
+
+        Task<PaginatedEnumerable<TResult>> QueryPaginatedElementsAsync<TResult, TResultKey>(
+            Func<IMongoQueryable<TModel>, IMongoQueryable<TResult>> filter,
+            Expression<Func<TResult, TResultKey>> orderKeySelector,
+            int page,
+            int take,
+            bool useDescendingOrder = false,
+            CancellationToken cancellationToken = default);
 
         Task ReplaceAsync(
             TModel model,

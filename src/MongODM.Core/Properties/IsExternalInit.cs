@@ -12,19 +12,8 @@
 //   See the License for the specific language governing permissions and
 //   limitations under the License.
 
-using System.Collections.Generic;
-
-namespace Etherna.ExecContext
+// Required because of this https://developercommunity.visualstudio.com/t/error-cs0518-predefined-type-systemruntimecompiler/1244809
+namespace System.Runtime.CompilerServices
 {
-    /// <summary>
-    /// Represents an execution context, where information can be put and retrieve alongside
-    /// the process with a key-value dictionary.
-    /// </summary>
-    public interface IExecutionContext
-    {
-        /// <summary>
-        /// The context dictionary.
-        /// </summary>
-        IDictionary<object, object?>? Items { get; }
-    }
+    internal static class IsExternalInit { }
 }

@@ -12,7 +12,7 @@
 //   See the License for the specific language governing permissions and
 //   limitations under the License.
 
-using Etherna.MongODM.AspNetCoreSample.Models;
+using Etherna.MongODM.AspNetCore.UI;
 using Etherna.MongODM.AspNetCoreSample.Persistence;
 using Hangfire;
 using Microsoft.AspNetCore.Builder;
@@ -35,7 +35,9 @@ namespace Etherna.MongODM.AspNetCoreSample
         {
             services.AddRazorPages();
 
-            services.AddMongODMWithHangfire<ModelBase>()
+            services.AddHangfireServer();
+
+            services.AddMongODMWithHangfire()
                 .AddDbContext<ISampleDbContext, SampleDbContext>();
 
             services.AddMongODMAdminDashboard();
@@ -52,13 +54,14 @@ namespace Etherna.MongODM.AspNetCoreSample
 
             app.UseAuthorization();
 
-            app.UseHangfireServer();
             app.UseHangfireDashboard();
 
             app.UseEndpoints(endpoints =>
             {
                 endpoints.MapRazorPages();
             });
+
+            app.SeedDbContexts();
         }
     }
 }

@@ -12,7 +12,7 @@
 //   See the License for the specific language governing permissions and
 //   limitations under the License.
 
-using MongoDB.Bson.Serialization;
+using Etherna.MongoDB.Bson.Serialization;
 using System;
 using System.Diagnostics.CodeAnalysis;
 
@@ -35,10 +35,25 @@ namespace Etherna.MongODM.Core.Serialization.Mapping.Schemas
         }
 
         [SuppressMessage("Reliability", "CA2000:Dispose objects before losing scope", Justification = "The new model map instance can't be disposed")]
+        public IReferenceModelMapsSchemaBuilder<TModel> AddFallbackModelMap(
+            Action<BsonClassMap<TModel>>? modelMapInitializer = null,
+            string? baseModelMapId = null) =>
+            AddFallbackModelMap(new ModelMap<TModel>(
+                "fallback",
+                new BsonClassMap<TModel>(modelMapInitializer ?? (cm => cm.AutoMap())),
+                baseModelMapId));
+
+        public IReferenceModelMapsSchemaBuilder<TModel> AddFallbackModelMap(ModelMap<TModel> modelMap)
+        {
+            AddFallbackModelMapHelper(modelMap);
+            return this;
+        }
+
+        [SuppressMessage("Reliability", "CA2000:Dispose objects before losing scope", Justification = "The new model map instance can't be disposed")]
         public IReferenceModelMapsSchemaBuilder<TModel> AddSecondaryMap(
             string id,
-            string? baseModelMapId = null,
-            Action<BsonClassMap<TModel>>? modelMapInitializer = null) =>
+            Action<BsonClassMap<TModel>>? modelMapInitializer = null,
+            string? baseModelMapId = null) =>
             AddSecondaryMap(new ModelMap<TModel>(
                 id,
                 new BsonClassMap<TModel>(modelMapInitializer ?? (cm => cm.AutoMap())),

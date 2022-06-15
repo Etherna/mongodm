@@ -37,6 +37,7 @@ namespace Etherna.MongODM.Core.Tasks
         {
             var dbContext = (TDbContext)serviceProvider.GetService(typeof(TDbContext));
             var dbMigrationOp = (DbMigrationOperation)await dbContext.DbOperations.FindOneAsync(dbMigrationOpId).ConfigureAwait(false);
+            var completedWithErrors = false;
 
             // Start migrate operation.
             dbMigrationOp.TaskStarted(taskId);
@@ -50,16 +51,19 @@ namespace Etherna.MongODM.Core.Tasks
                     async procDocs =>
                     {
                         dbMigrationOp.AddLog(new DocumentMigrationLog(
-                            docMigration.SourceCollection.Name,
+                            docMigration.SourceRepository.Name,
                             MigrationLogBase.ExecutionState.Executing,
                             procDocs));
 
                         await dbContext.SaveChangesAsync().ConfigureAwait(false);
                     }).ConfigureAwait(false);
 
+                if (!result.Succeded)
+                    completedWithErrors = true;
+
                 //ended document migration log
                 dbMigrationOp.AddLog(new DocumentMigrationLog(
-                    docMigration.SourceCollection.Name,
+                    docMigration.SourceRepository.Name,
                     result.Succeded ?
                         MigrationLogBase.ExecutionState.Succeded :
                         MigrationLogBase.ExecutionState.Failed,
@@ -69,23 +73,39 @@ namespace Etherna.MongODM.Core.Tasks
             }
 
             // Build indexes.
-            foreach (var repository in dbContext.RepositoryRegister.ModelCollectionRepositoryMap.Values)
+            foreach (var repository in dbContext.RepositoryRegistry.CollectionRepositoriesByModelType.Values)
             {
                 dbMigrationOp.AddLog(new IndexMigrationLog(
                     repository.Name,
                     MigrationLogBase.ExecutionState.Executing));
                 await dbContext.SaveChangesAsync().ConfigureAwait(false);
 
-                await repository.BuildIndexesAsync(dbContext.SchemaRegister).ConfigureAwait(false);
+                try
+                {
+                    await repository.BuildIndexesAsync().ConfigureAwait(false);
 
-                dbMigrationOp.AddLog(new IndexMigrationLog(
-                    repository.Name,
-                    MigrationLogBase.ExecutionState.Succeded));
+                    dbMigrationOp.AddLog(new IndexMigrationLog(
+                        repository.Name,
+                        MigrationLogBase.ExecutionState.Succeded));
+                }
+                catch (Exception)
+                {
+                    completedWithErrors = true;
+
+                    dbMigrationOp.AddLog(new IndexMigrationLog(
+                        repository.Name,
+                        MigrationLogBase.ExecutionState.Failed));
+                }
+
                 await dbContext.SaveChangesAsync().ConfigureAwait(false);
             }
 
             // Complete task.
-            dbMigrationOp.TaskCompleted();
+            if (!completedWithErrors)
+                dbMigrationOp.TaskCompleted();
+            else
+                dbMigrationOp.TaskFailed();
+
             await dbContext.SaveChangesAsync().ConfigureAwait(false);
         }
     }

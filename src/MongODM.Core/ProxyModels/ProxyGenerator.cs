@@ -17,6 +17,7 @@ using Etherna.MongODM.Core.Domain.Models;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 using System.Threading;
 
 namespace Etherna.MongODM.Core.ProxyModels
@@ -34,14 +35,13 @@ namespace Etherna.MongODM.Core.ProxyModels
         private readonly Dictionary<Type, Type> proxyTypeDictionary = new();
         private readonly ReaderWriterLockSlim proxyTypeDictionaryLock = new(LockRecursionPolicy.SupportsRecursion);
 
-        // Constructors.
+        // Constructor and dispose.
         public ProxyGenerator(
             Castle.DynamicProxy.IProxyGenerator proxyGeneratorCore)
         {
             this.proxyGeneratorCore = proxyGeneratorCore;
         }
-
-        // Dispose.
+        
         public void Dispose()
         {
             Dispose(true);
@@ -62,6 +62,9 @@ namespace Etherna.MongODM.Core.ProxyModels
             disposed = true;
         }
 
+        // Properties.
+        public bool DisableCreationWithProxyTypes { get; set; }
+
         // Methods.
         public object CreateInstance(
             Type type,
@@ -72,6 +75,17 @@ namespace Etherna.MongODM.Core.ProxyModels
                 throw new ArgumentNullException(nameof(dbContext));
             if (type is null)
                 throw new ArgumentNullException(nameof(type));
+
+            // If creation of proxy models are disabled, create a simple model instance.
+            if (DisableCreationWithProxyTypes)
+            {
+                return Activator.CreateInstance(
+                    type,
+                    BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance,
+                    null,
+                    constructorArguments,
+                    null);
+            }
 
             // Get configuration.
             (Type[] AdditionalInterfaces, Func<IDbContext, IInterceptor[]> InterceptorInstancerSelector) configuration = (null!, null!);

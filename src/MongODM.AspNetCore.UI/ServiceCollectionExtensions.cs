@@ -12,14 +12,14 @@
 //   See the License for the specific language governing permissions and
 //   limitations under the License.
 
-using Etherna.MongODM.AspNetCore.UI;
 using Etherna.MongODM.AspNetCore.UI.Auth.Handlers;
 using Etherna.MongODM.AspNetCore.UI.Auth.Requirements;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc.RazorPages;
+using Microsoft.Extensions.DependencyInjection;
 using System;
 
-namespace Microsoft.Extensions.DependencyInjection
+namespace Etherna.MongODM.AspNetCore.UI
 {
     public static class ServiceCollectionExtensions
     {
@@ -44,15 +44,14 @@ namespace Microsoft.Extensions.DependencyInjection
                     routeModel =>
                     {
                         foreach (var selector in routeModel.Selectors)
-                        {
-                            var attributeRouteModel = selector.AttributeRouteModel;
+                            if (selector.AttributeRouteModel?.Template is not null)
+                            {
+                                var segments = selector.AttributeRouteModel.Template.Split('/');
+                                if (segments[0] == AreaName)
+                                    segments[0] = dashboardOptions.BasePath;
 
-                            var segments = selector.AttributeRouteModel.Template.Split('/');
-                            if (segments[0] == AreaName)
-                                segments[0] = dashboardOptions.BasePath;
-
-                            selector.AttributeRouteModel.Template = string.Join("/", segments);
-                        }
+                                selector.AttributeRouteModel.Template = string.Join("/", segments);
+                            }
                     });
             });
 

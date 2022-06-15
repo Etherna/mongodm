@@ -12,8 +12,8 @@
 //   See the License for the specific language governing permissions and
 //   limitations under the License.
 
+using Etherna.MongoDB.Bson.Serialization;
 using Etherna.MongODM.Core.Extensions;
-using MongoDB.Bson.Serialization;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -32,6 +32,7 @@ namespace Etherna.MongODM.Core.Serialization.Mapping
         // Constructors.
         public MemberDependency(
             IModelMap rootModelMap,
+            bool rootModelMapIsActive,
             IEnumerable<OwnedBsonMemberMap> memberPath,
             bool useCascadeDelete)
         {
@@ -39,6 +40,7 @@ namespace Etherna.MongODM.Core.Serialization.Mapping
             if (!memberPath.Any())
                 throw new ArgumentException("Member path can't be empty", nameof(memberPath));
             RootModelMap = rootModelMap ?? throw new ArgumentNullException(nameof(rootModelMap));
+            RootModelMapIsActive = rootModelMapIsActive;
             UseCascadeDelete = useCascadeDelete;
         }
 
@@ -118,6 +120,11 @@ namespace Etherna.MongODM.Core.Serialization.Mapping
         /// The root owning model map
         /// </summary>
         public IModelMap RootModelMap { get; }
+
+        /// <summary>
+        /// True if root model map is the currently active in schema
+        /// </summary>
+        public bool RootModelMapIsActive { get; }
 
         /// <summary>
         /// True if requested to apply cascade delete

@@ -12,17 +12,16 @@
 //   See the License for the specific language governing permissions and
 //   limitations under the License.
 
-using MongoDB.Bson.Serialization;
+using Etherna.MongoDB.Bson.Serialization;
 using System;
 
 namespace Etherna.MongODM.Core.Serialization.Mapping.Schemas
 {
     public interface IModelMapsSchemaBuilder<TModel>
-        where TModel : class
     {
         // Methods.
         /// <summary>
-        /// Add a fallback serializer invoked in case of undefined schema id
+        /// Add a fallback serializer invoked in case of unrecognized schema id
         /// </summary>
         /// <param name="fallbackSerializer">Fallback serializer</param>
         /// <returns>This same model schema</returns>
@@ -30,18 +29,24 @@ namespace Etherna.MongODM.Core.Serialization.Mapping.Schemas
             IBsonSerializer<TModel> fallbackSerializer);
 
         /// <summary>
-        /// Register a secondary model map
+        /// Add a fallback model map invoked in case of unrecognized schema id, and absence of fallback serializer
         /// </summary>
-        /// <param name="id">The map Id</param>
         /// <param name="modelMapInitializer">The model map inizializer</param>
         /// <param name="baseModelMapId">Id of the base model map for this model map</param>
         /// <param name="customSerializer">Custom serializer</param>
         /// <returns>This same model schema configuration</returns>
-        IModelMapsSchemaBuilder<TModel> AddSecondaryMap(
-            string id,
+        IModelMapsSchemaBuilder<TModel> AddFallbackModelMap(
             Action<BsonClassMap<TModel>>? modelMapInitializer = null,
             string? baseModelMapId = null,
             IBsonSerializer<TModel>? customSerializer = null);
+
+        /// <summary>
+        /// Add a fallback model map invoked in case of unrecognized schema id, and absence of fallback serializer
+        /// </summary>
+        /// <param name="modelMap">The model map</param>
+        /// <returns>This same model schema configuration</returns>
+        IModelMapsSchemaBuilder<TModel> AddFallbackModelMap(
+            ModelMap<TModel> modelMap);
 
         /// <summary>
         /// Register a secondary model map

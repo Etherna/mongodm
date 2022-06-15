@@ -12,21 +12,18 @@
 //   See the License for the specific language governing permissions and
 //   limitations under the License.
 
-using System;
+using Etherna.MongoDB.Driver;
+using Etherna.MongODM.Core.Options;
+using System.Collections.Generic;
 
-namespace Etherna.ExecContext.AsyncLocal
+namespace Etherna.MongODM.Core
 {
-    /// <summary>
-    ///     The <see cref="AsyncLocalContext"/> interface.
-    ///     Permits to create an async local context living with the method calling tree.
-    /// </summary>
-    public interface IAsyncLocalContext : IExecutionContext
+    public interface IDbContextBuilder
     {
-        /// <summary>
-        /// Initialize a new async local context
-        /// </summary>
-        /// <returns>The new context handler</returns>
-        /// <exception cref="InvalidOperationException">Throw when another local context is found</exception>
-        IAsyncLocalContextHandler InitAsyncLocalContext();
+        void Initialize(
+            IDbDependencies dependencies,
+            IMongoClient mongoClient,
+            IDbContextOptions options,
+            IEnumerable<IDbContext> childDbContexts);
     }
 }

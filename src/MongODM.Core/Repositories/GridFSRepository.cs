@@ -12,12 +12,12 @@
 //   See the License for the specific language governing permissions and
 //   limitations under the License.
 
+using Etherna.MongoDB.Bson;
+using Etherna.MongoDB.Driver;
+using Etherna.MongoDB.Driver.GridFS;
 using Etherna.MongODM.Core.Domain.Models;
 using Etherna.MongODM.Core.Exceptions;
-using Etherna.MongODM.Core.Serialization.Mapping;
-using MongoDB.Bson;
-using MongoDB.Driver;
-using MongoDB.Driver.GridFS;
+using Etherna.MongODM.Core.Utility;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -46,18 +46,40 @@ namespace Etherna.MongODM.Core.Repositories
         }
 
         // Properties.
-        public IGridFSBucket GridFSBucket =>
-            _gridFSBucket ??= new GridFSBucket(DbContext.Database, new GridFSBucketOptions { BucketName = options.Name });
         public override string Name => options.Name;
 
         // Methods.
-        public override Task BuildIndexesAsync(ISchemaRegister schemaRegister, CancellationToken cancellationToken = default) => Task.CompletedTask;
+        public Task AccessToGridFSBucketAsync(Func<IGridFSBucket, Task> action) =>
+            AccessToGridFSBucketAsync(async bucket =>
+            {
+                await action(bucket).ConfigureAwait(false);
+                return 0;
+            });
+
+        public async Task<TResult> AccessToGridFSBucketAsync<TResult>(Func<IGridFSBucket, Task<TResult>> func)
+        {
+            if (func is null)
+                throw new ArgumentNullException(nameof(func));
+
+            // Initialize bucket cache.
+            if (_gridFSBucket is null)
+                _gridFSBucket = new GridFSBucket(DbContext.Database, new GridFSBucketOptions { BucketName = options.Name });
+
+            // Execute func into execution context.
+            using (new DbExecutionContextHandler(DbContext))
+            {
+                return await func(_gridFSBucket).ConfigureAwait(false);
+            }
+        }
+
+        public override Task BuildIndexesAsync(CancellationToken cancellationToken = default) => Task.CompletedTask;
 
         public virtual Task<byte[]> DownloadAsBytesAsync(string id, CancellationToken cancellationToken = default) =>
-            GridFSBucket.DownloadAsBytesAsync(ObjectId.Parse(id), null, cancellationToken);
+            AccessToGridFSBucketAsync(bucket => bucket.DownloadAsBytesAsync(ObjectId.Parse(id), null, cancellationToken));
 
         public virtual async Task<Stream> DownloadAsStreamAsync(string id, CancellationToken cancellationToken = default) =>
-            await GridFSBucket.OpenDownloadStreamAsync(ObjectId.Parse(id), null, cancellationToken).ConfigureAwait(false);
+            await AccessToGridFSBucketAsync(bucket =>
+                bucket.OpenDownloadStreamAsync(ObjectId.Parse(id), null, cancellationToken)).ConfigureAwait(false);
 
         // Protected methods.
         protected override async Task CreateOnDBAsync(IEnumerable<TModel> models, CancellationToken cancellationToken)
@@ -69,48 +91,52 @@ namespace Etherna.MongODM.Core.Repositories
                 await CreateOnDBAsync(model, cancellationToken).ConfigureAwait(false);
         }
 
-        protected override async Task CreateOnDBAsync(TModel model, CancellationToken cancellationToken)
-        {
-            if (model is null)
-                throw new ArgumentNullException(nameof(model));
-
-            // Upload.
-            model.Stream.Position = 0;
-            var id = await GridFSBucket.UploadFromStreamAsync(model.Name, model.Stream, new GridFSUploadOptions
+        protected override Task CreateOnDBAsync(TModel model, CancellationToken cancellationToken) =>
+            AccessToGridFSBucketAsync(async bucket =>
             {
-                Metadata = options.MetadataSerializer?.Invoke(model)
-            }, cancellationToken).ConfigureAwait(false);
-            ReflectionHelper.SetValue(model, m => m.Id, id.ToString());
-        }
+                if (model is null)
+                    throw new ArgumentNullException(nameof(model));
 
-        protected override Task DeleteOnDBAsync(TModel model, CancellationToken cancellationToken)
-        {
-            if (model is null)
-                throw new ArgumentNullException(nameof(model));
+                // Upload.
+                model.Stream.Position = 0;
+                var id = await bucket.UploadFromStreamAsync(model.Name, model.Stream, new GridFSUploadOptions
+                {
+                    Metadata = options.MetadataSerializer?.Invoke(model)
+                }, cancellationToken).ConfigureAwait(false);
+                ReflectionHelper.SetValue(model, m => m.Id, id.ToString());
+            });
 
-            return GridFSBucket.DeleteAsync(ObjectId.Parse(model.Id), cancellationToken);
-        }
 
-        protected override async Task<TModel> FindOneOnDBAsync(string id, CancellationToken cancellationToken = default)
-        {
-            if (id == null)
-                throw new ArgumentNullException(nameof(id));
+        protected override Task DeleteOnDBAsync(TModel model, CancellationToken cancellationToken) =>
+            AccessToGridFSBucketAsync(bucket =>
+            {
+                if (model is null)
+                    throw new ArgumentNullException(nameof(model));
 
-            var filter = Builders<GridFSFileInfo>.Filter.Eq("_id", ObjectId.Parse(id));
-            var mongoFile = await GridFSBucket.Find(filter, cancellationToken: cancellationToken)
-                                              .SingleOrDefaultAsync(cancellationToken).ConfigureAwait(false);
-            if (mongoFile == null)
-                throw new MongodmEntityNotFoundException($"Can't find key {id}");
+                return bucket.DeleteAsync(ObjectId.Parse(model.Id), cancellationToken);
+            });
 
-            var file = DbContext.ProxyGenerator.CreateInstance<TModel>(DbContext);
-            ReflectionHelper.SetValue(file, m => m.Id, mongoFile.Id.ToString());
-            ReflectionHelper.SetValue(file, m => m.Length, mongoFile.Length);
-            ReflectionHelper.SetValue(file, m => m.Name, mongoFile.Filename);
+        protected override Task<TModel> FindOneOnDBAsync(string id, CancellationToken cancellationToken = default) =>
+            AccessToGridFSBucketAsync(async bucket =>
+            {
+                if (id == null)
+                    throw new ArgumentNullException(nameof(id));
 
-            // Deserialize metadata.
-            options.MetadataDeserializer?.Invoke(mongoFile.Metadata, file);
+                var filter = Builders<GridFSFileInfo>.Filter.Eq("_id", ObjectId.Parse(id));
+                var mongoFile = await (await bucket.FindAsync(filter, cancellationToken: cancellationToken).ConfigureAwait(false))
+                                                  .SingleOrDefaultAsync(cancellationToken).ConfigureAwait(false);
+                if (mongoFile == null)
+                    throw new MongodmEntityNotFoundException($"Can't find key {id}");
 
-            return file;
-        }
+                var file = DbContext.ProxyGenerator.CreateInstance<TModel>(DbContext);
+                ReflectionHelper.SetValue(file, m => m.Id, mongoFile.Id.ToString());
+                ReflectionHelper.SetValue(file, m => m.Length, mongoFile.Length);
+                ReflectionHelper.SetValue(file, m => m.Name, mongoFile.Filename);
+
+                // Deserialize metadata.
+                options.MetadataDeserializer?.Invoke(mongoFile.Metadata, file);
+
+                return file;
+            });
     }
 }

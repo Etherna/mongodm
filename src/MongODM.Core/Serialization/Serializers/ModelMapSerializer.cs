@@ -12,20 +12,18 @@
 //   See the License for the specific language governing permissions and
 //   limitations under the License.
 
+using Etherna.MongoDB.Bson;
+using Etherna.MongoDB.Bson.IO;
+using Etherna.MongoDB.Bson.Serialization;
+using Etherna.MongoDB.Bson.Serialization.Conventions;
+using Etherna.MongoDB.Bson.Serialization.Serializers;
 using Etherna.MongODM.Core.Domain.Models;
-using Etherna.MongODM.Core.Options;
 using Etherna.MongODM.Core.ProxyModels;
 using Etherna.MongODM.Core.Serialization.Mapping;
-using Etherna.MongODM.Core.Serialization.Modifiers;
-using Etherna.MongODM.Core.Utility;
-using MongoDB.Bson;
-using MongoDB.Bson.IO;
-using MongoDB.Bson.Serialization;
-using MongoDB.Bson.Serialization.Conventions;
-using MongoDB.Bson.Serialization.Serializers;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
 
 namespace Etherna.MongODM.Core.Serialization.Serializers
 {
@@ -35,45 +33,36 @@ namespace Etherna.MongODM.Core.Serialization.Serializers
     {
         // Fields.
         private IDiscriminatorConvention _discriminatorConvention = default!;
-        private readonly IDbCache dbCache;
         private readonly BsonElement documentSemVerElement;
-        private readonly DocumentSemVerOptions documentSemVerOptions;
-        private readonly ModelMapVersionOptions modelMapVersionOptions;
-        private readonly ISchemaRegister schemaRegister;
-        private readonly ISerializerModifierAccessor serializerModifierAccessor;
+        private readonly IDbContext dbContext;
 
         // Constructor.
         public ModelMapSerializer(
-            IDbCache dbCache,
-            DocumentSemVerOptions documentSemVerOptions,
-            ModelMapVersionOptions modelMapVersionOptions,
-            ISchemaRegister schemaRegister,
-            ISerializerModifierAccessor serializerModifierAccessor)
+            IDbContext dbContext)
         {
-            this.dbCache = dbCache ?? throw new ArgumentNullException(nameof(dbCache));
-            this.documentSemVerOptions = documentSemVerOptions ?? throw new ArgumentNullException(nameof(documentSemVerOptions));
-            this.modelMapVersionOptions = modelMapVersionOptions ?? throw new ArgumentNullException(nameof(modelMapVersionOptions));
-            this.schemaRegister = schemaRegister ?? throw new ArgumentNullException(nameof(schemaRegister));
-            this.serializerModifierAccessor = serializerModifierAccessor ?? throw new ArgumentNullException(nameof(serializerModifierAccessor));
+            if (dbContext is null)
+                throw new ArgumentNullException(nameof(dbContext));
+
+            this.dbContext = dbContext;
 
             documentSemVerElement = new BsonElement(
-                documentSemVerOptions.ElementName,
-                documentSemVerOptions.CurrentVersion.ToBsonArray());
+                dbContext.Options.DocumentSemVer.ElementName,
+                dbContext.Options.DocumentSemVer.CurrentVersion.ToBsonArray());
         }
 
         // Properties.
-        public IEnumerable<BsonClassMap> AllChildClassMaps => schemaRegister.GetModelMapsSchema(typeof(TModel))
+        public IEnumerable<BsonClassMap> AllChildClassMaps => dbContext.SchemaRegistry.GetModelMapsSchema(typeof(TModel))
             .AllMapsDictionary.Values.Select(map => map.BsonClassMap);
 
         public BsonClassMapSerializer<TModel> DefaultBsonClassMapSerializer =>
-            (BsonClassMapSerializer<TModel>)schemaRegister.GetModelMapsSchema(typeof(TModel)).ActiveMap.BsonClassMapSerializer;
+            (BsonClassMapSerializer<TModel>)dbContext.SchemaRegistry.GetModelMapsSchema(typeof(TModel)).ActiveMap.BsonClassMapSerializer;
 
         public IDiscriminatorConvention DiscriminatorConvention
         {
             get
             {
                 if (_discriminatorConvention == null)
-                    _discriminatorConvention = BsonSerializer.LookupDiscriminatorConvention(typeof(TModel));
+                    _discriminatorConvention = dbContext.DiscriminatorRegistry.LookupDiscriminatorConvention(typeof(TModel));
                 return _discriminatorConvention;
             }
         }
@@ -94,14 +83,14 @@ namespace Etherna.MongODM.Core.Serialization.Serializers
             // Find pre-deserialization informations.
             //get actual type and schema
             var actualType = DiscriminatorConvention.GetActualType(context.Reader, args.NominalType);
-            var actualTypeSchema = schemaRegister.GetModelMapsSchema(actualType);
+            var actualTypeSchema = dbContext.SchemaRegistry.GetModelMapsSchema(actualType);
 
             //deserialize on document
             var bsonDocument = BsonDocumentSerializer.Instance.Deserialize(context, args);
 
             //get version
             SemanticVersion? documentSemVer = null;
-            if (bsonDocument.TryGetElement(documentSemVerOptions.ElementName, out BsonElement versionElement))
+            if (bsonDocument.TryGetElement(dbContext.Options.DocumentSemVer.ElementName, out BsonElement versionElement))
             {
                 documentSemVer = BsonValueToSemVer(versionElement.Value);
                 bsonDocument.RemoveElement(versionElement); //don't report into extra elements
@@ -109,7 +98,7 @@ namespace Etherna.MongODM.Core.Serialization.Serializers
 
             //get model map id
             string? modelMapId = null;
-            if (bsonDocument.TryGetElement(modelMapVersionOptions.ElementName, out BsonElement modelMapIdElement))
+            if (bsonDocument.TryGetElement(dbContext.Options.ModelMapVersion.ElementName, out BsonElement modelMapIdElement))
             {
                 modelMapId = BsonValueToModelMapId(modelMapIdElement.Value);
                 bsonDocument.RemoveElement(modelMapIdElement); //don't report into extra elements
@@ -130,8 +119,9 @@ namespace Etherna.MongODM.Core.Serialization.Serializers
             //if a correct model map is identified with its id
             if (modelMapId != null && actualTypeSchema.AllMapsDictionary.ContainsKey(modelMapId))
             {
-                var serializer = actualTypeSchema.AllMapsDictionary[modelMapId].BsonClassMapSerializer;
-                model = (TModel)serializer.Deserialize(localContext, args);
+                var task = DeserializeModelMapHelperAsync(actualTypeSchema.AllMapsDictionary[modelMapId], localContext, args);
+                task.Wait();
+                model = task.Result;
             }
 
             //else, if a fallback serializator exists
@@ -140,27 +130,42 @@ namespace Etherna.MongODM.Core.Serialization.Serializers
                 model = (TModel)actualTypeSchema.FallbackSerializer.Deserialize(localContext, args);
             }
 
+            //else, if a fallback model map exists
+            else if (actualTypeSchema.FallbackModelMap != null)
+            {
+                var task = DeserializeModelMapHelperAsync(actualTypeSchema.FallbackModelMap, localContext, args);
+                task.Wait();
+                model = task.Result;
+            }
+
             //else, deserialize wih current active model map
             else
             {
-                model = (TModel)actualTypeSchema.ActiveMap.BsonClassMapSerializer.Deserialize(localContext, args);
+                var task = DeserializeModelMapHelperAsync(actualTypeSchema.ActiveMap, localContext, args);
+                task.Wait();
+                model = task.Result;
             }
 
-            // Add model to cache.
-            if (!serializerModifierAccessor.IsNoCacheEnabled &&
-                GetDocumentId(model, out var id, out _, out _) && id != null)
+            // Add model to cache (if proxy).
+            /* Proxy models enable different features. Anyway, if the model as not been created as a proxy
+             * (for example for tests scope) these additional operations are not possible or required.
+             * In this case, don't add any not-proxy models in cache.
+             */
+            if (!dbContext.SerializerModifierAccessor.IsNoCacheEnabled &&
+                GetDocumentId(model, out var id, out _, out _) && id != null &&
+                dbContext.ProxyGenerator.IsProxyType(model.GetType()))
             {
-                if (dbCache.LoadedModels.ContainsKey(id))
+                if (dbContext.DbCache.LoadedModels.ContainsKey(id))
                 {
                     var fullModel = model;
-                    model = (TModel)dbCache.LoadedModels[id];
+                    model = (TModel)dbContext.DbCache.LoadedModels[id];
 
                     if (((IReferenceable)model).IsSummary)
                         ((IReferenceable)model).MergeFullModel(fullModel);
                 }
                 else
                 {
-                    dbCache.AddModel(id, (IEntityModel)model);
+                    dbContext.DbCache.AddModel(id, (IEntityModel)model);
                 }
             }
 
@@ -193,7 +198,7 @@ namespace Etherna.MongODM.Core.Serialization.Serializers
             var bsonDocument = new BsonDocument();
             using var bsonWriter = new ExtendedBsonDocumentWriter(bsonDocument)
             {
-                IsRootDocument = !(context.Writer is ExtendedBsonDocumentWriter)
+                IsRootDocument = context.Writer is not ExtendedBsonDocumentWriter
             };
             var localContext = BsonSerializationContext.CreateRoot(
                 bsonWriter,
@@ -201,7 +206,7 @@ namespace Etherna.MongODM.Core.Serialization.Serializers
 
             // Get default schema.
             var actualType = value.GetType();
-            var modelMapsSchema = schemaRegister.GetModelMapsSchema(actualType);
+            var modelMapsSchema = dbContext.SchemaRegistry.GetModelMapsSchema(actualType);
 
             // Serialize.
             modelMapsSchema.ActiveBsonClassMapSerializer.Serialize(localContext, args, value);
@@ -214,14 +219,14 @@ namespace Etherna.MongODM.Core.Serialization.Serializers
              * from bson class map serializer. In that case, the right model map id is already be setted, and we
              * don't have to replace it with the one wrong of the basic collection model type.
              */
-            if (!bsonDocument.Contains(modelMapVersionOptions.ElementName))
-                bsonDocument.InsertAt(0, schemaRegister.GetActiveModelMapIdBsonElement(actualType));
+            if (!bsonDocument.Contains(dbContext.Options.ModelMapVersion.ElementName))
+                bsonDocument.InsertAt(0, dbContext.SchemaRegistry.GetActiveModelMapIdBsonElement(actualType));
 
             //add version
-            if (documentSemVerOptions.WriteInDocuments && bsonWriter.IsRootDocument)
+            if (dbContext.Options.DocumentSemVer.WriteInDocuments && bsonWriter.IsRootDocument)
             {
-                if (bsonDocument.Contains(documentSemVerOptions.ElementName))
-                    bsonDocument.Remove(documentSemVerOptions.ElementName);
+                if (bsonDocument.Contains(dbContext.Options.DocumentSemVer.ElementName))
+                    bsonDocument.Remove(dbContext.Options.DocumentSemVer.ElementName);
                 bsonDocument.InsertAt(1, documentSemVerElement);
             }
 
@@ -256,5 +261,23 @@ namespace Etherna.MongODM.Core.Serialization.Serializers
                     bsonArray.Count >= 4 ? bsonArray[3].AsString : null),
                 _ => throw new NotSupportedException(),
             };
+
+        private static async Task<TModel> DeserializeModelMapHelperAsync(
+            IModelMap modelMap,
+            BsonDeserializationContext context,
+            BsonDeserializationArgs args)
+        {
+            /* If is mapped a different serializer than the current one, choose it.
+             * Otherwise, if doesn't exist or is already the current, deserialize with BsonClassMap
+             */
+            var serializer = modelMap.Serializer is not null && modelMap.Serializer.GetType() != typeof(ModelMapSerializer<TModel>) ?
+                modelMap.Serializer :
+                modelMap.BsonClassMapSerializer;
+
+            var model = (TModel)serializer.Deserialize(context, args);
+
+            // Fix model.
+            return (TModel)await modelMap.FixDeserializedModelAsync(model).ConfigureAwait(false);
+        }
     }
 }

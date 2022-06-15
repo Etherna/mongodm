@@ -12,10 +12,10 @@
 //   See the License for the specific language governing permissions and
 //   limitations under the License.
 
+using Etherna.MongoDB.Driver;
 using Etherna.MongODM.Core.Domain.Models;
 using Etherna.MongODM.Core.Repositories;
 using Etherna.MongODM.Core.Serialization.Modifiers;
-using MongoDB.Driver;
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
@@ -51,10 +51,10 @@ namespace Etherna.MongODM.Core.Tasks
 
             // Get repository.
             /* Ignore document update if doesn't exists a collection that can handle its type. */
-            if (!dbContext.RepositoryRegister.ModelCollectionRepositoryMap.ContainsKey(typeof(TModel)))
+            if (!dbContext.RepositoryRegistry.CollectionRepositoriesByModelType.ContainsKey(typeof(TModel)))
                 return;
 
-            var repository = (ICollectionRepository<TModel, TKey>)dbContext.RepositoryRegister.ModelCollectionRepositoryMap[typeof(TModel)];
+            var repository = (ICollectionRepository<TModel, TKey>)dbContext.RepositoryRegistry.CollectionRepositoriesByModelType[typeof(TModel)];
 
             // Update models.
             HashSet<TKey> upgradedDocumentsId = new();

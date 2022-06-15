@@ -12,13 +12,14 @@
 //   See the License for the specific language governing permissions and
 //   limitations under the License.
 
+using Etherna.MongoDB.Bson;
+using Etherna.MongoDB.Bson.Serialization;
 using Etherna.MongODM.Core.Extensions;
 using Etherna.MongODM.Core.Serialization.Mapping.Schemas;
 using Etherna.MongODM.Core.Serialization.Serializers;
 using Etherna.MongODM.Core.Utility;
-using MongoDB.Bson;
-using MongoDB.Bson.Serialization;
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
@@ -27,12 +28,13 @@ using System.Text;
 
 namespace Etherna.MongODM.Core.Serialization.Mapping
 {
-    public class SchemaRegister : FreezableConfig, ISchemaRegister
+    public class SchemaRegistry : FreezableConfig, ISchemaRegistry
     {
         // Fields.
         private readonly Dictionary<Type, ISchema> _schemas = new();
 
         private readonly Dictionary<Type, BsonElement> activeModelMapIdBsonElement = new();
+        private readonly ConcurrentDictionary<Type, BsonClassMap> defaultClassMapsCache = new();
         private readonly Dictionary<MemberInfo, List<MemberDependency>> memberInfoToMemberMapsDictionary = new();
         private readonly Dictionary<Type, List<MemberDependency>> modelTypeToReferencedIdMemberMapsDictionary = new();
 
@@ -77,8 +79,7 @@ namespace Etherna.MongODM.Core.Serialization.Mapping
             var modelMap = new ModelMap<TModel>(
                 activeModelMapId,
                 new BsonClassMap<TModel>(activeModelMapInitializer ?? (cm => cm.AutoMap())),
-                null,
-                customSerializer ?? ModelMap.GetDefaultSerializer<TModel>(dbContext));
+                serializer: customSerializer ?? ModelMap.GetDefaultSerializer<TModel>(dbContext));
 
             return AddModelMapsSchema(modelMap);
         }
@@ -105,6 +106,29 @@ namespace Etherna.MongODM.Core.Serialization.Mapping
                 return modelSchemaConfiguration;
             });
 
+        public BsonClassMap GetActiveClassMap(Type modelType)
+        {
+            // If a schema is registered.
+            if (_schemas.ContainsKey(modelType) &&
+                _schemas[modelType] is IModelMapsSchema modelMapSchema)
+                return modelMapSchema.ActiveMap.BsonClassMap;
+
+            // If we don't have a model schema, look for a default classmap, or create it.
+            if (defaultClassMapsCache.ContainsKey(modelType))
+                return defaultClassMapsCache[modelType];
+
+            var classMapDefinition = typeof(BsonClassMap<>);
+            var classMapType = classMapDefinition.MakeGenericType(modelType);
+            var classMap = (BsonClassMap)Activator.CreateInstance(classMapType);
+            classMap.AutoMap();
+
+            // Register classMap (if doesn't exist) with discriminator.
+            defaultClassMapsCache.TryAdd(modelType, classMap);
+            dbContext.DiscriminatorRegistry.AddDiscriminator(modelType, classMap.Discriminator);
+
+            return classMap;
+        }
+
         public BsonElement GetActiveModelMapIdBsonElement(Type modelType)
         {
             if (modelType is null)
@@ -119,12 +143,12 @@ namespace Etherna.MongODM.Core.Serialization.Mapping
             return activeModelMapIdBsonElement[modelType];
         }
 
-        public IEnumerable<MemberDependency> GetIdMemberDependenciesFromRootModel(Type modelType)
+        public IEnumerable<MemberDependency> GetIdMemberDependenciesFromRootModel(Type modelType, bool onlyFromActiveModelMap = false)
         {
             Freeze(); //needed for initialization
 
             if (modelTypeToReferencedIdMemberMapsDictionary.TryGetValue(modelType, out List<MemberDependency> dependencies))
-                return dependencies;
+                return dependencies.Where(d => !onlyFromActiveModelMap || d.RootModelMapIsActive);
             return Array.Empty<MemberDependency>();
         }
 
@@ -144,7 +168,7 @@ namespace Etherna.MongODM.Core.Serialization.Mapping
             if (modelType is null)
                 throw new ArgumentNullException(nameof(modelType));
             if (!_schemas.ContainsKey(modelType))
-                throw new InvalidOperationException(modelType.Name + " schema is not registered");
+                throw new KeyNotFoundException(modelType.Name + " schema is not registered");
 
             var schema = _schemas[modelType];
 
@@ -199,12 +223,12 @@ namespace Etherna.MongODM.Core.Serialization.Mapping
 
                 // Register active serializer.
                 if (schema.ActiveSerializer != null)
-                    BsonSerializer.RegisterSerializer(schema.ModelType, schema.ActiveSerializer);
+                    ((BsonSerializerRegistry)dbContext.SerializerRegistry).RegisterSerializer(schema.ModelType, schema.ActiveSerializer);
 
                 // Register discriminators for all bson class maps.
                 if (schema is IModelMapsSchema modelMapsSchema)
                     foreach (var modelMap in modelMapsSchema.AllMapsDictionary.Values)
-                        BsonSerializer.RegisterDiscriminator(modelMapsSchema.ModelType, modelMap.BsonClassMap.Discriminator);
+                        dbContext.DiscriminatorRegistry.AddDiscriminator(modelMapsSchema.ModelType, modelMap.BsonClassMap.Discriminator);
             }
 
             // Specific for model maps schemas.
@@ -220,6 +244,7 @@ namespace Etherna.MongODM.Core.Serialization.Mapping
                 foreach (var modelMap in schema.AllMapsDictionary.Values)
                     CompileDependencyRegisters(
                         modelMap,
+                        modelMap == schema.ActiveMap,
                         modelMap.BsonClassMap,
                         default,
                         Array.Empty<OwnedBsonMemberMap>());
@@ -235,7 +260,7 @@ namespace Etherna.MongODM.Core.Serialization.Mapping
                 activeModelMapIdBsonElement.Add(
                     schema.ModelType,
                     new BsonElement(
-                        dbContext.ModelMapVersionOptions.ElementName,
+                        dbContext.Options.ModelMapVersion.ElementName,
                         new BsonString(notProxySchema.ActiveMap.Id)));
             }
         }
@@ -243,6 +268,7 @@ namespace Etherna.MongODM.Core.Serialization.Mapping
         // Helpers.
         private void CompileDependencyRegisters(
             IModelMap modelMap,
+            bool modelMapIsActive,
             BsonClassMap currentClassMap,
             BsonClassMap? lastEntityClassMap,
             IEnumerable<OwnedBsonMemberMap> ownedBsonMemberPath,
@@ -268,6 +294,7 @@ namespace Etherna.MongODM.Core.Serialization.Mapping
                 // Identify current member with its root model map, the path from current model map, and cascade delete information.
                 var memberDependency = new MemberDependency(
                     modelMap,
+                    modelMapIsActive,
                     currentMemberPath,
                     useCascadeDeleteSetting ?? false);
 
@@ -306,11 +333,9 @@ namespace Etherna.MongODM.Core.Serialization.Mapping
                 //model maps schema serializers
                 if (memberSerializer is IModelMapsContainerSerializer schemaSerializer)
                 {
-#pragma warning disable CA1508 // Avoid dead conditional code. Here code analyzer is wrong
                     bool? useCascadeDelete = (memberSerializer as IReferenceContainerSerializer)?.UseCascadeDelete;
-#pragma warning restore CA1508 // Avoid dead conditional code
                     foreach (var childClassMap in schemaSerializer.AllChildClassMaps)
-                        CompileDependencyRegisters(modelMap, childClassMap, lastEntityClassMap, currentMemberPath, useCascadeDelete);
+                        CompileDependencyRegisters(modelMap, modelMapIsActive, childClassMap, lastEntityClassMap, currentMemberPath, useCascadeDelete);
                 }
             }
         }
@@ -332,6 +357,7 @@ namespace Etherna.MongODM.Core.Serialization.Mapping
                 Guid.NewGuid().ToString(), //string id
                 classMap,                  //BsonClassMap<TModel> bsonClassMap
                 null,                      //string? baseModelMapId
+                null,                      //Func<TModel, Task<TModel>>? fixDeserializedModelFunc
                 null);                     //IBsonSerializer<TModel>? serializer
 
             //model maps schema

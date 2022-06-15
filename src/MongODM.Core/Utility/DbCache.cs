@@ -16,24 +16,37 @@ using Etherna.ExecContext;
 using Etherna.MongODM.Core.Domain.Models;
 using System;
 using System.Collections.Generic;
+using System.Text;
 
 namespace Etherna.MongODM.Core.Utility
 {
     public class DbCache : IDbCache
     {
         // Consts.
-        private const string CacheKey = "DBCache";
+        private const string CacheKeyPrefix = "DBCache-";
 
         // Fields.
-        private readonly IExecutionContext executionContext;
+        private string cacheKey = default!;
+        private IExecutionContext executionContext = default!;
 
         // Constructors.
-        public DbCache(IExecutionContext executionContext)
+        public void Initialize(IDbContext dbContext)
         {
-            this.executionContext = executionContext ?? throw new ArgumentNullException(nameof(executionContext));
+            if (dbContext is null)
+                throw new ArgumentNullException(nameof(dbContext));
+            if (IsInitialized)
+                throw new InvalidOperationException("Instance already initialized");
+
+            var cacheKeyBuilder = new StringBuilder(CacheKeyPrefix);
+            cacheKeyBuilder.Append(dbContext.Identifier);
+            cacheKey = cacheKeyBuilder.ToString();
+            executionContext = dbContext.ExecutionContext;
+
+            IsInitialized = true;
         }
 
         // Properties.
+        public bool IsInitialized { get; private set; }
         public IReadOnlyDictionary<object, IEntityModel> LoadedModels
         {
             get
@@ -85,10 +98,10 @@ namespace Etherna.MongODM.Core.Utility
             if (executionContext.Items is null)
                 throw new InvalidOperationException("Execution context can't have null Items here");
 
-            if (!executionContext.Items.ContainsKey(CacheKey))
-                executionContext.Items.Add(CacheKey, new Dictionary<object, IEntityModel>());
+            if (!executionContext.Items.ContainsKey(cacheKey))
+                executionContext.Items.Add(cacheKey, new Dictionary<object, IEntityModel>());
 
-            return (Dictionary<object, IEntityModel>)executionContext.Items[CacheKey]!;
+            return (Dictionary<object, IEntityModel>)executionContext.Items[cacheKey]!;
         }
     }
 }

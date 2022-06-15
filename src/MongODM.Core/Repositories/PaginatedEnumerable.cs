@@ -12,14 +12,27 @@
 //   See the License for the specific language governing permissions and
 //   limitations under the License.
 
-namespace Etherna.ExecContext.AsyncLocal
+using System.Collections.Generic;
+
+namespace Etherna.MongODM.Core.Repositories
 {
-    /// <summary>
-    ///     Interface used by <see cref="AsyncLocalContextHandler"/> for comunicate with its
-    ///     creator <see cref="AsyncLocalContext"/>.
-    /// </summary>
-    internal interface IHandledAsyncLocalContext
+    public class PaginatedEnumerable<TClass>
     {
-        void OnDisposed(IAsyncLocalContextHandler context);
+        public PaginatedEnumerable(
+            IEnumerable<TClass> elements,
+            int currentPage,
+            int pageSize,
+            int maxPage)
+        {
+            CurrentPage = currentPage;
+            Elements = elements;
+            MaxPage = maxPage;
+            PageSize = pageSize;
+        }
+
+        public int CurrentPage { get; }
+        public IEnumerable<TClass> Elements { get; }
+        public int MaxPage { get; }
+        public int PageSize { get; }
     }
 }

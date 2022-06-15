@@ -13,23 +13,26 @@
 //   limitations under the License.
 
 using Etherna.ExecContext;
-using Microsoft.AspNetCore.Http;
-using System.Collections.Generic;
+using Etherna.MongoDB.Bson.Serialization;
 
-namespace Etherna.MongODM.AspNetCore
+namespace Etherna.MongODM.Core.Utility
 {
-    public class HttpContextExecutionContext : IExecutionContext
+    public class SerializationContextAccessor : ISerializationContextAccessor
     {
         // Fields.
-        private readonly IHttpContextAccessor httpContextAccessor;
+        private readonly IExecutionContext executionContext;
 
-        // Constructors.
-        public HttpContextExecutionContext(IHttpContextAccessor httpContextAccessor)
+        // Constructor.
+        public SerializationContextAccessor(IExecutionContext executionContext)
         {
-            this.httpContextAccessor = httpContextAccessor;
+            this.executionContext = executionContext;
         }
 
-        // Properties.
-        public IDictionary<object, object?>? Items => httpContextAccessor?.HttpContext?.Items;
+        // Method.
+        public IBsonSerializerRegistry? TryGetCurrentBsonSerializerRegistry()
+        {
+            var dbContext = DbExecutionContextHandler.TryGetCurrentDbContext(executionContext);
+            return dbContext?.SerializerRegistry;
+        }
     }
 }

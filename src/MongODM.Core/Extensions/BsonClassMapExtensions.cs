@@ -12,9 +12,9 @@
 //   See the License for the specific language governing permissions and
 //   limitations under the License.
 
+using Etherna.MongoDB.Bson.Serialization;
 using Etherna.MongODM.Core.Domain.Models;
 using Etherna.MongODM.Core.Serialization.Serializers;
-using MongoDB.Bson.Serialization;
 using System;
 using System.Linq.Expressions;
 using System.Reflection;
@@ -41,7 +41,6 @@ namespace Etherna.MongODM.Core.Extensions
             this BsonClassMap<TModel> classMap,
             Expression<Func<TModel, TMember>> memberLambda,
             IBsonSerializer<TMember> serializer)
-        where TMember : class
         {
             if (classMap is null)
                 throw new ArgumentNullException(nameof(classMap));

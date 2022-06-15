@@ -12,8 +12,9 @@
 //   See the License for the specific language governing permissions and
 //   limitations under the License.
 
+using Etherna.MongoDB.Driver.GridFS;
 using Etherna.MongODM.Core.Domain.Models;
-using MongoDB.Driver.GridFS;
+using System;
 using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
@@ -22,7 +23,9 @@ namespace Etherna.MongODM.Core.Repositories
 {
     public interface IGridFSRepository : IRepository
     {
-        IGridFSBucket GridFSBucket { get; }
+        Task AccessToGridFSBucketAsync(Func<IGridFSBucket, Task> action);
+
+        Task<TResult> AccessToGridFSBucketAsync<TResult>(Func<IGridFSBucket, Task<TResult>> func);
 
         Task<byte[]> DownloadAsBytesAsync(string id, CancellationToken cancellationToken = default);
 

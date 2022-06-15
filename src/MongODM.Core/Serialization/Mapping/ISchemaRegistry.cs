@@ -12,10 +12,10 @@
 //   See the License for the specific language governing permissions and
 //   limitations under the License.
 
+using Etherna.MongoDB.Bson;
+using Etherna.MongoDB.Bson.Serialization;
 using Etherna.MongODM.Core.Serialization.Mapping.Schemas;
 using Etherna.MongODM.Core.Utility;
-using MongoDB.Bson;
-using MongoDB.Bson.Serialization;
 using System;
 using System.Collections.Generic;
 using System.Reflection;
@@ -23,9 +23,9 @@ using System.Reflection;
 namespace Etherna.MongODM.Core.Serialization.Mapping
 {
     /// <summary>
-    /// Interface for <see cref="SchemaRegister"/> implementation.
+    /// Interface for <see cref="SchemaRegistry"/> implementation.
     /// </summary>
-    public interface ISchemaRegister : IDbContextInitializable, IFreezableConfig
+    public interface ISchemaRegistry : IDbContextInitializable, IFreezableConfig
     {
         // Properties.
         /// <summary>
@@ -69,6 +69,12 @@ namespace Etherna.MongODM.Core.Serialization.Mapping
             where TModel : class;
 
         /// <summary>
+        /// Get active class map from schemas, or create a default classMap for model type
+        /// </summary>
+        /// <returns>The active model map</returns>
+        BsonClassMap GetActiveClassMap(Type modelType);
+
+        /// <summary>
         /// Return bson element for represent a model map id
         /// </summary>
         /// <param name="modelType">The model type</param>
@@ -79,8 +85,9 @@ namespace Etherna.MongODM.Core.Serialization.Mapping
         /// Get all id member dependencies from a root model type
         /// </summary>
         /// <param name="modelType">The model type</param>
+        /// <param name="onlyFromActiveModelMap">If true, ignore secondary model maps</param>
         /// <returns>The list of member dependencies</returns>
-        IEnumerable<MemberDependency> GetIdMemberDependenciesFromRootModel(Type modelType);
+        IEnumerable<MemberDependency> GetIdMemberDependenciesFromRootModel(Type modelType, bool onlyFromActiveModelMap = false);
 
         /// <summary>
         /// Get all member dependencies that points to a specific member definition

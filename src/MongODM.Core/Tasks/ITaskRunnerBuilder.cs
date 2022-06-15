@@ -12,19 +12,12 @@
 //   See the License for the specific language governing permissions and
 //   limitations under the License.
 
-using System;
+using Etherna.MongODM.Core.Options;
 
-namespace Etherna.ExecContext.Exceptions
+namespace Etherna.MongODM.Core.Tasks
 {
-    public class ExecutionContextNotFoundException : Exception
+    public interface ITaskRunnerBuilder
     {
-        public ExecutionContextNotFoundException(string message) : base(message)
-        { }
-
-        public ExecutionContextNotFoundException(string message, Exception innerException) : base(message, innerException)
-        { }
-
-        public ExecutionContextNotFoundException()
-        { }
+        void SetMongODMOptions(MongODMOptions options);
     }
 }

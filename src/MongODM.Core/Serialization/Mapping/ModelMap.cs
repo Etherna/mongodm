@@ -12,11 +12,14 @@
 //   See the License for the specific language governing permissions and
 //   limitations under the License.
 
+using Etherna.MongoDB.Bson.Serialization;
 using Etherna.MongODM.Core.Extensions;
 using Etherna.MongODM.Core.Serialization.Serializers;
 using Etherna.MongODM.Core.Utility;
-using MongoDB.Bson.Serialization;
 using System;
+using System.Linq;
+using System.Reflection;
+using System.Threading.Tasks;
 
 namespace Etherna.MongODM.Core.Serialization.Mapping
 {
@@ -63,6 +66,9 @@ namespace Etherna.MongODM.Core.Serialization.Mapping
         public IBsonSerializer? Serializer { get; }
 
         // Methods.
+        public Task<object> FixDeserializedModelAsync(object model) =>
+            FixDeserializedModelHelperAsync(model);
+
         public void SetBaseModelMap(IModelMap baseModelMap) =>
             ExecuteConfigAction(() =>
             {
@@ -81,11 +87,29 @@ namespace Etherna.MongODM.Core.Serialization.Mapping
                 if (ModelType.IsAbstract)
                     throw new InvalidOperationException("Can't generate proxy of an abstract model");
 
+                // Remove CreatorMaps.
+                while (BsonClassMap.CreatorMaps.Any())
+                {
+                    var memberInfo = BsonClassMap.CreatorMaps.First().MemberInfo;
+                    switch (memberInfo)
+                    {
+                        case ConstructorInfo constructorInfo:
+                            BsonClassMap.UnmapConstructor(constructorInfo);
+                            break;
+                        case MethodInfo methodInfo:
+                            BsonClassMap.UnmapFactoryMethod(methodInfo);
+                            break;
+                        default: throw new InvalidOperationException();
+                    }
+                }
+
                 // Set creator.
                 BsonClassMap.SetCreator(() => dbContext.ProxyGenerator.CreateInstance(ModelType, dbContext));
             });
 
         // Protected methods.
+        protected abstract Task<object> FixDeserializedModelHelperAsync(object model);
+
         protected override void FreezeAction()
         {
             // Freeze bson class maps.
@@ -99,24 +123,45 @@ namespace Etherna.MongODM.Core.Serialization.Mapping
             if (dbContext is null)
                 throw new ArgumentNullException(nameof(dbContext));
 
-            return new ModelMapSerializer<TModel>(
-                dbContext.DbCache,
-                dbContext.DocumentSemVerOptions,
-                dbContext.ModelMapVersionOptions,
-                dbContext.SchemaRegister,
-                dbContext.SerializerModifierAccessor);
+            return new ModelMapSerializer<TModel>(dbContext);
         }
     }
 
-    public class ModelMap<TModel> : ModelMap
+    public class ModelMap<TModel> : ModelMap, IModelMap<TModel>
     {
+        private readonly Func<TModel, Task<TModel>>? fixDeserializedModelFunc;
+
         // Constructors.
         public ModelMap(
             string id,
-            BsonClassMap<TModel> bsonClassMap,
+            BsonClassMap<TModel>? bsonClassMap = null,
             string? baseModelMapId = null,
+            Func<TModel, Task<TModel>>? fixDeserializedModelFunc = null,
             IBsonSerializer<TModel>? serializer = null)
-            : base(id, baseModelMapId, bsonClassMap, serializer)
-        { }
+            : base(id, baseModelMapId, bsonClassMap ?? new BsonClassMap<TModel>(cm => cm.AutoMap()), serializer)
+        {
+            this.fixDeserializedModelFunc = fixDeserializedModelFunc;
+        }
+
+        // Methods.
+        public async Task<TModel> FixDeserializedModelAsync(TModel model)
+        {
+            if (model is null)
+                throw new ArgumentNullException(nameof(model));
+
+            return (TModel)await FixDeserializedModelHelperAsync(model).ConfigureAwait(false);
+        }
+
+        // Protected methods.
+        protected override async Task<object> FixDeserializedModelHelperAsync(
+            object model)
+        {
+            if (model is null)
+                throw new ArgumentNullException(nameof(model));
+
+            return fixDeserializedModelFunc is not null ?
+                (await fixDeserializedModelFunc((TModel)model).ConfigureAwait(false))! :
+                model;
+        }
     }
 }

@@ -12,24 +12,13 @@
 //   See the License for the specific language governing permissions and
 //   limitations under the License.
 
-namespace Etherna.ExecContext.AsyncLocal
+using System;
+using System.Collections.Generic;
+
+namespace Etherna.MongODM.Core.Options
 {
-    /// <summary>
-    ///     The handler for an <see cref="AsyncLocalContext"/> initialization.
-    ///     Dispose this for release the context.
-    /// </summary>
-    public sealed class AsyncLocalContextHandler : IAsyncLocalContextHandler
+    public interface IMongODMOptionsBuilder
     {
-        // Constructors.
-        internal AsyncLocalContextHandler(IHandledAsyncLocalContext handledContext)
-        {
-            HandledContext = handledContext;
-        }
-
-        // Properties.
-        internal IHandledAsyncLocalContext HandledContext { get; }
-
-        // Methods.
-        public void Dispose() => HandledContext.OnDisposed(this);
+        void SetDbContextTypes(IEnumerable<Type> dbContextTypes);
     }
 }

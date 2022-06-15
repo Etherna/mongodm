@@ -19,13 +19,13 @@ using System.Reflection;
 
 namespace Etherna.MongODM.Core.Repositories
 {
-    public class RepositoryRegister : IRepositoryRegister
+    public class RepositoryRegistry : IRepositoryRegistry
     {
         // Fields.
         private IDbContext dbContext = default!;
-        private IReadOnlyDictionary<Type, ICollectionRepository> _modelCollectionRepositoryMap = default!;
-        private IReadOnlyDictionary<Type, IGridFSRepository> _modelGridFSRepositoryMap = default!;
-        private IReadOnlyDictionary<Type, IRepository> _modelRepositoryMap = default!;
+        private IReadOnlyDictionary<Type, ICollectionRepository> _collectionRepositoriesByModelType = default!;
+        private IReadOnlyDictionary<Type, IGridFSRepository> _gridFSRepositoriesByModelType = default!;
+        private IReadOnlyDictionary<Type, IRepository> _repositoriesByModelType = default!;
 
         // Initializer.
         public void Initialize(IDbContext dbContext)
@@ -40,11 +40,11 @@ namespace Etherna.MongODM.Core.Repositories
         // Properties.
         public bool IsInitialized { get; private set; }
 
-        public IReadOnlyDictionary<Type, ICollectionRepository> ModelCollectionRepositoryMap
+        public IReadOnlyDictionary<Type, ICollectionRepository> CollectionRepositoriesByModelType
         {
             get
             {
-                if (_modelCollectionRepositoryMap is null)
+                if (_collectionRepositoriesByModelType is null)
                 {
                     var dbContextType = dbContext.GetType();
 
@@ -67,20 +67,20 @@ namespace Etherna.MongODM.Core.Repositories
                             return false;
                         });
 
-                    // Initialize register.
-                    _modelCollectionRepositoryMap = repos.ToDictionary(
+                    // Initialize registry.
+                    _collectionRepositoriesByModelType = repos.ToDictionary(
                         prop => ((ICollectionRepository)prop.GetValue(dbContext)).GetModelType,
                         prop => (ICollectionRepository)prop.GetValue(dbContext));
                 }
 
-                return _modelCollectionRepositoryMap;
+                return _collectionRepositoriesByModelType;
             }
         }
-        public IReadOnlyDictionary<Type, IGridFSRepository> ModelGridFSRepositoryMap
+        public IReadOnlyDictionary<Type, IGridFSRepository> GridFSRepositoriesByModelType
         {
             get
             {
-                if (_modelGridFSRepositoryMap is null)
+                if (_gridFSRepositoriesByModelType is null)
                 {
                     var dbContextType = dbContext.GetType();
 
@@ -103,33 +103,33 @@ namespace Etherna.MongODM.Core.Repositories
                             return false;
                         });
 
-                    //construct register
-                    _modelGridFSRepositoryMap = repos.ToDictionary(
+                    //construct registry
+                    _gridFSRepositoriesByModelType = repos.ToDictionary(
                         prop => ((IGridFSRepository)prop.GetValue(dbContext)).GetModelType,
                         prop => (IGridFSRepository)prop.GetValue(dbContext));
                 }
 
-                return _modelGridFSRepositoryMap;
+                return _gridFSRepositoriesByModelType;
             }
         }
-        public IReadOnlyDictionary<Type, IRepository> ModelRepositoryMap
+        public IReadOnlyDictionary<Type, IRepository> RepositoriesByModelType
         {
             get
             {
-                if (_modelRepositoryMap is null)
+                if (_repositoriesByModelType is null)
                 {
                     var repoMap = new Dictionary<Type, IRepository>();
 
-                    foreach (var pair in ModelCollectionRepositoryMap)
+                    foreach (var pair in CollectionRepositoriesByModelType)
                         repoMap.Add(pair.Key, pair.Value);
 
-                    foreach (var pair in ModelGridFSRepositoryMap)
+                    foreach (var pair in GridFSRepositoriesByModelType)
                         repoMap.Add(pair.Key, pair.Value);
 
-                    _modelRepositoryMap = repoMap;
+                    _repositoriesByModelType = repoMap;
                 }
 
-                return _modelRepositoryMap;
+                return _repositoriesByModelType;
             }
         }
     }

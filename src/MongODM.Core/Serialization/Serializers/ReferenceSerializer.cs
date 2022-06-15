@@ -12,13 +12,13 @@
 //   See the License for the specific language governing permissions and
 //   limitations under the License.
 
+using Etherna.MongoDB.Bson;
+using Etherna.MongoDB.Bson.IO;
+using Etherna.MongoDB.Bson.Serialization;
+using Etherna.MongoDB.Bson.Serialization.Conventions;
+using Etherna.MongoDB.Bson.Serialization.Serializers;
 using Etherna.MongODM.Core.Domain.Models;
 using Etherna.MongODM.Core.ProxyModels;
-using MongoDB.Bson;
-using MongoDB.Bson.IO;
-using MongoDB.Bson.Serialization;
-using MongoDB.Bson.Serialization.Conventions;
-using MongoDB.Bson.Serialization.Serializers;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -90,7 +90,7 @@ namespace Etherna.MongODM.Core.Serialization.Serializers
             get
             {
                 if (_discriminatorConvention == null)
-                    _discriminatorConvention = BsonSerializer.LookupDiscriminatorConvention(typeof(TModelBase));
+                    _discriminatorConvention = dbContext.DiscriminatorRegistry.LookupDiscriminatorConvention(typeof(TModelBase));
                 return _discriminatorConvention;
             }
         }
@@ -126,7 +126,7 @@ namespace Etherna.MongODM.Core.Serialization.Serializers
 
             //get model map id
             string? modelMapId = null;
-            if (bsonDocument.TryGetElement(dbContext.ModelMapVersionOptions.ElementName, out BsonElement modelMapIdElement))
+            if (bsonDocument.TryGetElement(dbContext.Options.ModelMapVersion.ElementName, out BsonElement modelMapIdElement))
             {
                 modelMapId = BsonValueToModelMapId(modelMapIdElement.Value);
                 bsonDocument.RemoveElement(modelMapIdElement); //don't report into extra elements
@@ -149,14 +149,17 @@ namespace Etherna.MongODM.Core.Serialization.Serializers
 
             var model = serializer.Deserialize(localContext, args) as TModelBase;
 
-            // Process model.
-            if (model != null)
+            // Process model (if proxy).
+            /* Proxy models enable different features. Anyway, if the model as not been created as a proxy
+             * (for example for tests scope) these additional operations are not possible or required.
+             * In this case, simply return the model as is.
+             */
+            if (model != null &&
+                dbContext.ProxyGenerator.IsProxyType(model.GetType()))
             {
                 var id = model.Id;
-#pragma warning disable CA1508 // Avoid dead conditional code
                 if (id == null) //ignore refered instances without id
                     return null!;
-#pragma warning restore CA1508 // Avoid dead conditional code
 
                 // Check if model as been loaded in cache.
                 if (dbContext.DbCache.LoadedModels.ContainsKey(id) &&
@@ -290,8 +293,8 @@ namespace Etherna.MongODM.Core.Serialization.Serializers
 
             // Add additional data.
             //add model map id
-            if (bsonDocument.Contains(dbContext.ModelMapVersionOptions.ElementName))
-                bsonDocument.Remove(dbContext.ModelMapVersionOptions.ElementName);
+            if (bsonDocument.Contains(dbContext.Options.ModelMapVersion.ElementName))
+                bsonDocument.Remove(dbContext.Options.ModelMapVersion.ElementName);
             var modelMapIdElement = configuration.GetActiveModelMapIdBsonElement(
                 dbContext.ProxyGenerator.PurgeProxyType(value.GetType()));
             bsonDocument.InsertAt(0, modelMapIdElement);

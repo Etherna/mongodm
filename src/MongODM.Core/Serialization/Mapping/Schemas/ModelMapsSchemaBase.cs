@@ -12,7 +12,7 @@
 //   See the License for the specific language governing permissions and
 //   limitations under the License.
 
-using MongoDB.Bson.Serialization;
+using Etherna.MongoDB.Bson.Serialization;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -69,6 +69,7 @@ namespace Etherna.MongODM.Core.Serialization.Mapping.Schemas
             }
         }
         public IDbContext DbContext { get; }
+        public IModelMap? FallbackModelMap { get; protected set; }
         public IBsonSerializer? FallbackSerializer { get; protected set; }
         public override Type? ProxyModelType { get; }
         public IEnumerable<IModelMap> SecondaryMaps => _secondaryMaps;
@@ -79,10 +80,21 @@ namespace Etherna.MongODM.Core.Serialization.Mapping.Schemas
             {
                 if (fallbackSerializer is null)
                     throw new ArgumentNullException(nameof(fallbackSerializer));
-                if (FallbackSerializer != null)
+                if (FallbackSerializer is not null)
                     throw new InvalidOperationException("Fallback serializer already setted");
 
                 FallbackSerializer = fallbackSerializer;
+            });
+
+        protected void AddFallbackModelMapHelper(IModelMap fallbackModelMap) =>
+            ExecuteConfigAction(() =>
+            {
+                if (fallbackModelMap is null)
+                    throw new ArgumentNullException(nameof(fallbackModelMap));
+                if (FallbackModelMap is not null)
+                    throw new InvalidOperationException("Fallback model map already setted");
+
+                FallbackModelMap = fallbackModelMap;
             });
 
         protected void AddSecondaryMapHelper(IModelMap modelMap) =>
@@ -104,8 +116,11 @@ namespace Etherna.MongODM.Core.Serialization.Mapping.Schemas
         {
             // Freeze model maps.
             ActiveMap.Freeze();
+
             foreach (var secondaryMap in _secondaryMaps)
                 secondaryMap.Freeze();
+
+            FallbackModelMap?.Freeze();
         }
     }
 }

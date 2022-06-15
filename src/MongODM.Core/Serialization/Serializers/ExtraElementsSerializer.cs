@@ -12,19 +12,30 @@
 //   See the License for the specific language governing permissions and
 //   limitations under the License.
 
-using MongoDB.Bson;
-using MongoDB.Bson.IO;
-using MongoDB.Bson.Serialization;
-using MongoDB.Bson.Serialization.Serializers;
+using Etherna.MongoDB.Bson;
+using Etherna.MongoDB.Bson.IO;
+using Etherna.MongoDB.Bson.Serialization;
+using Etherna.MongoDB.Bson.Serialization.Serializers;
 using System;
 using System.Collections.Generic;
 
 namespace Etherna.MongODM.Core.Serialization.Serializers
 {
+    /// <summary>
+    /// Utility serializer used for help into document migration scripts.
+    /// </summary>
     public class ExtraElementsSerializer : SerializerBase<object>
     {
-        private static ExtraElementsSerializer Instance { get; } = new ExtraElementsSerializer();
+        // Fields.
+        private readonly IDbContext dbContext;
 
+        // Constructor.
+        public ExtraElementsSerializer(IDbContext dbContext)
+        {
+            this.dbContext = dbContext;
+        }
+
+        // Methods.
         public override void Serialize(BsonSerializationContext context, BsonSerializationArgs args, object value)
         {
             if (context is null)
@@ -51,13 +62,12 @@ namespace Etherna.MongODM.Core.Serialization.Serializers
             }
             else
             {
-                BsonSerializer.Serialize(context.Writer, value);
+                var serializer = dbContext.SerializerRegistry.GetSerializer<object>();
+                serializer.Serialize(context, value);
             }
         }
 
-        // Static methods.
-
-        public static TValue DeserializeValue<TValue>(
+        public TValue DeserializeValue<TValue>(
             object extraElements,
             IBsonSerializer<TValue>? serializer = null)
         {
@@ -71,13 +81,13 @@ namespace Etherna.MongODM.Core.Serialization.Serializers
 
             serializationContext.Writer.WriteStartDocument();
             serializationContext.Writer.WriteName("container");
-            Instance.Serialize(serializationContext, extraElements);
+            this.Serialize(serializationContext, extraElements);
             serializationContext.Writer.WriteEndDocument();
 
             // Lookup for a serializer.
             if (serializer == null)
             {
-                serializer = BsonSerializer.LookupSerializer<TValue>();
+                serializer = dbContext.SerializerRegistry.GetSerializer<TValue>();
             }
 
             // Deserialize.

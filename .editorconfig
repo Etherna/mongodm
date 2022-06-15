@@ -24,3 +24,6 @@ dotnet_diagnostic.CA1040.severity = none    # Sometime they are needed
 
 # CA1812: Avoid uninstantiated internal classes
 dotnet_diagnostic.CA1812.severity = none    # Doing extensive use of dependency injection
+
+# CS1591: Missing XML comment for publicly visible type or member
+dotnet_diagnostic.CS1591.severity = none    # There are currently too much missing descriptions

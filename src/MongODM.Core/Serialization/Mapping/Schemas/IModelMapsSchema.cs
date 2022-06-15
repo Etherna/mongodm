@@ -12,7 +12,7 @@
 //   See the License for the specific language governing permissions and
 //   limitations under the License.
 
-using MongoDB.Bson.Serialization;
+using Etherna.MongoDB.Bson.Serialization;
 using System.Collections.Generic;
 
 namespace Etherna.MongODM.Core.Serialization.Mapping.Schemas
@@ -24,6 +24,7 @@ namespace Etherna.MongODM.Core.Serialization.Mapping.Schemas
         IModelMap ActiveMap { get; }
         IReadOnlyDictionary<string, IModelMap> AllMapsDictionary { get; }
         IDbContext DbContext { get; }
+        IModelMap? FallbackModelMap { get; }
         IBsonSerializer? FallbackSerializer { get; }
         IEnumerable<IModelMap> SecondaryMaps { get; }
     }

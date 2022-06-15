@@ -12,11 +12,22 @@
 //   See the License for the specific language governing permissions and
 //   limitations under the License.
 
-// This file is used by Code Analysis to maintain SuppressMessage
-// attributes that are applied to this project.
-// Project-level suppressions either have no target or are given
-// a specific target and scoped to a namespace, type, member, etc.
+using System;
 
-using System.Diagnostics.CodeAnalysis;
+namespace Etherna.MongODM.Core.Exceptions
+{
+    public class MongodmDbSeedingException : Exception
+    {
+        public MongodmDbSeedingException()
+        {
+        }
 
-[assembly: SuppressMessage("Globalization", "CA1303:Do not pass literals as localized parameters", Justification = "This library will be not localized", Scope = "NamespaceAndDescendants", Target = "~N:Etherna.ExecContext")]
+        public MongodmDbSeedingException(string message) : base(message)
+        {
+        }
+
+        public MongodmDbSeedingException(string message, Exception innerException) : base(message, innerException)
+        {
+        }
+    }
+}
