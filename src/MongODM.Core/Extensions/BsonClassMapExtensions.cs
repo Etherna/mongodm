@@ -46,8 +46,7 @@ namespace Etherna.MongODM.Core.Extensions
                 throw new ArgumentNullException(nameof(classMap));
 
             var member = classMap.GetMemberMap(memberLambda);
-            if (member == null)
-                member = classMap.MapMember(memberLambda);
+            member ??= classMap.MapMember(memberLambda);
             return member.SetSerializer(serializer);
         }
 

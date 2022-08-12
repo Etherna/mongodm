@@ -61,8 +61,7 @@ namespace Etherna.MongODM.Core.Serialization.Serializers
         {
             get
             {
-                if (_discriminatorConvention == null)
-                    _discriminatorConvention = dbContext.DiscriminatorRegistry.LookupDiscriminatorConvention(typeof(TModel));
+                _discriminatorConvention ??= dbContext.DiscriminatorRegistry.LookupDiscriminatorConvention(typeof(TModel));
                 return _discriminatorConvention;
             }
         }

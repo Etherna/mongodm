@@ -62,8 +62,7 @@ namespace Etherna.MongODM.Core.Repositories
                 throw new ArgumentNullException(nameof(func));
 
             // Initialize bucket cache.
-            if (_gridFSBucket is null)
-                _gridFSBucket = new GridFSBucket(DbContext.Database, new GridFSBucketOptions { BucketName = options.Name });
+            _gridFSBucket ??= new GridFSBucket(DbContext.Database, new GridFSBucketOptions { BucketName = options.Name });
 
             // Execute func into execution context.
             using (new DbExecutionContextHandler(DbContext))

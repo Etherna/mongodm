@@ -70,7 +70,7 @@ namespace Etherna.MongODM.Core
             interceptor.Intercept(getIsSummaryInvocationMock.Object);
             interceptor.Intercept(getLoadedMembersInvocationMock.Object);
             Assert.False((bool)getIsSummaryInvocationMock.Object.ReturnValue);
-            Assert.Empty(getLoadedMembersInvocationMock.Object.ReturnValue as IEnumerable<string>);
+            Assert.Empty((IEnumerable<string>)getLoadedMembersInvocationMock.Object.ReturnValue);
 
             // Action.
             interceptor.Intercept(initializeInvocationMock.Object);
@@ -81,7 +81,7 @@ namespace Etherna.MongODM.Core
             Assert.True((bool)getIsSummaryInvocationMock.Object.ReturnValue);
             Assert.Equal(
                 new[] { nameof(FakeModel.Id) },
-                getLoadedMembersInvocationMock.Object.ReturnValue as IEnumerable<string>);
+                (IEnumerable<string>)getLoadedMembersInvocationMock.Object.ReturnValue);
         }
 
         [Theory]
@@ -117,14 +117,14 @@ namespace Etherna.MongODM.Core
                 Assert.True((bool)getIsSummaryInvocationMock.Object.ReturnValue);
                 Assert.Equal(
                     new[] { nameof(FakeModel.IntegerProp) },
-                    getLoadedMembersInvocationMock.Object.ReturnValue as IEnumerable<string>);
+                    (IEnumerable<string>)getLoadedMembersInvocationMock.Object.ReturnValue);
             }
             else
             {
                 interceptor.Intercept(getIsSummaryInvocationMock.Object);
                 interceptor.Intercept(getLoadedMembersInvocationMock.Object);
                 Assert.False((bool)getIsSummaryInvocationMock.Object.ReturnValue);
-                Assert.Empty(getLoadedMembersInvocationMock.Object.ReturnValue as IEnumerable<string>);
+                Assert.Empty((IEnumerable<string>)getLoadedMembersInvocationMock.Object.ReturnValue);
             }
         }
 
@@ -207,7 +207,7 @@ namespace Etherna.MongODM.Core
                 Assert.True((bool)getIsSummaryInvocationMock.Object.ReturnValue);
                 Assert.Equal(
                     new[] { nameof(FakeModel.IntegerProp) },
-                    getLoadedMembersInvocationMock.Object.ReturnValue as IEnumerable<string>);
+                    (IEnumerable<string>)getLoadedMembersInvocationMock.Object.ReturnValue);
             }
             else
             {

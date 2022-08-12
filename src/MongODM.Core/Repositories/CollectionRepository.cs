@@ -65,8 +65,7 @@ namespace Etherna.MongODM.Core.Repositories
                 throw new ArgumentNullException(nameof(func));
 
             // Initialize collection cache.
-            if (_collection is null)
-                _collection = DbContext.Database.GetCollection<TModel>(options.Name);
+            _collection ??= DbContext.Database.GetCollection<TModel>(options.Name);
 
             // Execute func into execution context.
             using (new DbExecutionContextHandler(DbContext))
