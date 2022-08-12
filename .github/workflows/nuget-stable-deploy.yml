@@ -2,8 +2,8 @@ name: Stable release deploy to NuGet
 
 on:
   push:
-    branches:
-    - main
+    tags:
+      - 'v*.*.*'
 
 jobs:
   build-test-package:

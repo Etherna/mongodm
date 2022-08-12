@@ -317,17 +317,21 @@ namespace Etherna.MongODM.Core.Serialization.Serializers
 
         public bool TryGetMemberSerializationInfo(string memberName, out BsonSerializationInfo serializationInfo)
         {
-            var modelType = configuration.Schemas.Values
+            serializationInfo = default!;
+
+            var classMap = configuration.Schemas.Values
                 .Select(s => s.ActiveMap.BsonClassMap)
                 .Where(cm => cm.GetMemberMap(memberName) != null)
-                .First()
-                .ClassType;
-            var serializer = configuration.Schemas[modelType].ActiveBsonClassMapSerializer;
+                .FirstOrDefault();
 
+            if (classMap is null)
+                return false;
+
+            var serializer = configuration.Schemas[classMap.ClassType].ActiveBsonClassMapSerializer;
             if (serializer is IBsonDocumentSerializer documentSerializer)
                 return documentSerializer.TryGetMemberSerializationInfo(memberName, out serializationInfo);
             else
-                throw new InvalidOperationException("Can't find a valid serializer");
+                return false;
         }
 
         // Helpers.
