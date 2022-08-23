@@ -180,14 +180,14 @@ namespace Etherna.MongODM.Core.Repositories
                     .Paginate(orderKeySelector, page, take)
                     .ToListAsync(cancellationToken)).ConfigureAwait(false);
 
-            var maxPage = (await QueryElementsAsync(elements => filter(elements)
-                .CountAsync(cancellationToken)).ConfigureAwait(false) - 1) / take;
+            var totalElements = await QueryElementsAsync(elements => filter(elements)
+                .LongCountAsync(cancellationToken)).ConfigureAwait(false);
 
             return new PaginatedEnumerable<TResult>(
                 elements,
+                totalElements,
                 page,
-                take,
-                maxPage);
+                take);
         }
 
         public virtual Task ReplaceAsync(
