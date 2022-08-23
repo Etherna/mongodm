@@ -20,19 +20,21 @@ namespace Etherna.MongODM.Core.Repositories
     {
         public PaginatedEnumerable(
             IEnumerable<TClass> elements,
+            long totalElements,
             int currentPage,
-            int pageSize,
-            int maxPage)
+            int pageSize)
         {
             CurrentPage = currentPage;
             Elements = elements;
-            MaxPage = maxPage;
+            MaxPage = (totalElements - 1) / pageSize;
             PageSize = pageSize;
+            TotalElements = totalElements;
         }
 
         public int CurrentPage { get; }
         public IEnumerable<TClass> Elements { get; }
-        public int MaxPage { get; }
+        public long MaxPage { get; }
         public int PageSize { get; }
+        public long TotalElements { get; }
     }
 }
