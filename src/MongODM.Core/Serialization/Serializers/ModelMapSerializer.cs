@@ -33,7 +33,6 @@ namespace Etherna.MongODM.Core.Serialization.Serializers
     {
         // Fields.
         private IDiscriminatorConvention _discriminatorConvention = default!;
-        private readonly BsonElement documentSemVerElement;
         private readonly IDbContext dbContext;
 
         // Constructor.
@@ -44,10 +43,6 @@ namespace Etherna.MongODM.Core.Serialization.Serializers
                 throw new ArgumentNullException(nameof(dbContext));
 
             this.dbContext = dbContext;
-
-            documentSemVerElement = new BsonElement(
-                dbContext.Options.DocumentSemVer.ElementName,
-                dbContext.Options.DocumentSemVer.CurrentVersion.ToBsonArray());
         }
 
         // Properties.
@@ -86,14 +81,6 @@ namespace Etherna.MongODM.Core.Serialization.Serializers
 
             //deserialize on document
             var bsonDocument = BsonDocumentSerializer.Instance.Deserialize(context, args);
-
-            //get version
-            SemanticVersion? documentSemVer = null;
-            if (bsonDocument.TryGetElement(dbContext.Options.DocumentSemVer.ElementName, out BsonElement versionElement))
-            {
-                documentSemVer = BsonValueToSemVer(versionElement.Value);
-                bsonDocument.RemoveElement(versionElement); //don't report into extra elements
-            }
 
             //get model map id
             string? modelMapId = null;
@@ -221,14 +208,6 @@ namespace Etherna.MongODM.Core.Serialization.Serializers
             if (!bsonDocument.Contains(dbContext.Options.ModelMapVersion.ElementName))
                 bsonDocument.InsertAt(0, dbContext.SchemaRegistry.GetActiveModelMapIdBsonElement(actualType));
 
-            //add version
-            if (dbContext.Options.DocumentSemVer.WriteInDocuments && bsonWriter.IsRootDocument)
-            {
-                if (bsonDocument.Contains(dbContext.Options.DocumentSemVer.ElementName))
-                    bsonDocument.Remove(dbContext.Options.DocumentSemVer.ElementName);
-                bsonDocument.InsertAt(1, documentSemVerElement);
-            }
-
             // Serialize document.
             BsonDocumentSerializer.Instance.Serialize(context, args, bsonDocument);
         }
@@ -245,19 +224,6 @@ namespace Etherna.MongODM.Core.Serialization.Serializers
             {
                 BsonNull _ => null,
                 BsonString bsonString => bsonString.AsString,
-                _ => throw new NotSupportedException(),
-            };
-
-        private static SemanticVersion? BsonValueToSemVer(BsonValue bsonValue) =>
-            bsonValue switch
-            {
-                BsonNull _ => null,
-                BsonString bsonString => new SemanticVersion(bsonString.AsString),
-                BsonArray bsonArray => new SemanticVersion(
-                    bsonArray[0].AsInt32,
-                    bsonArray[1].AsInt32,
-                    bsonArray[2].AsInt32,
-                    bsonArray.Count >= 4 ? bsonArray[3].AsString : null),
                 _ => throw new NotSupportedException(),
             };
 

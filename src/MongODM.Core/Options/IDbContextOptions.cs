@@ -19,7 +19,6 @@ namespace Etherna.MongODM.Core.Options
         public string ConnectionString { get; }
         public string DbName { get; }
         public string DbOperationsCollectionName { get; }
-        public DocumentSemVerOptions DocumentSemVer { get; }
         public string? Identifier { get; }
         public ModelMapVersionOptions ModelMapVersion { get; }
     }

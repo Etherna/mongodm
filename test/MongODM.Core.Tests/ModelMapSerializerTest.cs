@@ -82,7 +82,6 @@ namespace Etherna.MongODM.Core
         private readonly Mock<IDbCache> dbCacheMock = new();
         private readonly Mock<IDbContext> dbContextMock = new();
         private readonly Mock<IDiscriminatorRegistry> discriminatorRegistryMock = new();
-        private readonly DocumentSemVerOptions documentSemVerOptions = new();
         private readonly Mock<IModelMapsSchema> modelMapsSchemaMock = new();
         private readonly ModelMapVersionOptions modelMapVersionOptions = new();
         private readonly Mock<ISchemaRegistry> schemaRegistryMock = new();
@@ -103,8 +102,6 @@ namespace Etherna.MongODM.Core
                 .Returns(() => discriminatorRegistryMock.Object);
             dbContextMock.Setup(c => c.ProxyGenerator.IsProxyType(It.IsAny<Type>()))
                 .Returns(true);
-            dbContextMock.Setup(c => c.Options.DocumentSemVer)
-                .Returns(() => documentSemVerOptions);
             dbContextMock.Setup(c => c.Options.ModelMapVersion)
                 .Returns(() => modelMapVersionOptions);
             dbContextMock.Setup(c => c.SchemaRegistry)
