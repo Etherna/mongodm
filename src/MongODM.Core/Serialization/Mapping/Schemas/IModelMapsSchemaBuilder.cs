@@ -46,7 +46,7 @@ namespace Etherna.MongODM.Core.Serialization.Mapping.Schemas
         /// <param name="modelMap">The model map</param>
         /// <returns>This same model schema configuration</returns>
         IModelMapsSchemaBuilder<TModel> AddFallbackModelMap(
-            ModelMap<TModel> modelMap);
+            IModelMap<TModel> modelMap);
 
         /// <summary>
         /// Register a secondary model map
@@ -54,6 +54,6 @@ namespace Etherna.MongODM.Core.Serialization.Mapping.Schemas
         /// <param name="modelMap">The model map</param>
         /// <returns>This same model schema configuration</returns>
         IModelMapsSchemaBuilder<TModel> AddSecondaryMap(
-            ModelMap<TModel> modelMap);
+            IModelMap<TModel> modelMap);
     }
 }

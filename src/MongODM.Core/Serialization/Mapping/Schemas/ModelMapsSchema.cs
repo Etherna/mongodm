@@ -46,13 +46,13 @@ namespace Etherna.MongODM.Core.Serialization.Mapping.Schemas
                 baseModelMapId,
                 serializer: customSerializer));
 
-        public IModelMapsSchemaBuilder<TModel> AddFallbackModelMap(ModelMap<TModel> modelMap)
+        public IModelMapsSchemaBuilder<TModel> AddFallbackModelMap(IModelMap<TModel> modelMap)
         {
             AddFallbackModelMapHelper(modelMap);
             return this;
         }
 
-        public IModelMapsSchemaBuilder<TModel> AddSecondaryMap(ModelMap<TModel> modelMap)
+        public IModelMapsSchemaBuilder<TModel> AddSecondaryMap(IModelMap<TModel> modelMap)
         {
             AddSecondaryMapHelper(modelMap);
             return this;
