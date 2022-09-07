@@ -20,7 +20,7 @@ using System.Collections.Generic;
 
 namespace Etherna.MongODM.Core.Serialization.Serializers
 {
-    class EntityModelSerializerAdapter<TExternalModel, TInternalModel, TKey> :
+    public class EntityModelSerializerAdapter<TExternalModel, TInternalModel, TKey> :
         SerializerBase<TExternalModel>,
         IBsonSerializer<TExternalModel>,
         IBsonDocumentSerializer,
