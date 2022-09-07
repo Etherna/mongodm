@@ -70,12 +70,6 @@ namespace Etherna.MongODM.Core
             DbOperations = new CollectionRepository<OperationBase, string>(options.DbOperationsCollectionName);
             DiscriminatorRegistry = dependencies.DiscriminatorRegistry;
             ExecutionContext = dependencies.ExecutionContext;
-            LibraryVersion = typeof(DbContext)
-                .GetTypeInfo()
-                .Assembly
-                .GetCustomAttribute<AssemblyInformationalVersionAttribute>()
-                ?.InformationalVersion
-                ?.Split('+')[0] ?? "1.0.0";
             Options = options;
             ProxyGenerator = dependencies.ProxyGenerator;
             RepositoryRegistry = dependencies.RepositoryRegistry;
@@ -188,7 +182,6 @@ namespace Etherna.MongODM.Core
                 }
             }
         }
-        public SemanticVersion LibraryVersion { get; private set; } = default!;
         public IDbContextOptions Options { get; private set; } = default!;
         public IProxyGenerator ProxyGenerator { get; private set; } = default!;
         public IRepositoryRegistry RepositoryRegistry { get; private set; } = default!;

@@ -28,7 +28,6 @@ namespace Etherna.MongODM.Core.Options
         public string DbName => ConnectionString.Split('?')[0]
                                                 .Split('/').Last();
         public string DbOperationsCollectionName { get; set; } = "_db_ops";
-        public DocumentSemVerOptions DocumentSemVer { get; set; } = new DocumentSemVerOptions();
         public string? Identifier { get; set; }
         public ModelMapVersionOptions ModelMapVersion { get; set; } = new ModelMapVersionOptions();
         public IEnumerable<Type> ChildDbContextTypes => _childDbContextTypes;
