@@ -42,7 +42,6 @@ namespace Etherna.MongODM.Core.Serialization.Serializers
         private readonly IDbContext dbContext;
         private bool disposed;
         private readonly ReferenceSerializerConfiguration configuration;
-        private readonly IDictionary<Type, IBsonSerializer> registeredAdapters = new Dictionary<Type, IBsonSerializer>();
 
         // Constructor.
         public ReferenceSerializer(
@@ -215,37 +214,6 @@ namespace Etherna.MongODM.Core.Serialization.Serializers
             }
 
             return model!;
-        }
-
-        public IBsonSerializer<TModel> GetAdapter<TModel>()
-            where TModel : class, TModelBase
-        {
-            configLockAdapters.EnterReadLock();
-            try
-            {
-                if (registeredAdapters.ContainsKey(typeof(TModel)))
-                {
-                    return (IBsonSerializer<TModel>)registeredAdapters[typeof(TModel)];
-                }
-            }
-            finally
-            {
-                configLockAdapters.ExitReadLock();
-            }
-
-            configLockAdapters.EnterWriteLock();
-            try
-            {
-                if (!registeredAdapters.ContainsKey(typeof(TModel)))
-                {
-                    registeredAdapters.Add(typeof(TModel), new ReferenceSerializerAdapter<TModelBase, TModel, TKey>(this));
-                }
-                return (IBsonSerializer<TModel>)registeredAdapters[typeof(TModel)];
-            }
-            finally
-            {
-                configLockAdapters.ExitWriteLock();
-            }
         }
 
         public bool GetDocumentId(object document, out object id, out Type idNominalType, out IIdGenerator idGenerator)
