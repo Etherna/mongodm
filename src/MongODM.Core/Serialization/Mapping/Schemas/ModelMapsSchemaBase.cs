@@ -41,8 +41,9 @@ namespace Etherna.MongODM.Core.Serialization.Mapping.Schemas
                 !dbContext.ProxyGenerator.IsProxyType(modelType))
             {
                 ProxyModelType = dbContext.ProxyGenerator.CreateInstance(modelType, dbContext).GetType();
-                ActiveMap.UseProxyGenerator(dbContext);
             }
+
+            activeMap.TryUseProxyGenerator(dbContext);
         }
 
         // Properties.
@@ -103,9 +104,8 @@ namespace Etherna.MongODM.Core.Serialization.Mapping.Schemas
                 if (modelMap is null)
                     throw new ArgumentNullException(nameof(modelMap));
 
-                // Verify if this schema uses proxy model.
-                if (ProxyModelType != null)
-                    modelMap.UseProxyGenerator(DbContext);
+                // Try to use proxy model generator.
+                modelMap.TryUseProxyGenerator(DbContext);
 
                 // Add schema.
                 _secondaryMaps.Add(modelMap);

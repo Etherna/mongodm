@@ -34,6 +34,7 @@ namespace Etherna.MongODM.Core.Serialization.Mapping
         // Methods.
         Task<object> FixDeserializedModelAsync(object model);
         void SetBaseModelMap(IModelMap baseModelMap);
+        bool TryUseProxyGenerator(IDbContext dbContext);
         void UseProxyGenerator(IDbContext dbContext);
     }
 

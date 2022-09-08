@@ -107,6 +107,23 @@ namespace Etherna.MongODM.Core.Serialization.Mapping
                 BsonClassMap.SetCreator(() => dbContext.ProxyGenerator.CreateInstance(ModelType, dbContext));
             });
 
+        public bool TryUseProxyGenerator(IDbContext dbContext)
+        {
+            if (dbContext is null)
+                throw new ArgumentNullException(nameof(dbContext));
+
+            // Verify if can use proxy model.
+            if (ModelType != typeof(object) &&
+                !ModelType.IsAbstract &&
+                !dbContext.ProxyGenerator.IsProxyType(ModelType))
+            {
+                UseProxyGenerator(dbContext);
+                return true;
+            }
+
+            return false;
+        }
+
         // Protected methods.
         protected abstract Task<object> FixDeserializedModelHelperAsync(object model);
 
@@ -161,6 +178,45 @@ namespace Etherna.MongODM.Core.Serialization.Mapping
 
             return fixDeserializedModelFunc is not null ?
                 (await fixDeserializedModelFunc((TModel)model).ConfigureAwait(false))! :
+                model;
+        }
+    }
+
+    public class ModelMap<TModel, TOverrideNominal> : ModelMap, IModelMap<TModel>
+        where TOverrideNominal : class, TModel
+    {
+        private readonly Func<TOverrideNominal, Task<TOverrideNominal>>? fixDeserializedModelFunc;
+
+        // Constructors.
+        public ModelMap(
+            string id,
+            BsonClassMap<TOverrideNominal>? bsonClassMap = null,
+            string? baseModelMapId = null,
+            Func<TOverrideNominal, Task<TOverrideNominal>>? fixDeserializedModelFunc = null,
+            IBsonSerializer<TOverrideNominal>? serializer = null)
+            : base(id, baseModelMapId, bsonClassMap ?? new BsonClassMap<TOverrideNominal>(cm => cm.AutoMap()), serializer)
+        {
+            this.fixDeserializedModelFunc = fixDeserializedModelFunc;
+        }
+
+        // Methods.
+        public async Task<TModel> FixDeserializedModelAsync(TModel model)
+        {
+            if (model is null)
+                throw new ArgumentNullException(nameof(model));
+
+            return (TModel)await FixDeserializedModelHelperAsync(model).ConfigureAwait(false);
+        }
+
+        // Protected methods.
+        protected override async Task<object> FixDeserializedModelHelperAsync(
+            object model)
+        {
+            if (model is null)
+                throw new ArgumentNullException(nameof(model));
+
+            return fixDeserializedModelFunc is not null ?
+                (await fixDeserializedModelFunc((TOverrideNominal)model).ConfigureAwait(false))! :
                 model;
         }
     }
