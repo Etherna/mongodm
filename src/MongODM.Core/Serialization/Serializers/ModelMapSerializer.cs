@@ -239,6 +239,13 @@ namespace Etherna.MongODM.Core.Serialization.Serializers
                 modelMap.Serializer :
                 modelMap.BsonClassMapSerializer;
 
+            // If model map ask to override the nominal type, override it on args.
+            var modelMapType = modelMap.GetType();
+            if (modelMapType.IsGenericType &&
+                modelMapType.GetGenericTypeDefinition() == typeof(ModelMap<,>))
+                args = new BsonDeserializationArgs { NominalType = modelMap.ModelType };
+
+            // Deserialize.
             var model = (TModel)serializer.Deserialize(context, args);
 
             // Fix model.

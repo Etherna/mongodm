@@ -228,7 +228,7 @@ namespace Etherna.MongODM.Core.Serialization.Mapping
                 // Register discriminators for all bson class maps.
                 if (schema is IModelMapsSchema modelMapsSchema)
                     foreach (var modelMap in modelMapsSchema.AllMapsDictionary.Values)
-                        dbContext.DiscriminatorRegistry.AddDiscriminator(modelMapsSchema.ModelType, modelMap.BsonClassMap.Discriminator);
+                        dbContext.DiscriminatorRegistry.AddDiscriminator(modelMap.ModelType, modelMap.BsonClassMap.Discriminator);
             }
 
             // Specific for model maps schemas.
@@ -382,26 +382,27 @@ namespace Etherna.MongODM.Core.Serialization.Mapping
             while (processingSchemas.Any())
             {
                 var schema = processingSchemas.Pop();
-                var baseModelType = schema.ModelType.BaseType;
-
-                // If don't need to be linked, because it is typeof(object).
-                if (baseModelType is null)
-                    continue;
-
-                // Get base type schema, or generate it.
-                if (!_schemas.TryGetValue(baseModelType, out ISchema baseSchema))
-                {
-                    // Create schema instance.
-                    baseSchema = CreateNewDefaultModelMapsSchema(baseModelType);
-
-                    // Register schema instance.
-                    _schemas.Add(baseModelType, baseSchema);
-                    processingSchemas.Push((IModelMapsSchema)baseSchema);
-                }
 
                 // Process schema's model maps.
                 foreach (var modelMap in schema.AllMapsDictionary.Values)
                 {
+                    var baseModelType = modelMap.ModelType.BaseType;
+
+                    // If don't need to be linked, because it is typeof(object).
+                    if (baseModelType is null)
+                        continue;
+
+                    // Get base type schema, or generate it.
+                    if (!_schemas.TryGetValue(baseModelType, out ISchema baseSchema))
+                    {
+                        // Create schema instance.
+                        baseSchema = CreateNewDefaultModelMapsSchema(baseModelType);
+
+                        // Register schema instance.
+                        _schemas.Add(baseModelType, baseSchema);
+                        processingSchemas.Push((IModelMapsSchema)baseSchema);
+                    }
+
                     // Search base model map.
                     var baseModelMap = modelMap.BaseModelMapId != null ?
                         ((IModelMapsSchema)baseSchema).AllMapsDictionary[modelMap.BaseModelMapId] :
