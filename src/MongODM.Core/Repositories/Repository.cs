@@ -19,8 +19,11 @@ using Etherna.MongODM.Core.Domain.Models;
 using Etherna.MongODM.Core.Exceptions;
 using Etherna.MongODM.Core.Extensions;
 using Etherna.MongODM.Core.ProxyModels;
+using Etherna.MongODM.Core.Serialization.Mapping;
 using Etherna.MongODM.Core.Utility;
+using MoreLinq;
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
@@ -29,27 +32,40 @@ using System.Threading.Tasks;
 
 namespace Etherna.MongODM.Core.Repositories
 {
-    public class CollectionRepository<TModel, TKey> :
-        RepositoryBase<TModel, TKey>,
-        ICollectionRepository<TModel, TKey>
+    public class Repository<TModel, TKey> :
+        IRepository<TModel, TKey>
         where TModel : class, IEntityModel<TKey>
     {
         // Fields.
-        private readonly CollectionRepositoryOptions<TModel> options;
+        private readonly RepositoryOptions<TModel> options;
         private IMongoCollection<TModel> _collection = default!;
 
         // Constructors.
-        public CollectionRepository(string name)
-            : this(new CollectionRepositoryOptions<TModel>(name))
+        public Repository(string name)
+            : this(new RepositoryOptions<TModel>(name))
         { }
 
-        public CollectionRepository(CollectionRepositoryOptions<TModel> options)
+        public Repository(RepositoryOptions<TModel> options)
         {
             this.options = options ?? throw new ArgumentNullException(nameof(options));
         }
 
+        // Initializer.
+        public virtual void Initialize(IDbContext dbContext)
+        {
+            if (IsInitialized)
+                throw new InvalidOperationException("Instance already initialized");
+            DbContext = dbContext;
+
+            IsInitialized = true;
+        }
+
         // Properties.
-        public override string Name => options.Name;
+        public IDbContext DbContext { get; private set; } = default!;
+        public Type GetKeyType => typeof(TKey);
+        public Type GetModelType => typeof(TModel);
+        public bool IsInitialized { get; private set; }
+        public string Name => options.Name;
 
         // Public methods.
         public Task AccessToCollectionAsync(Func<IMongoCollection<TModel>, Task> action) =>
@@ -58,7 +74,7 @@ namespace Etherna.MongODM.Core.Repositories
                 await action(collection).ConfigureAwait(false);
                 return 0;
             });
-        
+
         public async Task<TResult> AccessToCollectionAsync<TResult>(Func<IMongoCollection<TModel>, Task<TResult>> func)
         {
             if (func is null)
@@ -74,7 +90,7 @@ namespace Etherna.MongODM.Core.Repositories
             }
         }
 
-        public override Task BuildIndexesAsync(CancellationToken cancellationToken = default) =>
+        public virtual Task BuildIndexesAsync(CancellationToken cancellationToken = default) =>
             AccessToCollectionAsync(async collection =>
             {
                 var newIndexes = new List<(string name, CreateIndexModel<TModel> createIndex)>();
@@ -89,7 +105,7 @@ namespace Etherna.MongODM.Core.Repositories
                         try
                         {
                             var renderedKeys = keys.Render(collection.DocumentSerializer, collection.Settings.SerializerRegistry);
-                            options.Name = $"doc_{ string.Join("_", renderedKeys.Names) }";
+                            options.Name = $"doc_{string.Join("_", renderedKeys.Names)}";
                         }
                         catch (InvalidOperationException)
                         {
@@ -138,11 +154,86 @@ namespace Etherna.MongODM.Core.Repositories
                     await collection.Indexes.CreateManyAsync(newIndexes.Select(i => i.createIndex), cancellationToken).ConfigureAwait(false);
             });
 
+        public Task CreateAsync(object model, CancellationToken cancellationToken = default) =>
+            CreateAsync((TModel)model, cancellationToken);
+
+        public Task CreateAsync(IEnumerable<object> models, CancellationToken cancellationToken = default) =>
+            CreateAsync(models.Select(m => (TModel)m), cancellationToken);
+
+        public virtual async Task CreateAsync(IEnumerable<TModel> models, CancellationToken cancellationToken = default)
+        {
+            await CreateOnDBAsync(models, cancellationToken).ConfigureAwait(false);
+            await DbContext.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
+        }
+
+        public virtual async Task CreateAsync(TModel model, CancellationToken cancellationToken = default)
+        {
+            await CreateOnDBAsync(model, cancellationToken).ConfigureAwait(false);
+            await DbContext.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
+        }
+
+        public async Task DeleteAsync(TKey id, CancellationToken cancellationToken = default)
+        {
+            var model = await FindOneAsync(id, cancellationToken: cancellationToken).ConfigureAwait(false);
+            await DeleteAsync(model, cancellationToken).ConfigureAwait(false);
+        }
+
+        public virtual async Task DeleteAsync(TModel model, CancellationToken cancellationToken = default)
+        {
+            if (model is null)
+                throw new ArgumentNullException(nameof(model));
+
+            // Process cascade delete.
+            var referencesIdsPaths = DbContext.SchemaRegistry.GetIdMemberDependenciesFromRootModel(typeof(TModel))
+                .Where(d => d.UseCascadeDelete)
+                .Where(d => d.EntityClassMapPath.Count() == 2) //ignore references of references
+                .DistinctBy(d => d.FullPathToString())
+                .Select(d => d.MemberPath);
+
+            foreach (var idPath in referencesIdsPaths)
+                await CascadeDeleteMembersAsync(model, idPath).ConfigureAwait(false);
+
+            // Unlink dependent models.
+            model.DisposeForDelete();
+            await DbContext.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
+
+            // Delete model.
+            await DeleteOnDBAsync(model, cancellationToken).ConfigureAwait(false);
+
+            // Remove from cache.
+            if (DbContext.DbCache.LoadedModels.ContainsKey(model.Id!))
+                DbContext.DbCache.RemoveModel(model.Id!);
+        }
+
+        public async Task DeleteAsync(IEntityModel model, CancellationToken cancellationToken = default)
+        {
+            if (model is not TModel castedModel)
+                throw new MongodmInvalidEntityTypeException("Invalid model type");
+            await DeleteAsync(castedModel, cancellationToken).ConfigureAwait(false);
+        }
+
         public virtual Task<IAsyncCursor<TProjection>> FindAsync<TProjection>(
             FilterDefinition<TModel> filter,
             FindOptions<TModel, TProjection>? options = null,
             CancellationToken cancellationToken = default) =>
             AccessToCollectionAsync(collection => collection.FindAsync(filter, options, cancellationToken));
+
+        public async Task<object> FindOneAsync(object id, CancellationToken cancellationToken = default) =>
+            await FindOneAsync((TKey)id, cancellationToken).ConfigureAwait(false);
+
+        public virtual async Task<TModel> FindOneAsync(
+            TKey id,
+            CancellationToken cancellationToken = default)
+        {
+            if (DbContext.DbCache.LoadedModels.ContainsKey(id!))
+            {
+                var cachedModel = DbContext.DbCache.LoadedModels[id!] as TModel;
+                if ((cachedModel as IReferenceable)?.IsSummary == false)
+                    return cachedModel!;
+            }
+
+            return await FindOneOnDBAsync(id, cancellationToken).ConfigureAwait(false);
+        }
 
         public Task<TModel> FindOneAsync(
             Expression<Func<TModel, bool>> predicate,
@@ -216,6 +307,28 @@ namespace Etherna.MongODM.Core.Repositories
             CancellationToken cancellationToken = default) =>
             ReplaceHelperAsync(model, session, updateDependentDocuments, cancellationToken);
 
+        public async Task<object?> TryFindOneAsync(object id, CancellationToken cancellationToken = default) =>
+            await TryFindOneAsync((TKey)id, cancellationToken).ConfigureAwait(false);
+
+        public async Task<TModel?> TryFindOneAsync(
+            TKey id,
+            CancellationToken cancellationToken = default)
+        {
+            if (id == null)
+            {
+                return null;
+            }
+
+            try
+            {
+                return await FindOneAsync(id, cancellationToken).ConfigureAwait(false);
+            }
+            catch (MongodmEntityNotFoundException)
+            {
+                return null;
+            }
+        }
+
         public async Task<TModel?> TryFindOneAsync(Expression<Func<TModel, bool>> predicate, CancellationToken cancellationToken = default)
         {
             if (predicate is null)
@@ -231,14 +344,14 @@ namespace Etherna.MongODM.Core.Repositories
             }
         }
 
-        // Protected methods.
-        protected override Task CreateOnDBAsync(IEnumerable<TModel> models, CancellationToken cancellationToken) =>
+        // Protected virtual methods.
+        protected virtual Task CreateOnDBAsync(IEnumerable<TModel> models, CancellationToken cancellationToken) =>
             AccessToCollectionAsync(collection => collection.InsertManyAsync(models, null, cancellationToken));
 
-        protected override Task CreateOnDBAsync(TModel model, CancellationToken cancellationToken) =>
+        protected virtual Task CreateOnDBAsync(TModel model, CancellationToken cancellationToken) =>
             AccessToCollectionAsync(collection => collection.InsertOneAsync(model, null, cancellationToken));
 
-        protected override Task DeleteOnDBAsync(TModel model, CancellationToken cancellationToken) =>
+        protected virtual Task DeleteOnDBAsync(TModel model, CancellationToken cancellationToken) =>
             AccessToCollectionAsync(collection =>
             {
                 if (model is null)
@@ -249,7 +362,7 @@ namespace Etherna.MongODM.Core.Repositories
                     cancellationToken);
             });
 
-        protected override async Task<TModel> FindOneOnDBAsync(TKey id, CancellationToken cancellationToken = default)
+        protected virtual async Task<TModel> FindOneOnDBAsync(TKey id, CancellationToken cancellationToken = default)
         {
             if (id == null)
                 throw new ArgumentNullException(nameof(id));
@@ -265,6 +378,44 @@ namespace Etherna.MongODM.Core.Repositories
         }
 
         // Helpers.
+        private async Task CascadeDeleteMembersAsync(object currentModel, IEnumerable<OwnedBsonMemberMap> idPath)
+        {
+            if (!idPath.Any())
+                throw new ArgumentException("Member path can't be empty", nameof(idPath));
+
+            var currentMember = idPath.First();
+            var memberTail = idPath.Skip(1);
+
+            if (currentMember.Member.IsIdMember())
+            {
+                //cascade delete model
+                var repository = DbContext.RepositoryRegistry.RepositoriesByModelType[currentModel.GetType().BaseType];
+                try { await repository.DeleteAsync((IEntityModel)currentModel).ConfigureAwait(false); }
+                catch { }
+            }
+            else
+            {
+                //recursion on value
+                var memberInfo = currentMember.Member.MemberInfo;
+                var memberValue = ReflectionHelper.GetValue(currentModel, memberInfo);
+                if (memberValue == null)
+                    return;
+
+                if (memberValue is IEnumerable enumerableMemberValue) //if enumerable
+                {
+                    if (enumerableMemberValue is IDictionary dictionaryMemberValue)
+                        enumerableMemberValue = dictionaryMemberValue.Values;
+
+                    foreach (var itemValue in enumerableMemberValue.Cast<object>().ToArray())
+                        await CascadeDeleteMembersAsync(itemValue, memberTail).ConfigureAwait(false);
+                }
+                else
+                {
+                    await CascadeDeleteMembersAsync(memberValue, memberTail).ConfigureAwait(false);
+                }
+            }
+        }
+
         private Task<TModel> FindOneOnDBAsync(
             Expression<Func<TModel, bool>> predicate,
             CancellationToken cancellationToken = default) =>
@@ -281,7 +432,7 @@ namespace Etherna.MongODM.Core.Repositories
 
                 return element;
             });
-       
+
 
         private Task ReplaceHelperAsync(
             TModel model,

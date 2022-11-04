@@ -64,7 +64,7 @@ namespace Etherna.MongODM.Core
         /// <summary>
         /// Internal collection for keep db operations execution log
         /// </summary>
-        ICollectionRepository<OperationBase, string> DbOperations { get; }
+        IRepository<OperationBase, string> DbOperations { get; }
 
         /// <summary>
         /// Registry for discriminator configuration.

@@ -23,8 +23,6 @@ namespace Etherna.MongODM.Core.Repositories
     {
         // Fields.
         private IDbContext dbContext = default!;
-        private IReadOnlyDictionary<Type, ICollectionRepository> _collectionRepositoriesByModelType = default!;
-        private IReadOnlyDictionary<Type, IGridFSRepository> _gridFSRepositoriesByModelType = default!;
         private IReadOnlyDictionary<Type, IRepository> _repositoriesByModelType = default!;
 
         // Initializer.
@@ -40,11 +38,11 @@ namespace Etherna.MongODM.Core.Repositories
         // Properties.
         public bool IsInitialized { get; private set; }
 
-        public IReadOnlyDictionary<Type, ICollectionRepository> CollectionRepositoriesByModelType
+        public IReadOnlyDictionary<Type, IRepository> RepositoriesByModelType
         {
             get
             {
-                if (_collectionRepositoriesByModelType is null)
+                if (_repositoriesByModelType is null)
                 {
                     var dbContextType = dbContext.GetType();
 
@@ -55,78 +53,22 @@ namespace Etherna.MongODM.Core.Repositories
                             var propType = prop.PropertyType;
 
                             if (propType.IsGenericType &&
-                                propType.GetGenericTypeDefinition() == typeof(ICollectionRepository<,>))
+                                propType.GetGenericTypeDefinition() == typeof(IRepository<,>))
                                 return true;
 
                             if (propType.GetInterfaces()
                                         .Where(@interface => @interface.IsGenericType)
                                         .Select(@interface => @interface.GetGenericTypeDefinition())
-                                        .Contains(typeof(ICollectionRepository<,>)))
+                                        .Contains(typeof(IRepository<,>)))
                                 return true;
 
                             return false;
                         });
 
                     // Initialize registry.
-                    _collectionRepositoriesByModelType = repos.ToDictionary(
-                        prop => ((ICollectionRepository)prop.GetValue(dbContext)).GetModelType,
-                        prop => (ICollectionRepository)prop.GetValue(dbContext));
-                }
-
-                return _collectionRepositoriesByModelType;
-            }
-        }
-        public IReadOnlyDictionary<Type, IGridFSRepository> GridFSRepositoriesByModelType
-        {
-            get
-            {
-                if (_gridFSRepositoriesByModelType is null)
-                {
-                    var dbContextType = dbContext.GetType();
-
-                    //select ICollectionRepository<,> implementing properties
-                    var repos = dbContextType.GetProperties(BindingFlags.Public | BindingFlags.Instance)
-                        .Where(prop =>
-                        {
-                            var propType = prop.PropertyType;
-
-                            if (propType.IsGenericType &&
-                                propType.GetGenericTypeDefinition() == typeof(IGridFSRepository<>))
-                                return true;
-
-                            if (propType.GetInterfaces()
-                                        .Where(@interface => @interface.IsGenericType)
-                                        .Select(@interface => @interface.GetGenericTypeDefinition())
-                                        .Contains(typeof(IGridFSRepository<>)))
-                                return true;
-
-                            return false;
-                        });
-
-                    //construct registry
-                    _gridFSRepositoriesByModelType = repos.ToDictionary(
-                        prop => ((IGridFSRepository)prop.GetValue(dbContext)).GetModelType,
-                        prop => (IGridFSRepository)prop.GetValue(dbContext));
-                }
-
-                return _gridFSRepositoriesByModelType;
-            }
-        }
-        public IReadOnlyDictionary<Type, IRepository> RepositoriesByModelType
-        {
-            get
-            {
-                if (_repositoriesByModelType is null)
-                {
-                    var repoMap = new Dictionary<Type, IRepository>();
-
-                    foreach (var pair in CollectionRepositoriesByModelType)
-                        repoMap.Add(pair.Key, pair.Value);
-
-                    foreach (var pair in GridFSRepositoriesByModelType)
-                        repoMap.Add(pair.Key, pair.Value);
-
-                    _repositoriesByModelType = repoMap;
+                    _repositoriesByModelType = repos.ToDictionary(
+                        prop => ((IRepository)prop.GetValue(dbContext)).GetModelType,
+                        prop => (IRepository)prop.GetValue(dbContext));
                 }
 
                 return _repositoriesByModelType;

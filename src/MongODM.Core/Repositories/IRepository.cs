@@ -12,9 +12,12 @@
 //   See the License for the specific language governing permissions and
 //   limitations under the License.
 
+using Etherna.MongoDB.Driver;
+using Etherna.MongoDB.Driver.Linq;
 using Etherna.MongODM.Core.Domain.Models;
 using System;
 using System.Collections.Generic;
+using System.Linq.Expressions;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -46,6 +49,17 @@ namespace Etherna.MongODM.Core.Repositories
             object id,
             CancellationToken cancellationToken = default);
 
+        Task ReplaceAsync(
+            object model,
+            bool updateDependentDocuments = true,
+            CancellationToken cancellationToken = default);
+
+        Task ReplaceAsync(
+            object model,
+            IClientSessionHandle session,
+            bool updateDependentDocuments = true,
+            CancellationToken cancellationToken = default);
+
         /// <summary>
         /// Try to find a model and don't throw exception if it is not found
         /// </summary>
@@ -60,6 +74,10 @@ namespace Etherna.MongODM.Core.Repositories
     public interface IRepository<TModel, TKey> : IRepository
         where TModel : class, IEntityModel<TKey>
     {
+        Task AccessToCollectionAsync(Func<IMongoCollection<TModel>, Task> action);
+
+        Task<TResult> AccessToCollectionAsync<TResult>(Func<IMongoCollection<TModel>, Task<TResult>> func);
+
         Task CreateAsync(
             TModel model,
             CancellationToken cancellationToken = default);
@@ -68,8 +86,17 @@ namespace Etherna.MongODM.Core.Repositories
             IEnumerable<TModel> models,
             CancellationToken cancellationToken = default);
 
+        Task<IAsyncCursor<TProjection>> FindAsync<TProjection>(
+            FilterDefinition<TModel> filter,
+            FindOptions<TModel, TProjection>? options = null,
+            CancellationToken cancellationToken = default);
+
         Task<TModel> FindOneAsync(
             TKey id,
+            CancellationToken cancellationToken = default);
+
+        Task<TModel> FindOneAsync(
+            Expression<Func<TModel, bool>> predicate,
             CancellationToken cancellationToken = default);
 
         Task DeleteAsync(
@@ -78,6 +105,29 @@ namespace Etherna.MongODM.Core.Repositories
 
         Task DeleteAsync(
             TKey id,
+            CancellationToken cancellationToken = default);
+
+        Task<TResult> QueryElementsAsync<TResult>(
+            Func<IMongoQueryable<TModel>, Task<TResult>> query,
+            AggregateOptions? aggregateOptions = null);
+
+        Task<PaginatedEnumerable<TResult>> QueryPaginatedElementsAsync<TResult, TResultKey>(
+            Func<IMongoQueryable<TModel>, IMongoQueryable<TResult>> filter,
+            Expression<Func<TResult, TResultKey>> orderKeySelector,
+            int page,
+            int take,
+            bool useDescendingOrder = false,
+            CancellationToken cancellationToken = default);
+
+        Task ReplaceAsync(
+            TModel model,
+            bool updateDependentDocuments = true,
+            CancellationToken cancellationToken = default);
+
+        Task ReplaceAsync(
+            TModel model,
+            IClientSessionHandle session,
+            bool updateDependentDocuments = true,
             CancellationToken cancellationToken = default);
 
         /// <summary>
@@ -88,6 +138,16 @@ namespace Etherna.MongODM.Core.Repositories
         /// <returns>The model, null if it doesn't exist</returns>
         Task<TModel?> TryFindOneAsync(
             TKey id,
+            CancellationToken cancellationToken = default);
+
+        /// <summary>
+        /// Try to find a model and don't throw exception if it is not found
+        /// </summary>
+        /// <param name="predicate">Model find predicate</param>
+        /// <param name="cancellationToken">The cancellation token</param>
+        /// <returns>The model, null if it doesn't exist</returns>
+        Task<TModel?> TryFindOneAsync(
+            Expression<Func<TModel, bool>> predicate,
             CancellationToken cancellationToken = default);
     }
 }

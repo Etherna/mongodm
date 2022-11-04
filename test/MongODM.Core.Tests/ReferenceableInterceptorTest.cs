@@ -28,7 +28,7 @@ namespace Etherna.MongODM.Core
     public class ReferenceableInterceptorTest
     {
         private readonly ReferenceableInterceptor<FakeModel, string> interceptor;
-        private readonly Mock<ICollectionRepository<FakeModel, string>> repositoryMock;
+        private readonly Mock<IRepository<FakeModel, string>> repositoryMock;
         private readonly Mock<IDbContext> dbContextMock;
 
         private readonly Mock<Castle.DynamicProxy.IInvocation> getIsSummaryInvocationMock;
@@ -36,7 +36,7 @@ namespace Etherna.MongODM.Core
 
         public ReferenceableInterceptorTest()
         {
-            repositoryMock = new Mock<ICollectionRepository<FakeModel, string>>();
+            repositoryMock = new Mock<IRepository<FakeModel, string>>();
 
             dbContextMock = new Mock<IDbContext>();
             dbContextMock.Setup(c => c.RepositoryRegistry.RepositoriesByModelType)

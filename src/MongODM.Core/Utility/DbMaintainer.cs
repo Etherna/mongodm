@@ -60,7 +60,7 @@ namespace Etherna.MongODM.Core.Utility
 
             // Group by root model type, and select only model types related to a collections.
             foreach (var dependencyGroup in referenceMemberMaps.GroupBy(memberMap => memberMap.RootModelMap.ModelType)
-                                                               .Where(group => dbContext.RepositoryRegistry.CollectionRepositoriesByModelType.ContainsKey(group.Key)))
+                                                               .Where(group => dbContext.RepositoryRegistry.RepositoriesByModelType.ContainsKey(group.Key)))
             {
                 // Extract only id paths to referenced entities.
                 var idPaths = dependencyGroup
