@@ -18,6 +18,7 @@ using Etherna.MongODM.Core.Extensions;
 using Etherna.MongODM.Core.Serialization.Mapping.Schemas;
 using Etherna.MongODM.Core.Serialization.Serializers;
 using Etherna.MongODM.Core.Utility;
+using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
@@ -35,19 +36,23 @@ namespace Etherna.MongODM.Core.Serialization.Mapping
 
         private readonly Dictionary<Type, BsonElement> activeModelMapIdBsonElement = new();
         private readonly ConcurrentDictionary<Type, BsonClassMap> defaultClassMapsCache = new();
+        private ILogger logger = default!;
         private readonly Dictionary<MemberInfo, List<MemberDependency>> memberInfoToMemberMapsDictionary = new();
         private readonly Dictionary<Type, List<MemberDependency>> modelTypeToReferencedIdMemberMapsDictionary = new();
 
         private IDbContext dbContext = default!;
 
         // Constructor and initializer.
-        public void Initialize(IDbContext dbContext)
+        public void Initialize(IDbContext dbContext, ILogger logger)
         {
             if (IsInitialized)
                 throw new InvalidOperationException("Instance already initialized");
-            this.dbContext = dbContext;
+            this.dbContext = dbContext ?? throw new ArgumentNullException(nameof(dbContext));
+            this.logger = logger ?? throw new ArgumentNullException(nameof(logger));
 
             IsInitialized = true;
+
+            this.logger.SchemaRegistryInitialized(dbContext.Options.DbName);
         }
 
         // Properties.

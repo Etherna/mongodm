@@ -15,6 +15,8 @@
 using Etherna.MongoDB.Bson;
 using Etherna.MongoDB.Bson.Serialization.Conventions;
 using Etherna.MongODM.Core.Conventions;
+using Etherna.MongODM.Core.Extensions;
+using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
 using System.Reflection;
@@ -29,17 +31,21 @@ namespace Etherna.MongODM.Core.Serialization.Mapping
         private readonly Dictionary<Type, IDiscriminatorConvention> discriminatorConventions = new();
         private readonly Dictionary<BsonValue, HashSet<Type>> discriminators = new();
         private readonly HashSet<Type> discriminatedTypes = new();
+        private ILogger logger = default!;
 
         private IDbContext dbContext = default!;
 
         // Constructor and initializer.
-        public void Initialize(IDbContext dbContext)
+        public void Initialize(IDbContext dbContext, ILogger logger)
         {
             if (IsInitialized)
                 throw new InvalidOperationException("Instance already initialized");
-            this.dbContext = dbContext;
+            this.dbContext = dbContext ?? throw new ArgumentNullException(nameof(dbContext));
+            this.logger = logger ?? throw new ArgumentNullException(nameof(logger));
 
             IsInitialized = true;
+
+            this.logger.DiscriminatorRegistryInitialized(dbContext.Options.DbName);
         }
 
         // Properties.

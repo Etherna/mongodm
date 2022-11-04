@@ -14,6 +14,8 @@
 
 using Etherna.ExecContext;
 using Etherna.MongODM.Core.Domain.Models;
+using Etherna.MongODM.Core.Extensions;
+using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
 using System.Text;
@@ -28,9 +30,10 @@ namespace Etherna.MongODM.Core.Utility
         // Fields.
         private string cacheKey = default!;
         private IExecutionContext executionContext = default!;
+        private ILogger logger = default!;
 
         // Constructors.
-        public void Initialize(IDbContext dbContext)
+        public void Initialize(IDbContext dbContext, ILogger logger)
         {
             if (dbContext is null)
                 throw new ArgumentNullException(nameof(dbContext));
@@ -41,8 +44,11 @@ namespace Etherna.MongODM.Core.Utility
             cacheKeyBuilder.Append(dbContext.Identifier);
             cacheKey = cacheKeyBuilder.ToString();
             executionContext = dbContext.ExecutionContext;
+            this.logger = logger ?? throw new ArgumentNullException(nameof(logger));
 
             IsInitialized = true;
+
+            this.logger.DbCacheInitialized(dbContext.Options.DbName);
         }
 
         // Properties.
