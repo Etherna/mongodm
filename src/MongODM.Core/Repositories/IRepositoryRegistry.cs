@@ -20,17 +20,7 @@ namespace Etherna.MongODM.Core.Repositories
     public interface IRepositoryRegistry : IDbContextInitializable
     {
         /// <summary>
-        /// Model-Repository map for collection types.
-        /// </summary>
-        IReadOnlyDictionary<Type, ICollectionRepository> CollectionRepositoriesByModelType { get; }
-
-        /// <summary>
-        /// Model-Repository map for gridfs types.
-        /// </summary>
-        IReadOnlyDictionary<Type, IGridFSRepository> GridFSRepositoriesByModelType { get; }
-
-        /// <summary>
-        /// Model-Repository map for both collection and gridfs types.
+        /// Model-Repository map.
         /// </summary>
         IReadOnlyDictionary<Type, IRepository> RepositoriesByModelType { get; }
     }

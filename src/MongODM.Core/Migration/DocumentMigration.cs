@@ -24,7 +24,7 @@ namespace Etherna.MongODM.Core.Migration
     public abstract class DocumentMigration
     {
         // Properties.
-        public abstract ICollectionRepository SourceRepository { get; }
+        public abstract IRepository SourceRepository { get; }
 
         // Methods.
         /// <summary>
@@ -46,25 +46,25 @@ namespace Etherna.MongODM.Core.Migration
         where TModel : class, IEntityModel<TKey>
     {
         // Fields.
-        private readonly ICollectionRepository<TModel, TKey> _sourceRepository;
-        private readonly Func<TModel, ICollectionRepository?> destinationRepositorySelector;
+        private readonly IRepository<TModel, TKey> _sourceRepository;
+        private readonly Func<TModel, IRepository?> destinationRepositorySelector;
         private readonly Func<TModel, object> modelConverter;
 
         // Constructors.
-        public DocumentMigration(ICollectionRepository<TModel, TKey> repository)
+        public DocumentMigration(IRepository<TModel, TKey> repository)
             : this(repository, repository, m => m)
         { }
 
         public DocumentMigration(
-            ICollectionRepository<TModel, TKey> sourceRepository,
-            ICollectionRepository destinationRepository,
+            IRepository<TModel, TKey> sourceRepository,
+            IRepository destinationRepository,
             Func<TModel, object> modelConverter)
             : this(sourceRepository, _ => destinationRepository, modelConverter)
         { }
 
         public DocumentMigration(
-            ICollectionRepository<TModel, TKey> sourceRepository,
-            Func<TModel, ICollectionRepository?> destinationRepositorySelector,
+            IRepository<TModel, TKey> sourceRepository,
+            Func<TModel, IRepository?> destinationRepositorySelector,
             Func<TModel, object> modelConverter)
         {
             _sourceRepository = sourceRepository ?? throw new ArgumentNullException(nameof(sourceRepository));
@@ -73,7 +73,7 @@ namespace Etherna.MongODM.Core.Migration
         }
 
         // Properties.
-        public override ICollectionRepository SourceRepository => _sourceRepository;
+        public override IRepository SourceRepository => _sourceRepository;
 
         // Methods.
         public override Task<MigrationResult> MigrateAsync(

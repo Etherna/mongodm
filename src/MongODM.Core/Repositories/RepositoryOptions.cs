@@ -12,15 +12,23 @@
 //   See the License for the specific language governing permissions and
 //   limitations under the License.
 
+using Etherna.MongoDB.Driver;
+using System;
+using System.Collections.Generic;
+
 namespace Etherna.MongODM.Core.Repositories
 {
-    public abstract class RepositoryOptionsBase
+    public class RepositoryOptions<TModel>
     {
-        protected RepositoryOptionsBase(string name)
+        // Constructors.
+        public RepositoryOptions(string name)
         {
+            IndexBuilders = Array.Empty<(IndexKeysDefinition<TModel> keys, CreateIndexOptions<TModel> options)>();
             Name = name ?? throw new System.ArgumentNullException(nameof(name));
         }
 
+        // Properties.
+        public IEnumerable<(IndexKeysDefinition<TModel> keys, CreateIndexOptions<TModel> options)> IndexBuilders { get; set; }
         public string Name { get; }
     }
 }

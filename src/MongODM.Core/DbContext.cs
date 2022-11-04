@@ -67,7 +67,7 @@ namespace Etherna.MongODM.Core
             DbCache = dependencies.DbCache;
             DbMaintainer = dependencies.DbMaintainer;
             DbMigrationManager = dependencies.DbMigrationManager;
-            DbOperations = new CollectionRepository<OperationBase, string>(options.DbOperationsCollectionName);
+            DbOperations = new Repository<OperationBase, string>(options.DbOperationsCollectionName);
             DiscriminatorRegistry = dependencies.DiscriminatorRegistry;
             ExecutionContext = dependencies.ExecutionContext;
             Options = options;
@@ -128,7 +128,7 @@ namespace Etherna.MongODM.Core
         public IDbCache DbCache { get; private set; } = default!;
         public IDbMaintainer DbMaintainer { get; private set; } = default!;
         public IDbMigrationManager DbMigrationManager { get; private set; } = default!;
-        public ICollectionRepository<OperationBase, string> DbOperations { get; private set; } = default!;
+        public IRepository<OperationBase, string> DbOperations { get; private set; } = default!;
         public IDiscriminatorRegistry DiscriminatorRegistry { get; private set; } = default!;
         public virtual IEnumerable<DocumentMigration> DocumentMigrationList { get; } = Array.Empty<DocumentMigration>();
         public IExecutionContext ExecutionContext { get; private set; } = default!;
@@ -231,9 +231,9 @@ namespace Etherna.MongODM.Core
                 var modelType = ProxyGenerator.PurgeProxyType(model.GetType());
                 while (modelType != typeof(object)) //try to find right collection. Can't replace model if it is stored on gridfs
                 {
-                    if (RepositoryRegistry.CollectionRepositoriesByModelType.ContainsKey(modelType))
+                    if (RepositoryRegistry.RepositoriesByModelType.ContainsKey(modelType))
                     {
-                        var repository = RepositoryRegistry.CollectionRepositoriesByModelType[modelType];
+                        var repository = RepositoryRegistry.RepositoriesByModelType[modelType];
                         await repository.ReplaceAsync(model, cancellationToken: cancellationToken).ConfigureAwait(false);
                         break;
                     }

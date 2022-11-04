@@ -20,6 +20,6 @@ namespace Etherna.MongODM.AspNetCoreSample.Persistence
 {
     public interface ISampleDbContext : IDbContext
     {
-        ICollectionRepository<Cat, string> Cats { get; }
+        IRepository<Cat, string> Cats { get; }
     }
 }
