@@ -13,8 +13,10 @@
 //   limitations under the License.
 
 using Etherna.MongoDB.Driver;
+using Etherna.MongODM.Core.Extensions;
 using Etherna.MongODM.Core.ProxyModels;
 using Etherna.MongODM.Core.Tasks;
+using Microsoft.Extensions.Logging;
 using System;
 using System.Linq;
 
@@ -24,6 +26,7 @@ namespace Etherna.MongODM.Core.Utility
     {
         // Fields.
         private IDbContext dbContext = default!;
+        private ILogger logger = default!;
         private readonly ITaskRunner taskRunner;
 
         // Constructors and initialization.
@@ -32,14 +35,17 @@ namespace Etherna.MongODM.Core.Utility
             this.taskRunner = taskRunner;
         }
 
-        public void Initialize(IDbContext dbContext)
+        public void Initialize(IDbContext dbContext, ILogger logger)
         {
             if (IsInitialized)
                 throw new InvalidOperationException("Instance already initialized");
 
-            this.dbContext = dbContext;
+            this.dbContext = dbContext ?? throw new ArgumentNullException(nameof(dbContext));
+            this.logger = logger ?? throw new ArgumentNullException(nameof(logger));
 
             IsInitialized = true;
+
+            this.logger.DbMaintainerInitialized(dbContext.Options.DbName);
         }
 
         // Properties.

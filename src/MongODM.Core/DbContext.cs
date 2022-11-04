@@ -19,6 +19,7 @@ using Etherna.MongoDB.Driver.Linq;
 using Etherna.MongODM.Core.Domain.ModelMaps;
 using Etherna.MongODM.Core.Domain.Models;
 using Etherna.MongODM.Core.Exceptions;
+using Etherna.MongODM.Core.Extensions;
 using Etherna.MongODM.Core.Migration;
 using Etherna.MongODM.Core.Options;
 using Etherna.MongODM.Core.ProxyModels;
@@ -28,10 +29,11 @@ using Etherna.MongODM.Core.Serialization.Mapping;
 using Etherna.MongODM.Core.Serialization.Modifiers;
 using Etherna.MongODM.Core.Serialization.Providers;
 using Etherna.MongODM.Core.Utility;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -45,10 +47,15 @@ namespace Etherna.MongODM.Core
         private IEnumerable<IDbContext> childDbContexts = default!;
         private bool isInitialized;
         private readonly ReaderWriterLockSlim isSeededLock = new(); //support read/write locks
+        private readonly ILogger logger;
         private readonly SemaphoreSlim seedingSemaphore = new(1, 1); //support async/await
 
         // Constructor and initializer.
-        protected DbContext() { }
+        protected DbContext(ILogger? logger = null)
+        {
+            this.logger = logger ?? NullLogger.Instance;
+        }
+
         public void Initialize(
             IDbDependencies dependencies,
             IMongoClient mongoClient,
@@ -81,17 +88,17 @@ namespace Etherna.MongODM.Core
             using var dbExecutionContext = new DbExecutionContextHandler(this);
 
             // Initialize internal dependencies.
-            DbCache.Initialize(this);
-            DbMaintainer.Initialize(this);
-            DbMigrationManager.Initialize(this);
-            DiscriminatorRegistry.Initialize(this);
-            RepositoryRegistry.Initialize(this);
-            SchemaRegistry.Initialize(this);
+            DbCache.Initialize(this, logger);
+            DbMaintainer.Initialize(this, logger);
+            DbMigrationManager.Initialize(this, logger);
+            DiscriminatorRegistry.Initialize(this, logger);
+            RepositoryRegistry.Initialize(this, logger);
+            SchemaRegistry.Initialize(this, logger);
             InitializeSerializerRegistry();
 
             // Initialize repositories.
             foreach (var repository in RepositoryRegistry.RepositoriesByModelType.Values)
-                repository.Initialize(this);
+                repository.Initialize(this, logger);
 
             // Register model maps.
             //internal maps
@@ -116,6 +123,8 @@ namespace Etherna.MongODM.Core
 
             // Set as initialized.
             isInitialized = true;
+
+            logger.DbContextInitialized(options.DbName);
         }
 
         // Public properties.
@@ -229,12 +238,15 @@ namespace Etherna.MongODM.Core
             foreach (var model in ChangedModelsList)
             {
                 var modelType = ProxyGenerator.PurgeProxyType(model.GetType());
-                while (modelType != typeof(object)) //try to find right collection. Can't replace model if it is stored on gridfs
+                while (modelType != typeof(object)) //try to find right collection
                 {
                     if (RepositoryRegistry.RepositoriesByModelType.ContainsKey(modelType))
                     {
                         var repository = RepositoryRegistry.RepositoriesByModelType[modelType];
                         await repository.ReplaceAsync(model, cancellationToken: cancellationToken).ConfigureAwait(false);
+
+                        logger.DbContextSavedChangedModelToRepository(Options.DbName, repository.ModelIdToString(model), repository.Name);
+
                         break;
                     }
                     else
@@ -249,6 +261,8 @@ namespace Etherna.MongODM.Core
             {
                 await child.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
             }
+
+            logger.DbContextSavedChanges(Options.DbName);
         }
 
         public async Task<bool> SeedIfNeededAsync()
@@ -274,6 +288,8 @@ namespace Etherna.MongODM.Core
 
                 // Cache as seeded.
                 IsSeeded = true;
+
+                logger.DbContextSeeded(Options.DbName);
 
                 return true;
             }

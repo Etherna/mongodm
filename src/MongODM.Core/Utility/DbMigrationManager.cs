@@ -17,6 +17,7 @@ using Etherna.MongoDB.Driver.Linq;
 using Etherna.MongODM.Core.Domain.Models;
 using Etherna.MongODM.Core.Extensions;
 using Etherna.MongODM.Core.Tasks;
+using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
@@ -27,6 +28,7 @@ namespace Etherna.MongODM.Core.Utility
     {
         // Fields.
         private IDbContext dbContext = default!;
+        private ILogger logger = default!;
         private readonly ITaskRunner taskRunner;
 
         // Constructor and initialization.
@@ -34,14 +36,17 @@ namespace Etherna.MongODM.Core.Utility
         {
             this.taskRunner = taskRunner;
         }
-        public void Initialize(IDbContext dbContext)
+        public void Initialize(IDbContext dbContext, ILogger logger)
         {
             if (IsInitialized)
                 throw new InvalidOperationException("Instance already initialized");
 
-            this.dbContext = dbContext;
+            this.dbContext = dbContext ?? throw new ArgumentNullException(nameof(dbContext));
+            this.logger = logger ?? throw new ArgumentNullException(nameof(logger));
 
             IsInitialized = true;
+
+            this.logger.DbMigrationManagerInitialized(dbContext.Options.DbName);
         }
 
         // Properties.

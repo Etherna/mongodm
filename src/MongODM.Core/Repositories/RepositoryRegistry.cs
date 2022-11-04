@@ -12,6 +12,8 @@
 //   See the License for the specific language governing permissions and
 //   limitations under the License.
 
+using Etherna.MongODM.Core.Extensions;
+using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -23,16 +25,20 @@ namespace Etherna.MongODM.Core.Repositories
     {
         // Fields.
         private IDbContext dbContext = default!;
+        private ILogger logger = default!;
         private IReadOnlyDictionary<Type, IRepository> _repositoriesByModelType = default!;
 
         // Initializer.
-        public void Initialize(IDbContext dbContext)
+        public void Initialize(IDbContext dbContext, ILogger logger)
         {
             if (IsInitialized)
                 throw new InvalidOperationException("Instance already initialized");
-            this.dbContext = dbContext;
+            this.dbContext = dbContext ?? throw new ArgumentNullException(nameof(dbContext));
+            this.logger = logger ?? throw new ArgumentNullException(nameof(logger));
 
             IsInitialized = true;
+
+            this.logger.RepositoryRegistryInitialized(dbContext.Options.DbName);
         }
 
         // Properties.

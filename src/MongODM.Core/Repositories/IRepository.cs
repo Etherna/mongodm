@@ -49,6 +49,8 @@ namespace Etherna.MongODM.Core.Repositories
             object id,
             CancellationToken cancellationToken = default);
 
+        string ModelIdToString(object model);
+
         Task ReplaceAsync(
             object model,
             bool updateDependentDocuments = true,

@@ -21,6 +21,7 @@ using Etherna.MongODM.Core.Extensions;
 using Etherna.MongODM.Core.ProxyModels;
 using Etherna.MongODM.Core.Serialization.Mapping;
 using Etherna.MongODM.Core.Utility;
+using Microsoft.Extensions.Logging;
 using MoreLinq;
 using System;
 using System.Collections;
@@ -37,6 +38,7 @@ namespace Etherna.MongODM.Core.Repositories
         where TModel : class, IEntityModel<TKey>
     {
         // Fields.
+        private ILogger logger = default!;
         private readonly RepositoryOptions<TModel> options;
         private IMongoCollection<TModel> _collection = default!;
 
@@ -51,13 +53,16 @@ namespace Etherna.MongODM.Core.Repositories
         }
 
         // Initializer.
-        public virtual void Initialize(IDbContext dbContext)
+        public virtual void Initialize(IDbContext dbContext, ILogger logger)
         {
             if (IsInitialized)
                 throw new InvalidOperationException("Instance already initialized");
-            DbContext = dbContext;
+            DbContext = dbContext ?? throw new ArgumentNullException(nameof(dbContext));
+            this.logger = logger ?? throw new ArgumentNullException(nameof(logger));
 
             IsInitialized = true;
+
+            this.logger.RepositoryInitialized(Name, dbContext.Options.DbName);
         }
 
         // Properties.
@@ -239,6 +244,18 @@ namespace Etherna.MongODM.Core.Repositories
             Expression<Func<TModel, bool>> predicate,
             CancellationToken cancellationToken = default) =>
             FindOneOnDBAsync(predicate, cancellationToken);
+
+        public string ModelIdToString(object model)
+        {
+            if (model is null)
+                throw new ArgumentNullException(nameof(model));
+            if (model is not TModel typedModel)
+                throw new ArgumentException($"Model is not of {model.GetType().Name} type", nameof(model));
+            if (typedModel.Id is null)
+                throw new InvalidOperationException("Model Id can't be null");
+
+            return typedModel.Id.ToString();
+        }
 
         public virtual Task<TResult> QueryElementsAsync<TResult>(
             Func<IMongoQueryable<TModel>, Task<TResult>> query,

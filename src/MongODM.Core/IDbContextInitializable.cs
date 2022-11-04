@@ -12,12 +12,14 @@
 //   See the License for the specific language governing permissions and
 //   limitations under the License.
 
+using Microsoft.Extensions.Logging;
+
 namespace Etherna.MongODM.Core
 {
     public interface IDbContextInitializable
     {
         bool IsInitialized { get; }
 
-        void Initialize(IDbContext dbContext);
+        void Initialize(IDbContext dbContext, ILogger logger);
     }
 }
