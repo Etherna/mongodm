@@ -198,7 +198,7 @@ namespace Etherna.MongODM.Core.Repositories
             await DeleteAsync(model, cancellationToken).ConfigureAwait(false);
         }
 
-        public async Task DeleteAsync(TModel model, CancellationToken cancellationToken = default)
+        public virtual async Task DeleteAsync(TModel model, CancellationToken cancellationToken = default)
         {
             if (model is null)
                 throw new ArgumentNullException(nameof(model));
