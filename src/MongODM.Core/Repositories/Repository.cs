@@ -238,7 +238,14 @@ namespace Etherna.MongODM.Core.Repositories
             FilterDefinition<TModel> filter,
             FindOptions<TModel, TProjection>? options = null,
             CancellationToken cancellationToken = default) =>
-            AccessToCollectionAsync(collection => collection.FindAsync(filter, options, cancellationToken));
+            AccessToCollectionAsync(collection =>
+            {
+                var result = collection.FindAsync(filter, options, cancellationToken);
+
+                logger.RepositoryQueriedCollection(Name, DbContext.Options.DbName);
+
+                return result;
+            });
 
         public async Task<object> FindOneAsync(object id, CancellationToken cancellationToken = default) =>
             await FindOneAsync((TKey)id, cancellationToken).ConfigureAwait(false);
@@ -282,7 +289,11 @@ namespace Etherna.MongODM.Core.Repositories
                 if (query is null)
                     throw new ArgumentNullException(nameof(query));
 
-                return query(collection.AsQueryable(aggregateOptions));
+                var result = query(collection.AsQueryable(aggregateOptions));
+
+                logger.RepositoryQueriedCollection(Name, DbContext.Options.DbName);
+
+                return result;
             });
 
         public async Task<PaginatedEnumerable<TResult>> QueryPaginatedElementsAsync<TResult, TResultKey>(
@@ -293,7 +304,7 @@ namespace Etherna.MongODM.Core.Repositories
             bool useDescendingOrder = false,
             CancellationToken cancellationToken = default)
         {
-            var elements = await QueryElementsAsync(elements =>
+            var models = await QueryElementsAsync(elements =>
 
                 useDescendingOrder ?
 
@@ -305,12 +316,12 @@ namespace Etherna.MongODM.Core.Repositories
                     .Paginate(orderKeySelector, page, take)
                     .ToListAsync(cancellationToken)).ConfigureAwait(false);
 
-            var totalElements = await QueryElementsAsync(elements => filter(elements)
+            var totalModels = await QueryElementsAsync(elements => filter(elements)
                 .LongCountAsync(cancellationToken)).ConfigureAwait(false);
 
             return new PaginatedEnumerable<TResult>(
-                elements,
-                totalElements,
+                models,
+                totalModels,
                 page,
                 take);
         }

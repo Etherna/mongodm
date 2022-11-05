@@ -13,9 +13,11 @@
 //   limitations under the License.
 
 using Etherna.MongoDB.Driver;
+using Etherna.MongoDB.Driver.Core.Configuration;
 using Etherna.MongODM.Core;
 using Etherna.MongODM.Core.Options;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -116,9 +118,16 @@ namespace Etherna.MongODM.AspNetCore
                     var dbContext = dbContextCreator(sp);
 
                     // Initialize instance.
+                    var mongoClientSettings = MongoClientSettings.FromConnectionString(options.ConnectionString);
+                    mongoClientSettings.ClusterConfigurator = cb =>
+                    {
+                        var loggerFactory = sp.GetService<ILoggerFactory>();
+                        cb.ConfigureLoggingSettings(_ => new LoggingSettings(loggerFactory));
+                    };
+
                     dbContext.Initialize(
                         dependencies,
-                        new MongoClient(options.ConnectionString),
+                        new MongoClient(mongoClientSettings),
                         options,
                         options.ChildDbContextTypes.Select(dbContextType => (IDbContext)sp.GetRequiredService(dbContextType)));
 

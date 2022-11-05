@@ -6,7 +6,7 @@ namespace Etherna.MongODM.Core.Extensions
 {
     /*
      * Always group similar log delegates by type, always use incremental event ids.
-     * Last event id is: 17
+     * Last event id is: 18
      */
     public static class LoggerExtensions
     {
@@ -116,6 +116,12 @@ namespace Etherna.MongODM.Core.Extensions
                 new EventId(16, nameof(RepositoryFoundDocument)),
                 "Repository {RepositoryName} of DbContext {DbName} found document with Id: {ModelId}");
 
+        private static readonly Action<ILogger, string, string, Exception> _repositoryQueriedCollection =
+            LoggerMessage.Define<string, string>(
+                LogLevel.Information,
+                new EventId(18, nameof(RepositoryQueriedCollection)),
+                "Repository {RepositoryName} of DbContext {DbName} queried collection");
+
         private static readonly Action<ILogger, string, string, string, Exception> _repositoryReplacedDocument =
             LoggerMessage.Define<string, string, string>(
                 LogLevel.Information,
@@ -173,6 +179,9 @@ namespace Etherna.MongODM.Core.Extensions
 
         public static void RepositoryInitialized(this ILogger logger, string repositoryName, string dbName) =>
             _repositoryInitialized(logger, repositoryName, dbName, null!);
+
+        public static void RepositoryQueriedCollection(this ILogger logger, string repositoryName, string dbName) =>
+            _repositoryQueriedCollection(logger, repositoryName, dbName, null!);
 
         public static void RepositoryRegistryInitialized(this ILogger logger, string dbName) =>
             _repositoryRegistryInitialized(logger, dbName, null!);
