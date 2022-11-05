@@ -91,7 +91,11 @@ namespace Etherna.MongODM.Core.Repositories
             // Execute func into execution context.
             using (new DbExecutionContextHandler(DbContext))
             {
-                return await func(_collection).ConfigureAwait(false);
+                var result = await func(_collection).ConfigureAwait(false);
+
+                logger.RepositoryAccessedCollection(Name, DbContext.Options.DbName);
+
+                return result;
             }
         }
 
@@ -157,6 +161,8 @@ namespace Etherna.MongODM.Core.Repositories
                 // Build new indexes.
                 if (newIndexes.Any())
                     await collection.Indexes.CreateManyAsync(newIndexes.Select(i => i.createIndex), cancellationToken).ConfigureAwait(false);
+
+                logger.RepositoryBuiltIndexes(Name, DbContext.Options.DbName);
             });
 
         public Task CreateAsync(object model, CancellationToken cancellationToken = default) =>
@@ -168,12 +174,21 @@ namespace Etherna.MongODM.Core.Repositories
         public virtual async Task CreateAsync(IEnumerable<TModel> models, CancellationToken cancellationToken = default)
         {
             await CreateOnDBAsync(models, cancellationToken).ConfigureAwait(false);
+
+            logger.RepositoryCreatedDocuments(Name, DbContext.Options.DbName, models.Select(m => m.Id!.ToString()));
+
             await DbContext.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
         }
 
         public virtual async Task CreateAsync(TModel model, CancellationToken cancellationToken = default)
         {
+            if (model is null)
+                throw new ArgumentNullException(nameof(model));
+
             await CreateOnDBAsync(model, cancellationToken).ConfigureAwait(false);
+
+            logger.RepositoryCreatedDocument(Name, DbContext.Options.DbName, model.Id!.ToString());
+
             await DbContext.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
         }
 
@@ -183,7 +198,7 @@ namespace Etherna.MongODM.Core.Repositories
             await DeleteAsync(model, cancellationToken).ConfigureAwait(false);
         }
 
-        public virtual async Task DeleteAsync(TModel model, CancellationToken cancellationToken = default)
+        public async Task DeleteAsync(TModel model, CancellationToken cancellationToken = default)
         {
             if (model is null)
                 throw new ArgumentNullException(nameof(model));
@@ -208,6 +223,8 @@ namespace Etherna.MongODM.Core.Repositories
             // Remove from cache.
             if (DbContext.DbCache.LoadedModels.ContainsKey(model.Id!))
                 DbContext.DbCache.RemoveModel(model.Id!);
+
+            logger.RepositoryDeletedDocument(Name, DbContext.Options.DbName, model.Id!.ToString());
         }
 
         public async Task DeleteAsync(IEntityModel model, CancellationToken cancellationToken = default)
@@ -442,12 +459,14 @@ namespace Etherna.MongODM.Core.Repositories
                     throw new ArgumentNullException(nameof(predicate));
 
                 using var cursor = await collection.FindAsync(predicate, cancellationToken: cancellationToken).ConfigureAwait(false);
-                var element = await cursor.FirstOrDefaultAsync(cancellationToken).ConfigureAwait(false);
+                var model = await cursor.FirstOrDefaultAsync(cancellationToken).ConfigureAwait(false);
 
-                if (element == default(TModel))
+                if (model == default(TModel))
                     throw new MongodmEntityNotFoundException("Can't find element");
 
-                return element;
+                logger.RepositoryFoundDocument(Name, DbContext.Options.DbName, model.Id!.ToString());
+
+                return model;
             });
 
 
@@ -484,6 +503,8 @@ namespace Etherna.MongODM.Core.Repositories
 
                 // Reset changed members.
                 ((IAuditable)model).ResetChangedMembers();
+
+                logger.RepositoryReplacedDocument(Name, DbContext.Options.DbName, model.Id!.ToString());
             });
     }
 }
