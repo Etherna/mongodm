@@ -6,7 +6,7 @@ namespace Etherna.MongODM.Core.Extensions
 {
     /*
      * Always group similar log delegates by type, always use incremental event ids.
-     * Last event id is: 18
+     * Last event id is: 21
      */
     public static class LoggerExtensions
     {
@@ -66,6 +66,12 @@ namespace Etherna.MongODM.Core.Extensions
                 LogLevel.Debug,
                 new EventId(6, nameof(SchemaRegistryInitialized)),
                 "SchemaRegistry of DbContext {DbName} initialized");
+
+        private static readonly Action<ILogger, Type, string, Exception> _summaryModelFullLoaded =
+            LoggerMessage.Define<Type, string>(
+                LogLevel.Debug,
+                new EventId(21, nameof(SummaryModelFullLoaded)),
+                "Summary model of type {ModelType} with id {ModelId} full loaded");
 
         //*** INFORMATION LOGS ***
         private static readonly Action<ILogger, string, Exception> _dbContextInitialized =
@@ -127,6 +133,18 @@ namespace Etherna.MongODM.Core.Extensions
                 LogLevel.Information,
                 new EventId(17, nameof(RepositoryReplacedDocument)),
                 "Repository {RepositoryName} of DbContext {DbName} replaced document with Id: {ModelId}");
+
+        private static readonly Action<ILogger, string, string, string, Exception> _updateDocDependenciesTaskEnded =
+            LoggerMessage.Define<string, string, string>(
+                LogLevel.Information,
+                new EventId(20, nameof(UpdateDocDependenciesTaskEnded)),
+                "UpdateDocDependenciesTask ended on DbContext {DbName} repository {RepositoryName} searching for model Id {ModelId}");
+
+        private static readonly Action<ILogger, string, string, string, IEnumerable<string>, Exception> _updateDocDependenciesTaskStarted =
+            LoggerMessage.Define<string, string, string, IEnumerable<string>>(
+                LogLevel.Information,
+                new EventId(19, nameof(UpdateDocDependenciesTaskStarted)),
+                "UpdateDocDependenciesTask started on DbContext {DbName} repository {RepositoryName} searching for model Id {ModelId} on these paths: {IdPaths}");
 
         //*** WARNING LOGS ***
 
@@ -191,5 +209,14 @@ namespace Etherna.MongODM.Core.Extensions
 
         public static void SchemaRegistryInitialized(this ILogger logger, string dbName) =>
             _schemaRegistryInitialized(logger, dbName, null!);
+
+        public static void SummaryModelFullLoaded(this ILogger logger, Type modelType, string modelId) =>
+            _summaryModelFullLoaded(logger, modelType, modelId, null!);
+
+        public static void UpdateDocDependenciesTaskEnded(this ILogger logger, string dbName, string repositoryName, string modelId) =>
+            _updateDocDependenciesTaskEnded(logger, dbName, repositoryName, modelId, null!);
+
+        public static void UpdateDocDependenciesTaskStarted(this ILogger logger, string dbName, string repositoryName, string modelId, IEnumerable<string> idPaths) =>
+            _updateDocDependenciesTaskStarted(logger, dbName, repositoryName, modelId, idPaths, null!);
     }
 }

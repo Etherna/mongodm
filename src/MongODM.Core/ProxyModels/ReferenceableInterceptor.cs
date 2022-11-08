@@ -15,7 +15,9 @@
 using Castle.DynamicProxy;
 using Etherna.MongODM.Core.Attributes;
 using Etherna.MongODM.Core.Domain.Models;
+using Etherna.MongODM.Core.Extensions;
 using Etherna.MongODM.Core.Repositories;
+using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -28,14 +30,17 @@ namespace Etherna.MongODM.Core.ProxyModels
         where TModel : class, IEntityModel<TKey>
     {
         // Fields.
-        private bool isSummary;
-        private readonly Dictionary<string, bool> settedMemberNames = new(); //<memberName, isFromSummary>
+        private readonly ILogger<ReferenceableInterceptor<TModel, TKey>> logger;
         private readonly IRepository repository;
+        private readonly Dictionary<string, bool> settedMemberNames = new(); //<memberName, isFromSummary>
+
+        private bool isSummary;
 
         // Constructors.
         public ReferenceableInterceptor(
             IEnumerable<Type> additionalInterfaces,
-            IDbContext dbContext)
+            IDbContext dbContext,
+            ILogger<ReferenceableInterceptor<TModel, TKey>> logger)
             : base(additionalInterfaces)
         {
             if (dbContext is null)
@@ -50,6 +55,7 @@ namespace Etherna.MongODM.Core.ProxyModels
             }
 
             repository = dbContext.RepositoryRegistry.RepositoriesByModelType[repositoryModelType];
+            this.logger = logger;
         }
 
         // Protected methods.
@@ -162,6 +168,8 @@ namespace Etherna.MongODM.Core.ProxyModels
                 // Merge full object to current.
                 var fullModel = (await repository.TryFindOneAsync(model.Id).ConfigureAwait(false)) as TModel;
                 MergeFullModel(model, fullModel);
+
+                logger.SummaryModelFullLoaded(typeof(TModel), model.Id.ToString());
             }
         }
 

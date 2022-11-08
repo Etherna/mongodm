@@ -14,6 +14,7 @@
 
 using Castle.DynamicProxy;
 using Etherna.MongODM.Core.Domain.Models;
+using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -26,6 +27,7 @@ namespace Etherna.MongODM.Core.ProxyModels
     {
         // Fields.
         private bool disposed;
+        private readonly ILoggerFactory loggerFactory;
         private readonly Castle.DynamicProxy.IProxyGenerator proxyGeneratorCore;
 
         private readonly Dictionary<Type,
@@ -37,8 +39,10 @@ namespace Etherna.MongODM.Core.ProxyModels
 
         // Constructor and dispose.
         public ProxyGenerator(
+            ILoggerFactory loggerFactory,
             Castle.DynamicProxy.IProxyGenerator proxyGeneratorCore)
         {
+            this.loggerFactory = loggerFactory;
             this.proxyGeneratorCore = proxyGeneratorCore;
         }
         
@@ -225,7 +229,7 @@ namespace Etherna.MongODM.Core.ProxyModels
             // Add custom interceptor instancers.
             interceptorInstancers.AddRange(GetCustomInterceptorInstancer(modelType, additionalInterfaces));
 
-            // Add internal interceptor instances.
+            // Add internal interceptor instancers.
             if (modelType.GetInterfaces().Contains(typeof(IEntityModel))) //only if is IEntityModel.
             {
                 var entityModelType = modelType.GetInterfaces().First(
@@ -233,15 +237,23 @@ namespace Etherna.MongODM.Core.ProxyModels
                 var entityModelKeyType = entityModelType.GetGenericArguments().Single();
 
                 //auditableInterceptor
+                var auditableInterceptorType = typeof(AuditableInterceptor<>).MakeGenericType(modelType);
+
                 interceptorInstancers.Add(dbContext => (IInterceptor)Activator.CreateInstance(
-                    typeof(AuditableInterceptor<>).MakeGenericType(modelType),
+                    auditableInterceptorType,
                     additionalInterfaces));
 
-                //summarizableInterceptor
+                //referenceableInterceptor
+                var referenceableInterceptorType = typeof(ReferenceableInterceptor<,>).MakeGenericType(modelType, entityModelKeyType);
+
+                var referenceableInterceptorLoggerType = typeof(Logger<>).MakeGenericType(referenceableInterceptorType);
+                var referenceableInterceptorLogger = Activator.CreateInstance(referenceableInterceptorLoggerType, loggerFactory);
+
                 interceptorInstancers.Add(dbContext => (IInterceptor)Activator.CreateInstance(
-                    typeof(ReferenceableInterceptor<,>).MakeGenericType(modelType, entityModelKeyType),
+                    referenceableInterceptorType,
                     additionalInterfaces,
-                    dbContext));
+                    dbContext,
+                    referenceableInterceptorLogger));
             }
 
             return dbContext => (from instancer in interceptorInstancers

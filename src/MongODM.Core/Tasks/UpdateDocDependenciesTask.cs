@@ -14,8 +14,10 @@
 
 using Etherna.MongoDB.Driver;
 using Etherna.MongODM.Core.Domain.Models;
+using Etherna.MongODM.Core.Extensions;
 using Etherna.MongODM.Core.Repositories;
 using Etherna.MongODM.Core.Serialization.Modifiers;
+using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
@@ -25,14 +27,17 @@ namespace Etherna.MongODM.Core.Tasks
     public class UpdateDocDependenciesTask : IUpdateDocDependenciesTask
     {
         // Fields.
+        private readonly ILogger<UpdateDocDependenciesTask> logger;
         private readonly ISerializerModifierAccessor serializerModifierAccessor;
         private readonly IServiceProvider serviceProvider;
 
         // Constructors.
         public UpdateDocDependenciesTask(
+            ILogger<UpdateDocDependenciesTask> logger,
             ISerializerModifierAccessor serializerModifierAccessor,
             IServiceProvider serviceProvider)
         {
+            this.logger = logger;
             this.serializerModifierAccessor = serializerModifierAccessor;
             this.serviceProvider = serviceProvider;
         }
@@ -46,6 +51,8 @@ namespace Etherna.MongODM.Core.Tasks
         {
             if (idPaths is null)
                 throw new ArgumentNullException(nameof(idPaths));
+            if (modelId is null)
+                throw new ArgumentNullException(nameof(modelId));
 
             var dbContext = (TDbContext)serviceProvider.GetService(typeof(TDbContext));
 
@@ -55,6 +62,8 @@ namespace Etherna.MongODM.Core.Tasks
                 return;
 
             var repository = (IRepository<TModel, TKey>)dbContext.RepositoryRegistry.RepositoriesByModelType[typeof(TModel)];
+
+            logger.UpdateDocDependenciesTaskStarted(dbContext.Options.DbName, repository.Name, modelId.ToString(), idPaths);
 
             // Update models.
             HashSet<TKey> upgradedDocumentsId = new();
@@ -88,6 +97,8 @@ namespace Etherna.MongODM.Core.Tasks
                     }
                 }
             }
+
+            logger.UpdateDocDependenciesTaskEnded(dbContext.Options.DbName, typeof(TModel).Name, modelId.ToString());
         }
     }
 }

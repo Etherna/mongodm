@@ -16,6 +16,7 @@ using Etherna.MongODM.Core.MockHelpers;
 using Etherna.MongODM.Core.Models;
 using Etherna.MongODM.Core.ProxyModels;
 using Etherna.MongODM.Core.Repositories;
+using Microsoft.Extensions.Logging;
 using Moq;
 using System;
 using System.Collections.Generic;
@@ -44,10 +45,13 @@ namespace Etherna.MongODM.Core
                 {
                     [typeof(FakeModel)] = repositoryMock.Object
                 });
+
+            var loggerMock = new Mock<ILogger<ReferenceableInterceptor<FakeModel, string>>>();
             
             interceptor = new ReferenceableInterceptor<FakeModel, string>(
                 new[] { typeof(IReferenceable) },
-                dbContextMock.Object);
+                dbContextMock.Object,
+                loggerMock.Object);
 
             getIsSummaryInvocationMock = InterceptorMockHelper.GetExternalPropertyGetInvocationMock<FakeModel, IReferenceable, bool>(
                 s => s.IsSummary);
