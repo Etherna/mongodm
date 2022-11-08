@@ -27,7 +27,7 @@
     <PackageReference Include="Etherna.MongoDB.Driver" Version="2.18.0" />
     <PackageReference Include="Etherna.MongoDB.Driver.GridFS" Version="2.18.0" />
     <PackageReference Include="ExecutionContext" Version="1.2.0" />
-    <PackageReference Include="GitVersion.MsBuild" Version="5.11.0">
+    <PackageReference Include="GitVersion.MsBuild" Version="5.11.1">
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
