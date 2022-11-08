@@ -19,7 +19,9 @@ namespace Etherna.MongODM.AspNetCoreSample.Models
 {
     public abstract class EntityModelBase<TKey> : ModelBase, IEntityModel<TKey>
     {
+#pragma warning disable CS8618 // Non-nullable field must contain a non-null value when exiting constructor. Consider declaring as nullable.
         protected EntityModelBase()
+#pragma warning restore CS8618 // Non-nullable field must contain a non-null value when exiting constructor. Consider declaring as nullable.
         {
             CreationDateTime = DateTime.Now;
         }

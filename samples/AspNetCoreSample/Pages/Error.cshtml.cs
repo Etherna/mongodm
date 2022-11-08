@@ -19,9 +19,10 @@ using System.Diagnostics;
 namespace Etherna.MongODM.AspNetCoreSample.Pages
 {
     [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]
+    [IgnoreAntiforgeryToken]
     public class ErrorModel : PageModel
     {
-        public string RequestId { get; set; }
+        public string? RequestId { get; set; }
 
         public bool ShowRequestId => !string.IsNullOrEmpty(RequestId);
 

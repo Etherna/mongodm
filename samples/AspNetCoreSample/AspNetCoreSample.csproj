@@ -3,9 +3,10 @@
   <PropertyGroup>
     <TargetFramework>net6.0</TargetFramework>
     <RootNamespace>Etherna.MongODM.AspNetCoreSample</RootNamespace>
-	  
+
     <Authors>Etherna Sagl</Authors>
     <IsPackable>false</IsPackable>
+    <Nullable>enable</Nullable>
   </PropertyGroup>
 
   <ItemGroup>

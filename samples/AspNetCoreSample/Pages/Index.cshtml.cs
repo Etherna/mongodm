@@ -34,14 +34,18 @@ namespace Etherna.MongODM.AspNetCoreSample.Pages
             public DateTime Birthday { get; set; }
 
             [Required]
+#pragma warning disable CS8618 // Non-nullable field must contain a non-null value when exiting constructor. Consider declaring as nullable.
             public string Name { get; set; }
+#pragma warning restore CS8618 // Non-nullable field must contain a non-null value when exiting constructor. Consider declaring as nullable.
         }
 
         // Fields.
         private readonly ISampleDbContext sampleDbContext;
 
         // Constructor.
+#pragma warning disable CS8618 // Non-nullable field must contain a non-null value when exiting constructor. Consider declaring as nullable.
         public IndexModel(ISampleDbContext sampleDbContext)
+#pragma warning restore CS8618 // Non-nullable field must contain a non-null value when exiting constructor. Consider declaring as nullable.
         {
             this.sampleDbContext = sampleDbContext;
         }
