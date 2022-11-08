@@ -23,7 +23,9 @@ namespace Etherna.MongODM.AspNetCoreSample.Models
             Name = name;
             Birthday = birthday;
         }
+#pragma warning disable CS8618 // Non-nullable field must contain a non-null value when exiting constructor. Consider declaring as nullable.
         protected Cat() { }
+#pragma warning restore CS8618 // Non-nullable field must contain a non-null value when exiting constructor. Consider declaring as nullable.
 
         public virtual int Age => (int)((DateTime.Now - Birthday).TotalDays / 365);
         public virtual DateTime Birthday { get; protected set; }

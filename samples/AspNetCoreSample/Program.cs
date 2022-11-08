@@ -12,8 +12,11 @@
 //   See the License for the specific language governing permissions and
 //   limitations under the License.
 
-using Microsoft.AspNetCore.Hosting;
-using Microsoft.Extensions.Hosting;
+using Etherna.MongODM.AspNetCore.UI;
+using Etherna.MongODM.AspNetCoreSample.Persistence;
+using Hangfire;
+using Microsoft.AspNetCore.Builder;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace Etherna.MongODM.AspNetCoreSample
 {
@@ -21,14 +24,38 @@ namespace Etherna.MongODM.AspNetCoreSample
     {
         public static void Main(string[] args)
         {
-            CreateHostBuilder(args).Build().Run();
-        }
+            var builder = WebApplication.CreateBuilder(args);
 
-        public static IHostBuilder CreateHostBuilder(string[] args) =>
-            Host.CreateDefaultBuilder(args)
-                .ConfigureWebHostDefaults(webBuilder =>
-                {
-                    webBuilder.UseStartup<Startup>();
-                });
+            // Add services to the container.
+            builder.Services.AddRazorPages();
+
+            builder.Services.AddHangfireServer();
+
+            builder.Services.AddMongODMWithHangfire()
+                .AddDbContext<ISampleDbContext, SampleDbContext>();
+
+            builder.Services.AddMongODMAdminDashboard();
+
+            var app = builder.Build();
+
+            // Configure the HTTP request pipeline.
+            app.UseHttpsRedirection();
+
+            app.UseDeveloperExceptionPage();
+
+            app.UseStaticFiles();
+
+            app.UseRouting();
+
+            app.UseAuthorization();
+
+            app.UseHangfireDashboard();
+
+            app.MapRazorPages();
+
+            app.SeedDbContexts();
+
+            app.Run();
+        }
     }
 }
