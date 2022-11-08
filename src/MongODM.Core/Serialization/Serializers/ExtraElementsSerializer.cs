@@ -85,10 +85,7 @@ namespace Etherna.MongODM.Core.Serialization.Serializers
             serializationContext.Writer.WriteEndDocument();
 
             // Lookup for a serializer.
-            if (serializer == null)
-            {
-                serializer = dbContext.SerializerRegistry.GetSerializer<TValue>();
-            }
+            serializer ??= dbContext.SerializerRegistry.GetSerializer<TValue>();
 
             // Deserialize.
             using var documentReader = new BsonDocumentReader(document);
