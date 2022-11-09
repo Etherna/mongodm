@@ -97,7 +97,7 @@ namespace Etherna.MongODM.Core
             InitializeSerializerRegistry();
 
             // Initialize repositories.
-            foreach (var repository in RepositoryRegistry.RepositoriesByModelType.Values)
+            foreach (var repository in RepositoryRegistry.Repositories)
                 repository.Initialize(this, logger);
 
             // Register model maps.
@@ -238,21 +238,13 @@ namespace Etherna.MongODM.Core
             foreach (var model in ChangedModelsList)
             {
                 var modelType = ProxyGenerator.PurgeProxyType(model.GetType());
-                while (modelType != typeof(object)) //try to find right collection
+
+                var repository = RepositoryRegistry.TryGetRepositoryByModelType(modelType);
+                if (repository != null)
                 {
-                    if (RepositoryRegistry.RepositoriesByModelType.ContainsKey(modelType))
-                    {
-                        var repository = RepositoryRegistry.RepositoriesByModelType[modelType];
-                        await repository.ReplaceAsync(model, cancellationToken: cancellationToken).ConfigureAwait(false);
+                    await repository.ReplaceAsync(model, cancellationToken: cancellationToken).ConfigureAwait(false);
 
-                        logger.DbContextSavedChangedModelToRepository(Options.DbName, repository.ModelIdToString(model), repository.Name);
-
-                        break;
-                    }
-                    else
-                    {
-                        modelType = modelType.BaseType;
-                    }
+                    logger.DbContextSavedChangedModelToRepository(Options.DbName, repository.ModelIdToString(model), repository.Name);
                 }
             }
 

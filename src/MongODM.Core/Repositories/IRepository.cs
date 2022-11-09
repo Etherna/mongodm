@@ -26,8 +26,8 @@ namespace Etherna.MongODM.Core.Repositories
     public interface IRepository : IDbContextInitializable
     {
         IDbContext DbContext { get; }
-        Type GetKeyType { get; }
-        Type GetModelType { get; }
+        Type KeyType { get; }
+        Type ModelType { get; }
         string Name { get; }
 
         Task BuildIndexesAsync(

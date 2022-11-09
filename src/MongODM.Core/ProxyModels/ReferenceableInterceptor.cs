@@ -46,15 +46,7 @@ namespace Etherna.MongODM.Core.ProxyModels
             if (dbContext is null)
                 throw new ArgumentNullException(nameof(dbContext));
 
-            var repositoryModelType = typeof(TModel);
-            while (!dbContext.RepositoryRegistry.RepositoriesByModelType.ContainsKey(repositoryModelType))
-            {
-                if (repositoryModelType == typeof(object))
-                    throw new InvalidOperationException($"Cant find valid repository for model type {typeof(TModel)}");
-                repositoryModelType = repositoryModelType.BaseType;
-            }
-
-            repository = dbContext.RepositoryRegistry.RepositoriesByModelType[repositoryModelType];
+            repository = dbContext.RepositoryRegistry.GetRepositoryByModelType(typeof(TModel));
             this.logger = logger;
         }
 

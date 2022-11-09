@@ -67,8 +67,8 @@ namespace Etherna.MongODM.Core.Repositories
 
         // Properties.
         public IDbContext DbContext { get; private set; } = default!;
-        public Type GetKeyType => typeof(TKey);
-        public Type GetModelType => typeof(TModel);
+        public Type KeyType => typeof(TKey);
+        public Type ModelType => typeof(TModel);
         public bool IsInitialized { get; private set; }
         public string Name => options.Name;
 
@@ -434,7 +434,7 @@ namespace Etherna.MongODM.Core.Repositories
             if (currentMember.Member.IsIdMember())
             {
                 //cascade delete model
-                var repository = DbContext.RepositoryRegistry.RepositoriesByModelType[currentModel.GetType().BaseType];
+                var repository = DbContext.RepositoryRegistry.GetRepositoryByModelType(currentModel.GetType().BaseType);
                 try { await repository.DeleteAsync((IEntityModel)currentModel).ConfigureAwait(false); }
                 catch { }
             }

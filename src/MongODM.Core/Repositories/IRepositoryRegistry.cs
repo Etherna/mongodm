@@ -19,9 +19,22 @@ namespace Etherna.MongODM.Core.Repositories
 {
     public interface IRepositoryRegistry : IDbContextInitializable
     {
+        // Properties.
+        IEnumerable<IRepository> Repositories { get; }
+
+        // Methods.
         /// <summary>
-        /// Model-Repository map.
+        /// Get repository that can handle a specific entity model type. Can handle also derivate types.
         /// </summary>
-        IReadOnlyDictionary<Type, IRepository> RepositoriesByModelType { get; }
+        /// <param name="modelType">Model type to search</param>
+        /// <returns>Entity model handling repository</returns>
+        IRepository GetRepositoryByModelType(Type modelType);
+
+        /// <summary>
+        /// Try to get repository that can handle a specific entity model type. Can handle also derivate types.
+        /// </summary>
+        /// <param name="modelType">Model type to search</param>
+        /// <returns>Entity model handling repository. Null if doesn't exist</returns>
+        IRepository? TryGetRepositoryByModelType(Type modelType);
     }
 }

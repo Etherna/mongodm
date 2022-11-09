@@ -24,17 +24,42 @@ namespace Etherna.MongODM.Core.Repositories
     public class RepositoryRegistry : IRepositoryRegistry
     {
         // Fields.
-        private IDbContext dbContext = default!;
         private ILogger logger = default!;
         private IReadOnlyDictionary<Type, IRepository> _repositoriesByModelType = default!;
 
         // Initializer.
         public void Initialize(IDbContext dbContext, ILogger logger)
         {
+            this.logger = logger ?? throw new ArgumentNullException(nameof(logger));
+
             if (IsInitialized)
                 throw new InvalidOperationException("Instance already initialized");
-            this.dbContext = dbContext ?? throw new ArgumentNullException(nameof(dbContext));
-            this.logger = logger ?? throw new ArgumentNullException(nameof(logger));
+
+            // Initialize repository dictionary.
+            //select IRepository<,> from dbcontext properties
+            var dbContextType = dbContext.GetType();
+            var repos = dbContextType.GetProperties(BindingFlags.Public | BindingFlags.Instance | BindingFlags.FlattenHierarchy)
+                .Where(prop =>
+                {
+                    var propType = prop.PropertyType;
+
+                    if (propType.IsGenericType &&
+                        propType.GetGenericTypeDefinition() == typeof(IRepository<,>))
+                        return true;
+
+                    if (propType.GetInterfaces()
+                                .Where(@interface => @interface.IsGenericType)
+                                .Select(@interface => @interface.GetGenericTypeDefinition())
+                                .Contains(typeof(IRepository<,>)))
+                        return true;
+
+                    return false;
+                });
+
+            //initialize registry
+            _repositoriesByModelType = repos.ToDictionary(
+                prop => ((IRepository)prop.GetValue(dbContext)).ModelType,
+                prop => (IRepository)prop.GetValue(dbContext));
 
             IsInitialized = true;
 
@@ -43,41 +68,30 @@ namespace Etherna.MongODM.Core.Repositories
 
         // Properties.
         public bool IsInitialized { get; private set; }
+        public IEnumerable<IRepository> Repositories => _repositoriesByModelType.Values;
 
-        public IReadOnlyDictionary<Type, IRepository> RepositoriesByModelType
+        // Methods.
+        public IRepository GetRepositoryByModelType(Type modelType)
         {
-            get
+            while (!_repositoriesByModelType.ContainsKey(modelType))
             {
-                if (_repositoriesByModelType is null)
-                {
-                    var dbContextType = dbContext.GetType();
+                if (modelType == typeof(object))
+                    throw new InvalidOperationException($"Cant find valid repository for model type {modelType}");
+                modelType = modelType.BaseType;
+            }
 
-                    // Select ICollectionRepository<,> from dbcontext properties.
-                    var repos = dbContextType.GetProperties(BindingFlags.Public | BindingFlags.Instance | BindingFlags.FlattenHierarchy)
-                        .Where(prop =>
-                        {
-                            var propType = prop.PropertyType;
+            return _repositoriesByModelType[modelType];
+        }
 
-                            if (propType.IsGenericType &&
-                                propType.GetGenericTypeDefinition() == typeof(IRepository<,>))
-                                return true;
-
-                            if (propType.GetInterfaces()
-                                        .Where(@interface => @interface.IsGenericType)
-                                        .Select(@interface => @interface.GetGenericTypeDefinition())
-                                        .Contains(typeof(IRepository<,>)))
-                                return true;
-
-                            return false;
-                        });
-
-                    // Initialize registry.
-                    _repositoriesByModelType = repos.ToDictionary(
-                        prop => ((IRepository)prop.GetValue(dbContext)).GetModelType,
-                        prop => (IRepository)prop.GetValue(dbContext));
-                }
-
-                return _repositoriesByModelType;
+        public IRepository? TryGetRepositoryByModelType(Type modelType)
+        {
+            try
+            {
+                return GetRepositoryByModelType(modelType);
+            }
+            catch (InvalidOperationException)
+            {
+                return null;
             }
         }
     }
