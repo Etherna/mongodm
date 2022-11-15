@@ -61,7 +61,7 @@ namespace Etherna.MongODM.Core.Utility
 
             // Find all possible coinvolted member maps with changes. Keep only referenced members
             var updatedMembers = updatedModel.ChangedMembers;
-            var referenceMemberMaps = updatedMembers.SelectMany(memberInfo => dbContext.SchemaRegistry.GetMemberDependenciesFromMemberInfo(memberInfo))
+            var referenceMemberMaps = updatedMembers.SelectMany(memberInfo => dbContext.SchemaRegistry.GetMemberMapsFromMemberInfo(memberInfo))
                                                     .Where(memberDependency => memberDependency.IsEntityReferenceMember);
 
             // Group by root model type, and select only model types related to a collections.
@@ -70,7 +70,7 @@ namespace Etherna.MongODM.Core.Utility
             {
                 // Extract only id paths to referenced entities.
                 var idPaths = dependencyGroup
-                    .Select(memberMap => string.Join(".", memberMap.MemberPathToLastEntityModelId.Select(idMember => idMember.Member.MemberInfo.Name)))
+                    .Select(memberMap => string.Join(".", memberMap.MemberPathToLastEntityModelId.ModelMapsPath.Select(idMember => idMember.Member.MemberInfo.Name)))
                     .Distinct();
 
                 // Enqueue call for background job.

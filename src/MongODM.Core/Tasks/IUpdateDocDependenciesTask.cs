@@ -20,10 +20,11 @@ namespace Etherna.MongODM.Core.Tasks
 {
     public interface IUpdateDocDependenciesTask
     {
-        Task RunAsync<TDbContext, TModel, TKey>(
+        Task RunAsync<TDbContext, TOriginModel, TOriginKey, TReferenceModel, TReferenceKey>(
             IEnumerable<string> idPaths,
-            TKey modelId)
-            where TModel : class, IEntityModel<TKey>
+            TReferenceKey referencedModelId)
+            where TOriginModel : class, IEntityModel<TOriginKey>
+            where TReferenceModel : class, IEntityModel<TReferenceKey>
             where TDbContext : class, IDbContext;
     }
 }

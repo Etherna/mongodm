@@ -28,7 +28,11 @@ using System.Threading.Tasks;
 namespace Etherna.MongODM.Core.Serialization.Serializers
 {
     public class ModelMapSerializer<TModel> :
-        SerializerBase<TModel>, IBsonSerializer<TModel>, IBsonDocumentSerializer, IBsonIdProvider, IModelMapsContainerSerializer
+        SerializerBase<TModel>,
+        IBsonSerializer<TModel>,
+        IBsonDocumentSerializer,
+        IBsonIdProvider,
+        IModelMapsContainerSerializer
         where TModel : class
     {
         // Fields.
@@ -46,8 +50,8 @@ namespace Etherna.MongODM.Core.Serialization.Serializers
         }
 
         // Properties.
-        public IEnumerable<BsonClassMap> AllChildClassMaps => dbContext.SchemaRegistry.GetModelMapsSchema(typeof(TModel))
-            .AllMapsDictionary.Values.Select(map => map.BsonClassMap);
+        public IEnumerable<IModelMap> AllChildModelMaps =>
+            dbContext.SchemaRegistry.GetModelMapsSchema(typeof(TModel)).AllMapsDictionary.Values;
 
         public BsonClassMapSerializer<TModel> DefaultBsonClassMapSerializer =>
             (BsonClassMapSerializer<TModel>)dbContext.SchemaRegistry.GetModelMapsSchema(typeof(TModel)).ActiveMap.BsonClassMapSerializer;

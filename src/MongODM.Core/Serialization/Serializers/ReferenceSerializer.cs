@@ -19,6 +19,7 @@ using Etherna.MongoDB.Bson.Serialization.Conventions;
 using Etherna.MongoDB.Bson.Serialization.Serializers;
 using Etherna.MongODM.Core.Domain.Models;
 using Etherna.MongODM.Core.ProxyModels;
+using Etherna.MongODM.Core.Serialization.Mapping;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -80,9 +81,8 @@ namespace Etherna.MongODM.Core.Serialization.Serializers
         }
 
         // Properties.
-        public IEnumerable<BsonClassMap> AllChildClassMaps => configuration.Schemas.Values
-            .SelectMany(schema => schema.AllMapsDictionary.Values
-                .Select(map => map.BsonClassMap));
+        public IEnumerable<IModelMap> AllChildModelMaps => configuration.Schemas.Values
+            .SelectMany(schema => schema.AllMapsDictionary.Values);
 
         public IDiscriminatorConvention DiscriminatorConvention
         {

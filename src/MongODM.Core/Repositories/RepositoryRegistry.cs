@@ -12,6 +12,7 @@
 //   See the License for the specific language governing permissions and
 //   limitations under the License.
 
+using Etherna.MongODM.Core.Domain.Models;
 using Etherna.MongODM.Core.Extensions;
 using Microsoft.Extensions.Logging;
 using System;
@@ -71,7 +72,11 @@ namespace Etherna.MongODM.Core.Repositories
         public IEnumerable<IRepository> Repositories => _repositoriesByModelType.Values;
 
         // Methods.
-        public IRepository GetRepositoryByModelType(Type modelType)
+        public IRepository<TModel, TKey> GetRepositoryByBaseModelType<TModel, TKey>()
+            where TModel : class, IEntityModel<TKey> =>
+            (IRepository<TModel, TKey>)_repositoriesByModelType[typeof(TModel)];
+
+        public IRepository GetRepositoryByHandledModelType(Type modelType)
         {
             while (!_repositoriesByModelType.ContainsKey(modelType))
             {
@@ -83,11 +88,11 @@ namespace Etherna.MongODM.Core.Repositories
             return _repositoriesByModelType[modelType];
         }
 
-        public IRepository? TryGetRepositoryByModelType(Type modelType)
+        public IRepository? TryGetRepositoryByHandledModelType(Type modelType)
         {
             try
             {
-                return GetRepositoryByModelType(modelType);
+                return GetRepositoryByHandledModelType(modelType);
             }
             catch (InvalidOperationException)
             {

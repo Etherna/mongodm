@@ -126,10 +126,10 @@ namespace Etherna.MongODM.Core.Repositories
                 }));
 
                 //referenced documents
-                var dependencies = DbContext.SchemaRegistry.GetIdMemberDependenciesFromRootModel(typeof(TModel), true);
+                var idMemberMaps = DbContext.SchemaRegistry.GetIdMemberMapsFromRootModel(typeof(TModel), true);
 
-                var idPaths = dependencies
-                    .Select(dependency => dependency.MemberPathToString())
+                var idPaths = idMemberMaps
+                    .Select(member => member.DefinitionPath.ElementPathAsString)
                     .Distinct();
 
                 newIndexes.AddRange(idPaths.Select(path =>
@@ -204,11 +204,11 @@ namespace Etherna.MongODM.Core.Repositories
                 throw new ArgumentNullException(nameof(model));
 
             // Process cascade delete.
-            var referencesIdsPaths = DbContext.SchemaRegistry.GetIdMemberDependenciesFromRootModel(typeof(TModel))
+            var referencesIdsPaths = DbContext.SchemaRegistry.GetIdMemberMapsFromRootModel(typeof(TModel))
                 .Where(d => d.UseCascadeDelete)
-                .Where(d => d.EntityClassMapPath.Count() == 2) //ignore references of references
-                .DistinctBy(d => d.FullPathToString())
-                .Select(d => d.MemberPath);
+                .Where(d => d.DefinitionPath.EntityModelMaps.Count() == 2) //ignore references of references
+                .DistinctBy(d => d.DefinitionPath.ElementPathAsString)
+                .Select(d => d.DefinitionPath);
 
             foreach (var idPath in referencesIdsPaths)
                 await CascadeDeleteMembersAsync(model, idPath).ConfigureAwait(false);
@@ -423,25 +423,22 @@ namespace Etherna.MongODM.Core.Repositories
         }
 
         // Helpers.
-        private async Task CascadeDeleteMembersAsync(object currentModel, IEnumerable<OwnedBsonMemberMap> idPath)
+        private async Task CascadeDeleteMembersAsync(object currentModel, MemberPath idPath)
         {
-            if (!idPath.Any())
-                throw new ArgumentException("Member path can't be empty", nameof(idPath));
+            var (_, currentMember) = idPath.ModelMapsPath.First();
+            var memberTail = new MemberPath(idPath.ModelMapsPath.Skip(1));
 
-            var currentMember = idPath.First();
-            var memberTail = idPath.Skip(1);
-
-            if (currentMember.Member.IsIdMember())
+            if (currentMember.IsIdMember())
             {
                 //cascade delete model
-                var repository = DbContext.RepositoryRegistry.GetRepositoryByModelType(currentModel.GetType().BaseType);
+                var repository = DbContext.RepositoryRegistry.GetRepositoryByHandledModelType(currentModel.GetType().BaseType);
                 try { await repository.DeleteAsync((IEntityModel)currentModel).ConfigureAwait(false); }
                 catch { }
             }
             else
             {
                 //recursion on value
-                var memberInfo = currentMember.Member.MemberInfo;
+                var memberInfo = currentMember.MemberInfo;
                 var memberValue = ReflectionHelper.GetValue(currentModel, memberInfo);
                 if (memberValue == null)
                     return;

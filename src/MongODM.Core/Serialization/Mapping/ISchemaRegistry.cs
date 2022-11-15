@@ -82,19 +82,19 @@ namespace Etherna.MongODM.Core.Serialization.Mapping
         BsonElement GetActiveModelMapIdBsonElement(Type modelType);
 
         /// <summary>
-        /// Get all id member dependencies from a root model type
+        /// Get all id member maps from a root model type
         /// </summary>
         /// <param name="modelType">The model type</param>
         /// <param name="onlyFromActiveModelMap">If true, ignore secondary model maps</param>
-        /// <returns>The list of member dependencies</returns>
-        IEnumerable<MemberDependency> GetIdMemberDependenciesFromRootModel(Type modelType, bool onlyFromActiveModelMap = false);
+        /// <returns>The list of member maps</returns>
+        IEnumerable<MemberMap> GetIdMemberMapsFromRootModel(Type modelType, bool onlyFromActiveModelMap = false);
 
         /// <summary>
-        /// Get all member dependencies that points to a specific member definition
+        /// Get all member maps that points to a specific member definition
         /// </summary>
         /// <param name="memberInfo">The member definition</param>
-        /// <returns>The list of member dependencies</returns>
-        IEnumerable<MemberDependency> GetMemberDependenciesFromMemberInfo(MemberInfo memberInfo);
+        /// <returns>The list of member maps</returns>
+        IEnumerable<MemberMap> GetMemberMapsFromMemberInfo(MemberInfo memberInfo);
 
         /// <summary>
         /// Get a registered model map schema for a given model type

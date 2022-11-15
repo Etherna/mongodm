@@ -239,7 +239,7 @@ namespace Etherna.MongODM.Core
             {
                 var modelType = ProxyGenerator.PurgeProxyType(model.GetType());
 
-                var repository = RepositoryRegistry.TryGetRepositoryByModelType(modelType);
+                var repository = RepositoryRegistry.TryGetRepositoryByHandledModelType(modelType);
                 if (repository != null)
                 {
                     await repository.ReplaceAsync(model, cancellationToken: cancellationToken).ConfigureAwait(false);

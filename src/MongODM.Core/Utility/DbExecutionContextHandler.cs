@@ -55,8 +55,7 @@ namespace Etherna.MongODM.Core.Utility
             lock (((ICollection)requestes).SyncRoot)
                 requestes.Remove(this);
 
-            if (asyncLocalContextHandler is not null)
-                asyncLocalContextHandler.Dispose();
+            asyncLocalContextHandler?.Dispose();
         }
 
         // Properties.

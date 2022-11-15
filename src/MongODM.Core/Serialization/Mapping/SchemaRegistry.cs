@@ -22,10 +22,8 @@ using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
-using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Reflection;
-using System.Text;
 
 namespace Etherna.MongODM.Core.Serialization.Mapping
 {
@@ -37,8 +35,8 @@ namespace Etherna.MongODM.Core.Serialization.Mapping
         private readonly Dictionary<Type, BsonElement> activeModelMapIdBsonElement = new();
         private readonly ConcurrentDictionary<Type, BsonClassMap> defaultClassMapsCache = new();
         private ILogger logger = default!;
-        private readonly Dictionary<MemberInfo, List<MemberDependency>> memberInfoToMemberMapsDictionary = new();
-        private readonly Dictionary<Type, List<MemberDependency>> modelTypeToReferencedIdMemberMapsDictionary = new();
+        private readonly Dictionary<MemberInfo, List<MemberMap>> memberInfoToMemberMapsDictionary = new();
+        private readonly Dictionary<Type, List<MemberMap>> modelTypeToReferencedIdMemberMapsDictionary = new();
 
         private IDbContext dbContext = default!;
 
@@ -74,7 +72,6 @@ namespace Etherna.MongODM.Core.Serialization.Mapping
                 return modelSchemaConfiguration;
             });
 
-        [SuppressMessage("Reliability", "CA2000:Dispose objects before losing scope", Justification = "The new model map instance can't be disposed")]
         public IModelMapsSchemaBuilder<TModel> AddModelMapsSchema<TModel>(
             string activeModelMapId,
             Action<BsonClassMap<TModel>>? activeModelMapInitializer = null,
@@ -114,13 +111,13 @@ namespace Etherna.MongODM.Core.Serialization.Mapping
         public BsonClassMap GetActiveClassMap(Type modelType)
         {
             // If a schema is registered.
-            if (_schemas.ContainsKey(modelType) &&
-                _schemas[modelType] is IModelMapsSchema modelMapSchema)
+            if (_schemas.TryGetValue(modelType, out ISchema schema) &&
+                schema is IModelMapsSchema modelMapSchema)
                 return modelMapSchema.ActiveMap.BsonClassMap;
 
             // If we don't have a model schema, look for a default classmap, or create it.
-            if (defaultClassMapsCache.ContainsKey(modelType))
-                return defaultClassMapsCache[modelType];
+            if (defaultClassMapsCache.TryGetValue(modelType, out BsonClassMap bcm))
+                return bcm;
 
             var classMapDefinition = typeof(BsonClassMap<>);
             var classMapType = classMapDefinition.MakeGenericType(modelType);
@@ -148,16 +145,16 @@ namespace Etherna.MongODM.Core.Serialization.Mapping
             return activeModelMapIdBsonElement[modelType];
         }
 
-        public IEnumerable<MemberDependency> GetIdMemberDependenciesFromRootModel(Type modelType, bool onlyFromActiveModelMap = false)
+        public IEnumerable<MemberMap> GetIdMemberMapsFromRootModel(Type modelType, bool onlyFromActiveModelMap = false)
         {
             Freeze(); //needed for initialization
 
-            if (modelTypeToReferencedIdMemberMapsDictionary.TryGetValue(modelType, out List<MemberDependency> dependencies))
+            if (modelTypeToReferencedIdMemberMapsDictionary.TryGetValue(modelType, out List<MemberMap> dependencies))
                 return dependencies.Where(d => !onlyFromActiveModelMap || d.RootModelMapIsActive);
-            return Array.Empty<MemberDependency>();
+            return Array.Empty<MemberMap>();
         }
 
-        public IEnumerable<MemberDependency> GetMemberDependenciesFromMemberInfo(MemberInfo memberInfo)
+        public IEnumerable<MemberMap> GetMemberMapsFromMemberInfo(MemberInfo memberInfo)
         {
             Freeze(); //needed for initialization
 
@@ -165,7 +162,7 @@ namespace Etherna.MongODM.Core.Serialization.Mapping
                 if (pair.Key.IsSameAs(memberInfo))
                     return pair.Value;
 
-            return Array.Empty<MemberDependency>();
+            return Array.Empty<MemberMap>();
         }
 
         public IModelMapsSchema GetModelMapsSchema(Type modelType)
@@ -181,37 +178,6 @@ namespace Etherna.MongODM.Core.Serialization.Mapping
                 throw new InvalidOperationException(modelType.Name + " schema is not a model maps schema");
 
             return modelMapSchema;
-        }
-
-        public override string ToString()
-        {
-            StringBuilder strBuilder = new();
-
-            // Member dependencies.
-            //memberInfoToMemberMapsDictionary
-            strBuilder.AppendLine("Member dependencies:");
-            foreach (var dependencies in from dependency in memberInfoToMemberMapsDictionary
-                                         orderby $"{dependency.Key.DeclaringType.Name}.{dependency.Key.Name}"
-                                         select dependency)
-            {
-                strBuilder.AppendLine($"{dependencies.Key.DeclaringType.Name}.{dependencies.Key.Name}");
-                foreach (var dependency in dependencies.Value.OrderBy(d => d.FullPathToString()))
-                    strBuilder.AppendLine($"  {dependency}");
-            }
-            strBuilder.AppendLine();
-
-            //modelTypeToReferencedIdMemberMapsDictionary
-            strBuilder.AppendLine("Models to referenced Ids:");
-            foreach (var dependencies in from dependency in modelTypeToReferencedIdMemberMapsDictionary
-                                         orderby $"{dependency.Key.Name}"
-                                         select dependency)
-            {
-                strBuilder.AppendLine($"{dependencies.Key.Name}");
-                foreach (var dependency in dependencies.Value.OrderBy(d => d.FullPathToString()))
-                    strBuilder.AppendLine($"  {dependency}");
-            }
-
-            return strBuilder.ToString();
         }
 
         // Protected methods.
@@ -250,9 +216,9 @@ namespace Etherna.MongODM.Core.Serialization.Mapping
                     CompileDependencyRegisters(
                         modelMap,
                         modelMap == schema.ActiveMap,
-                        modelMap.BsonClassMap,
+                        modelMap,
                         default,
-                        Array.Empty<OwnedBsonMemberMap>());
+                        Array.Empty<(IModelMap OwnerClass, BsonMemberMap Member)>());
 
                 // Generate active model maps id bson elements.
                 /*
@@ -272,35 +238,34 @@ namespace Etherna.MongODM.Core.Serialization.Mapping
 
         // Helpers.
         private void CompileDependencyRegisters(
-            IModelMap modelMap,
+            IModelMap rootModelMap,
             bool modelMapIsActive,
-            BsonClassMap currentClassMap,
-            BsonClassMap? lastEntityClassMap,
-            IEnumerable<OwnedBsonMemberMap> ownedBsonMemberPath,
+            IModelMap currentModelMap,
+            IModelMap? lastEntityModelMap,
+            IEnumerable<(IModelMap OwnerClass, BsonMemberMap Member)> ownedBsonMemberPath,
             bool? useCascadeDeleteSetting = null)
         {
             // Ignore class maps of abstract types. (child classes will map all their members)
-            if (currentClassMap.ClassType.IsAbstract)
+            if (currentModelMap.ModelType.IsAbstract)
                 return;
             // Ignore class maps of proxy types. (they are not useful in dependency context)
-            if (dbContext.ProxyGenerator.IsProxyType(currentClassMap.ClassType))
+            if (dbContext.ProxyGenerator.IsProxyType(currentModelMap.ModelType))
                 return;
 
             // Identify last indented entity class maps.
-            if (currentClassMap.IsEntity())
-                lastEntityClassMap = currentClassMap;
+            if (currentModelMap.IsEntity)
+                lastEntityModelMap = currentModelMap;
 
             // Explore recursively members.
-            foreach (var ownedBsonMemberMap in currentClassMap.AllMemberMaps.Select(member => new OwnedBsonMemberMap(currentClassMap, member)))
+            foreach (var memberMap in currentModelMap.BsonClassMap.AllMemberMaps)
             {
                 // Update path.
-                var currentMemberPath = ownedBsonMemberPath.Append(ownedBsonMemberMap);
+                var currentMemberPath = ownedBsonMemberPath.Append((currentModelMap, memberMap));
 
                 // Identify current member with its root model map, the path from current model map, and cascade delete information.
-                var memberDependency = new MemberDependency(
-                    modelMap,
+                var memberDependency = new MemberMap(
+                    new MemberPath(ownedBsonMemberPath.Append((currentModelMap, memberMap))),
                     modelMapIsActive,
-                    currentMemberPath,
                     useCascadeDeleteSetting ?? false);
 
                 // Add member dependency to registers.
@@ -310,37 +275,37 @@ namespace Etherna.MongODM.Core.Serialization.Mapping
                  * MemberInfo comparison has to be performed with extension method "IsSameAs". If an equal member info
                  * is found with this equality comparer, it has to be taken as key also for current memberinfo
                  */
-                List<MemberDependency>? memberDependencyList = default;
+                List<MemberMap>? memberDependencyList = default;
                 foreach (var pair in memberInfoToMemberMapsDictionary)
-                    if (pair.Key.IsSameAs(ownedBsonMemberMap.Member.MemberInfo))
+                    if (pair.Key.IsSameAs(memberMap.MemberInfo))
                     {
                         memberDependencyList = memberInfoToMemberMapsDictionary[pair.Key];
                         break;
                     }
                 if (memberDependencyList is null)
                 {
-                    memberDependencyList = new List<MemberDependency>();
-                    memberInfoToMemberMapsDictionary[ownedBsonMemberMap.Member.MemberInfo] = memberDependencyList;
+                    memberDependencyList = new List<MemberMap>();
+                    memberInfoToMemberMapsDictionary[memberMap.MemberInfo] = memberDependencyList;
                 }
 
                 memberDependencyList.Add(memberDependency);
 
                 //model type to each referenced id member maps, for each different model maps version
-                if (!modelTypeToReferencedIdMemberMapsDictionary.ContainsKey(modelMap.ModelType))
-                    modelTypeToReferencedIdMemberMapsDictionary[modelMap.ModelType] = new List<MemberDependency>();
+                if (!modelTypeToReferencedIdMemberMapsDictionary.ContainsKey(rootModelMap.ModelType))
+                    modelTypeToReferencedIdMemberMapsDictionary[rootModelMap.ModelType] = new List<MemberMap>();
 
                 if (memberDependency.IsEntityReferenceMember && memberDependency.IsIdMember)
-                    modelTypeToReferencedIdMemberMapsDictionary[modelMap.ModelType].Add(memberDependency);
+                    modelTypeToReferencedIdMemberMapsDictionary[rootModelMap.ModelType].Add(memberDependency);
 
                 // Analize recursion on member.
-                var memberSerializer = ownedBsonMemberMap.Member.GetSerializer();
+                var memberSerializer = memberMap.GetSerializer();
 
                 //model maps schema serializers
                 if (memberSerializer is IModelMapsContainerSerializer schemaSerializer)
                 {
                     bool? useCascadeDelete = (memberSerializer as IReferenceContainerSerializer)?.UseCascadeDelete;
-                    foreach (var childClassMap in schemaSerializer.AllChildClassMaps)
-                        CompileDependencyRegisters(modelMap, modelMapIsActive, childClassMap, lastEntityClassMap, currentMemberPath, useCascadeDelete);
+                    foreach (var childModelMap in schemaSerializer.AllChildModelMaps)
+                        CompileDependencyRegisters(rootModelMap, modelMapIsActive, childModelMap, lastEntityModelMap, currentMemberPath, useCascadeDelete);
                 }
             }
         }

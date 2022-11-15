@@ -46,7 +46,7 @@ namespace Etherna.MongODM.Core.ProxyModels
             if (dbContext is null)
                 throw new ArgumentNullException(nameof(dbContext));
 
-            repository = dbContext.RepositoryRegistry.GetRepositoryByModelType(typeof(TModel));
+            repository = dbContext.RepositoryRegistry.GetRepositoryByHandledModelType(typeof(TModel));
             this.logger = logger;
         }
 

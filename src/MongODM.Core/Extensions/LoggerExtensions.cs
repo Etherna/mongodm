@@ -140,11 +140,11 @@ namespace Etherna.MongODM.Core.Extensions
                 new EventId(20, nameof(UpdateDocDependenciesTaskEnded)),
                 "UpdateDocDependenciesTask ended on DbContext {DbName} repository {RepositoryName} searching for model Id {ModelId}");
 
-        private static readonly Action<ILogger, string, string, string, IEnumerable<string>, Exception> _updateDocDependenciesTaskStarted =
-            LoggerMessage.Define<string, string, string, IEnumerable<string>>(
+        private static readonly Action<ILogger, string, string, string, string, IEnumerable<string>, Exception> _updateDocDependenciesTaskStarted =
+            LoggerMessage.Define<string, string, string, string, IEnumerable<string>>(
                 LogLevel.Information,
                 new EventId(19, nameof(UpdateDocDependenciesTaskStarted)),
-                "UpdateDocDependenciesTask started on DbContext {DbName} repository {RepositoryName} searching for model Id {ModelId} on these paths: {IdPaths}");
+                "UpdateDocDependenciesTask started on DbContext {DbName} with origin repository {OriginRepositoryName}, reference repository {ReferenceRepositoryName}, searching for model Id {ModelId} on paths: {IdPaths}");
 
         //*** WARNING LOGS ***
 
@@ -216,7 +216,7 @@ namespace Etherna.MongODM.Core.Extensions
         public static void UpdateDocDependenciesTaskEnded(this ILogger logger, string dbName, string repositoryName, string modelId) =>
             _updateDocDependenciesTaskEnded(logger, dbName, repositoryName, modelId, null!);
 
-        public static void UpdateDocDependenciesTaskStarted(this ILogger logger, string dbName, string repositoryName, string modelId, IEnumerable<string> idPaths) =>
-            _updateDocDependenciesTaskStarted(logger, dbName, repositoryName, modelId, idPaths, null!);
+        public static void UpdateDocDependenciesTaskStarted(this ILogger logger, string dbName, string originRepositoryName, string referencedRepositoryName, string modelId, IEnumerable<string> idPaths) =>
+            _updateDocDependenciesTaskStarted(logger, dbName, originRepositoryName, referencedRepositoryName, modelId, idPaths, null!);
     }
 }

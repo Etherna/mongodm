@@ -15,6 +15,7 @@
 using Etherna.MongoDB.Bson.Serialization;
 using Etherna.MongoDB.Bson.Serialization.Options;
 using Etherna.MongoDB.Bson.Serialization.Serializers;
+using Etherna.MongODM.Core.Serialization.Mapping;
 using System;
 using System.Collections.Generic;
 
@@ -43,9 +44,9 @@ namespace Etherna.MongODM.Core.Serialization.Serializers
         { }
 
         // Properties.
-        public IEnumerable<BsonClassMap> AllChildClassMaps =>
-            (ValueSerializer as IModelMapsContainerSerializer)?.AllChildClassMaps ??
-            Array.Empty<BsonClassMap>();
+        public IEnumerable<IModelMap> AllChildModelMaps =>
+            (ValueSerializer as IModelMapsContainerSerializer)?.AllChildModelMaps ??
+            Array.Empty<IModelMap>();
 
         public IBsonSerializer ChildSerializer => ValueSerializer;
 

@@ -40,7 +40,7 @@ namespace Etherna.MongODM.Core
             repositoryMock = new Mock<IRepository<FakeModel, string>>();
 
             dbContextMock = new Mock<IDbContext>();
-            dbContextMock.Setup(c => c.RepositoryRegistry.GetRepositoryByModelType(typeof(FakeModel)))
+            dbContextMock.Setup(c => c.RepositoryRegistry.GetRepositoryByHandledModelType(typeof(FakeModel)))
                 .Returns(() => repositoryMock.Object);
 
             var loggerMock = new Mock<ILogger<ReferenceableInterceptor<FakeModel, string>>>();
