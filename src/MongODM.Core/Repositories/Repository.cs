@@ -20,6 +20,7 @@ using Etherna.MongODM.Core.Exceptions;
 using Etherna.MongODM.Core.Extensions;
 using Etherna.MongODM.Core.ProxyModels;
 using Etherna.MongODM.Core.Serialization.Mapping;
+using Etherna.MongODM.Core.Serialization.Mapping.Schemas;
 using Etherna.MongODM.Core.Utility;
 using Microsoft.Extensions.Logging;
 using MoreLinq;
@@ -126,7 +127,9 @@ namespace Etherna.MongODM.Core.Repositories
                 }));
 
                 //referenced documents
-                var idMemberMaps = DbContext.SchemaRegistry.GetIdMemberMapsFromRootModel(typeof(TModel), true);
+                var idMemberMaps = DbContext.SchemaRegistry.TryGetModelMapsSchema(typeof(TModel), out IModelMapsSchema? modelMapsSchema) ?
+                    modelMapsSchema!.ReferencedIdMemberMaps.Where(mm => mm.RootModelMap == modelMapsSchema.ActiveModelMap) :
+                    Array.Empty<IMemberMap>();
 
                 var idPaths = idMemberMaps
                     .Select(member => member.DefinitionPath.ElementPathAsString)
@@ -204,11 +207,13 @@ namespace Etherna.MongODM.Core.Repositories
                 throw new ArgumentNullException(nameof(model));
 
             // Process cascade delete.
-            var referencesIdsPaths = DbContext.SchemaRegistry.GetIdMemberMapsFromRootModel(typeof(TModel))
-                .Where(d => d.UseCascadeDelete)
-                .Where(d => d.DefinitionPath.EntityModelMaps.Count() == 2) //ignore references of references
-                .DistinctBy(d => d.DefinitionPath.ElementPathAsString)
-                .Select(d => d.DefinitionPath);
+            var referencesIdsPaths = DbContext.SchemaRegistry.TryGetModelMapsSchema(typeof(TModel), out IModelMapsSchema? modelMapsSchema) ?
+                modelMapsSchema!.ReferencedIdMemberMaps
+                    .Where(d => d.UseCascadeDelete)
+                    .Where(d => d.DefinitionPath.EntityModelMaps.Count() == 2) //ignore references of references
+                    .DistinctBy(d => d.DefinitionPath.ElementPathAsString)
+                    .Select(d => d.DefinitionPath) :
+                Array.Empty<MemberPath>();
 
             foreach (var idPath in referencesIdsPaths)
                 await CascadeDeleteMembersAsync(model, idPath).ConfigureAwait(false);

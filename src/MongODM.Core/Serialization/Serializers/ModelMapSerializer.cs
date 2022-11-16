@@ -54,7 +54,7 @@ namespace Etherna.MongODM.Core.Serialization.Serializers
             dbContext.SchemaRegistry.GetModelMapsSchema(typeof(TModel)).AllModelMapsDictionary.Values;
 
         public BsonClassMapSerializer<TModel> DefaultBsonClassMapSerializer =>
-            (BsonClassMapSerializer<TModel>)dbContext.SchemaRegistry.GetModelMapsSchema(typeof(TModel)).ActiveMap.BsonClassMapSerializer;
+            (BsonClassMapSerializer<TModel>)dbContext.SchemaRegistry.GetModelMapsSchema(typeof(TModel)).ActiveModelMap.BsonClassMapSerializer;
 
         public IDiscriminatorConvention DiscriminatorConvention
         {
@@ -131,7 +131,7 @@ namespace Etherna.MongODM.Core.Serialization.Serializers
             //else, deserialize wih current active model map
             else
             {
-                var task = DeserializeModelMapHelperAsync(actualTypeSchema.ActiveMap, localContext, args);
+                var task = DeserializeModelMapHelperAsync(actualTypeSchema.ActiveModelMap, localContext, args);
                 task.Wait();
                 model = task.Result;
             }

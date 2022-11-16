@@ -78,8 +78,8 @@ namespace Etherna.MongODM.Core.Tasks
             var originRepository = dbContext.RepositoryRegistry.GetRepositoryByBaseModelType<TOriginModel, TOriginKey>();
             var referencedRepository = dbContext.RepositoryRegistry.GetRepositoryByBaseModelType<TReferenceModel, TReferenceKey>();
 
-            var originModelActiveMap = dbContext.SchemaRegistry.GetModelMapsSchema(typeof(TOriginModel)).ActiveMap;
-            var referenceModelActiveMap = dbContext.SchemaRegistry.GetModelMapsSchema(typeof(TReferenceModel)).ActiveMap;
+            var originModelActiveMap = dbContext.SchemaRegistry.GetModelMapsSchema(typeof(TOriginModel)).ActiveModelMap;
+            var referenceModelActiveMap = dbContext.SchemaRegistry.GetModelMapsSchema(typeof(TReferenceModel)).ActiveModelMap;
 
             var referencedModel = referencedRepository.FindOneAsync(referencedModelId);
 

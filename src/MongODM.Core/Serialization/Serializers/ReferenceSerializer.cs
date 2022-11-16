@@ -288,7 +288,7 @@ namespace Etherna.MongODM.Core.Serialization.Serializers
             serializationInfo = default!;
 
             var classMap = configuration.Schemas.Values
-                .Select(s => s.ActiveMap.BsonClassMap)
+                .Select(s => s.ActiveModelMap.BsonClassMap)
                 .Where(cm => cm.GetMemberMap(memberName) != null)
                 .FirstOrDefault();
 

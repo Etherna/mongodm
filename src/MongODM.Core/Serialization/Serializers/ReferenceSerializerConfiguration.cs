@@ -136,7 +136,7 @@ namespace Etherna.MongODM.Core.Serialization.Serializers
                     schema.ModelType,
                     new BsonElement(
                         dbContext.Options.ModelMapVersion.ElementName,
-                        new BsonString(notProxySchema.ActiveMap.Id)));
+                        new BsonString(notProxySchema.ActiveModelMap.Id)));
             }
         }
 
@@ -206,7 +206,7 @@ namespace Etherna.MongODM.Core.Serialization.Serializers
                     // Search base model map.
                     var baseModelMap = modelMap.BaseModelMapId != null ?
                         baseSchema.AllModelMapsDictionary[modelMap.BaseModelMapId] :
-                        baseSchema.ActiveMap;
+                        baseSchema.ActiveModelMap;
 
                     // Link base model map.
                     modelMap.SetBaseModelMap(baseModelMap);

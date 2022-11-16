@@ -111,7 +111,7 @@ namespace Etherna.MongODM.Core.Serialization.Mapping
             // If a schema is registered.
             if (_schemas.TryGetValue(modelType, out ISchema schema) &&
                 schema is IModelMapsSchema modelMapSchema)
-                return modelMapSchema.ActiveMap.BsonClassMap;
+                return modelMapSchema.ActiveModelMap.BsonClassMap;
 
             // If we don't have a model schema, look for a default classmap, or create it.
             if (defaultClassMapsCache.TryGetValue(modelType, out BsonClassMap bcm))
@@ -143,17 +143,6 @@ namespace Etherna.MongODM.Core.Serialization.Mapping
             return activeModelMapIdBsonElement[modelType];
         }
 
-        public IEnumerable<IMemberMap> GetIdMemberMapsFromRootModel(Type modelType, bool onlyFromActiveModelMap = false)
-        {
-            Freeze(); //needed for initialization
-
-            var schema = Schemas[modelType];
-            if (schema is IModelMapsSchema modelMapsSchema)
-                return modelMapsSchema.ReferencedIdMemberMaps.Where(mm => !onlyFromActiveModelMap || mm.RootModelMapIsActive);
-
-            return Array.Empty<IMemberMap>();
-        }
-
         public IEnumerable<IMemberMap> GetMemberMapsFromMemberInfo(MemberInfo memberInfo)
         {
             Freeze(); //needed for initialization
@@ -178,6 +167,22 @@ namespace Etherna.MongODM.Core.Serialization.Mapping
                 throw new InvalidOperationException(modelType.Name + " schema is not a model maps schema");
 
             return modelMapSchema;
+        }
+
+        public bool TryGetModelMapsSchema(Type modelType, out IModelMapsSchema? modelMapsSchema)
+        {
+            if (modelType is null)
+                throw new ArgumentNullException(nameof(modelType));
+
+            if (_schemas.TryGetValue(modelType, out ISchema schema) &&
+                schema is IModelMapsSchema foundModelMapsSchema)
+            {
+                modelMapsSchema = foundModelMapsSchema;
+                return true;
+            }
+
+            modelMapsSchema = null;
+            return false;
         }
 
         // Protected methods.
@@ -245,7 +250,7 @@ namespace Etherna.MongODM.Core.Serialization.Mapping
                     schema.ModelType,
                     new BsonElement(
                         dbContext.Options.ModelMapVersion.ElementName,
-                        new BsonString(notProxySchema.ActiveMap.Id)));
+                        new BsonString(notProxySchema.ActiveModelMap.Id)));
             }
         }
 
@@ -316,7 +321,7 @@ namespace Etherna.MongODM.Core.Serialization.Mapping
                     // Search base model map.
                     var baseModelMap = modelMap.BaseModelMapId != null ?
                         ((IModelMapsSchema)baseSchema).AllModelMapsDictionary[modelMap.BaseModelMapId] :
-                        ((IModelMapsSchema)baseSchema).ActiveMap;
+                        ((IModelMapsSchema)baseSchema).ActiveModelMap;
 
                     // Link base model map.
                     modelMap.SetBaseModelMap(baseModelMap);

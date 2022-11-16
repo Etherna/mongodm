@@ -21,13 +21,13 @@ namespace Etherna.MongODM.Core.Serialization.Mapping.Schemas
     {
         // Properties.
         IBsonSerializer ActiveBsonClassMapSerializer { get; }
-        IModelMap ActiveMap { get; }
+        IModelMap ActiveModelMap { get; }
         IEnumerable<IMemberMap> AllMemberMaps { get; }
         IReadOnlyDictionary<string, IModelMap> AllModelMapsDictionary { get; }
         IDbContext DbContext { get; }
         IModelMap? FallbackModelMap { get; }
         IBsonSerializer? FallbackSerializer { get; }
         IEnumerable<IMemberMap> ReferencedIdMemberMaps { get; }
-        IEnumerable<IModelMap> SecondaryMaps { get; }
+        IEnumerable<IModelMap> SecondaryModelMaps { get; }
     }
 }
