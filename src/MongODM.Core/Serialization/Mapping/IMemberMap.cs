@@ -13,56 +13,25 @@
 //   limitations under the License.
 
 using Etherna.MongoDB.Bson.Serialization;
-using Etherna.MongODM.Core.Extensions;
-using System;
-using System.Linq;
 
 namespace Etherna.MongODM.Core.Serialization.Mapping
 {
-    /// <summary>
-    /// Identify a member map with a reference to its root model map, and path to reach it
-    /// </summary>
-    public class MemberMap : IMemberMap
+    public interface IMemberMap
     {
-        // Constructors.
-        public MemberMap(
-            MemberPath definitionPath,
-            bool useCascadeDelete)
-        {
-            DefinitionPath = definitionPath ?? throw new ArgumentNullException(nameof(definitionPath));
-            UseCascadeDelete = useCascadeDelete;
-
-            { //MemberPathToLastEntityModelId
-                int take = DefinitionPath.ModelMapsPath.Count() - 1;
-                for (; take >= 0; take--)
-                {
-                    if (DefinitionPath.ModelMapsPath.ElementAt(take).OwnerClass.IsEntity)
-                        break;
-                }
-
-                MemberPathToLastEntityModelId = new MemberPath(
-                    take >= 0 ? //if exists an entity
-                        DefinitionPath.ModelMapsPath.Take(take).Append((
-                            DefinitionPath.ModelMapsPath.ElementAt(take).OwnerClass,
-                            DefinitionPath.ModelMapsPath.ElementAt(take).OwnerClass.BsonClassMap.IdMemberMap)) :
-                        Array.Empty<(IModelMap OwnerClass, BsonMemberMap Member)>());
-            }
-        }
-
         // Properties.
-        public BsonMemberMap BsonMemberMap => DefinitionPath.ModelMapsPath.Last().Member;
+        BsonMemberMap BsonMemberMap { get; }
 
-        public MemberPath DefinitionPath { get; }
+        MemberPath DefinitionPath { get; }
 
         /// <summary>
         /// True if member is an entity Id
         /// </summary>
-        public bool IsIdMember => DefinitionPath.ModelMapsPath.Last().Member.IsIdMember();
+        bool IsIdMember { get; }
 
         /// <summary>
         /// True if member is contained into a referenced entity model
         /// </summary>
-        public bool IsEntityReferenceMember => DefinitionPath.EntityModelMaps.Count() >= 2;
+        bool IsEntityReferenceMember { get; }
 
         /// <summary>
         /// The member path from the root type, to the id member of the entity model that owns current member
@@ -90,16 +59,16 @@ namespace Etherna.MongODM.Core.Serialization.Mapping
         /// [ 0 , 1 , 2 , 3 ]
         /// return: members([{Ei>}])
         /// </example>
-        public MemberPath MemberPathToLastEntityModelId { get; }
+        MemberPath MemberPathToLastEntityModelId { get; }
 
         /// <summary>
         /// The root owning model map
         /// </summary>
-        public IModelMap RootModelMap => DefinitionPath.ModelMapsPath.First().OwnerClass;
+        IModelMap RootModelMap { get; }
 
         /// <summary>
         /// True if requested to apply cascade delete
         /// </summary>
-        public bool UseCascadeDelete { get; }
+        bool UseCascadeDelete { get; }
     }
 }

@@ -105,8 +105,8 @@ namespace Etherna.MongODM.Core.Serialization.Serializers
             var schema = _schemas[modelType];
 
             //if a correct model map is identified with its id, use its bson class map serializer
-            if (modelMapId != null && schema.AllMapsDictionary.ContainsKey(modelMapId))
-                return schema.AllMapsDictionary[modelMapId].BsonClassMapSerializer;
+            if (modelMapId != null && schema.AllModelMapsDictionary.ContainsKey(modelMapId))
+                return schema.AllModelMapsDictionary[modelMapId].BsonClassMapSerializer;
 
             //else, use fallback serializer if exists. The schema's active serializer otherwise
             return schema.FallbackSerializer ?? schema.ActiveSerializer;
@@ -201,11 +201,11 @@ namespace Etherna.MongODM.Core.Serialization.Serializers
                 }
 
                 // Process schema's model maps.
-                foreach (var modelMap in schema.AllMapsDictionary.Values)
+                foreach (var modelMap in schema.AllModelMapsDictionary.Values)
                 {
                     // Search base model map.
                     var baseModelMap = modelMap.BaseModelMapId != null ?
-                        baseSchema.AllMapsDictionary[modelMap.BaseModelMapId] :
+                        baseSchema.AllModelMapsDictionary[modelMap.BaseModelMapId] :
                         baseSchema.ActiveMap;
 
                     // Link base model map.

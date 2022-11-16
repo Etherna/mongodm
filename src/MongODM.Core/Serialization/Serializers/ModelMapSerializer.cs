@@ -51,7 +51,7 @@ namespace Etherna.MongODM.Core.Serialization.Serializers
 
         // Properties.
         public IEnumerable<IModelMap> AllChildModelMaps =>
-            dbContext.SchemaRegistry.GetModelMapsSchema(typeof(TModel)).AllMapsDictionary.Values;
+            dbContext.SchemaRegistry.GetModelMapsSchema(typeof(TModel)).AllModelMapsDictionary.Values;
 
         public BsonClassMapSerializer<TModel> DefaultBsonClassMapSerializer =>
             (BsonClassMapSerializer<TModel>)dbContext.SchemaRegistry.GetModelMapsSchema(typeof(TModel)).ActiveMap.BsonClassMapSerializer;
@@ -107,9 +107,9 @@ namespace Etherna.MongODM.Core.Serialization.Serializers
             TModel model;
 
             //if a correct model map is identified with its id
-            if (modelMapId != null && actualTypeSchema.AllMapsDictionary.ContainsKey(modelMapId))
+            if (modelMapId != null && actualTypeSchema.AllModelMapsDictionary.ContainsKey(modelMapId))
             {
-                var task = DeserializeModelMapHelperAsync(actualTypeSchema.AllMapsDictionary[modelMapId], localContext, args);
+                var task = DeserializeModelMapHelperAsync(actualTypeSchema.AllModelMapsDictionary[modelMapId], localContext, args);
                 task.Wait();
                 model = task.Result;
             }

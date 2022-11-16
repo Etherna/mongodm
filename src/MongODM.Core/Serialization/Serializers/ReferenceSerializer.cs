@@ -82,7 +82,7 @@ namespace Etherna.MongODM.Core.Serialization.Serializers
 
         // Properties.
         public IEnumerable<IModelMap> AllChildModelMaps => configuration.Schemas.Values
-            .SelectMany(schema => schema.AllMapsDictionary.Values);
+            .SelectMany(schema => schema.AllModelMapsDictionary.Values);
 
         public IDiscriminatorConvention DiscriminatorConvention
         {
