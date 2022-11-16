@@ -31,22 +31,6 @@ namespace Etherna.MongODM.Core.Serialization.Mapping
         {
             DefinitionPath = definitionPath ?? throw new ArgumentNullException(nameof(definitionPath));
             UseCascadeDelete = useCascadeDelete;
-
-            { //MemberPathToLastEntityModelId
-                int take = DefinitionPath.ModelMapsPath.Count() - 1;
-                for (; take >= 0; take--)
-                {
-                    if (DefinitionPath.ModelMapsPath.ElementAt(take).OwnerClass.IsEntity)
-                        break;
-                }
-
-                MemberPathToLastEntityModelId = new MemberPath(
-                    take >= 0 ? //if exists an entity
-                        DefinitionPath.ModelMapsPath.Take(take).Append((
-                            DefinitionPath.ModelMapsPath.ElementAt(take).OwnerClass,
-                            DefinitionPath.ModelMapsPath.ElementAt(take).OwnerClass.BsonClassMap.IdMemberMap)) :
-                        Array.Empty<(IModelMap OwnerClass, BsonMemberMap Member)>());
-            }
         }
 
         // Properties.
@@ -63,34 +47,6 @@ namespace Etherna.MongODM.Core.Serialization.Mapping
         /// True if member is contained into a referenced entity model
         /// </summary>
         public bool IsEntityReferenceMember => DefinitionPath.EntityModelMaps.Count() >= 2;
-
-        /// <summary>
-        /// The member path from the root type, to the id member of the entity model that owns current member
-        /// </summary>
-        /// <example>
-        /// [(E)ntityModel, (V)alueObject, (->) !id member, (i>) id member]
-        /// 
-        /// MemberPath:
-        ///  E-> V-> Ei>
-        /// [ 0 , 1 , 2 ]
-        /// return: members([0, 1, 2])
-        /// 
-        /// MemberPath:
-        ///  E-> V-> E-> V->
-        /// [ 0 , 1 , 2 , 3 ]
-        /// return: members([0, 1, {Ei>}])
-        /// 
-        /// MemberPath:
-        ///  V-> V-> V-> V->
-        /// [ 0 , 1 , 2 , 3 ]
-        /// return: members([ ])
-        /// 
-        /// MemberPath:
-        ///  E-> V-> V-> V->
-        /// [ 0 , 1 , 2 , 3 ]
-        /// return: members([{Ei>}])
-        /// </example>
-        public MemberPath MemberPathToLastEntityModelId { get; }
 
         /// <summary>
         /// The root owning model map

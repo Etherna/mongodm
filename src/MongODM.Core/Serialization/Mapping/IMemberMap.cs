@@ -34,34 +34,6 @@ namespace Etherna.MongODM.Core.Serialization.Mapping
         bool IsEntityReferenceMember { get; }
 
         /// <summary>
-        /// The member path from the root type, to the id member of the entity model that owns current member
-        /// </summary>
-        /// <example>
-        /// [(E)ntityModel, (V)alueObject, (->) !id member, (i>) id member]
-        /// 
-        /// MemberPath:
-        ///  E-> V-> Ei>
-        /// [ 0 , 1 , 2 ]
-        /// return: members([0, 1, 2])
-        /// 
-        /// MemberPath:
-        ///  E-> V-> E-> V->
-        /// [ 0 , 1 , 2 , 3 ]
-        /// return: members([0, 1, {Ei>}])
-        /// 
-        /// MemberPath:
-        ///  V-> V-> V-> V->
-        /// [ 0 , 1 , 2 , 3 ]
-        /// return: members([ ])
-        /// 
-        /// MemberPath:
-        ///  E-> V-> V-> V->
-        /// [ 0 , 1 , 2 , 3 ]
-        /// return: members([{Ei>}])
-        /// </example>
-        MemberPath MemberPathToLastEntityModelId { get; }
-
-        /// <summary>
         /// The root owning model map
         /// </summary>
         IModelMap RootModelMap { get; }

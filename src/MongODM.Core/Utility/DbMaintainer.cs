@@ -12,6 +12,7 @@
 //   See the License for the specific language governing permissions and
 //   limitations under the License.
 
+using Etherna.MongoDB.Bson.Serialization;
 using Etherna.MongoDB.Driver;
 using Etherna.MongODM.Core.Extensions;
 using Etherna.MongODM.Core.ProxyModels;
@@ -70,7 +71,22 @@ namespace Etherna.MongODM.Core.Utility
             {
                 // Extract only id paths to referenced entities.
                 var idPaths = dependencyGroup
-                    .Select(memberMap => string.Join(".", memberMap.MemberPathToLastEntityModelId.ModelMapsPath.Select(idMember => idMember.Member.MemberInfo.Name)))
+                    .Select(memberMap =>
+                    {
+                        int take = memberMap.DefinitionPath.ModelMapsPath.Count() - 1;
+                        for (; take >= 0; take--)
+                        {
+                            if (memberMap.DefinitionPath.ModelMapsPath.ElementAt(take).OwnerClass.IsEntity)
+                                break;
+                        }
+
+                        var memberPathToLastEntityModelId = take >= 0 ? //if exists an entity
+                            memberMap.DefinitionPath.ModelMapsPath.Take(take).Select(p => p.Member).Append(
+                            memberMap.DefinitionPath.ModelMapsPath.ElementAt(take).OwnerClass.BsonClassMap.IdMemberMap) :
+                            Array.Empty<BsonMemberMap>();
+
+                        return string.Join(".", memberPathToLastEntityModelId.Select(idMember => idMember.MemberInfo.Name));
+                    })
                     .Distinct();
 
                 // Enqueue call for background job.
