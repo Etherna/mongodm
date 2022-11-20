@@ -203,7 +203,7 @@ namespace Etherna.MongODM.Core.Serialization.Mapping
 
                 // Register discriminators for all bson class maps.
                 if (schema is IModelMapsSchema modelMapsSchema)
-                    foreach (var modelMap in modelMapsSchema.AllModelMapsDictionary.Values)
+                    foreach (var modelMap in modelMapsSchema.RootModelMapsDictionary.Values)
                         dbContext.DiscriminatorRegistry.AddDiscriminator(modelMap.ModelType, modelMap.BsonClassMap.Discriminator);
             }
 
@@ -217,7 +217,7 @@ namespace Etherna.MongODM.Core.Serialization.Mapping
                  * 
                  * This operation needs to be executed AFTER that all serializers have been registered.
                  */
-                foreach (var memberMap in schema.AllMemberMaps)
+                foreach (var memberMap in schema.RootModelMapsDictionary.Values.SelectMany(modelMap => modelMap.AllChildMemberMaps))
                 {
                     var memberInfo = memberMap.BsonMemberMap.MemberInfo;
 
@@ -226,16 +226,16 @@ namespace Etherna.MongODM.Core.Serialization.Mapping
                      * MemberInfo comparison has to be performed with extension method "IsSameAs". If an equal member info
                      * is found with this equality comparer, it has to be taken as key also for current memberinfo
                      */
-                    var memberDependencyList = memberInfoToMemberMapsDictionary.FirstOrDefault(
+                    var memberMapList = memberInfoToMemberMapsDictionary.FirstOrDefault(
                         pair => pair.Key.IsSameAs(memberInfo)).Value;
 
-                    if (memberDependencyList is null)
+                    if (memberMapList is null)
                     {
-                        memberDependencyList = new List<IMemberMap>();
-                        memberInfoToMemberMapsDictionary[memberInfo] = memberDependencyList;
+                        memberMapList = new List<IMemberMap>();
+                        memberInfoToMemberMapsDictionary[memberInfo] = memberMapList;
                     }
 
-                    memberDependencyList.Add(memberMap);
+                    memberMapList.Add(memberMap);
                 }
 
                 // Generate active model maps id bson elements.
@@ -299,7 +299,7 @@ namespace Etherna.MongODM.Core.Serialization.Mapping
                 var schema = processingSchemas.Pop();
 
                 // Process schema's model maps.
-                foreach (var modelMap in schema.AllModelMapsDictionary.Values)
+                foreach (var modelMap in schema.RootModelMapsDictionary.Values)
                 {
                     var baseModelType = modelMap.ModelType.BaseType;
 
@@ -320,7 +320,7 @@ namespace Etherna.MongODM.Core.Serialization.Mapping
 
                     // Search base model map.
                     var baseModelMap = modelMap.BaseModelMapId != null ?
-                        ((IModelMapsSchema)baseSchema).AllModelMapsDictionary[modelMap.BaseModelMapId] :
+                        ((IModelMapsSchema)baseSchema).RootModelMapsDictionary[modelMap.BaseModelMapId] :
                         ((IModelMapsSchema)baseSchema).ActiveModelMap;
 
                     // Link base model map.

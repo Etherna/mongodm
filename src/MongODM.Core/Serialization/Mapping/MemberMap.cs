@@ -26,11 +26,9 @@ namespace Etherna.MongODM.Core.Serialization.Mapping
     {
         // Constructors.
         public MemberMap(
-            MemberPath definitionPath,
-            bool useCascadeDelete)
+            MemberPath definitionPath)
         {
             DefinitionPath = definitionPath ?? throw new ArgumentNullException(nameof(definitionPath));
-            UseCascadeDelete = useCascadeDelete;
         }
 
         // Properties.
@@ -38,10 +36,7 @@ namespace Etherna.MongODM.Core.Serialization.Mapping
 
         public MemberPath DefinitionPath { get; }
 
-        /// <summary>
-        /// True if member is an entity Id
-        /// </summary>
-        public bool IsIdMember => DefinitionPath.ModelMapsPath.Last().Member.IsIdMember();
+        public string Id => DefinitionPath.TypedPathAsString;
 
         /// <summary>
         /// True if member is contained into a referenced entity model
@@ -49,13 +44,17 @@ namespace Etherna.MongODM.Core.Serialization.Mapping
         public bool IsEntityReferenceMember => DefinitionPath.EntityModelMaps.Count() >= 2;
 
         /// <summary>
-        /// The root owning model map
+        /// True if member is an entity Id
         /// </summary>
-        public IModelMap RootModelMap => DefinitionPath.ModelMapsPath.First().OwnerClass;
+        public bool IsIdMember => DefinitionPath.ModelMapsPath.Last().Member.IsIdMember();
+
+        public IModelMap? OwnerEntityModelMap => DefinitionPath.EntityModelMaps.LastOrDefault();
+
+        public IModelMap OwnerModelMap => DefinitionPath.ModelMapsPath.Last().OwnerModel;
 
         /// <summary>
-        /// True if requested to apply cascade delete
+        /// The root owning model map
         /// </summary>
-        public bool UseCascadeDelete { get; }
+        public IModelMap RootModelMap => DefinitionPath.ModelMapsPath.First().OwnerModel;
     }
 }

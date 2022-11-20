@@ -12,7 +12,6 @@
 //   See the License for the specific language governing permissions and
 //   limitations under the License.
 
-using Etherna.MongoDB.Bson.Serialization;
 using Etherna.MongoDB.Driver;
 using Etherna.MongODM.Core.Extensions;
 using Etherna.MongODM.Core.ProxyModels;
@@ -60,37 +59,27 @@ namespace Etherna.MongODM.Core.Utility
             if (modelId is null)
                 throw new ArgumentNullException(nameof(modelId));
 
-            // Find all possible coinvolted member maps with changes. Keep only referenced members
-            var updatedMembers = updatedModel.ChangedMembers;
-            var referenceMemberMaps = updatedMembers.SelectMany(memberInfo => dbContext.SchemaRegistry.GetMemberMapsFromMemberInfo(memberInfo))
-                                                    .Where(memberDependency => memberDependency.IsEntityReferenceMember);
+            // Find all possibly involved member maps with changes. Select only referenced members
+            var updatedMembersInfo = updatedModel.ChangedMembers;
+            var referenceMemberMaps = updatedMembersInfo.SelectMany(updatedMemberInfo => dbContext.SchemaRegistry.GetMemberMapsFromMemberInfo(updatedMemberInfo))
+                                                        .Where(memberDependency => memberDependency.IsEntityReferenceMember);
 
-            // Group by root model type, and select only model types related to a collections.
-            foreach (var dependencyGroup in referenceMemberMaps.GroupBy(memberMap => memberMap.RootModelMap.ModelType)
-                                                               .Where(group => dbContext.RepositoryRegistry.Repositories.Any(r => r.ModelType == group.Key)))
+            // Group by repository of origin root model
+            foreach (var referenceMemberMapsGroupedByOriginRepo in referenceMemberMaps.GroupBy(
+                memberMap => dbContext.RepositoryRegistry.GetRepositoryByHandledModelType(memberMap.RootModelMap.ModelType)))
             {
-                // Extract only id paths to referenced entities.
-                var idPaths = dependencyGroup
+                // Extract only id member maps of referenced entities.
+                var idMemberMapIdentifiers = referenceMemberMapsGroupedByOriginRepo
                     .Select(memberMap =>
                     {
-                        int take = memberMap.DefinitionPath.ModelMapsPath.Count() - 1;
-                        for (; take >= 0; take--)
-                        {
-                            if (memberMap.DefinitionPath.ModelMapsPath.ElementAt(take).OwnerClass.IsEntity)
-                                break;
-                        }
-
-                        var memberPathToLastEntityModelId = take >= 0 ? //if exists an entity
-                            memberMap.DefinitionPath.ModelMapsPath.Take(take).Select(p => p.Member).Append(
-                            memberMap.DefinitionPath.ModelMapsPath.ElementAt(take).OwnerClass.BsonClassMap.IdMemberMap) :
-                            Array.Empty<BsonMemberMap>();
-
-                        return string.Join(".", memberPathToLastEntityModelId.Select(idMember => idMember.MemberInfo.Name));
+                        var ownerEntityModelMap = memberMap.OwnerEntityModelMap;
+                        var idMemberMap = ownerEntityModelMap!.IdMemberMap!;
+                        return idMemberMap.Id;
                     })
                     .Distinct();
 
-                // Enqueue call for background job.
-                taskRunner.RunUpdateDocDependenciesTask(dbContext.GetType(), dependencyGroup.Key, typeof(TKey), idPaths, modelId);
+                // Enqueue call of background job.
+                taskRunner.RunUpdateDocDependenciesTask(dbContext.GetType(), referenceMemberMapsGroupedByOriginRepo.Key.ModelType, typeof(TKey), idMemberMapIdentifiers, modelId);
             }
         }
     }

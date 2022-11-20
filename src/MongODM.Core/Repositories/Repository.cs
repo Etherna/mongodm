@@ -128,7 +128,7 @@ namespace Etherna.MongODM.Core.Repositories
 
                 //referenced documents
                 var idMemberMaps = DbContext.SchemaRegistry.TryGetModelMapsSchema(typeof(TModel), out IModelMapsSchema? modelMapsSchema) ?
-                    modelMapsSchema!.ReferencedIdMemberMaps.Where(mm => mm.RootModelMap == modelMapsSchema.ActiveModelMap) :
+                    modelMapsSchema!.ActiveModelMap.AllChildMemberMaps.Where(mm => mm.IsEntityReferenceMember && mm.IsIdMember) :
                     Array.Empty<IMemberMap>();
 
                 var idPaths = idMemberMaps
@@ -205,18 +205,6 @@ namespace Etherna.MongODM.Core.Repositories
         {
             if (model is null)
                 throw new ArgumentNullException(nameof(model));
-
-            // Process cascade delete.
-            var referencesIdsPaths = DbContext.SchemaRegistry.TryGetModelMapsSchema(typeof(TModel), out IModelMapsSchema? modelMapsSchema) ?
-                modelMapsSchema!.ReferencedIdMemberMaps
-                    .Where(d => d.UseCascadeDelete)
-                    .Where(d => d.DefinitionPath.EntityModelMaps.Count() == 2) //ignore references of references
-                    .DistinctBy(d => d.DefinitionPath.ElementPathAsString)
-                    .Select(d => d.DefinitionPath) :
-                Array.Empty<MemberPath>();
-
-            foreach (var idPath in referencesIdsPaths)
-                await CascadeDeleteMembersAsync(model, idPath).ConfigureAwait(false);
 
             // Unlink dependent models.
             model.DisposeForDelete();
@@ -428,41 +416,6 @@ namespace Etherna.MongODM.Core.Repositories
         }
 
         // Helpers.
-        private async Task CascadeDeleteMembersAsync(object currentModel, MemberPath idPath)
-        {
-            var (_, currentMember) = idPath.ModelMapsPath.First();
-            var memberTail = new MemberPath(idPath.ModelMapsPath.Skip(1));
-
-            if (currentMember.IsIdMember())
-            {
-                //cascade delete model
-                var repository = DbContext.RepositoryRegistry.GetRepositoryByHandledModelType(currentModel.GetType().BaseType);
-                try { await repository.DeleteAsync((IEntityModel)currentModel).ConfigureAwait(false); }
-                catch { }
-            }
-            else
-            {
-                //recursion on value
-                var memberInfo = currentMember.MemberInfo;
-                var memberValue = ReflectionHelper.GetValue(currentModel, memberInfo);
-                if (memberValue == null)
-                    return;
-
-                if (memberValue is IEnumerable enumerableMemberValue) //if enumerable
-                {
-                    if (enumerableMemberValue is IDictionary dictionaryMemberValue)
-                        enumerableMemberValue = dictionaryMemberValue.Values;
-
-                    foreach (var itemValue in enumerableMemberValue.Cast<object>().ToArray())
-                        await CascadeDeleteMembersAsync(itemValue, memberTail).ConfigureAwait(false);
-                }
-                else
-                {
-                    await CascadeDeleteMembersAsync(memberValue, memberTail).ConfigureAwait(false);
-                }
-            }
-        }
-
         private Task<TModel> FindOneOnDBAsync(
             Expression<Func<TModel, bool>> predicate,
             CancellationToken cancellationToken = default) =>

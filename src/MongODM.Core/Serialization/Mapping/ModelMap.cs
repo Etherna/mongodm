@@ -17,6 +17,7 @@ using Etherna.MongODM.Core.Extensions;
 using Etherna.MongODM.Core.Serialization.Serializers;
 using Etherna.MongODM.Core.Utility;
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using System.Threading.Tasks;
@@ -27,6 +28,7 @@ namespace Etherna.MongODM.Core.Serialization.Mapping
     {
         // Fields.
         private IBsonSerializer _bsonClassMapSerializer = default!;
+        private readonly Dictionary<string, IMemberMap> _memberMapsDictionary = new(); // Id -> MemberMap
 
         // Constructors.
         protected ModelMap(
@@ -46,6 +48,10 @@ namespace Etherna.MongODM.Core.Serialization.Mapping
 
         // Properties.
         public string Id { get; }
+        public IEnumerable<IMemberMap> AllChildMemberMaps => BsonClassMap.AllMemberMaps
+            .Select(bsonMemberMap => bsonMemberMap.GetSerializer())
+            .OfType<IModelMapsContainerSerializer>()
+            .SelectMany(serializer => serializer.AllChildModelMaps.SelectMany(mm => mm.AllChildMemberMaps));
         public string? BaseModelMapId { get; private set; }
         public BsonClassMap BsonClassMap { get; }
         public IBsonSerializer BsonClassMapSerializer
@@ -61,7 +67,16 @@ namespace Etherna.MongODM.Core.Serialization.Mapping
                 return _bsonClassMapSerializer;
             }
         }
+        public IMemberMap? IdMemberMap => MemberMapsDictionary.Values.FirstOrDefault(mm => mm.IsIdMember);
         public bool IsEntity => BsonClassMap.IsEntity();
+        public IReadOnlyDictionary<string, IMemberMap> MemberMapsDictionary
+        {
+            get
+            {
+                Freeze(); //needed for initialization
+                return _memberMapsDictionary;
+            }
+        }
         public Type ModelType => BsonClassMap.ClassType;
         public IBsonSerializer? Serializer { get; }
 
@@ -131,6 +146,32 @@ namespace Etherna.MongODM.Core.Serialization.Mapping
         {
             // Freeze bson class maps.
             BsonClassMap.Freeze();
+        }
+
+        // Internal methods.
+        internal void InitializeMemberMaps(MemberPath initialMemberPath)
+        {
+            /* Member inizialization will be moved directly into model mapping, as is for BsonMemberMap */
+            foreach (var bsonMemberMap in BsonClassMap.AllMemberMaps)
+            {
+                // Update path.
+                var newMemberPath = new MemberPath(initialMemberPath.ModelMapsPath.Append((this, bsonMemberMap)));
+
+                // Identify current member with its path from current model map.
+                var memberMap = new MemberMap(newMemberPath);
+
+                // Add member map to dictionary.
+                _memberMapsDictionary.Add(memberMap.Id, memberMap);
+
+                // Analize recursion on member.
+                var memberSerializer = bsonMemberMap.GetSerializer();
+                if (memberSerializer is IModelMapsContainerSerializer modelMapsContainerSerializer)
+                    foreach (var childModelMap in modelMapsContainerSerializer.AllChildModelMaps)
+                    {
+                        childModelMap.Freeze();
+                        ((ModelMap)childModelMap).InitializeMemberMaps(newMemberPath);
+                    }
+            }
         }
 
         // Static methods.

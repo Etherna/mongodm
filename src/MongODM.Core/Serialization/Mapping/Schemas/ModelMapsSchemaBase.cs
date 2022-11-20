@@ -13,7 +13,6 @@
 //   limitations under the License.
 
 using Etherna.MongoDB.Bson.Serialization;
-using Etherna.MongODM.Core.Serialization.Serializers;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -23,8 +22,7 @@ namespace Etherna.MongODM.Core.Serialization.Mapping.Schemas
     abstract class ModelMapsSchemaBase : SchemaBase, IModelMapsSchema
     {
         // Fields.
-        private readonly Dictionary<string, IMemberMap> _allMemberMapsDictionary = new(); // PathId -> MemberMap
-        private Dictionary<string, IModelMap> _allModelMapsDictionary = default!; // Id -> ModelMap
+        private Dictionary<string, IModelMap> _rootModelMapsDictionary = default!; // Id -> ModelMap
         protected readonly List<IModelMap> _secondaryModelMaps = new();
 
         // Constructor.
@@ -52,31 +50,32 @@ namespace Etherna.MongODM.Core.Serialization.Mapping.Schemas
         public IBsonSerializer ActiveBsonClassMapSerializer => ActiveModelMap.BsonClassMapSerializer;
         public IModelMap ActiveModelMap { get; }
         public override IBsonSerializer? ActiveSerializer => ActiveModelMap.Serializer;
-        public IEnumerable<IMemberMap> AllMemberMaps => _allMemberMapsDictionary.Values;
-        public IReadOnlyDictionary<string, IModelMap> AllModelMapsDictionary
+        public IDbContext DbContext { get; }
+        public IModelMap? FallbackModelMap { get; protected set; }
+        public IBsonSerializer? FallbackSerializer { get; protected set; }
+        public override Type? ProxyModelType { get; }
+        public IReadOnlyDictionary<string, IModelMap> RootModelMapsDictionary
         {
             get
             {
-                if (_allModelMapsDictionary is null)
+                if (_rootModelMapsDictionary is null)
                 {
-                    var result = SecondaryModelMaps
-                        .Append(ActiveModelMap)
-                        .ToDictionary(modelMap => modelMap.Id);
+                    var modelMaps = SecondaryModelMaps.Append(ActiveModelMap);
+
+                    if (FallbackModelMap is not null)
+                        modelMaps = modelMaps.Append(FallbackModelMap);
+
+                    var result = modelMaps.ToDictionary(modelMap => modelMap.Id);
 
                     if (!IsFrozen)
                         return result;
 
                     //optimize performance only if frozen
-                    _allModelMapsDictionary = result;
+                    _rootModelMapsDictionary = result;
                 }
-                return _allModelMapsDictionary;
+                return _rootModelMapsDictionary;
             }
         }
-        public IDbContext DbContext { get; }
-        public IModelMap? FallbackModelMap { get; protected set; }
-        public IBsonSerializer? FallbackSerializer { get; protected set; }
-        public override Type? ProxyModelType { get; }
-        public IEnumerable<IMemberMap> ReferencedIdMemberMaps => _allMemberMapsDictionary.Values.Where(memberMap => memberMap.IsEntityReferenceMember && memberMap.IsIdMember);
         public IEnumerable<IModelMap> SecondaryModelMaps => _secondaryModelMaps;
 
         // Protected methods.
@@ -119,61 +118,20 @@ namespace Etherna.MongODM.Core.Serialization.Mapping.Schemas
         protected override void FreezeAction()
         {
             // Freeze model maps.
-            ActiveModelMap.Freeze();
+            foreach (var modelMap in RootModelMapsDictionary.Values)
+                modelMap.Freeze();
 
-            foreach (var secondaryModelMap in _secondaryModelMaps)
-                secondaryModelMap.Freeze();
-
-            FallbackModelMap?.Freeze();
-
-            // Initialize member maps and registers.
-            foreach (var modelMap in AllModelMapsDictionary.Values)
-                InitializeMemberMaps(
-                    modelMap,
-                    Array.Empty<(IModelMap OwnerClass, BsonMemberMap Member)>());
-        }
-
-        // Helpers.
-        /// <summary>
-        /// Explore with recursion a model map and all its descendent definitions through member maps
-        /// </summary>
-        /// <param name="modelMap"></param>
-        /// <param name="memberPath"></param>
-        /// <param name="useCascadeDeleteSetting"></param>
-        private void InitializeMemberMaps(
-            IModelMap modelMap,
-            IEnumerable<(IModelMap OwnerClass, BsonMemberMap Member)> memberPath,
-            bool? useCascadeDeleteSetting = null)
-        {
-            // Ignore model maps of abstract types. (child classes will map all their members)
-            if (modelMap.ModelType.IsAbstract)
-                return;
-            // Ignore model maps of proxy types.
-            if (DbContext.ProxyGenerator.IsProxyType(modelMap.ModelType))
-                return;
-
-            // Explore recursively members.
-            foreach (var bsonMemberMap in modelMap.BsonClassMap.AllMemberMaps)
+            // Initialize member maps.
+            foreach (var modelMap in RootModelMapsDictionary.Values)
             {
-                // Update path.
-                var currentMemberPath = memberPath.Append((modelMap, bsonMemberMap));
+                // Ignore model maps of abstract types. (child classes will map all their members)
+                if (modelMap.ModelType.IsAbstract)
+                    return;
+                // Ignore model maps of proxy types.
+                if (DbContext.ProxyGenerator.IsProxyType(modelMap.ModelType))
+                    return;
 
-                // Identify current member with its path from current model map, and cascade delete information.
-                var memberMap = new MemberMap(
-                    new MemberPath(currentMemberPath),
-                    useCascadeDeleteSetting ?? false);
-
-                // Add member map to dictionary.
-                _allMemberMapsDictionary.Add(memberMap.DefinitionPath.TypedPathAsString, memberMap);
-
-                // Analize recursion on member.
-                var memberSerializer = bsonMemberMap.GetSerializer();
-                if (memberSerializer is IModelMapsContainerSerializer modelMapsContainerSerializer)
-                    foreach (var childModelMap in modelMapsContainerSerializer.AllChildModelMaps)
-                        InitializeMemberMaps(
-                            childModelMap,
-                            currentMemberPath,
-                            (memberSerializer as IReferenceContainerSerializer)?.UseCascadeDelete);
+                ((ModelMap)modelMap).InitializeMemberMaps(new MemberPath(Array.Empty<(IModelMap OwnerModel, BsonMemberMap Member)>()));
             }
         }
     }

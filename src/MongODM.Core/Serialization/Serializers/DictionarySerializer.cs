@@ -24,7 +24,6 @@ namespace Etherna.MongODM.Core.Serialization.Serializers
     public class DictionarySerializer<TKey, TValue> :
         DictionarySerializerBase<IDictionary<TKey, TValue>, TKey, TValue>,
         IChildSerializerConfigurable,
-        IReferenceContainerSerializer,
         IDictionaryRepresentationConfigurable<DictionarySerializer<TKey, TValue>>
     {
         // Constructors.
@@ -49,9 +48,6 @@ namespace Etherna.MongODM.Core.Serialization.Serializers
             Array.Empty<IModelMap>();
 
         public IBsonSerializer ChildSerializer => ValueSerializer;
-        
-        public bool UseCascadeDelete =>
-            (ValueSerializer as IReferenceContainerSerializer)?.UseCascadeDelete ?? false;
 
         // Public methods.
         public override void Serialize(BsonSerializationContext context, BsonSerializationArgs args, IDictionary<TKey, TValue> value)

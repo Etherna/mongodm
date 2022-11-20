@@ -22,8 +22,7 @@ namespace Etherna.MongODM.Core.Serialization.Serializers
 {
     public class EnumerableSerializer<TItem> :
         EnumerableSerializerBase<IEnumerable<TItem>, TItem>,
-        IChildSerializerConfigurable,
-        IReferenceContainerSerializer
+        IChildSerializerConfigurable
     {
         // Constructors.
         /// <summary>
@@ -54,9 +53,6 @@ namespace Etherna.MongODM.Core.Serialization.Serializers
             Array.Empty<IModelMap>();
 
         public IBsonSerializer ChildSerializer => ItemSerializer;
-
-        public bool UseCascadeDelete =>
-            (ItemSerializer as IReferenceContainerSerializer)?.UseCascadeDelete ?? false;
 
         // Public methods.
         public override void Serialize(BsonSerializationContext context, BsonSerializationArgs args, IEnumerable<TItem> value)

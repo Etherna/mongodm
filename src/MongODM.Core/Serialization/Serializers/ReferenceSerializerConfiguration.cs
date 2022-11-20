@@ -27,7 +27,6 @@ namespace Etherna.MongODM.Core.Serialization.Serializers
     {
         // Fields.
         private readonly Dictionary<Type, IModelMapsSchema> _schemas = new();
-        private bool _useCascadeDelete;
 
         private readonly Dictionary<Type, BsonElement> activeModelMapIdBsonElement = new();
         private readonly IDbContext dbContext;
@@ -40,12 +39,6 @@ namespace Etherna.MongODM.Core.Serialization.Serializers
 
         // Properties.
         public IReadOnlyDictionary<Type, IModelMapsSchema> Schemas => _schemas;
-
-        public bool UseCascadeDelete
-        {
-            get => _useCascadeDelete;
-            set => ExecuteConfigAction(() => _useCascadeDelete = value);
-        }
 
         // Methods.
         public IReferenceModelMapsSchemaBuilder<TModel> AddModelMapsSchema<TModel>(
@@ -105,8 +98,8 @@ namespace Etherna.MongODM.Core.Serialization.Serializers
             var schema = _schemas[modelType];
 
             //if a correct model map is identified with its id, use its bson class map serializer
-            if (modelMapId != null && schema.AllModelMapsDictionary.ContainsKey(modelMapId))
-                return schema.AllModelMapsDictionary[modelMapId].BsonClassMapSerializer;
+            if (modelMapId != null && schema.RootModelMapsDictionary.ContainsKey(modelMapId))
+                return schema.RootModelMapsDictionary[modelMapId].BsonClassMapSerializer;
 
             //else, use fallback serializer if exists. The schema's active serializer otherwise
             return schema.FallbackSerializer ?? schema.ActiveSerializer;
@@ -201,11 +194,11 @@ namespace Etherna.MongODM.Core.Serialization.Serializers
                 }
 
                 // Process schema's model maps.
-                foreach (var modelMap in schema.AllModelMapsDictionary.Values)
+                foreach (var modelMap in schema.RootModelMapsDictionary.Values)
                 {
                     // Search base model map.
                     var baseModelMap = modelMap.BaseModelMapId != null ?
-                        baseSchema.AllModelMapsDictionary[modelMap.BaseModelMapId] :
+                        baseSchema.RootModelMapsDictionary[modelMap.BaseModelMapId] :
                         baseSchema.ActiveModelMap;
 
                     // Link base model map.

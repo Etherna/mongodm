@@ -24,6 +24,11 @@ namespace Etherna.MongODM.Core.Serialization.Mapping
         MemberPath DefinitionPath { get; }
 
         /// <summary>
+        /// An unique identifier per schema
+        /// </summary>
+        string Id { get; }
+
+        /// <summary>
         /// True if member is an entity Id
         /// </summary>
         bool IsIdMember { get; }
@@ -33,14 +38,13 @@ namespace Etherna.MongODM.Core.Serialization.Mapping
         /// </summary>
         bool IsEntityReferenceMember { get; }
 
+        IModelMap? OwnerEntityModelMap { get; }
+
+        IModelMap OwnerModelMap { get; }
+
         /// <summary>
         /// The root owning model map
         /// </summary>
         IModelMap RootModelMap { get; }
-
-        /// <summary>
-        /// True if requested to apply cascade delete
-        /// </summary>
-        bool UseCascadeDelete { get; }
     }
 }

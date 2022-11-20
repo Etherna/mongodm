@@ -15,6 +15,7 @@
 using Etherna.MongoDB.Bson.Serialization;
 using Etherna.MongODM.Core.Utility;
 using System;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 
 namespace Etherna.MongODM.Core.Serialization.Mapping
@@ -23,10 +24,13 @@ namespace Etherna.MongODM.Core.Serialization.Mapping
     {
         // Properties.
         string Id { get; }
+        IEnumerable<IMemberMap> AllChildMemberMaps { get; }
         string? BaseModelMapId { get; }
         BsonClassMap BsonClassMap { get; }
         IBsonSerializer BsonClassMapSerializer { get; }
+        IMemberMap? IdMemberMap { get; }
         bool IsEntity { get; }
+        IReadOnlyDictionary<string, IMemberMap> MemberMapsDictionary { get; }
         Type ModelType { get; }
         IBsonSerializer? Serializer { get; }
 

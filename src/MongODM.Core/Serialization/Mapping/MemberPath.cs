@@ -8,7 +8,7 @@ namespace Etherna.MongODM.Core.Serialization.Mapping
     public class MemberPath
     {
         // Constructor.
-        public MemberPath(IEnumerable<(IModelMap OwnerClass, BsonMemberMap Member)> modelMapsPath)
+        public MemberPath(IEnumerable<(IModelMap OwnerModel, BsonMemberMap Member)> modelMapsPath)
         {
             if (modelMapsPath is null)
                 throw new ArgumentNullException(nameof(modelMapsPath));
@@ -19,7 +19,7 @@ namespace Etherna.MongODM.Core.Serialization.Mapping
         }
 
         // Properties.
-        public IEnumerable<(IModelMap OwnerClass, BsonMemberMap Member)> ModelMapsPath { get; }
+        public IEnumerable<(IModelMap OwnerModel, BsonMemberMap Member)> ModelMapsPath { get; }
 
         public string ElementPathAsString => string.Join(".", ModelMapsPath.Select(pair => pair.Member.ElementName));
 
@@ -27,12 +27,12 @@ namespace Etherna.MongODM.Core.Serialization.Mapping
         /// Description of all encountered entity model classes in member path
         /// </summary>
         public IEnumerable<IModelMap> EntityModelMaps =>
-            ModelMapsPath.Select(pair => pair.OwnerClass)
+            ModelMapsPath.Select(pair => pair.OwnerModel)
                          .Where(modelMap => modelMap.IsEntity);
 
         /// <summary>
         /// Typed member path as a string, unique per schema
         /// </summary>
-        public string TypedPathAsString => string.Join("|", ModelMapsPath.Select(pair => $"{pair.OwnerClass.ModelType.Name}.{pair.Member.MemberName}"));
+        public string TypedPathAsString => string.Join("|", ModelMapsPath.Select(pair => $"{pair.OwnerModel.ModelType.Name}.{pair.Member.MemberName}"));
     }
 }

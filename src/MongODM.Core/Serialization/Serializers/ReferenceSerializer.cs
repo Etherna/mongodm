@@ -32,7 +32,6 @@ namespace Etherna.MongODM.Core.Serialization.Serializers
         IBsonSerializer<TModelBase>,
         IBsonDocumentSerializer,
         IBsonIdProvider,
-        IReferenceContainerSerializer,
         IDisposable
         where TModelBase : class, IEntityModel<TKey>
     {
@@ -82,7 +81,7 @@ namespace Etherna.MongODM.Core.Serialization.Serializers
 
         // Properties.
         public IEnumerable<IModelMap> AllChildModelMaps => configuration.Schemas.Values
-            .SelectMany(schema => schema.AllModelMapsDictionary.Values);
+            .SelectMany(schema => schema.RootModelMapsDictionary.Values);
 
         public IDiscriminatorConvention DiscriminatorConvention
         {
@@ -92,8 +91,6 @@ namespace Etherna.MongODM.Core.Serialization.Serializers
                 return _discriminatorConvention;
             }
         }
-
-        public bool UseCascadeDelete => configuration.UseCascadeDelete;
 
         // Methods.
         public override TModelBase Deserialize(BsonDeserializationContext context, BsonDeserializationArgs args)
