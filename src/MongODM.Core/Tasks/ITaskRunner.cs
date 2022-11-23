@@ -20,6 +20,10 @@ namespace Etherna.MongODM.Core.Tasks
     public interface ITaskRunner
     {
         void RunMigrateDbTask(Type dbContextType, string dbMigrationOpId);
-        void RunUpdateDocDependenciesTask(Type dbContextType, Type modelType, Type keyType, IEnumerable<string> idPaths, object modelId);
+        void RunUpdateDocDependenciesTask(
+            Type dbContextType,
+            Type referenceRepositoryType,
+            IEnumerable<string> idMemberMapIdentifiers,
+            object modelId);
     }
 }

@@ -128,7 +128,7 @@ namespace Etherna.MongODM.Core.Repositories
 
                 //referenced documents
                 var idMemberMaps = DbContext.SchemaRegistry.TryGetModelMapsSchema(typeof(TModel), out IModelMapsSchema? modelMapsSchema) ?
-                    modelMapsSchema!.ActiveModelMap.AllChildMemberMaps.Where(mm => mm.IsEntityReferenceMember && mm.IsIdMember) :
+                    modelMapsSchema!.ActiveModelMap.AllChildMemberMapsDictionary.Values.Where(mm => mm.IsEntityReferenceMember && mm.IsIdMember) :
                     Array.Empty<IMemberMap>();
 
                 var idPaths = idMemberMaps
@@ -465,7 +465,7 @@ namespace Etherna.MongODM.Core.Repositories
 
                 // Update dependent documents.
                 if (updateDependentDocuments)
-                    DbContext.DbMaintainer.OnUpdatedModel((IAuditable)model, model.Id);
+                    DbContext.DbMaintainer.OnUpdatedModel<TKey>((IAuditable)model);
 
                 // Reset changed members.
                 ((IAuditable)model).ResetChangedMembers();

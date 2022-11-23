@@ -40,9 +40,17 @@ namespace Etherna.MongODM.HF.Tasks
                 task => task.RunAsync(dbContextType, dbMigrationOpId, null!),
                 new EnqueuedState(mongODMOptions.DbMaintenanceQueueName));
 
-        public void RunUpdateDocDependenciesTask(Type dbContextType, Type modelType, Type keyType, IEnumerable<string> idPaths, object modelId) =>
+        public void RunUpdateDocDependenciesTask(
+            Type dbContextType,
+            Type referenceRepositoryType,
+            IEnumerable<string> idMemberMapIdentifiers,
+            object modelId) =>
             backgroundJobClient.Create<UpdateDocDependenciesTaskFacade>(
-                task => task.RunAsync(dbContextType, modelType, keyType, idPaths, modelId),
+                task => task.RunAsync(
+                    dbContextType,
+                    referenceRepositoryType,
+                    idMemberMapIdentifiers,
+                    modelId),
                 new EnqueuedState(mongODMOptions.DbMaintenanceQueueName));
 
         // Explicit methods.

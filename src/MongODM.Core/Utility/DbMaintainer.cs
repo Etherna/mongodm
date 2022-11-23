@@ -13,6 +13,7 @@
 //   limitations under the License.
 
 using Etherna.MongoDB.Driver;
+using Etherna.MongODM.Core.Domain.Models;
 using Etherna.MongODM.Core.Extensions;
 using Etherna.MongODM.Core.ProxyModels;
 using Etherna.MongODM.Core.Tasks;
@@ -52,35 +53,63 @@ namespace Etherna.MongODM.Core.Utility
         public bool IsInitialized { get; private set; }
 
         // Methods.
-        public void OnUpdatedModel<TKey>(IAuditable updatedModel, TKey modelId)
+        /*
+         * Maintain summary information from origin summary documents, pointing to updated referenced document.
+         * 
+         * Example:
+         * originDoc1: {
+         *   "a": {
+         *     "_id": "referredDocId",
+         *     "c": "cVal"
+         *   }
+         * }
+         * originDoc2:{
+         *   "b": {
+         *     "_id": "referredDocId",
+         *     "d": "dVal"
+         *   }
+         * }
+         * referredDoc:{
+         *   "_id": "referredDocId",
+         *   "c": "cVal",
+         *   "d": "dVal"
+         * }
+         * 
+         * If referred document "referredDoc" updates it's fields "b" and "c" with a new value,
+         * "originDoc1.a" and "originDoc2.b" fields would be updated by this process.
+         */
+        public void OnUpdatedModel<TKey>(IAuditable updatedModel)
         {
             if (updatedModel is null)
                 throw new ArgumentNullException(nameof(updatedModel));
-            if (modelId is null)
-                throw new ArgumentNullException(nameof(modelId));
+            if (updatedModel is not IEntityModel<TKey>)
+                throw new ArgumentException($"Model is not of type {nameof(IEntityModel<TKey>)}", nameof(updatedModel));
 
-            // Find all possibly involved member maps with changes. Select only referenced members
-            var updatedMembersInfo = updatedModel.ChangedMembers;
-            var referenceMemberMaps = updatedMembersInfo.SelectMany(updatedMemberInfo => dbContext.SchemaRegistry.GetMemberMapsFromMemberInfo(updatedMemberInfo))
-                                                        .Where(memberDependency => memberDependency.IsEntityReferenceMember);
+            // Find referenced model repository.
+            var referenceRepository = dbContext.RepositoryRegistry.GetRepositoryByHandledModelType(updatedModel.GetType());
 
-            // Group by repository of origin root model
-            foreach (var referenceMemberMapsGroupedByOriginRepo in referenceMemberMaps.GroupBy(
-                memberMap => dbContext.RepositoryRegistry.GetRepositoryByHandledModelType(memberMap.RootModelMap.ModelType)))
-            {
-                // Extract only id member maps of referenced entities.
-                var idMemberMapIdentifiers = referenceMemberMapsGroupedByOriginRepo
-                    .Select(memberMap =>
-                    {
-                        var ownerEntityModelMap = memberMap.OwnerEntityModelMap;
-                        var idMemberMap = ownerEntityModelMap!.IdMemberMap!;
-                        return idMemberMap.Id;
-                    })
-                    .Distinct();
+            // Find all possibly involved member maps with changes. Select only referenced members.
+            var referenceMemberMaps = updatedModel.ChangedMembers
+                .SelectMany(updatedMemberInfo => dbContext.SchemaRegistry.GetMemberMapsFromMemberInfo(updatedMemberInfo))
+                .Where(memberMap => memberMap.IsEntityReferenceMember);
 
-                // Enqueue call of background job.
-                taskRunner.RunUpdateDocDependenciesTask(dbContext.GetType(), referenceMemberMapsGroupedByOriginRepo.Key.ModelType, typeof(TKey), idMemberMapIdentifiers, modelId);
-            }
+            // Find related id member maps.
+            /*****
+             * idMemberMaps contains reference Ids for sub-documents summary of the updated document, containing updated property.
+             * These are taken from all schemas and all model maps.
+             * 
+             * We pass member maps' string ids because strings are better serializable by the task executor.
+             * All member maps must be recovered by the task using Ids from the schema register.
+             *****/
+            var idMemberMaps = referenceMemberMaps.Select(mm => mm.OwnerEntityModelMap!.IdMemberMap!)
+                                                  .Distinct();
+
+            // Enqueue call of background job.
+            taskRunner.RunUpdateDocDependenciesTask(
+                dbContext.GetType(),
+                referenceRepository.GetType(),
+                idMemberMaps.Select(mm => mm.Id),
+                ((IEntityModel<TKey>)updatedModel).Id!);
         }
     }
 }

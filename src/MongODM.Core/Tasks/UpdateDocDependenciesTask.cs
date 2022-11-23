@@ -16,10 +16,9 @@ using Etherna.MongoDB.Bson;
 using Etherna.MongoDB.Bson.IO;
 using Etherna.MongoDB.Bson.Serialization;
 using Etherna.MongoDB.Driver;
-using Etherna.MongODM.Core.Domain.Models;
 using Etherna.MongODM.Core.Extensions;
+using Etherna.MongODM.Core.Repositories;
 using Etherna.MongODM.Core.Serialization.Modifiers;
-using Etherna.MongODM.Core.Serialization.Serializers;
 using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
@@ -47,50 +46,57 @@ namespace Etherna.MongODM.Core.Tasks
         }
 
         // Methods.
-        public async Task RunAsync<TDbContext, TOriginModel, TOriginKey, TReferenceModel, TReferenceKey>(
-            IEnumerable<string> idPaths,
-            TReferenceKey referencedModelId)
-            where TOriginModel : class, IEntityModel<TOriginKey>
-            where TReferenceModel : class, IEntityModel<TReferenceKey>
+        /*
+         * Reference sub-documents are updated using FindOneAndUpdate command. The root document is kept untouched.
+         * 
+         * Property serializers are selected looking for definition on the current active model map for the specific member.
+         * We can do this, because references are not strictly binded to the current model map version on document, 
+         * and in any case, we can assume that current active model map is the best summary for current application.
+         * 
+         * In case that an IdPath is not mapped on current active map, we can simply update with a minimal id reference.
+         * The mapping Id definition is taken from the active map of referenced model, and the sub-document will not have any map Id associated.
+         * Consideraton is that in this edge case probably the property is not more necessary, and even if it is, it can always be recovered by lazy loading.
+         * 
+         * In this way we can also cache serialized sub-documents by IdPath.
+         */
+        public async Task RunAsync<TDbContext, TReferenceRepository>(
+            IEnumerable<string> idMemberMapIdentifiers,
+            object referencedModelId)
+            where TReferenceRepository : class, IRepository
             where TDbContext : class, IDbContext
         {
-            /*
-             * Documents are not updated to the last active model map, but only properties are updated using FindOneAndUpdate command on specific sub-documents.
-             * 
-             * Property serializers are selected looking for definition on the current active model map.
-             * We can do this, because references are not strictly binded to the current model map version on document, 
-             * and in any case, we can assume that current active model map is the best summary for current application.
-             * 
-             * In case that an IdPath is not mapped on current active map, we can simply update with a minimal id reference.
-             * The mapping Id definition is taken from the active map of referenced model, and the sub-document will not have any map Id associated.
-             * Consideraton is that in this edge case probably the property is not more necessary, and even if it is, it can always be recovered by lazy loading.
-             * 
-             * In this way we can also cache serialized sub-documents by IdPath.
-             */
-
-            if (idPaths is null)
-                throw new ArgumentNullException(nameof(idPaths));
+            if (idMemberMapIdentifiers is null)
+                throw new ArgumentNullException(nameof(idMemberMapIdentifiers));
             if (referencedModelId is null)
                 throw new ArgumentNullException(nameof(referencedModelId));
 
             // Get data.
             var dbContext = (TDbContext)serviceProvider.GetService(typeof(TDbContext));
-            var originRepository = dbContext.RepositoryRegistry.GetRepositoryByBaseModelType<TOriginModel, TOriginKey>();
-            var referencedRepository = dbContext.RepositoryRegistry.GetRepositoryByBaseModelType<TReferenceModel, TReferenceKey>();
-
-            var originModelActiveMap = dbContext.SchemaRegistry.GetModelMapsSchema(typeof(TOriginModel)).ActiveModelMap;
-            var referenceModelActiveMap = dbContext.SchemaRegistry.GetModelMapsSchema(typeof(TReferenceModel)).ActiveModelMap;
-
+            var referencedRepository = dbContext.RepositoryRegistry.Repositories.OfType<TReferenceRepository>().First();
             var referencedModel = referencedRepository.FindOneAsync(referencedModelId);
 
-            logger.UpdateDocDependenciesTaskStarted(dbContext.Options.DbName, originRepository.Name, referencedRepository.Name, referencedModelId.ToString(), idPaths);
+            //recover reference id member maps from all schemas, from all model maps
+            var idMemberMaps = idMemberMapIdentifiers.Select(
+                idMemberMapIdentifier => dbContext.SchemaRegistry.MemberMapsDictionary[idMemberMapIdentifier]);
+
+            var referenceModelActiveMap = dbContext.SchemaRegistry.GetModelMapsSchema(typeof(TReferenceModel)).ActiveModelMap;
+
+            logger.UpdateDocDependenciesTaskStarted(dbContext.Options.DbName, referencedRepository.Name, referencedModelId.ToString(), idMemberMapIdentifiers);
 
             // Prepare serialized sub-documents.
-            var serializedDocumentsCache = new Dictionary<string, BsonDocument>(); // idPath -> serialized sub-documents
-
-            foreach (var idPath in idPaths)
+            /*
+             * At this point idMemberMaps contains all Id Member Maps, also several versions from different ModelMaps, but ponting to the same Id path.
+             * We need to take unique id paths, and select correct serializers.
+             * For a specific Id path, if it exists from member maps of current active model map, take its serializer.
+             * Otherwise, if it doesn't exist, serialize the minimal document with only Id.
+             */
+            var serializedDocumentsCache = new Dictionary<string, BsonDocument>(); // id path -> serialized sub-documents
+            foreach (var idMemberMap in idMemberMaps)
             {
-                var referenceSerializer = TryFindReferenceSerializer(originModelActiveMap.BsonClassMap, idPath.Split('.'));
+
+                // Select serializers.
+
+                var referenceSerializer = idMemberMap.OwnerModelMap.Serializer;
 
                 var serializedReferenceDocument = new BsonDocument();
                 using var bsonWriter = new BsonDocumentWriter(serializedReferenceDocument);
@@ -107,7 +113,7 @@ namespace Etherna.MongODM.Core.Tasks
                     bsonWriter.WriteEndDocument();
                 }
 
-                serializedDocumentsCache[idPath] = serializedReferenceDocument;
+                serializedDocumentsCache[idMemberMap] = serializedReferenceDocument;
             }
 
             // Update models.
@@ -139,39 +145,6 @@ namespace Etherna.MongODM.Core.Tasks
                 }
 
             logger.UpdateDocDependenciesTaskEnded(dbContext.Options.DbName, typeof(TModel).Name, modelId.ToString());
-        }
-
-        // Helpers.
-        /// <summary>
-        /// Try to find recursively the proper ReferenceSerializer exploring bsonClassMap with the given path.
-        /// </summary>
-        /// <param name="bsonClassMap">The class map to explore</param>
-        /// <param name="idPathSplitted">The path to search</param>
-        /// <returns>The reference serializer, if exists</returns>
-        private static IBsonSerializer? TryFindReferenceSerializer(BsonClassMap bsonClassMap, IEnumerable<string> idPathSplitted)
-        {
-            // If path is empty or only Id, we don't have a valid condition.
-            if (idPathSplitted.Count() <= 1)
-                throw new ArgumentException("Invalid id path", nameof(idPathSplitted));
-
-            // Get serializer.
-            var memberMap = bsonClassMap.AllMemberMaps.FirstOrDefault(member => member.ElementName == idPathSplitted.First());
-            if (memberMap is null) //if sub-document is not mapped
-                return null;
-
-            var memberSerializer = memberMap.GetSerializer();
-
-            //if path is "<sub-document>._id", return the serializer
-            if (idPathSplitted.Count() == 2)
-                return memberSerializer;
-
-            //else, if id path is longer and it is not a model map container, we can't proceed document exploration
-            else if (memberSerializer is not IModelMapsContainerSerializer modelMapsContainerMemberSerializer)
-                return null;
-
-            //else, proceed with recursion
-            else
-                return TryFindReferenceSerializer(modelMapsContainerMemberSerializer.ActiveChildBsonClassMap, idPathSplitted.Skip(1));
         }
     }
 }

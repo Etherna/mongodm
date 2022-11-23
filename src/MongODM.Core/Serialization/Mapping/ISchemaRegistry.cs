@@ -28,6 +28,8 @@ namespace Etherna.MongODM.Core.Serialization.Mapping
     public interface ISchemaRegistry : IDbContextInitializable, IFreezableConfig
     {
         // Properties.
+        Dictionary<string, IMemberMap> MemberMapsDictionary { get; }
+
         /// <summary>
         /// All registered schemas, indexed by model type
         /// </summary>

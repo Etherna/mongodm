@@ -23,11 +23,10 @@ namespace Etherna.MongODM.Core.Utility
     {
         // Methods.
         /// <summary>
-        /// Method to invoke when an auditable model is changed.
+        /// Method to invoke when an auditable model is updated.
         /// </summary>
-        /// <typeparam name="TKey">The model type</typeparam>
-        /// <param name="updatedModel">The changed model</param>
-        /// <param name="modelId">The model id</param>
-        void OnUpdatedModel<TKey>(IAuditable updatedModel, TKey modelId);
+        /// <typeparam name="TKey">Updated model Key type</typeparam>
+        /// <param name="updatedModel">The updated model</param>
+        void OnUpdatedModel<TKey>(IAuditable updatedModel);
     }
 }

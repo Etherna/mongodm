@@ -29,7 +29,8 @@ namespace Etherna.MongODM.Core.Serialization.Mapping
     public class SchemaRegistry : FreezableConfig, ISchemaRegistry
     {
         // Fields.
-        private readonly Dictionary<Type, ISchema> _schemas = new();
+        private readonly Dictionary<string, IMemberMap> _memberMapsDictionary = new();
+        private readonly Dictionary<Type, ISchema> _schemas = new(); //model type -> model schema
 
         private readonly Dictionary<Type, BsonElement> activeModelMapIdBsonElement = new();
         private readonly ConcurrentDictionary<Type, BsonClassMap> defaultClassMapsCache = new();
@@ -53,6 +54,7 @@ namespace Etherna.MongODM.Core.Serialization.Mapping
 
         // Properties.
         public bool IsInitialized { get; private set; }
+        public Dictionary<string, IMemberMap> MemberMapsDictionary => _memberMapsDictionary;
         public IReadOnlyDictionary<Type, ISchema> Schemas => _schemas;
 
         // Methods.
@@ -217,15 +219,17 @@ namespace Etherna.MongODM.Core.Serialization.Mapping
                  * 
                  * This operation needs to be executed AFTER that all serializers have been registered.
                  */
-                foreach (var memberMap in schema.RootModelMapsDictionary.Values.SelectMany(modelMap => modelMap.AllChildMemberMaps))
+                foreach (var memberMap in schema.RootModelMapsDictionary.Values.SelectMany(modelMap => modelMap.AllChildMemberMapsDictionary.Values))
                 {
-                    var memberInfo = memberMap.BsonMemberMap.MemberInfo;
+                    //map member map with its Id
+                    _memberMapsDictionary.Add(memberMap.Id, memberMap);
 
-                    //memberInfo to related member dependencies, for each different model maps version
+                    //map memberInfo to related member dependencies
                     /*
                      * MemberInfo comparison has to be performed with extension method "IsSameAs". If an equal member info
                      * is found with this equality comparer, it has to be taken as key also for current memberinfo
                      */
+                    var memberInfo = memberMap.BsonMemberMap.MemberInfo;
                     var memberMapList = memberInfoToMemberMapsDictionary.FirstOrDefault(
                         pair => pair.Key.IsSameAs(memberInfo)).Value;
 

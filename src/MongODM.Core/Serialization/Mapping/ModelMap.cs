@@ -48,10 +48,11 @@ namespace Etherna.MongODM.Core.Serialization.Mapping
 
         // Properties.
         public string Id { get; }
-        public IEnumerable<IMemberMap> AllChildMemberMaps => BsonClassMap.AllMemberMaps
+        public IReadOnlyDictionary<string, IMemberMap> AllChildMemberMapsDictionary => BsonClassMap.AllMemberMaps
             .Select(bsonMemberMap => bsonMemberMap.GetSerializer())
             .OfType<IModelMapsContainerSerializer>()
-            .SelectMany(serializer => serializer.AllChildModelMaps.SelectMany(mm => mm.AllChildMemberMaps));
+            .SelectMany(serializer => serializer.AllChildModelMaps.SelectMany(mm => mm.AllChildMemberMapsDictionary))
+            .ToDictionary(pair => pair.Key, pair => pair.Value);
         public string? BaseModelMapId { get; private set; }
         public BsonClassMap BsonClassMap { get; }
         public IBsonSerializer BsonClassMapSerializer
@@ -69,14 +70,7 @@ namespace Etherna.MongODM.Core.Serialization.Mapping
         }
         public IMemberMap? IdMemberMap => MemberMapsDictionary.Values.FirstOrDefault(mm => mm.IsIdMember);
         public bool IsEntity => BsonClassMap.IsEntity();
-        public IReadOnlyDictionary<string, IMemberMap> MemberMapsDictionary
-        {
-            get
-            {
-                Freeze(); //needed for initialization
-                return _memberMapsDictionary;
-            }
-        }
+        public IReadOnlyDictionary<string, IMemberMap> MemberMapsDictionary => _memberMapsDictionary;
         public Type ModelType => BsonClassMap.ClassType;
         public IBsonSerializer? Serializer { get; }
 

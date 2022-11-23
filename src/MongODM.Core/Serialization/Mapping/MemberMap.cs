@@ -36,7 +36,7 @@ namespace Etherna.MongODM.Core.Serialization.Mapping
 
         public MemberPath DefinitionPath { get; }
 
-        public string Id => DefinitionPath.TypedPathAsString;
+        public string Id => $"{RootModelMap.Id}|{DefinitionPath.TypedPathAsString}";
 
         /// <summary>
         /// True if member is contained into a referenced entity model
