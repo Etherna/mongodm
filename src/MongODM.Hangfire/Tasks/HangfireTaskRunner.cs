@@ -42,15 +42,15 @@ namespace Etherna.MongODM.HF.Tasks
 
         public void RunUpdateDocDependenciesTask(
             Type dbContextType,
-            Type referenceRepositoryType,
-            IEnumerable<string> idMemberMapIdentifiers,
-            object modelId) =>
+            string referenceRepositoryName,
+            object modelId,
+            IEnumerable<string> idMemberMapIdentifiers) =>
             backgroundJobClient.Create<UpdateDocDependenciesTaskFacade>(
                 task => task.RunAsync(
                     dbContextType,
-                    referenceRepositoryType,
-                    idMemberMapIdentifiers,
-                    modelId),
+                    referenceRepositoryName,
+                    modelId,
+                    idMemberMapIdentifiers),
                 new EnqueuedState(mongODMOptions.DbMaintenanceQueueName));
 
         // Explicit methods.

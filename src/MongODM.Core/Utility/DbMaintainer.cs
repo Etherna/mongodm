@@ -107,9 +107,9 @@ namespace Etherna.MongODM.Core.Utility
             // Enqueue call of background job.
             taskRunner.RunUpdateDocDependenciesTask(
                 dbContext.GetType(),
-                referenceRepository.GetType(),
-                idMemberMaps.Select(mm => mm.Id),
-                ((IEntityModel<TKey>)updatedModel).Id!);
+                referenceRepository.Name,
+                ((IEntityModel<TKey>)updatedModel).Id!,
+                idMemberMaps.Select(mm => mm.Id));
         }
     }
 }

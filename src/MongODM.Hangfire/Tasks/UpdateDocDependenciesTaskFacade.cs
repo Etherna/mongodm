@@ -34,17 +34,21 @@ namespace Etherna.MongODM.HF.Tasks
         // Methods.
         public Task RunAsync(
             Type dbContextType,
-            Type referenceRepositoryType,
-            IEnumerable<string> idMemberMapIdentifiers,
-            object modelId)
+            string referenceRepositoryName,
+            object modelId,
+            IEnumerable<string> idMemberMapIdentifiers)
         {
             var method = typeof(UpdateDocDependenciesTask).GetMethod(
                 nameof(UpdateDocDependenciesTask.RunAsync), BindingFlags.Public | BindingFlags.Instance)
                 .MakeGenericMethod(
-                    dbContextType,
-                    referenceRepositoryType);
+                    dbContextType);
 
-            return (Task)method.Invoke(task, new object[] { idMemberMapIdentifiers, modelId });
+            return (Task)method.Invoke(task, new object[]
+            {
+                referenceRepositoryName,
+                modelId,
+                idMemberMapIdentifiers
+            });
         }
     }
 }

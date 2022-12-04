@@ -12,18 +12,15 @@
 //   See the License for the specific language governing permissions and
 //   limitations under the License.
 
-using System;
-using System.Collections.Generic;
+using Etherna.MongoDB.Bson.Serialization;
 
-namespace Etherna.MongODM.Core.Tasks
+namespace Etherna.MongODM.Core.Serialization.Serializers
 {
-    public interface ITaskRunner
+    public interface IReferenceSerializer :
+        IBsonDocumentSerializer,
+        IBsonIdProvider,
+        IModelMapsContainerSerializer
     {
-        void RunMigrateDbTask(Type dbContextType, string dbMigrationOpId);
-        void RunUpdateDocDependenciesTask(
-            Type dbContextType,
-            string referenceRepositoryName,
-            object modelId,
-            IEnumerable<string> idMemberMapIdentifiers);
+        ReferenceSerializerConfiguration Configuration { get; }
     }
 }
