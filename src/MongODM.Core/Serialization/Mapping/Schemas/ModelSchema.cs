@@ -14,50 +14,43 @@
 
 using Etherna.MongoDB.Bson.Serialization;
 using System;
-using System.Diagnostics.CodeAnalysis;
 
 namespace Etherna.MongODM.Core.Serialization.Mapping.Schemas
 {
-    class ReferenceModelMapsSchema<TModel> : ModelMapsSchemaBase, IReferenceModelMapsSchemaBuilder<TModel>
+    class ModelSchema<TModel> : ModelSchemaBase, IModelSchemaBuilder<TModel>
+        where TModel : class
     {
         // Constructor.
-        public ReferenceModelMapsSchema(
+        public ModelSchema(
             ModelMap<TModel> activeMap,
             IDbContext dbContext)
             : base(activeMap, dbContext, typeof(TModel))
         { }
 
         // Methods.
-        public IReferenceModelMapsSchemaBuilder<TModel> AddFallbackCustomSerializer(IBsonSerializer<TModel> fallbackSerializer)
+        public IModelSchemaBuilder<TModel> AddFallbackCustomSerializer(IBsonSerializer<TModel> fallbackSerializer)
         {
             AddFallbackCustomSerializerHelper(fallbackSerializer);
             return this;
         }
 
-        public IReferenceModelMapsSchemaBuilder<TModel> AddFallbackModelMap(
+        public IModelSchemaBuilder<TModel> AddFallbackModelMap(
             Action<BsonClassMap<TModel>>? modelMapInitializer = null,
-            string? baseModelMapId = null) =>
+            string? baseModelMapId = null,
+            IBsonSerializer<TModel>? customSerializer = null) =>
             AddFallbackModelMap(new ModelMap<TModel>(
                 "fallback",
                 new BsonClassMap<TModel>(modelMapInitializer ?? (cm => cm.AutoMap())),
-                baseModelMapId));
+                baseModelMapId,
+                customSerializer: customSerializer));
 
-        public IReferenceModelMapsSchemaBuilder<TModel> AddFallbackModelMap(ModelMap<TModel> modelMap)
+        public IModelSchemaBuilder<TModel> AddFallbackModelMap(IModelMap<TModel> modelMap)
         {
             AddFallbackModelMapHelper(modelMap);
             return this;
         }
 
-        public IReferenceModelMapsSchemaBuilder<TModel> AddSecondaryMap(
-            string id,
-            Action<BsonClassMap<TModel>>? modelMapInitializer = null,
-            string? baseModelMapId = null) =>
-            AddSecondaryMap(new ModelMap<TModel>(
-                id,
-                new BsonClassMap<TModel>(modelMapInitializer ?? (cm => cm.AutoMap())),
-                baseModelMapId));
-
-        public IReferenceModelMapsSchemaBuilder<TModel> AddSecondaryMap(ModelMap<TModel> modelMap)
+        public IModelSchemaBuilder<TModel> AddSecondaryMap(IModelMap<TModel> modelMap)
         {
             AddSecondaryMapHelper(modelMap);
             return this;

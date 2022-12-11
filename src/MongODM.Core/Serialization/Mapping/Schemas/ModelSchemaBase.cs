@@ -19,14 +19,14 @@ using System.Linq;
 
 namespace Etherna.MongODM.Core.Serialization.Mapping.Schemas
 {
-    abstract class ModelMapsSchemaBase : SchemaBase, IModelMapsSchema
+    abstract class ModelSchemaBase : SchemaBase, IModelSchema
     {
         // Fields.
         private Dictionary<string, IModelMap> _rootModelMapsDictionary = default!; // Id -> ModelMap
         protected readonly List<IModelMap> _secondaryModelMaps = new();
 
         // Constructor.
-        protected ModelMapsSchemaBase(
+        protected ModelSchemaBase(
             IModelMap activeMap,
             IDbContext dbContext,
             Type modelType)

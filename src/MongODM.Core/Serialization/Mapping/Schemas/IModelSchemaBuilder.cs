@@ -17,7 +17,7 @@ using System;
 
 namespace Etherna.MongODM.Core.Serialization.Mapping.Schemas
 {
-    public interface IModelMapsSchemaBuilder<TModel>
+    public interface IModelSchemaBuilder<TModel>
     {
         // Methods.
         /// <summary>
@@ -25,7 +25,7 @@ namespace Etherna.MongODM.Core.Serialization.Mapping.Schemas
         /// </summary>
         /// <param name="fallbackSerializer">Fallback serializer</param>
         /// <returns>This same model schema</returns>
-        IModelMapsSchemaBuilder<TModel> AddFallbackCustomSerializer(
+        IModelSchemaBuilder<TModel> AddFallbackCustomSerializer(
             IBsonSerializer<TModel> fallbackSerializer);
 
         /// <summary>
@@ -35,7 +35,7 @@ namespace Etherna.MongODM.Core.Serialization.Mapping.Schemas
         /// <param name="baseModelMapId">Id of the base model map for this model map</param>
         /// <param name="customSerializer">Custom serializer</param>
         /// <returns>This same model schema configuration</returns>
-        IModelMapsSchemaBuilder<TModel> AddFallbackModelMap(
+        IModelSchemaBuilder<TModel> AddFallbackModelMap(
             Action<BsonClassMap<TModel>>? modelMapInitializer = null,
             string? baseModelMapId = null,
             IBsonSerializer<TModel>? customSerializer = null);
@@ -45,7 +45,7 @@ namespace Etherna.MongODM.Core.Serialization.Mapping.Schemas
         /// </summary>
         /// <param name="modelMap">The model map</param>
         /// <returns>This same model schema configuration</returns>
-        IModelMapsSchemaBuilder<TModel> AddFallbackModelMap(
+        IModelSchemaBuilder<TModel> AddFallbackModelMap(
             IModelMap<TModel> modelMap);
 
         /// <summary>
@@ -53,7 +53,7 @@ namespace Etherna.MongODM.Core.Serialization.Mapping.Schemas
         /// </summary>
         /// <param name="modelMap">The model map</param>
         /// <returns>This same model schema configuration</returns>
-        IModelMapsSchemaBuilder<TModel> AddSecondaryMap(
+        IModelSchemaBuilder<TModel> AddSecondaryMap(
             IModelMap<TModel> modelMap);
     }
 }

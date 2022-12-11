@@ -17,7 +17,7 @@ using System;
 
 namespace Etherna.MongODM.Core.Serialization.Mapping.Schemas
 {
-    public interface IReferenceModelMapsSchemaBuilder<TModel>
+    public interface IReferenceModelSchemaBuilder<TModel>
     {
         // Methods.
         /// <summary>
@@ -25,7 +25,7 @@ namespace Etherna.MongODM.Core.Serialization.Mapping.Schemas
         /// </summary>
         /// <param name="fallbackSerializer">Fallback serializer</param>
         /// <returns>This same model schema</returns>
-        IReferenceModelMapsSchemaBuilder<TModel> AddFallbackCustomSerializer(
+        IReferenceModelSchemaBuilder<TModel> AddFallbackCustomSerializer(
             IBsonSerializer<TModel> fallbackSerializer);
 
         /// <summary>
@@ -34,7 +34,7 @@ namespace Etherna.MongODM.Core.Serialization.Mapping.Schemas
         /// <param name="modelMapInitializer">The model map inizializer</param>
         /// <param name="baseModelMapId">Id of the base model map for this model map</param>
         /// <returns>This same model schema configuration</returns>
-        IReferenceModelMapsSchemaBuilder<TModel> AddFallbackModelMap(
+        IReferenceModelSchemaBuilder<TModel> AddFallbackModelMap(
             Action<BsonClassMap<TModel>>? modelMapInitializer = null,
             string? baseModelMapId = null);
 
@@ -43,7 +43,7 @@ namespace Etherna.MongODM.Core.Serialization.Mapping.Schemas
         /// </summary>
         /// <param name="modelMap">The model map</param>
         /// <returns>This same model schema configuration</returns>
-        IReferenceModelMapsSchemaBuilder<TModel> AddFallbackModelMap(
+        IReferenceModelSchemaBuilder<TModel> AddFallbackModelMap(
             ModelMap<TModel> modelMap);
 
         /// <summary>
@@ -53,7 +53,7 @@ namespace Etherna.MongODM.Core.Serialization.Mapping.Schemas
         /// <param name="modelMapInitializer">The model map inizializer</param>
         /// <param name="baseModelMapId">Id of the base model map for this model map</param>
         /// <returns>This same model schema configuration</returns>
-        IReferenceModelMapsSchemaBuilder<TModel> AddSecondaryMap(
+        IReferenceModelSchemaBuilder<TModel> AddSecondaryMap(
             string id,
             Action<BsonClassMap<TModel>>? modelMapInitializer = null,
             string? baseModelMapId = null);
@@ -63,7 +63,7 @@ namespace Etherna.MongODM.Core.Serialization.Mapping.Schemas
         /// </summary>
         /// <param name="modelMap">The model map</param>
         /// <returns>This same model schema configuration</returns>
-        IReferenceModelMapsSchemaBuilder<TModel> AddSecondaryMap(
+        IReferenceModelSchemaBuilder<TModel> AddSecondaryMap(
             ModelMap<TModel> modelMap);
     }
 }

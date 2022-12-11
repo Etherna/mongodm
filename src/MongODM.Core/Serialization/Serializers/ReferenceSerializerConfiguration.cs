@@ -27,7 +27,7 @@ namespace Etherna.MongODM.Core.Serialization.Serializers
     public class ReferenceSerializerConfiguration : FreezableConfig
     {
         // Fields.
-        private readonly Dictionary<Type, IModelMapsSchema> _schemas = new();
+        private readonly Dictionary<Type, IModelSchema> _schemas = new();
 
         private readonly Dictionary<Type, BsonElement> activeModelMapIdBsonElement = new();
         private readonly IDbContext dbContext;
@@ -39,20 +39,20 @@ namespace Etherna.MongODM.Core.Serialization.Serializers
         }
 
         // Properties.
-        public IReadOnlyDictionary<Type, IModelMapsSchema> Schemas => _schemas;
+        public IReadOnlyDictionary<Type, IModelSchema> Schemas => _schemas;
 
         // Methods.
-        public IReferenceModelMapsSchemaBuilder<TModel> AddModelMapsSchema<TModel>(
+        public IReferenceModelSchemaBuilder<TModel> AddModelSchema<TModel>(
             string activeModelMapId,
             Action<BsonClassMap<TModel>>? activeModelMapInitializer = null,
             string? baseModelMapId = null)
             where TModel : class =>
-            AddModelMapsSchema(new ModelMap<TModel>(
+            AddModelSchema(new ModelMap<TModel>(
                 activeModelMapId,
                 new BsonClassMap<TModel>(activeModelMapInitializer ?? (cm => cm.AutoMap())),
                 baseModelMapId));
 
-        public IReferenceModelMapsSchemaBuilder<TModel> AddModelMapsSchema<TModel>(
+        public IReferenceModelSchemaBuilder<TModel> AddModelSchema<TModel>(
             ModelMap<TModel> activeModelMap)
             where TModel : class =>
             ExecuteConfigAction(() =>
@@ -61,10 +61,10 @@ namespace Etherna.MongODM.Core.Serialization.Serializers
                     throw new ArgumentNullException(nameof(activeModelMap));
 
                 // Register and return schema configuration.
-                var modelSchemaConfiguration = new ReferenceModelMapsSchema<TModel>(activeModelMap, dbContext);
+                var modelSchemaConfiguration = new ReferenceModelSchema<TModel>(activeModelMap, dbContext);
                 _schemas.Add(typeof(TModel), modelSchemaConfiguration);
 
-                // If model maps schema uses proxy model, register a new one for proxy type.
+                // If model schema uses proxy model, register a new one for proxy type.
                 if (modelSchemaConfiguration.ProxyModelType != null)
                 {
                     var proxyModelSchema = CreateNewDefaultReferenceSchema(modelSchemaConfiguration.ProxyModelType);
@@ -135,7 +135,7 @@ namespace Etherna.MongODM.Core.Serialization.Serializers
         }
 
         // Helpers
-        private IModelMapsSchema CreateNewDefaultReferenceSchema(Type modelType)
+        private IModelSchema CreateNewDefaultReferenceSchema(Type modelType)
         {
             //class map
             var classMapDefinition = typeof(BsonClassMap<>);
@@ -155,12 +155,12 @@ namespace Etherna.MongODM.Core.Serialization.Serializers
                 null,                      //Func<TModel, Task<TModel>>? fixDeserializedModelFunc
                 null);                     //IBsonSerializer<TModel>? serializer
 
-            //model maps schema
-            var modelMapsSchemaDefinition = typeof(ReferenceModelMapsSchema<>);
-            var modelMapsSchemaType = modelMapsSchemaDefinition.MakeGenericType(modelType);
+            //model schema
+            var modelSchemaDefinition = typeof(ReferenceModelSchema<>);
+            var modelSchemaType = modelSchemaDefinition.MakeGenericType(modelType);
 
-            return (IModelMapsSchema)Activator.CreateInstance(
-                modelMapsSchemaType,
+            return (IModelSchema)Activator.CreateInstance(
+                modelSchemaType,
                 activeModelMap,      //ReferenceModelMap<TModel> activeMap
                 dbContext);          //IDbContext dbContext
         }
@@ -172,7 +172,7 @@ namespace Etherna.MongODM.Core.Serialization.Serializers
              * iterator, and if an enumerable is modified during foreach execution, an
              * exception is rised.
              */
-            var processingSchemas = new Stack<IModelMapsSchema>(_schemas.Values);
+            var processingSchemas = new Stack<IModelSchema>(_schemas.Values);
 
             while (processingSchemas.Any())
             {
@@ -184,7 +184,7 @@ namespace Etherna.MongODM.Core.Serialization.Serializers
                     continue;
 
                 // Get base type schema, or generate it.
-                if (!_schemas.TryGetValue(baseModelType, out IModelMapsSchema baseSchema))
+                if (!_schemas.TryGetValue(baseModelType, out IModelSchema baseSchema))
                 {
                     // Create schema instance.
                     baseSchema = CreateNewDefaultReferenceSchema(baseModelType);

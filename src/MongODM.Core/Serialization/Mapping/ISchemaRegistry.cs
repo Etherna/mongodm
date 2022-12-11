@@ -54,7 +54,7 @@ namespace Etherna.MongODM.Core.Serialization.Mapping
         /// <param name="activeModelMapInitializer">The active model map inizializer</param>
         /// <param name="customSerializer">Replace default serializer with a custom</param>
         /// <returns>The new schema</returns>
-        IModelMapsSchemaBuilder<TModel> AddModelMapsSchema<TModel>(
+        IModelSchemaBuilder<TModel> AddModelSchema<TModel>(
             string activeModelMapId,
             Action<BsonClassMap<TModel>>? activeModelMapInitializer = null,
             IBsonSerializer<TModel>? customSerializer = null)
@@ -66,7 +66,7 @@ namespace Etherna.MongODM.Core.Serialization.Mapping
         /// <typeparam name="TModel">The model type</typeparam>
         /// <param name="activeModelMap">The active model map</param>
         /// <returns>The new schema</returns>
-        IModelMapsSchemaBuilder<TModel> AddModelMapsSchema<TModel>(
+        IModelSchemaBuilder<TModel> AddModelSchema<TModel>(
             ModelMap<TModel> activeModelMap)
             where TModel : class;
 
@@ -91,18 +91,18 @@ namespace Etherna.MongODM.Core.Serialization.Mapping
         IEnumerable<IMemberMap> GetMemberMapsFromMemberInfo(MemberInfo memberInfo);
 
         /// <summary>
-        /// Get a registered model map schema for a given model type
+        /// Get a registered model schema for a given model type
         /// </summary>
         /// <param name="modelType">The model type</param>
-        /// <returns>The registered model maps schema</returns>
-        IModelMapsSchema GetModelMapsSchema(Type modelType);
+        /// <returns>The registered model schema</returns>
+        IModelSchema GetModelSchema(Type modelType);
 
         /// <summary>
-        /// Try to get a registered model map schema for a given model type
+        /// Try to get a registered model schema for a given model type
         /// </summary>
         /// <param name="modelType">The model type</param>
-        /// <param name="modelMapsSchema">Output model maps schema, if exists</param>
+        /// <param name="modelSchema">Output model schema, if exists</param>
         /// <returns>Operation result</returns>
-        bool TryGetModelMapsSchema(Type modelType, out IModelMapsSchema? modelMapsSchema);
+        bool TryGetModelSchema(Type modelType, out IModelSchema? modelSchema);
     }
 }

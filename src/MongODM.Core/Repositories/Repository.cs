@@ -23,9 +23,7 @@ using Etherna.MongODM.Core.Serialization.Mapping;
 using Etherna.MongODM.Core.Serialization.Mapping.Schemas;
 using Etherna.MongODM.Core.Utility;
 using Microsoft.Extensions.Logging;
-using MoreLinq;
 using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
@@ -127,8 +125,8 @@ namespace Etherna.MongODM.Core.Repositories
                 }));
 
                 //referenced documents
-                var idMemberMaps = DbContext.SchemaRegistry.TryGetModelMapsSchema(typeof(TModel), out IModelMapsSchema? modelMapsSchema) ?
-                    modelMapsSchema!.ActiveModelMap.AllChildMemberMapsDictionary.Values.Where(mm => mm.IsEntityReferenceMember && mm.IsIdMember) :
+                var idMemberMaps = DbContext.SchemaRegistry.TryGetModelSchema(typeof(TModel), out IModelSchema? modelSchema) ?
+                    modelSchema!.ActiveModelMap.AllChildMemberMapsDictionary.Values.Where(mm => mm.IsEntityReferenceMember && mm.IsIdMember) :
                     Array.Empty<IMemberMap>();
 
                 var idPaths = idMemberMaps

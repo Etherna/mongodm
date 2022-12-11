@@ -51,10 +51,10 @@ namespace Etherna.MongODM.Core.Serialization.Serializers
 
         // Properties.
         public IEnumerable<IModelMap> AllChildModelMaps =>
-            dbContext.SchemaRegistry.GetModelMapsSchema(typeof(TModel)).RootModelMapsDictionary.Values;
+            dbContext.SchemaRegistry.GetModelSchema(typeof(TModel)).RootModelMapsDictionary.Values;
 
         public BsonClassMapSerializer<TModel> DefaultBsonClassMapSerializer =>
-            (BsonClassMapSerializer<TModel>)dbContext.SchemaRegistry.GetModelMapsSchema(typeof(TModel)).ActiveModelMap.BsonClassMap.ToSerializer();
+            (BsonClassMapSerializer<TModel>)dbContext.SchemaRegistry.GetModelSchema(typeof(TModel)).ActiveModelMap.BsonClassMap.ToSerializer();
 
         public IDiscriminatorConvention DiscriminatorConvention
         {
@@ -81,7 +81,7 @@ namespace Etherna.MongODM.Core.Serialization.Serializers
             // Find pre-deserialization informations.
             //get actual type and schema
             var actualType = DiscriminatorConvention.GetActualType(context.Reader, args.NominalType);
-            var actualTypeSchema = dbContext.SchemaRegistry.GetModelMapsSchema(actualType);
+            var actualTypeSchema = dbContext.SchemaRegistry.GetModelSchema(actualType);
 
             //deserialize on document
             var bsonDocument = BsonDocumentSerializer.Instance.Deserialize(context, args);
@@ -196,10 +196,10 @@ namespace Etherna.MongODM.Core.Serialization.Serializers
 
             // Get default schema.
             var actualType = value.GetType();
-            var modelMapsSchema = dbContext.SchemaRegistry.GetModelMapsSchema(actualType);
+            var modelSchema = dbContext.SchemaRegistry.GetModelSchema(actualType);
 
             // Serialize.
-            modelMapsSchema.ActiveModelMap.BsonClassMap.ToSerializer().Serialize(localContext, args, value);
+            modelSchema.ActiveModelMap.BsonClassMap.ToSerializer().Serialize(localContext, args, value);
 
             // Add additional data.
             //add model map id

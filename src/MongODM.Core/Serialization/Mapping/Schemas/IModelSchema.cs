@@ -17,7 +17,7 @@ using System.Collections.Generic;
 
 namespace Etherna.MongODM.Core.Serialization.Mapping.Schemas
 {
-    public interface IModelMapsSchema : ISchema
+    public interface IModelSchema : ISchema
     {
         // Properties.
         IModelMap ActiveModelMap { get; }
