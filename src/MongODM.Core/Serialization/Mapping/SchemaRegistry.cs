@@ -81,7 +81,7 @@ namespace Etherna.MongODM.Core.Serialization.Mapping
             var modelMap = new ModelMap<TModel>(
                 activeModelMapId,
                 new BsonClassMap<TModel>(activeModelMapInitializer ?? (cm => cm.AutoMap())),
-                serializer: customSerializer ?? ModelMap.GetDefaultSerializer<TModel>(dbContext));
+                customSerializer: customSerializer ?? ModelMap.GetDefaultSerializer<TModel>(dbContext));
 
             return AddModelMapsSchema(modelMap);
         }

@@ -132,7 +132,7 @@ namespace Etherna.MongODM.Core.Repositories
                     Array.Empty<IMemberMap>();
 
                 var idPaths = idMemberMaps
-                    .Select(member => member.DefinitionPath.ElementPathAsString)
+                    .Select(member => string.Join(".", member.DefinitionPath.ModelMapsPath.Select(pair => pair.Member.ElementName)))
                     .Distinct();
 
                 newIndexes.AddRange(idPaths.Select(path =>

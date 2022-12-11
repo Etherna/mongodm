@@ -43,7 +43,7 @@ namespace Etherna.MongODM.Core.Serialization.Mapping.Schemas
                 "fallback",
                 new BsonClassMap<TModel>(modelMapInitializer ?? (cm => cm.AutoMap())),
                 baseModelMapId,
-                serializer: customSerializer));
+                customSerializer: customSerializer));
 
         public IModelMapsSchemaBuilder<TModel> AddFallbackModelMap(IModelMap<TModel> modelMap)
         {

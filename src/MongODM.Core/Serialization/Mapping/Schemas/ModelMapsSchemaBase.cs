@@ -47,7 +47,6 @@ namespace Etherna.MongODM.Core.Serialization.Mapping.Schemas
         }
 
         // Properties.
-        public IBsonSerializer ActiveBsonClassMapSerializer => ActiveModelMap.BsonClassMapSerializer;
         public IModelMap ActiveModelMap { get; }
         public override IBsonSerializer? ActiveSerializer => ActiveModelMap.Serializer;
         public IDbContext DbContext { get; }
@@ -60,7 +59,7 @@ namespace Etherna.MongODM.Core.Serialization.Mapping.Schemas
             {
                 if (_rootModelMapsDictionary is null)
                 {
-                    var modelMaps = SecondaryModelMaps.Append(ActiveModelMap);
+                    var modelMaps = new[] { ActiveModelMap }.Concat(_secondaryModelMaps);
 
                     if (FallbackModelMap is not null)
                         modelMaps = modelMaps.Append(FallbackModelMap);

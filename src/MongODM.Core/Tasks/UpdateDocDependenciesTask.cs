@@ -16,13 +16,16 @@ using Etherna.MongoDB.Bson;
 using Etherna.MongoDB.Bson.IO;
 using Etherna.MongoDB.Bson.Serialization;
 using Etherna.MongoDB.Driver;
+using Etherna.MongODM.Core.Domain.Models;
 using Etherna.MongODM.Core.Extensions;
+using Etherna.MongODM.Core.Repositories;
+using Etherna.MongODM.Core.Serialization.Mapping;
 using Etherna.MongODM.Core.Serialization.Modifiers;
-using Etherna.MongODM.Core.Serialization.Serializers;
 using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 using System.Threading.Tasks;
 
 namespace Etherna.MongODM.Core.Tasks
@@ -62,103 +65,66 @@ namespace Etherna.MongODM.Core.Tasks
             // Get data.
             var dbContext = (TDbContext)serviceProvider.GetService(typeof(TDbContext));
             var referencedRepository = dbContext.RepositoryRegistry.Repositories.First(r => r.Name == referencedRepositoryName);
-            var referencedModel = referencedRepository.FindOneAsync(referencedModelId);
+            var referencedModel = await referencedRepository.FindOneAsync(referencedModelId);
 
             //recover reference id member maps from all schemas, from all model maps
             var idMemberMaps = idMemberMapIdentifiers.Select(
                 idMemberMapIdentifier => dbContext.SchemaRegistry.MemberMapsDictionary[idMemberMapIdentifier]);
 
-            // Extract mapped serializers for each id member.
+            // Define mapping of serializers and serialized documents.
             /*
              * At this point idMemberMaps contains all Id Member Maps, also from different Schemas/ModelMaps, and also ponting to same Id paths.
-             * We need to select for each id path all available unique versions of serializers.
-             * If serializer is not an IReferenceSerializer, ignore it and eventually update document with only minimal Id document.
+             * Different serializers are in general available for the same Id path.
+             * 
+             * We need to create two dictionary maps:
+             * - repositoryDictionary: repository -> id find strings -> serializer[]
+             * - serializedDocumentDictionary: serializer -> serializated document
+             * 
+             * This permits to denormalize and optimize the mapping from each id path to all their possible serialized documents.
              */
-            var idPathSerializersDictionary = idMemberMaps
-                .GroupBy(idmm => idmm.DefinitionPath.ElementPathAsString)
-                .ToDictionary(group => group.Key, group => group.Select(idmm => (idmm.OwnerModelMap.BsonClassMapSerializer as IReferenceSerializer)!)
-                                                                .Where(serializer => serializer != null)
-                                                                .Distinct());
+            var repositoryDictionary = idMemberMaps
+                .GroupBy(idmm => dbContext.RepositoryRegistry.GetRepositoryByHandledModelType(idmm.RootModelMap.ModelType))
+                .ToDictionary(repoGroup => repoGroup.Key,
+                              repoGroup => repoGroup.GroupBy(idmm => MemberMapToMongoFindString(idmm))
+                                                    .ToDictionary(idFindStringGroup => idFindStringGroup.Key,
+                                                                  idFindStringGroup => idFindStringGroup.Select(idmm => idmm.OwnerModelMap.Serializer)));
+            var serializedDocumentDictionary = repositoryDictionary
+                .SelectMany(repoPair => repoPair.Value)
+                .SelectMany(idFindStringPair => idFindStringPair.Value)
+                .ToDictionary(serializer => serializer,
+                              serializer =>
+                              {
+                                  var serializedDocument = new BsonDocument();
+                                  using var bsonWriter = new BsonDocumentWriter(serializedDocument);
+                                  var context = BsonSerializationContext.CreateRoot(bsonWriter);
+                                  serializer.Serialize(context, referencedModel);
+                                  return serializedDocument;
+                              });
 
-            // Serialize referenced document for each available serializer type.
-            var documentsBySerializerDictionary = idPathSerializersDictionary.Values
-                .SelectMany(list => list)
-                .Distinct()
-                .ToDictionary(
-                    serializer => serializer,
-                    serializer =>
-                    {
-                        var serializedReferenceDocument = new BsonDocument();
-                        using var bsonWriter = new BsonDocumentWriter(serializedReferenceDocument);
-                        var context = BsonSerializationContext.CreateRoot(bsonWriter);
-
-                        serializer.Serialize(context, referencedModel);
-
-                        return serializedReferenceDocument;
-                    });
-
-            // Find all origin repositories.
-            var originRepositories = idMemberMaps
-                .Select(idmm => dbContext.RepositoryRegistry.GetRepositoryByHandledModelType(idmm.RootModelMap.ModelType))
-                .Distinct();
-
-            foreach (var originRepository in originRepositories)
+            // Find Ids of documents that may need to be upgraded.
+            /*
+             * Use all Id paths to find all Ids of existing documents that may need to be upgraded.
+             * Only already existing documents may require an upgrade, so to limit actions on these documents is safe.
+             * 
+             * This permits to execute FindAndUpdate actions to an enumerable set of documents.
+             */
+            var upgradableDocumentsIdByRepository = new Dictionary<IRepository, IEnumerable<object>>();
+            foreach (var repositoryGroup in repositoryDictionary)
             {
-                // Find ids of origin documents that need to be updated.
-                var upgradableDocsCursor = await originRepository.FindAsync(
-                    Builders<TOriginModel>.Filter.Or(
-                        idPaths.Select(idPath => Builders<TOriginModel>.Filter.Eq(idPath, referencedModelId))),
-                    new FindOptions<TOriginModel, TOriginModel>
-                    {
-                        NoCursorTimeout = true,
-                        Projection = Builders<TOriginModel>.Projection.Include(m => m.Id) //we need only Id
-                    }).ConfigureAwait(false);
-            }
+                var repository = repositoryGroup.Key;
+                var idFindStrings = repositoryGroup.Value.Keys;
 
+                var originModelType = repository.ModelType;
+                var originIdType = repository.KeyType;
 
+                var result = typeof(UpdateDocDependenciesTask).GetMethod(nameof(FindUpgradableDocumentsIdAsync), BindingFlags.NonPublic | BindingFlags.Static)
+                    .MakeGenericMethod(originModelType, originIdType)
+                    .Invoke(null, new[] { repository, idFindStrings, referencedModelId });
 
-
-
-
-
-            // Prepare serialized sub-documents.
-            var serializedDocumentsCache = new Dictionary<string, BsonDocument>(); // id path -> serialized sub-documents
-            foreach (var idMemberMap in idMemberMaps)
-            {
-
-                // Select serializers.
-
-                var referenceSerializer = idMemberMap.OwnerModelMap.Serializer;
-
-                var serializedReferenceDocument = new BsonDocument();
-                using var bsonWriter = new BsonDocumentWriter(serializedReferenceDocument);
-                var context = BsonSerializationContext.CreateRoot(bsonWriter);
-                if (referenceSerializer is not null) //if property is defined in ActiveMap, use its serializer
-                {
-                    referenceSerializer.Serialize(context, referencedModel);
-                }
-                else //if is not defined, serialize as minimal reference with only id
-                {
-                    bsonWriter.WriteStartDocument();
-                    bsonWriter.WriteName(referencedModelActiveMap.BsonClassMap.IdMemberMap.ElementName);
-                    referencedModelActiveMap.BsonClassMap.IdMemberMap.GetSerializer().Serialize(context, referencedModelId);
-                    bsonWriter.WriteEndDocument();
-                }
-
-                serializedDocumentsCache[idMemberMap] = serializedReferenceDocument;
+                upgradableDocumentsIdByRepository.Add(repository, await (Task<IEnumerable<object>>)result);
             }
 
             // Update models.
-            //find ids of documents that need to be updated
-            var upgradableDocsCursor = await originRepository.FindAsync(
-                Builders<TOriginModel>.Filter.Or(
-                    idPaths.Select(idPath => Builders<TOriginModel>.Filter.Eq(idPath, referencedModelId))),
-                new FindOptions<TOriginModel, TOriginModel>
-                {
-                    NoCursorTimeout = true,
-                    Projection = Builders<TOriginModel>.Projection.Include(m => m.Id) //we need only Id
-                }).ConfigureAwait(false);
-
             //update one document at time
             while (await upgradableDocsCursor.MoveNextAsync().ConfigureAwait(false))
                 foreach (var upgradableDocId in upgradableDocsCursor.Current.Select(m => m.Id))
@@ -178,5 +144,31 @@ namespace Etherna.MongODM.Core.Tasks
 
             logger.UpdateDocDependenciesTaskEnded(dbContext.Options.DbName, typeof(TModel).Name, modelId.ToString());
         }
+
+        // Helpers.
+        private static async Task<IEnumerable<object>> FindUpgradableDocumentsIdAsync<TOriginModel, TOriginKey>(
+            IRepository<TOriginModel, TOriginKey> repository,
+            IEnumerable<string> idFindStrings,
+            object referencedModelId)
+            where TOriginModel : class, IEntityModel<TOriginKey>
+        {
+            var cursor = await repository.FindAsync(
+                Builders<TOriginModel>.Filter.Or(
+                    idFindStrings.Select(idFindString => Builders<TOriginModel>.Filter.Eq(idFindString, referencedModelId))),
+                new FindOptions<TOriginModel, TOriginModel>
+                {
+                    NoCursorTimeout = true,
+                    Projection = Builders<TOriginModel>.Projection.Include(m => m.Id) //we need only Id
+                }).ConfigureAwait(false);
+
+            List<object> ids = new();
+            while(await cursor.MoveNextAsync())
+                ids.AddRange(cursor.Current.Select(m => (object)m.Id!));
+
+            return ids;
+        }
+
+        private static string MemberMapToMongoFindString(IMemberMap memberMap) =>
+            string.Join(".", memberMap.DefinitionPath.ModelMapsPath.Select(pair => pair.Member.ElementName));
     }
 }

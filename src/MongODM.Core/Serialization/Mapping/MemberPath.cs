@@ -21,8 +21,6 @@ namespace Etherna.MongODM.Core.Serialization.Mapping
         // Properties.
         public IEnumerable<(IModelMap OwnerModel, BsonMemberMap Member)> ModelMapsPath { get; }
 
-        public string ElementPathAsString => string.Join(".", ModelMapsPath.Select(pair => pair.Member.ElementName));
-
         /// <summary>
         /// Description of all encountered entity model classes in member path
         /// </summary>

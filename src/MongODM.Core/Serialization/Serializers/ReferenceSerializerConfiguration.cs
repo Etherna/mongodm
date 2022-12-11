@@ -14,6 +14,7 @@
 
 using Etherna.MongoDB.Bson;
 using Etherna.MongoDB.Bson.Serialization;
+using Etherna.MongODM.Core.Extensions;
 using Etherna.MongODM.Core.Serialization.Mapping;
 using Etherna.MongODM.Core.Serialization.Mapping.Schemas;
 using Etherna.MongODM.Core.Utility;
@@ -99,7 +100,7 @@ namespace Etherna.MongODM.Core.Serialization.Serializers
 
             //if a correct model map is identified with its id, use its bson class map serializer
             if (modelMapId != null && schema.RootModelMapsDictionary.ContainsKey(modelMapId))
-                return schema.RootModelMapsDictionary[modelMapId].BsonClassMapSerializer;
+                return schema.RootModelMapsDictionary[modelMapId].BsonClassMap.ToSerializer();
 
             //else, use fallback serializer if exists. The schema's active serializer otherwise
             return schema.FallbackSerializer ?? schema.ActiveSerializer;

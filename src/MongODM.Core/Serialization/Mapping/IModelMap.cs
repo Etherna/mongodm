@@ -27,12 +27,14 @@ namespace Etherna.MongODM.Core.Serialization.Mapping
         IReadOnlyDictionary<string, IMemberMap> AllChildMemberMapsDictionary { get; }
         string? BaseModelMapId { get; }
         BsonClassMap BsonClassMap { get; }
-        IBsonSerializer BsonClassMapSerializer { get; }
         IMemberMap? IdMemberMap { get; }
         bool IsEntity { get; }
         IReadOnlyDictionary<string, IMemberMap> MemberMapsDictionary { get; }
         Type ModelType { get; }
-        IBsonSerializer? Serializer { get; }
+        /// <summary>
+        /// ModelMap serializer
+        /// </summary>
+        IBsonSerializer Serializer { get; }
 
         // Methods.
         Task<object> FixDeserializedModelAsync(object model);

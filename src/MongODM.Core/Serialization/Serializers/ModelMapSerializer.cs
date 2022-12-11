@@ -18,11 +18,11 @@ using Etherna.MongoDB.Bson.Serialization;
 using Etherna.MongoDB.Bson.Serialization.Conventions;
 using Etherna.MongoDB.Bson.Serialization.Serializers;
 using Etherna.MongODM.Core.Domain.Models;
+using Etherna.MongODM.Core.Extensions;
 using Etherna.MongODM.Core.ProxyModels;
 using Etherna.MongODM.Core.Serialization.Mapping;
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Threading.Tasks;
 
 namespace Etherna.MongODM.Core.Serialization.Serializers
@@ -54,7 +54,7 @@ namespace Etherna.MongODM.Core.Serialization.Serializers
             dbContext.SchemaRegistry.GetModelMapsSchema(typeof(TModel)).RootModelMapsDictionary.Values;
 
         public BsonClassMapSerializer<TModel> DefaultBsonClassMapSerializer =>
-            (BsonClassMapSerializer<TModel>)dbContext.SchemaRegistry.GetModelMapsSchema(typeof(TModel)).ActiveModelMap.BsonClassMapSerializer;
+            (BsonClassMapSerializer<TModel>)dbContext.SchemaRegistry.GetModelMapsSchema(typeof(TModel)).ActiveModelMap.BsonClassMap.ToSerializer();
 
         public IDiscriminatorConvention DiscriminatorConvention
         {
@@ -199,7 +199,7 @@ namespace Etherna.MongODM.Core.Serialization.Serializers
             var modelMapsSchema = dbContext.SchemaRegistry.GetModelMapsSchema(actualType);
 
             // Serialize.
-            modelMapsSchema.ActiveBsonClassMapSerializer.Serialize(localContext, args, value);
+            modelMapsSchema.ActiveModelMap.BsonClassMap.ToSerializer().Serialize(localContext, args, value);
 
             // Add additional data.
             //add model map id
@@ -239,9 +239,9 @@ namespace Etherna.MongODM.Core.Serialization.Serializers
             /* If is mapped a different serializer than the current one, choose it.
              * Otherwise, if doesn't exist or is already the current, deserialize with BsonClassMap
              */
-            var serializer = modelMap.Serializer is not null && modelMap.Serializer.GetType() != typeof(ModelMapSerializer<TModel>) ?
+            var serializer = modelMap.Serializer.GetType() != typeof(ModelMapSerializer<TModel>) ?
                 modelMap.Serializer :
-                modelMap.BsonClassMapSerializer;
+                modelMap.BsonClassMap.ToSerializer();
 
             // If model map ask to override the nominal type, override it on args.
             var modelMapType = modelMap.GetType();
