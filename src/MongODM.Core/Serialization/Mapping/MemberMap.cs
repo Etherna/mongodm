@@ -14,6 +14,7 @@
 
 using Etherna.MongoDB.Bson.Serialization;
 using Etherna.MongODM.Core.Extensions;
+using Etherna.MongODM.Core.Serialization.Mapping.Schemas;
 using System;
 using System.Linq;
 
@@ -56,5 +57,7 @@ namespace Etherna.MongODM.Core.Serialization.Mapping
         /// The root owning model map
         /// </summary>
         public IModelMap RootModelMap => DefinitionPath.ModelMapsPath.First().OwnerModel;
+
+        public IModelSchema Schema => OwnerModelMap.Schema;
     }
 }

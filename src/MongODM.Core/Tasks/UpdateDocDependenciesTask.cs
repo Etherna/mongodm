@@ -67,15 +67,21 @@ namespace Etherna.MongODM.Core.Tasks
             var referencedRepository = dbContext.RepositoryRegistry.Repositories.First(r => r.Name == referencedRepositoryName);
             var referencedModel = await referencedRepository.FindOneAsync(referencedModelId);
 
-            //recover reference id member maps from all schemas, from all model maps
-            var idMemberMaps = idMemberMapIdentifiers.Select(
-                idMemberMapIdentifier => dbContext.SchemaRegistry.MemberMapsDictionary[idMemberMapIdentifier]);
+            // Recover reference id member maps model's schemas, and all model maps.
+            /*
+             * At this point idMemberMapIdentifiers contains Ids from all reference Member Maps, also from different Schemas/ModelMaps, also ponting to the same Id paths.
+             * Anyway, we know the referenced model type, and only member maps from the same type schema are valid. We can select only them.
+             * All model maps from this schema will be searched for updates.
+             * 
+             * If the reference summary had a different type, the proper id map will not be find.
+             * In this case, replace summary with minimal reference with only Id.
+             */
+            var idMemberMaps = idMemberMapIdentifiers
+                .Select(idMemberMapIdentifier => dbContext.SchemaRegistry.MemberMapsDictionary[idMemberMapIdentifier])
+                .Where(idMemberMap => idMemberMap.Schema.ModelType == referencedModel.GetType());
 
             // Define mapping of serializers and serialized documents.
             /*
-             * At this point idMemberMaps contains all Id Member Maps, also from different Schemas/ModelMaps, and also ponting to same Id paths.
-             * Different serializers are in general available for the same Id path.
-             * 
              * We need to create two dictionary maps:
              * - repositoryDictionary: repository -> id find strings -> serializer[]
              * - serializedDocumentDictionary: serializer -> serializated document
@@ -101,14 +107,14 @@ namespace Etherna.MongODM.Core.Tasks
                                   return serializedDocument;
                               });
 
-            // Find Ids of documents that may need to be upgraded.
+            // Find Ids of documents that may need to be updated.
             /*
-             * Use all Id paths to find all Ids of existing documents that may need to be upgraded.
-             * Only already existing documents may require an upgrade, so to limit actions on these documents is safe.
+             * Use all Id paths to find all Ids of existing documents that may need to be updated.
+             * Only already existing documents may require an update, so to limit actions on these documents is safe.
              * 
              * This permits to execute FindAndUpdate actions to an enumerable set of documents.
              */
-            var upgradableDocumentsIdByRepository = new Dictionary<IRepository, IEnumerable<object>>();
+            var updatableDocumentsIdByRepository = new Dictionary<IRepository, IEnumerable<object>>();
             foreach (var repositoryGroup in repositoryDictionary)
             {
                 var repository = repositoryGroup.Key;
@@ -117,36 +123,43 @@ namespace Etherna.MongODM.Core.Tasks
                 var originModelType = repository.ModelType;
                 var originIdType = repository.KeyType;
 
-                var result = typeof(UpdateDocDependenciesTask).GetMethod(nameof(FindUpgradableDocumentsIdAsync), BindingFlags.NonPublic | BindingFlags.Static)
+                var result = typeof(UpdateDocDependenciesTask).GetMethod(nameof(FindUpdatableDocumentsIdAsync), BindingFlags.NonPublic | BindingFlags.Static)
                     .MakeGenericMethod(originModelType, originIdType)
                     .Invoke(null, new[] { repository, idFindStrings, referencedModelId });
 
-                upgradableDocumentsIdByRepository.Add(repository, await (Task<IEnumerable<object>>)result);
+                updatableDocumentsIdByRepository.Add(repository, await (Task<IEnumerable<object>>)result);
             }
 
             // Update models.
-            //update one document at time
-            while (await upgradableDocsCursor.MoveNextAsync().ConfigureAwait(false))
-                foreach (var upgradableDocId in upgradableDocsCursor.Current.Select(m => m.Id))
+            /*
+             * Update one document at time using FindOneAndUpdate.
+             * Iterate on repositories, available reference Ids on each repository, and available serializer for each Id.
+             */
+            foreach (var repoPair in repositoryDictionary)
+            {
+                var repository = repoPair.Key;
+                var idFindStringDictionary = repoPair.Value;
+                var updatableDocumentsId = updatableDocumentsIdByRepository[repository];
+
+                foreach (var idFindStringPair in idFindStringDictionary)
                 {
-                    //find model map Id and related ModelMap
+                    var idFindString = idFindStringPair.Key;
+                    var serializers = idFindStringPair.Value;
 
-
-                    /* Process one Id path per time.
-                     * This is required, because we need to verify when we "find-update" a document, that the property is still reporting the right document reference.
-                     * If the source document has changed in the meantime, and we doesn't check this with id path granularity, we could create inconsistence states.
-                     */
-                    foreach (var idPath in idPaths)
+                    foreach (var serializer in serializers)
                     {
+                        var serializedDocument = serializedDocumentDictionary[serializer];
 
+                        //TODO.
                     }
                 }
+            }
 
-            logger.UpdateDocDependenciesTaskEnded(dbContext.Options.DbName, typeof(TModel).Name, modelId.ToString());
+            logger.UpdateDocDependenciesTaskEnded(typeof(TDbContext), referencedRepositoryName, referencedModelId.ToString());
         }
 
         // Helpers.
-        private static async Task<IEnumerable<object>> FindUpgradableDocumentsIdAsync<TOriginModel, TOriginKey>(
+        private static async Task<IEnumerable<object>> FindUpdatableDocumentsIdAsync<TOriginModel, TOriginKey>(
             IRepository<TOriginModel, TOriginKey> repository,
             IEnumerable<string> idFindStrings,
             object referencedModelId)

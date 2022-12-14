@@ -18,7 +18,7 @@ using System;
 
 namespace Etherna.MongODM.Core.Serialization.Mapping.Schemas
 {
-    public abstract class SchemaBase : FreezableConfig, ISchema
+    internal abstract class SchemaBase : FreezableConfig, ISchema
     {
         // Constructor.
         protected SchemaBase(

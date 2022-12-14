@@ -17,13 +17,12 @@ using System;
 
 namespace Etherna.MongODM.Core.Serialization.Mapping.Schemas
 {
-    class ReferenceModelSchema<TModel> : ModelSchemaBase, IReferenceModelSchemaBuilder<TModel>
+    internal class ReferenceModelSchema<TModel> : ModelSchemaBase, IReferenceModelSchemaBuilder<TModel>
     {
         // Constructor.
         public ReferenceModelSchema(
-            ModelMap<TModel> activeMap,
             IDbContext dbContext)
-            : base(activeMap, dbContext, typeof(TModel))
+            : base(dbContext, typeof(TModel))
         { }
 
         // Methods.
@@ -39,7 +38,10 @@ namespace Etherna.MongODM.Core.Serialization.Mapping.Schemas
             AddFallbackModelMap(new ModelMap<TModel>(
                 "fallback",
                 new BsonClassMap<TModel>(modelMapInitializer ?? (cm => cm.AutoMap())),
-                baseModelMapId));
+                baseModelMapId,
+                null,
+                null,
+                this));
 
         public IReferenceModelSchemaBuilder<TModel> AddFallbackModelMap(ModelMap<TModel> modelMap)
         {
@@ -54,7 +56,10 @@ namespace Etherna.MongODM.Core.Serialization.Mapping.Schemas
             AddSecondaryMap(new ModelMap<TModel>(
                 id,
                 new BsonClassMap<TModel>(modelMapInitializer ?? (cm => cm.AutoMap())),
-                baseModelMapId));
+                baseModelMapId,
+                null,
+                null,
+                this));
 
         public IReferenceModelSchemaBuilder<TModel> AddSecondaryMap(ModelMap<TModel> modelMap)
         {

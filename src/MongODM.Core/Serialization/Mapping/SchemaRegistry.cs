@@ -75,37 +75,32 @@ namespace Etherna.MongODM.Core.Serialization.Mapping
         public IModelSchemaBuilder<TModel> AddModelSchema<TModel>(
             string activeModelMapId,
             Action<BsonClassMap<TModel>>? activeModelMapInitializer = null,
-            IBsonSerializer<TModel>? customSerializer = null) where TModel : class
-        {
-            // Create model map.
-            var modelMap = new ModelMap<TModel>(
-                activeModelMapId,
-                new BsonClassMap<TModel>(activeModelMapInitializer ?? (cm => cm.AutoMap())),
-                customSerializer: customSerializer ?? ModelMap.GetDefaultSerializer<TModel>(dbContext));
-
-            return AddModelSchema(modelMap);
-        }
-
-        public IModelSchemaBuilder<TModel> AddModelSchema<TModel>(
-            ModelMap<TModel> activeModelMap)
+            IBsonSerializer<TModel>? activeCustomSerializer = null)
             where TModel : class =>
             ExecuteConfigAction(() =>
             {
-                if (activeModelMap is null)
-                    throw new ArgumentNullException(nameof(activeModelMap));
+                // Register and add schema configuration.
+                var modelSchema = new ModelSchema<TModel>(dbContext);
+                _schemas.Add(typeof(TModel), modelSchema);
 
-                // Register and return schema configuration.
-                var modelSchemaConfiguration = new ModelSchema<TModel>(activeModelMap, dbContext);
-                _schemas.Add(typeof(TModel), modelSchemaConfiguration);
+                // Create model map and set it as active in schema.
+                var modelMap = new ModelMap<TModel>(
+                    activeModelMapId,
+                    new BsonClassMap<TModel>(activeModelMapInitializer ?? (cm => cm.AutoMap())),
+                    null,
+                    null,
+                    activeCustomSerializer ?? ModelMap.GetDefaultSerializer<TModel>(dbContext),
+                    modelSchema);
+                modelSchema.ActiveModelMap = modelMap;
 
                 // If model schema uses proxy model, register a new one for proxy type.
-                if (modelSchemaConfiguration.ProxyModelType != null)
+                if (modelSchema.ProxyModelType != null)
                 {
-                    var proxyModelSchema = CreateNewDefaultModelSchema(modelSchemaConfiguration.ProxyModelType);
-                    _schemas.Add(modelSchemaConfiguration.ProxyModelType, proxyModelSchema);
+                    var proxyModelSchema = CreateNewDefaultModelSchema(modelSchema.ProxyModelType);
+                    _schemas.Add(modelSchema.ProxyModelType, proxyModelSchema);
                 }
 
-                return modelSchemaConfiguration;
+                return modelSchema;
             });
 
         public BsonClassMap GetActiveClassMap(Type modelType)
@@ -261,6 +256,15 @@ namespace Etherna.MongODM.Core.Serialization.Mapping
         // Helpers.
         private IModelSchema CreateNewDefaultModelSchema(Type modelType)
         {
+            // Construct.
+            //model schema
+            var modelSchemaDefinition = typeof(ModelSchema<>);
+            var modelSchemaType = modelSchemaDefinition.MakeGenericType(modelType);
+
+            var modelSchema = (ModelSchemaBase)Activator.CreateInstance(
+                modelSchemaType,
+                dbContext);          //IDbContext dbContext
+
             //class map
             var classMapDefinition = typeof(BsonClassMap<>);
             var classMapType = classMapDefinition.MakeGenericType(modelType);
@@ -277,16 +281,13 @@ namespace Etherna.MongODM.Core.Serialization.Mapping
                 classMap,                  //BsonClassMap<TModel> bsonClassMap
                 null,                      //string? baseModelMapId
                 null,                      //Func<TModel, Task<TModel>>? fixDeserializedModelFunc
-                null);                     //IBsonSerializer<TModel>? serializer
+                null,                      //IBsonSerializer<TModel>? customSerializer
+                modelSchema);              //IModelSchema schema
 
-            //model schema
-            var modelSchemaDefinition = typeof(ModelSchema<>);
-            var modelSchemaType = modelSchemaDefinition.MakeGenericType(modelType);
+            // Set active model map.
+            modelSchema.ActiveModelMap = activeModelMap;
 
-            return (IModelSchema)Activator.CreateInstance(
-                modelSchemaType,
-                activeModelMap,      //ModelMap<TModel> activeMap
-                dbContext);          //IDbContext dbContext
+            return modelSchema;
         }
 
         private void LinkBaseModelMaps()

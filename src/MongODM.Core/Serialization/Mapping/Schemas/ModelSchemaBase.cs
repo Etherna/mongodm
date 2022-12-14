@@ -19,20 +19,19 @@ using System.Linq;
 
 namespace Etherna.MongODM.Core.Serialization.Mapping.Schemas
 {
-    abstract class ModelSchemaBase : SchemaBase, IModelSchema
+    internal abstract class ModelSchemaBase : SchemaBase, IModelSchema
     {
         // Fields.
+        private IModelMap _activeModelMap = default!;
         private Dictionary<string, IModelMap> _rootModelMapsDictionary = default!; // Id -> ModelMap
         protected readonly List<IModelMap> _secondaryModelMaps = new();
 
         // Constructor.
         protected ModelSchemaBase(
-            IModelMap activeMap,
             IDbContext dbContext,
             Type modelType)
             : base(modelType)
         {
-            ActiveModelMap = activeMap ?? throw new ArgumentNullException(nameof(activeMap));
             DbContext = dbContext ?? throw new ArgumentNullException(nameof(dbContext));
 
             // Verify if have to use proxy model.
@@ -42,12 +41,18 @@ namespace Etherna.MongODM.Core.Serialization.Mapping.Schemas
             {
                 ProxyModelType = dbContext.ProxyGenerator.CreateInstance(modelType, dbContext).GetType();
             }
-
-            activeMap.TryUseProxyGenerator(dbContext);
         }
 
         // Properties.
-        public IModelMap ActiveModelMap { get; }
+        public IModelMap ActiveModelMap
+        {
+            get => _activeModelMap;
+            internal set
+            {
+                _activeModelMap = value;
+                _activeModelMap.TryUseProxyGenerator(DbContext);
+            }
+        }
         public override IBsonSerializer? ActiveSerializer => ActiveModelMap.Serializer;
         public IDbContext DbContext { get; }
         public IModelMap? FallbackModelMap { get; protected set; }

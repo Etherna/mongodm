@@ -47,31 +47,30 @@ namespace Etherna.MongODM.Core.Serialization.Serializers
             Action<BsonClassMap<TModel>>? activeModelMapInitializer = null,
             string? baseModelMapId = null)
             where TModel : class =>
-            AddModelSchema(new ModelMap<TModel>(
-                activeModelMapId,
-                new BsonClassMap<TModel>(activeModelMapInitializer ?? (cm => cm.AutoMap())),
-                baseModelMapId));
-
-        public IReferenceModelSchemaBuilder<TModel> AddModelSchema<TModel>(
-            ModelMap<TModel> activeModelMap)
-            where TModel : class =>
             ExecuteConfigAction(() =>
             {
-                if (activeModelMap is null)
-                    throw new ArgumentNullException(nameof(activeModelMap));
-
                 // Register and return schema configuration.
-                var modelSchemaConfiguration = new ReferenceModelSchema<TModel>(activeModelMap, dbContext);
-                _schemas.Add(typeof(TModel), modelSchemaConfiguration);
+                var modelSchema = new ReferenceModelSchema<TModel>(dbContext);
+                _schemas.Add(typeof(TModel), modelSchema);
+
+                // Create model map and set it as active in schema.
+                var modelMap = new ModelMap<TModel>(
+                    activeModelMapId,
+                    new BsonClassMap<TModel>(activeModelMapInitializer ?? (cm => cm.AutoMap())),
+                    baseModelMapId,
+                    null,
+                    null,
+                    modelSchema);
+                modelSchema.ActiveModelMap = modelMap;
 
                 // If model schema uses proxy model, register a new one for proxy type.
-                if (modelSchemaConfiguration.ProxyModelType != null)
+                if (modelSchema.ProxyModelType != null)
                 {
-                    var proxyModelSchema = CreateNewDefaultReferenceSchema(modelSchemaConfiguration.ProxyModelType);
-                    _schemas.Add(modelSchemaConfiguration.ProxyModelType, proxyModelSchema);
+                    var proxyModelSchema = CreateNewDefaultReferenceSchema(modelSchema.ProxyModelType);
+                    _schemas.Add(modelSchema.ProxyModelType, proxyModelSchema);
                 }
 
-                return modelSchemaConfiguration;
+                return modelSchema;
             });
 
         public BsonElement GetActiveModelMapIdBsonElement(Type modelType)

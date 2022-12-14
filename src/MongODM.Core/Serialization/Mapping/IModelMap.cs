@@ -13,6 +13,7 @@
 //   limitations under the License.
 
 using Etherna.MongoDB.Bson.Serialization;
+using Etherna.MongODM.Core.Serialization.Mapping.Schemas;
 using Etherna.MongODM.Core.Utility;
 using System;
 using System.Collections.Generic;
@@ -31,6 +32,7 @@ namespace Etherna.MongODM.Core.Serialization.Mapping
         bool IsEntity { get; }
         IReadOnlyDictionary<string, IMemberMap> MemberMapsDictionary { get; }
         Type ModelType { get; }
+        IModelSchema Schema { get; }
         /// <summary>
         /// ModelMap serializer
         /// </summary>

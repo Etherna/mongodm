@@ -61,16 +61,6 @@ namespace Etherna.MongODM.Core.Serialization.Mapping
             where TModel : class;
 
         /// <summary>
-        /// Register a new schema based on model map
-        /// </summary>
-        /// <typeparam name="TModel">The model type</typeparam>
-        /// <param name="activeModelMap">The active model map</param>
-        /// <returns>The new schema</returns>
-        IModelSchemaBuilder<TModel> AddModelSchema<TModel>(
-            ModelMap<TModel> activeModelMap)
-            where TModel : class;
-
-        /// <summary>
         /// Get active class map from schemas, or create a default classMap for model type
         /// </summary>
         /// <returns>The active model map</returns>

@@ -13,6 +13,7 @@
 //   limitations under the License.
 
 using Etherna.MongoDB.Bson.Serialization;
+using Etherna.MongODM.Core.Serialization.Mapping.Schemas;
 
 namespace Etherna.MongODM.Core.Serialization.Mapping
 {
@@ -46,5 +47,7 @@ namespace Etherna.MongODM.Core.Serialization.Mapping
         /// The root owning model map
         /// </summary>
         IModelMap RootModelMap { get; }
+
+        IModelSchema Schema { get; }
     }
 }
