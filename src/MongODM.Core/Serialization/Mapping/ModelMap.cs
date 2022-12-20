@@ -29,6 +29,9 @@ namespace Etherna.MongODM.Core.Serialization.Mapping
     {
         // Fields.
         private readonly Dictionary<string, IMemberMap> _memberMapsDictionary = new(); // Id -> MemberMap
+        private IBsonSerializer? _serializer;
+
+        private readonly IBsonSerializer? customSerializer;
 
         // Constructors.
         internal protected ModelMap(
@@ -44,8 +47,8 @@ namespace Etherna.MongODM.Core.Serialization.Mapping
             Id = id;
             BaseModelMapId = baseModelMapId;
             BsonClassMap = bsonClassMap ?? throw new ArgumentNullException(nameof(bsonClassMap));
+            this.customSerializer = customSerializer;
             Schema = schema ?? throw new ArgumentNullException(nameof(schema));
-            Serializer = customSerializer ?? bsonClassMap.ToSerializer();
         }
 
         // Properties.
@@ -62,7 +65,7 @@ namespace Etherna.MongODM.Core.Serialization.Mapping
         public IReadOnlyDictionary<string, IMemberMap> MemberMapsDictionary => _memberMapsDictionary;
         public Type ModelType => BsonClassMap.ClassType;
         public IModelSchema Schema { get; }
-        public IBsonSerializer Serializer { get; }
+        public IBsonSerializer Serializer => _serializer ??= customSerializer ?? BsonClassMap.ToSerializer();
 
         // Methods.
         public Task<object> FixDeserializedModelAsync(object model) =>

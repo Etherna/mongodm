@@ -21,6 +21,7 @@ using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using System.Reflection;
 
@@ -277,12 +278,18 @@ namespace Etherna.MongODM.Core.Serialization.Mapping
 
             var activeModelMap = (ModelMap)Activator.CreateInstance(
                 modelMapType,
-                Guid.NewGuid().ToString(), //string id
-                classMap,                  //BsonClassMap<TModel> bsonClassMap
-                null,                      //string? baseModelMapId
-                null,                      //Func<TModel, Task<TModel>>? fixDeserializedModelFunc
-                null,                      //IBsonSerializer<TModel>? customSerializer
-                modelSchema);              //IModelSchema schema
+                BindingFlags.NonPublic | BindingFlags.Instance,
+                null,
+                new object[]
+                {
+                    Guid.NewGuid().ToString(), //string id
+                    classMap,                  //BsonClassMap<TModel> bsonClassMap
+                    null!,                     //string? baseModelMapId
+                    null!,                     //Func<TModel, Task<TModel>>? fixDeserializedModelFunc
+                    null!,                     //IBsonSerializer<TModel>? customSerializer
+                    modelSchema                //IModelSchema schema
+                },
+                CultureInfo.InvariantCulture);
 
             // Set active model map.
             modelSchema.ActiveModelMap = activeModelMap;

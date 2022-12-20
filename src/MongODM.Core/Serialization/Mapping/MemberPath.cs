@@ -12,8 +12,6 @@ namespace Etherna.MongODM.Core.Serialization.Mapping
         {
             if (modelMapsPath is null)
                 throw new ArgumentNullException(nameof(modelMapsPath));
-            if (!modelMapsPath.Any())
-                throw new ArgumentException("Bson path can't be empty", nameof(modelMapsPath));
 
             ModelMapsPath = modelMapsPath;
         }
