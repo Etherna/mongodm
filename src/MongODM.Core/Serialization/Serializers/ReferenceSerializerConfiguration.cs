@@ -20,7 +20,9 @@ using Etherna.MongODM.Core.Serialization.Mapping.Schemas;
 using Etherna.MongODM.Core.Utility;
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
+using System.Reflection;
 
 namespace Etherna.MongODM.Core.Serialization.Serializers
 {
@@ -136,6 +138,14 @@ namespace Etherna.MongODM.Core.Serialization.Serializers
         // Helpers
         private IModelSchema CreateNewDefaultReferenceSchema(Type modelType)
         {
+            //model schema
+            var modelSchemaDefinition = typeof(ReferenceModelSchema<>);
+            var modelSchemaType = modelSchemaDefinition.MakeGenericType(modelType);
+
+            var modelSchema = (ModelSchemaBase)Activator.CreateInstance(
+                modelSchemaType,
+                dbContext);          //IDbContext dbContext
+
             //class map
             var classMapDefinition = typeof(BsonClassMap<>);
             var classMapType = classMapDefinition.MakeGenericType(modelType);
@@ -148,20 +158,23 @@ namespace Etherna.MongODM.Core.Serialization.Serializers
 
             var activeModelMap = (ModelMap)Activator.CreateInstance(
                 modelMapType,
-                Guid.NewGuid().ToString(), //string id
-                classMap,                  //BsonClassMap<TModel> bsonClassMap
-                null,                      //string? baseModelMapId
-                null,                      //Func<TModel, Task<TModel>>? fixDeserializedModelFunc
-                null);                     //IBsonSerializer<TModel>? serializer
+                BindingFlags.NonPublic | BindingFlags.Instance,
+                null,
+                new object[]
+                {
+                    Guid.NewGuid().ToString(), //string id
+                    classMap,                  //BsonClassMap<TModel> bsonClassMap
+                    null!,                     //string? baseModelMapId
+                    null!,                     //Func<TModel, Task<TModel>>? fixDeserializedModelFunc
+                    null!,                     //IBsonSerializer<TModel>? customSerializer
+                    modelSchema                //IModelSchema schema
+                },
+                CultureInfo.InvariantCulture);
 
-            //model schema
-            var modelSchemaDefinition = typeof(ReferenceModelSchema<>);
-            var modelSchemaType = modelSchemaDefinition.MakeGenericType(modelType);
+            // Set active model map.
+            modelSchema.ActiveModelMap = activeModelMap;
 
-            return (IModelSchema)Activator.CreateInstance(
-                modelSchemaType,
-                activeModelMap,      //ReferenceModelMap<TModel> activeMap
-                dbContext);          //IDbContext dbContext
+            return modelSchema;
         }
 
         private void LinkBaseModelMaps()
