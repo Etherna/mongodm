@@ -156,11 +156,14 @@ namespace Etherna.MongODM.Core
         {
             // Setup
             var bsonReader = new BsonDocumentReader(test.Document);
-            var bsonClassMapSerializer = CreateBsonClassMapSerializer();
+            var classMap = new BsonClassMap<FakeModel>(cm => cm.AutoMap());
+            classMap.Freeze();
             var serializer = new ModelMapSerializer<FakeModel>(dbContextMock.Object);
 
-            modelSchemaMock.Setup(s => s.ActiveModelMap.BsonClassMap.ToSerializer())
-                .Returns(bsonClassMapSerializer);
+            modelSchemaMock.Setup(s => s.ActiveModelMap.BsonClassMap)
+                .Returns(classMap);
+            modelSchemaMock.Setup(s => s.ActiveModelMap.Serializer)
+                .Returns(classMap.ToSerializer());
             modelSchemaMock.Setup(s => s.ActiveModelMap.FixDeserializedModelAsync(It.IsAny<object>()))
                 .Returns<object>(m => Task.FromResult(m));
 
@@ -180,11 +183,13 @@ namespace Etherna.MongODM.Core
         {
             // Setup
             var model = new FakeModel { Id = "idVal" };
-            var bsonClassMapSerializer = CreateBsonClassMapSerializer();
+            var classMap = new BsonClassMap<FakeModel>(cm => cm.AutoMap());
+            classMap.Freeze();
+            var bsonClassMapSerializer = new BsonClassMapSerializer<FakeModel>(classMap);
             var serializer = new ModelMapSerializer<FakeModel>(dbContextMock.Object);
 
-            modelSchemaMock.Setup(s => s.ActiveModelMap.BsonClassMap.ToSerializer())
-                .Returns(bsonClassMapSerializer);
+            modelSchemaMock.Setup(s => s.ActiveModelMap.BsonClassMap)
+                .Returns(classMap);
 
             // Action
             var result = serializer.GetDocumentId(
@@ -211,11 +216,13 @@ namespace Etherna.MongODM.Core
         {
             // Setup
             var memberName = nameof(FakeModel.StringProp);
-            var bsonClassMapSerializer = CreateBsonClassMapSerializer();
+            var classMap = new BsonClassMap<FakeModel>(cm => cm.AutoMap());
+            classMap.Freeze();
+            var bsonClassMapSerializer = new BsonClassMapSerializer<FakeModel>(classMap);
             var serializer = new ModelMapSerializer<FakeModel>(dbContextMock.Object);
 
-            modelSchemaMock.Setup(s => s.ActiveModelMap.BsonClassMap.ToSerializer())
-                .Returns(bsonClassMapSerializer);
+            modelSchemaMock.Setup(s => s.ActiveModelMap.BsonClassMap)
+                .Returns(classMap);
 
             // Action
             var result = serializer.TryGetMemberSerializationInfo(memberName, out BsonSerializationInfo serializationInfo);
@@ -299,11 +306,12 @@ namespace Etherna.MongODM.Core
         public void Serialize(SerializationTestElement test)
         {
             // Setup
-            var bsonClassMapSerializer = CreateBsonClassMapSerializer();
+            var classMap = new BsonClassMap<FakeModel>(cm => cm.AutoMap());
+            classMap.Freeze();
             var serializer = new ModelMapSerializer<FakeModel>(dbContextMock.Object);
 
-            modelSchemaMock.Setup(s => s.ActiveModelMap.BsonClassMap.ToSerializer())
-                .Returns(bsonClassMapSerializer);
+            modelSchemaMock.Setup(s => s.ActiveModelMap.BsonClassMap)
+                .Returns(classMap);
             modelSchemaMock.Setup(s => s.ActiveModelMap.Id)
                 .Returns("mapId");
 
@@ -328,11 +336,13 @@ namespace Etherna.MongODM.Core
             // Setup
             var id = "idVal";
             var model = new FakeModel();
-            var bsonClassMapSerializer = CreateBsonClassMapSerializer();
+            var classMap = new BsonClassMap<FakeModel>(cm => cm.AutoMap());
+            classMap.Freeze();
+            var bsonClassMapSerializer = new BsonClassMapSerializer<FakeModel>(classMap);
             var serializer = new ModelMapSerializer<FakeModel>(dbContextMock.Object);
 
-            modelSchemaMock.Setup(s => s.ActiveModelMap.BsonClassMap.ToSerializer())
-                .Returns(bsonClassMapSerializer);
+            modelSchemaMock.Setup(s => s.ActiveModelMap.BsonClassMap)
+                .Returns(classMap);
 
             // Action
             serializer.SetDocumentId(model, id);
@@ -341,13 +351,6 @@ namespace Etherna.MongODM.Core
             var expectedModel = new FakeModel();
             bsonClassMapSerializer.SetDocumentId(expectedModel, id);
             Assert.Equal(expectedModel, model, new FakeModelComparer());
-        }
-
-        private static BsonClassMapSerializer<FakeModel> CreateBsonClassMapSerializer()
-        {
-            var classMap = new BsonClassMap<FakeModel>(cm => cm.AutoMap());
-            classMap.Freeze();
-            return new BsonClassMapSerializer<FakeModel>(classMap);
         }
     }
 }
