@@ -17,7 +17,7 @@ For these reasons SQL databases are often still prefered to documentals, because
 
 **MongODM has the scope to solve these problems**, and its scope is to **bring efficiency of denormalized documental data also to complex application domains**, without have to worry at all of how data is organized from an application layer!
 
-Moreover, **MongODM uses official [MongoDB's drivers for C#](https://github.com/mongodb/mongo-csharp-driver)**, thus inheriting all the powerful features developed by MongoDB's team, for example descripting data serialization, and keeping compatibility with any new relase of MongoDB Server or MongoDB Atlas.
+Moreover, **MongODM uses official [MongoDB's drivers for C#](https://github.com/mongodb/mongo-csharp-driver)**, thus inheriting all the powerful features developed by MongoDB's team, for example descripting data serialization, and keeping compatibility with any new release of MongoDB Server or MongoDB Atlas.
 
 Here is a non exhaustive list of implemented features by MongODM:
 
