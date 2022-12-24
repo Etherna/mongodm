@@ -19,6 +19,6 @@ namespace Etherna.MongODM.Core.Serialization.Serializers
 {
     public interface IModelMapsContainerSerializer
     {
-        IEnumerable<IModelMap> AllChildModelMaps { get; }
+        IEnumerable<IModelMapSchema> AllChildModelMapSchemas { get; }
     }
 }

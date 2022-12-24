@@ -40,7 +40,7 @@ namespace Etherna.MongODM.Core.Serialization.Serializers
         }
 
         // Properties.
-        public IEnumerable<IModelMap> AllChildModelMaps => (serializerBase as IModelMapsContainerSerializer)?.AllChildModelMaps ?? Array.Empty<IModelMap>();
+        public IEnumerable<IModelMapSchema> AllChildModelMapSchemas => (serializerBase as IModelMapsContainerSerializer)?.AllChildModelMapSchemas ?? Array.Empty<IModelMapSchema>();
 
         // Methods.
         public override TExternalModel Deserialize(BsonDeserializationContext context, BsonDeserializationArgs args) =>

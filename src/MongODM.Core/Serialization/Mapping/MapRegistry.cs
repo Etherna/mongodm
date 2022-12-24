@@ -15,7 +15,6 @@
 using Etherna.MongoDB.Bson;
 using Etherna.MongoDB.Bson.Serialization;
 using Etherna.MongODM.Core.Extensions;
-using Etherna.MongODM.Core.Serialization.Mapping.Schemas;
 using Etherna.MongODM.Core.Utility;
 using Microsoft.Extensions.Logging;
 using System;
@@ -27,11 +26,11 @@ using System.Reflection;
 
 namespace Etherna.MongODM.Core.Serialization.Mapping
 {
-    public class SchemaRegistry : FreezableConfig, ISchemaRegistry
+    public class MapRegistry : FreezableConfig, IMapRegistry
     {
         // Fields.
         private readonly Dictionary<string, IMemberMap> _memberMapsDictionary = new();
-        private readonly Dictionary<Type, ISchema> _schemas = new(); //model type -> model schema
+        private readonly Dictionary<Type, IMap> _maps = new(); //model type -> map
 
         private readonly Dictionary<Type, BsonElement> activeModelMapIdBsonElement = new();
         private readonly ConcurrentDictionary<Type, BsonClassMap> defaultClassMapsCache = new();
@@ -56,62 +55,62 @@ namespace Etherna.MongODM.Core.Serialization.Mapping
         // Properties.
         public bool IsInitialized { get; private set; }
         public Dictionary<string, IMemberMap> MemberMapsDictionary => _memberMapsDictionary;
-        public IReadOnlyDictionary<Type, ISchema> Schemas => _schemas;
+        public IReadOnlyDictionary<Type, IMap> Maps => _maps;
 
         // Methods.
-        public ICustomSerializerSchemaBuilder<TModel> AddCustomSerializerSchema<TModel>(
+        public ICustomSerializerMapBuilder<TModel> AddCustomSerializerMap<TModel>(
             IBsonSerializer<TModel> customSerializer) where TModel : class =>
             ExecuteConfigAction(() =>
             {
                 if (customSerializer is null)
                     throw new ArgumentNullException(nameof(customSerializer));
 
-                // Register and return schema configuration.
-                var modelSchemaConfiguration = new CustomSerializerSchema<TModel>(customSerializer);
-                _schemas.Add(typeof(TModel), modelSchemaConfiguration);
+                // Register and return map configuration.
+                var customSerializerMap = new CustomSerializerMap<TModel>(customSerializer);
+                _maps.Add(typeof(TModel), customSerializerMap);
 
-                return modelSchemaConfiguration;
+                return customSerializerMap;
             });
 
-        public IModelSchemaBuilder<TModel> AddModelSchema<TModel>(
-            string activeModelMapId,
-            Action<BsonClassMap<TModel>>? activeModelMapInitializer = null,
+        public IRootModelMapBuilder<TModel> AddModelMap<TModel>(
+            string activeModelMapSchemaId,
+            Action<BsonClassMap<TModel>>? activeModelMapSchemaInitializer = null,
             IBsonSerializer<TModel>? activeCustomSerializer = null)
             where TModel : class =>
             ExecuteConfigAction(() =>
             {
                 // Register and add schema configuration.
-                var modelSchema = new ModelSchema<TModel>(dbContext);
-                _schemas.Add(typeof(TModel), modelSchema);
+                var modelMap = new RootModelMap<TModel>(dbContext);
+                _maps.Add(typeof(TModel), modelMap);
 
                 // Create model map and set it as active in schema.
-                var modelMap = new ModelMap<TModel>(
-                    activeModelMapId,
-                    new BsonClassMap<TModel>(activeModelMapInitializer ?? (cm => cm.AutoMap())),
+                var modelMapSchema = new ModelMapSchema<TModel>(
+                    activeModelMapSchemaId,
+                    new BsonClassMap<TModel>(activeModelMapSchemaInitializer ?? (cm => cm.AutoMap())),
                     null,
                     null,
-                    activeCustomSerializer ?? ModelMap.GetDefaultSerializer<TModel>(dbContext),
-                    modelSchema);
-                modelSchema.ActiveModelMap = modelMap;
+                    activeCustomSerializer ?? ModelMapSchema.GetDefaultSerializer<TModel>(dbContext),
+                    modelMap);
+                modelMap.ActiveModelMapSchema = modelMapSchema;
 
                 // If model schema uses proxy model, register a new one for proxy type.
-                if (modelSchema.ProxyModelType != null)
+                if (modelMap.ProxyModelType != null)
                 {
-                    var proxyModelSchema = CreateNewDefaultModelSchema(modelSchema.ProxyModelType);
-                    _schemas.Add(modelSchema.ProxyModelType, proxyModelSchema);
+                    var proxyModelMap = CreateNewDefaultModelMap(modelMap.ProxyModelType);
+                    _maps.Add(modelMap.ProxyModelType, proxyModelMap);
                 }
 
-                return modelSchema;
+                return modelMap;
             });
 
         public BsonClassMap GetActiveClassMap(Type modelType)
         {
-            // If a schema is registered.
-            if (_schemas.TryGetValue(modelType, out ISchema schema) &&
-                schema is IModelSchema modelSchema)
-                return modelSchema.ActiveModelMap.BsonClassMap;
+            // If a map is registered.
+            if (_maps.TryGetValue(modelType, out IMap map) &&
+                map is IModelMap modelMap)
+                return modelMap.ActiveModelMapSchema.BsonClassMap;
 
-            // If we don't have a model schema, look for a default classmap, or create it.
+            // If we don't have a model map, look for a default classmap, or create it.
             if (defaultClassMapsCache.TryGetValue(modelType, out BsonClassMap bcm))
                 return bcm;
 
@@ -152,34 +151,34 @@ namespace Etherna.MongODM.Core.Serialization.Mapping
             return Array.Empty<IMemberMap>();
         }
 
-        public IModelSchema GetModelSchema(Type modelType)
+        public IModelMap GetModelMap(Type modelType)
         {
             if (modelType is null)
                 throw new ArgumentNullException(nameof(modelType));
-            if (!_schemas.ContainsKey(modelType))
-                throw new KeyNotFoundException(modelType.Name + " schema is not registered");
+            if (!_maps.ContainsKey(modelType))
+                throw new KeyNotFoundException(modelType.Name + " map is not registered");
 
-            var schema = _schemas[modelType];
+            var map = _maps[modelType];
 
-            if (schema is not IModelSchema modelSchema)
-                throw new InvalidOperationException(modelType.Name + " schema is not a model schema");
+            if (map is not IModelMap modelMap)
+                throw new InvalidOperationException(modelType.Name + " map is not a model map");
 
-            return modelSchema;
+            return modelMap;
         }
 
-        public bool TryGetModelSchema(Type modelType, out IModelSchema? modelSchema)
+        public bool TryGetModelMap(Type modelType, out IModelMap? modelMap)
         {
             if (modelType is null)
                 throw new ArgumentNullException(nameof(modelType));
 
-            if (_schemas.TryGetValue(modelType, out ISchema schema) &&
-                schema is IModelSchema foundModelSchema)
+            if (_maps.TryGetValue(modelType, out IMap map) &&
+                map is IModelMap foundModelMap)
             {
-                modelSchema = foundModelSchema;
+                modelMap = foundModelMap;
                 return true;
             }
 
-            modelSchema = null;
+            modelMap = null;
             return false;
         }
 
@@ -190,23 +189,23 @@ namespace Etherna.MongODM.Core.Serialization.Mapping
             LinkBaseModelMaps();
 
             // Freeze, register serializers and compile registers.
-            foreach (var schema in _schemas.Values)
+            foreach (var map in _maps.Values)
             {
                 // Freeze schema.
-                schema.Freeze();
+                map.Freeze();
 
                 // Register active serializer.
-                if (schema.ActiveSerializer != null)
-                    ((BsonSerializerRegistry)dbContext.SerializerRegistry).RegisterSerializer(schema.ModelType, schema.ActiveSerializer);
+                if (map.ActiveSerializer != null)
+                    ((BsonSerializerRegistry)dbContext.SerializerRegistry).RegisterSerializer(map.ModelType, map.ActiveSerializer);
 
                 // Register discriminators for all bson class maps.
-                if (schema is IModelSchema modelSchema)
-                    foreach (var modelMap in modelSchema.RootModelMapsDictionary.Values)
-                        dbContext.DiscriminatorRegistry.AddDiscriminator(modelMap.ModelType, modelMap.BsonClassMap.Discriminator);
+                if (map is IModelMap modelMap)
+                    foreach (var modelMapSchema in modelMap.AllModelMapSchemaDictionary.Values)
+                        dbContext.DiscriminatorRegistry.AddDiscriminator(modelMapSchema.ModelType, modelMapSchema.BsonClassMap.Discriminator);
             }
 
-            // Specific for model schemas.
-            foreach (var schema in _schemas.Values.OfType<IModelSchema>())
+            // Specific for model maps.
+            foreach (var modelMap in _maps.Values.OfType<IModelMap>())
             {
                 // Compile model maps registers.
                 /*
@@ -215,7 +214,7 @@ namespace Etherna.MongODM.Core.Serialization.Mapping
                  * 
                  * This operation needs to be executed AFTER that all serializers have been registered.
                  */
-                foreach (var memberMap in schema.RootModelMapsDictionary.Values.SelectMany(modelMap => modelMap.AllChildMemberMapsDictionary.Values))
+                foreach (var memberMap in modelMap.AllModelMapSchemaDictionary.Values.SelectMany(modelMapSchema => modelMapSchema.AllChildMemberMapsDictionary.Values))
                 {
                     //map member map with its Id
                     _memberMapsDictionary.Add(memberMap.Id, memberMap);
@@ -244,26 +243,26 @@ namespace Etherna.MongODM.Core.Serialization.Mapping
                  * when we serialize a proxy model, we don't want that in the proxy's model map id
                  * will be reported on document, but we want to serialize its original type's id.
                  */
-                var notProxySchema = GetModelSchema(dbContext.ProxyGenerator.PurgeProxyType(schema.ModelType));
+                var notProxySchema = GetModelMap(dbContext.ProxyGenerator.PurgeProxyType(modelMap.ModelType));
 
                 activeModelMapIdBsonElement.Add(
-                    schema.ModelType,
+                    modelMap.ModelType,
                     new BsonElement(
                         dbContext.Options.ModelMapVersion.ElementName,
-                        new BsonString(notProxySchema.ActiveModelMap.Id)));
+                        new BsonString(notProxySchema.ActiveModelMapSchema.Id)));
             }
         }
 
         // Helpers.
-        private IModelSchema CreateNewDefaultModelSchema(Type modelType)
+        private IModelMap CreateNewDefaultModelMap(Type modelType)
         {
             // Construct.
             //model schema
-            var modelSchemaDefinition = typeof(ModelSchema<>);
-            var modelSchemaType = modelSchemaDefinition.MakeGenericType(modelType);
+            var modelMapDefinition = typeof(RootModelMap<>);
+            var modelMapType = modelMapDefinition.MakeGenericType(modelType);
 
-            var modelSchema = (ModelSchemaBase)Activator.CreateInstance(
-                modelSchemaType,
+            var modelMap = (ModelMapBase)Activator.CreateInstance(
+                modelMapType,
                 dbContext);          //IDbContext dbContext
 
             //class map
@@ -273,11 +272,11 @@ namespace Etherna.MongODM.Core.Serialization.Mapping
             var classMap = (BsonClassMap)Activator.CreateInstance(classMapType);
 
             //model map
-            var modelMapDefinition = typeof(ModelMap<>);
-            var modelMapType = modelMapDefinition.MakeGenericType(modelType);
+            var modelMapSchemaDefinition = typeof(ModelMapSchema<>);
+            var modelMapSchemaType = modelMapSchemaDefinition.MakeGenericType(modelType);
 
-            var activeModelMap = (ModelMap)Activator.CreateInstance(
-                modelMapType,
+            var activeModelMapSchema = (ModelMapSchema)Activator.CreateInstance(
+                modelMapSchemaType,
                 BindingFlags.NonPublic | BindingFlags.Instance,
                 null,
                 new object[]
@@ -287,14 +286,14 @@ namespace Etherna.MongODM.Core.Serialization.Mapping
                     null!,                     //string? baseModelMapId
                     null!,                     //Func<TModel, Task<TModel>>? fixDeserializedModelFunc
                     null!,                     //IBsonSerializer<TModel>? customSerializer
-                    modelSchema                //IModelSchema schema
+                    modelMap                   //IModelMap modelMap
                 },
                 CultureInfo.InvariantCulture);
 
             // Set active model map.
-            modelSchema.ActiveModelMap = activeModelMap;
+            modelMap.ActiveModelMapSchema = activeModelMapSchema;
 
-            return modelSchema;
+            return modelMap;
         }
 
         private void LinkBaseModelMaps()
@@ -304,39 +303,39 @@ namespace Etherna.MongODM.Core.Serialization.Mapping
              * iterator, and if an enumerable is modified during foreach execution, an
              * exception is rised.
              */
-            var processingSchemas = new Stack<IModelSchema>(_schemas.Values.OfType<IModelSchema>());
+            var processingModelMaps = new Stack<IModelMap>(_maps.Values.OfType<IModelMap>());
 
-            while (processingSchemas.Any())
+            while (processingModelMaps.Any())
             {
-                var schema = processingSchemas.Pop();
+                var modelMap = processingModelMaps.Pop();
 
                 // Process schema's model maps.
-                foreach (var modelMap in schema.RootModelMapsDictionary.Values)
+                foreach (var modelMapSchema in modelMap.AllModelMapSchemaDictionary.Values)
                 {
-                    var baseModelType = modelMap.ModelType.BaseType;
+                    var baseModelType = modelMapSchema.ModelType.BaseType;
 
                     // If don't need to be linked, because it is typeof(object).
                     if (baseModelType is null)
                         continue;
 
-                    // Get base type schema, or generate it.
-                    if (!_schemas.TryGetValue(baseModelType, out ISchema baseSchema))
+                    // Get base type map, or generate it.
+                    if (!_maps.TryGetValue(baseModelType, out IMap baseMap))
                     {
                         // Create schema instance.
-                        baseSchema = CreateNewDefaultModelSchema(baseModelType);
+                        baseMap = CreateNewDefaultModelMap(baseModelType);
 
                         // Register schema instance.
-                        _schemas.Add(baseModelType, baseSchema);
-                        processingSchemas.Push((IModelSchema)baseSchema);
+                        _maps.Add(baseModelType, baseMap);
+                        processingModelMaps.Push((IModelMap)baseMap);
                     }
 
-                    // Search base model map.
-                    var baseModelMap = modelMap.BaseModelMapId != null ?
-                        ((IModelSchema)baseSchema).RootModelMapsDictionary[modelMap.BaseModelMapId] :
-                        ((IModelSchema)baseSchema).ActiveModelMap;
+                    // Search base model map schema.
+                    var baseModelMapSchema = modelMapSchema.BaseModelMapSchemaId != null ?
+                        ((IModelMap)baseMap).AllModelMapSchemaDictionary[modelMapSchema.BaseModelMapSchemaId] :
+                        ((IModelMap)baseMap).ActiveModelMapSchema;
 
                     // Link base model map.
-                    modelMap.SetBaseModelMap(baseModelMap);
+                    modelMapSchema.SetBaseModelMapSchema(baseModelMapSchema);
                 }
             }
         }

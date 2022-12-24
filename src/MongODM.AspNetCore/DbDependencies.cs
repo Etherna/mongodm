@@ -35,10 +35,10 @@ namespace Etherna.MongODM.AspNetCore
             IDbMigrationManager dbContextMigrationManager,
             IDiscriminatorRegistry discriminatorRegistry,
             IExecutionContext executionContext,
+            IMapRegistry mapRegistry,
             IOptions<MongODMOptions> mongODMOptions,
             IProxyGenerator proxyGenerator,
             IRepositoryRegistry repositoryRegistry,
-            ISchemaRegistry schemaRegistry,
             ISerializerModifierAccessor serializerModifierAccessor)
         {
             if (mongODMOptions is null)
@@ -49,8 +49,8 @@ namespace Etherna.MongODM.AspNetCore
             DbMigrationManager = dbContextMigrationManager;
             DiscriminatorRegistry = discriminatorRegistry;
             ExecutionContext = executionContext;
+            MapRegistry = mapRegistry;
             MongODMOptions = mongODMOptions.Value;
-            SchemaRegistry = schemaRegistry;
             ProxyGenerator = proxyGenerator;
             RepositoryRegistry = repositoryRegistry;
             SerializerModifierAccessor = serializerModifierAccessor;
@@ -62,10 +62,10 @@ namespace Etherna.MongODM.AspNetCore
         public IDbMigrationManager DbMigrationManager { get; }
         public IDiscriminatorRegistry DiscriminatorRegistry { get; }
         public IExecutionContext ExecutionContext { get; }
+        public IMapRegistry MapRegistry { get; }
         public MongODMOptions MongODMOptions { get; }
         public IProxyGenerator ProxyGenerator { get; }
         public IRepositoryRegistry RepositoryRegistry { get; }
-        public ISchemaRegistry SchemaRegistry { get; }
         public ISerializerModifierAccessor SerializerModifierAccessor { get; }
     }
 }

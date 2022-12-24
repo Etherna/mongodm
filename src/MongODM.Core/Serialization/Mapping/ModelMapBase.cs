@@ -17,17 +17,17 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 
-namespace Etherna.MongODM.Core.Serialization.Mapping.Schemas
+namespace Etherna.MongODM.Core.Serialization.Mapping
 {
-    internal abstract class ModelSchemaBase : SchemaBase, IModelSchema
+    internal abstract class ModelMapBase : MapBase, IModelMap
     {
         // Fields.
-        private IModelMap _activeModelMap = default!;
-        private Dictionary<string, IModelMap> _rootModelMapsDictionary = default!; // Id -> ModelMap
-        protected readonly List<IModelMap> _secondaryModelMaps = new();
+        private IModelMapSchema _activeModelMapSchema = default!;
+        private Dictionary<string, IModelMapSchema> _allModelMapSchemaDictionary = default!; // Id -> ModelMap
+        protected readonly List<IModelMapSchema> _secondaryModelMapSchemas = new();
 
         // Constructor.
-        protected ModelSchemaBase(
+        protected ModelMapBase(
             IDbContext dbContext,
             Type modelType)
             : base(modelType)
@@ -44,30 +44,30 @@ namespace Etherna.MongODM.Core.Serialization.Mapping.Schemas
         }
 
         // Properties.
-        public IModelMap ActiveModelMap
+        public IModelMapSchema ActiveModelMapSchema
         {
-            get => _activeModelMap;
+            get => _activeModelMapSchema;
             internal set
             {
-                _activeModelMap = value;
-                _activeModelMap.TryUseProxyGenerator(DbContext);
+                _activeModelMapSchema = value;
+                _activeModelMapSchema.TryUseProxyGenerator(DbContext);
             }
         }
-        public override IBsonSerializer? ActiveSerializer => ActiveModelMap.Serializer;
+        public override IBsonSerializer ActiveSerializer => ActiveModelMapSchema.Serializer;
         public IDbContext DbContext { get; }
-        public IModelMap? FallbackModelMap { get; protected set; }
+        public IModelMapSchema? FallbackModelMapSchema { get; protected set; }
         public IBsonSerializer? FallbackSerializer { get; protected set; }
         public override Type? ProxyModelType { get; }
-        public IReadOnlyDictionary<string, IModelMap> RootModelMapsDictionary
+        public IReadOnlyDictionary<string, IModelMapSchema> AllModelMapSchemaDictionary
         {
             get
             {
-                if (_rootModelMapsDictionary is null)
+                if (_allModelMapSchemaDictionary is null)
                 {
-                    var modelMaps = new[] { ActiveModelMap }.Concat(_secondaryModelMaps);
+                    var modelMaps = new[] { ActiveModelMapSchema }.Concat(_secondaryModelMapSchemas);
 
-                    if (FallbackModelMap is not null)
-                        modelMaps = modelMaps.Append(FallbackModelMap);
+                    if (FallbackModelMapSchema is not null)
+                        modelMaps = modelMaps.Append(FallbackModelMapSchema);
 
                     var result = modelMaps.ToDictionary(modelMap => modelMap.Id);
 
@@ -75,12 +75,12 @@ namespace Etherna.MongODM.Core.Serialization.Mapping.Schemas
                         return result;
 
                     //optimize performance only if frozen
-                    _rootModelMapsDictionary = result;
+                    _allModelMapSchemaDictionary = result;
                 }
-                return _rootModelMapsDictionary;
+                return _allModelMapSchemaDictionary;
             }
         }
-        public IEnumerable<IModelMap> SecondaryModelMaps => _secondaryModelMaps;
+        public IEnumerable<IModelMapSchema> SecondaryModelMapSchemas => _secondaryModelMapSchemas;
 
         // Protected methods.
         protected void AddFallbackCustomSerializerHelper(IBsonSerializer fallbackSerializer) =>
@@ -94,39 +94,39 @@ namespace Etherna.MongODM.Core.Serialization.Mapping.Schemas
                 FallbackSerializer = fallbackSerializer;
             });
 
-        protected void AddFallbackModelMapHelper(IModelMap fallbackModelMap) =>
+        protected void AddFallbackModelMapSchemaHelper(IModelMapSchema fallbackModelMapSchema) =>
             ExecuteConfigAction(() =>
             {
-                if (fallbackModelMap is null)
-                    throw new ArgumentNullException(nameof(fallbackModelMap));
-                if (FallbackModelMap is not null)
-                    throw new InvalidOperationException("Fallback model map already setted");
+                if (fallbackModelMapSchema is null)
+                    throw new ArgumentNullException(nameof(fallbackModelMapSchema));
+                if (FallbackModelMapSchema is not null)
+                    throw new InvalidOperationException("Fallback model map schema already setted");
 
-                FallbackModelMap = fallbackModelMap;
+                FallbackModelMapSchema = fallbackModelMapSchema;
             });
 
-        protected void AddSecondaryMapHelper(IModelMap modelMap) =>
+        protected void AddSecondaryModelMapSchemaHelper(IModelMapSchema modelMapSchema) =>
             ExecuteConfigAction(() =>
             {
-                if (modelMap is null)
-                    throw new ArgumentNullException(nameof(modelMap));
+                if (modelMapSchema is null)
+                    throw new ArgumentNullException(nameof(modelMapSchema));
 
                 // Try to use proxy model generator.
-                modelMap.TryUseProxyGenerator(DbContext);
+                modelMapSchema.TryUseProxyGenerator(DbContext);
 
                 // Add schema.
-                _secondaryModelMaps.Add(modelMap);
+                _secondaryModelMapSchemas.Add(modelMapSchema);
                 return this;
             });
 
         protected override void FreezeAction()
         {
             // Freeze model maps.
-            foreach (var modelMap in RootModelMapsDictionary.Values)
+            foreach (var modelMap in AllModelMapSchemaDictionary.Values)
                 modelMap.Freeze();
 
             // Initialize member maps.
-            foreach (var modelMap in RootModelMapsDictionary.Values)
+            foreach (var modelMap in AllModelMapSchemaDictionary.Values)
             {
                 // Ignore model maps of abstract types. (child classes will map all their members)
                 if (modelMap.ModelType.IsAbstract)
@@ -135,7 +135,7 @@ namespace Etherna.MongODM.Core.Serialization.Mapping.Schemas
                 if (DbContext.ProxyGenerator.IsProxyType(modelMap.ModelType))
                     return;
 
-                ((ModelMap)modelMap).InitializeMemberMaps(new MemberPath(Array.Empty<(IModelMap OwnerModel, BsonMemberMap Member)>()));
+                ((ModelMapSchema)modelMap).InitializeMemberMaps(new MemberPath(Array.Empty<(IModelMapSchema OwnerModel, BsonMemberMap Member)>()));
             }
         }
     }

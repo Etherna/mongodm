@@ -15,45 +15,45 @@
 using Etherna.MongoDB.Bson.Serialization;
 using System;
 
-namespace Etherna.MongODM.Core.Serialization.Mapping.Schemas
+namespace Etherna.MongODM.Core.Serialization.Mapping
 {
-    public interface IModelSchemaBuilder<TModel>
+    public interface IRootModelMapBuilder<TModel>
     {
         // Methods.
         /// <summary>
         /// Add a fallback serializer invoked in case of unrecognized schema id
         /// </summary>
         /// <param name="fallbackSerializer">Fallback serializer</param>
-        /// <returns>This same model schema</returns>
-        IModelSchemaBuilder<TModel> AddFallbackCustomSerializer(
+        /// <returns>This same model map</returns>
+        IRootModelMapBuilder<TModel> AddFallbackCustomSerializerMap(
             IBsonSerializer<TModel> fallbackSerializer);
 
         /// <summary>
         /// Add a fallback model map invoked in case of unrecognized schema id, and absence of fallback serializer
         /// </summary>
-        /// <param name="modelMapInitializer">The model map inizializer</param>
-        /// <param name="baseModelMapId">Id of the base model map for this model map</param>
+        /// <param name="modelMapSchemaInitializer">The model map inizializer</param>
+        /// <param name="baseModelMapSchemaId">Id of the base model map for this model map</param>
         /// <param name="customSerializer">Custom serializer</param>
-        /// <returns>This same model schema configuration</returns>
-        IModelSchemaBuilder<TModel> AddFallbackModelMap(
-            Action<BsonClassMap<TModel>>? modelMapInitializer = null,
-            string? baseModelMapId = null,
+        /// <returns>This same model map configuration</returns>
+        IRootModelMapBuilder<TModel> AddFallbackModelMapSchema(
+            Action<BsonClassMap<TModel>>? modelMapSchemaInitializer = null,
+            string? baseModelMapSchemaId = null,
             IBsonSerializer<TModel>? customSerializer = null);
 
         /// <summary>
         /// Add a fallback model map invoked in case of unrecognized schema id, and absence of fallback serializer
         /// </summary>
-        /// <param name="modelMap">The model map</param>
-        /// <returns>This same model schema configuration</returns>
-        IModelSchemaBuilder<TModel> AddFallbackModelMap(
-            IModelMap<TModel> modelMap);
+        /// <param name="modelMapSchema">The model map schema</param>
+        /// <returns>This same model map configuration</returns>
+        IRootModelMapBuilder<TModel> AddFallbackModelMapSchema(
+            IModelMapSchema<TModel> modelMapSchema);
 
         /// <summary>
-        /// Register a secondary model map
+        /// Register a secondary model map schema
         /// </summary>
-        /// <param name="modelMap">The model map</param>
-        /// <returns>This same model schema configuration</returns>
-        IModelSchemaBuilder<TModel> AddSecondaryMap(
-            IModelMap<TModel> modelMap);
+        /// <param name="modelMapSchema">The model map schema</param>
+        /// <returns>This same model map configuration</returns>
+        IRootModelMapBuilder<TModel> AddSecondaryModelMapSchema(
+            IModelMapSchema<TModel> modelMapSchema);
     }
 }

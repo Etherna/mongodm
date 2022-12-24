@@ -14,7 +14,6 @@
 
 using Etherna.MongoDB.Bson;
 using Etherna.MongoDB.Bson.Serialization;
-using Etherna.MongODM.Core.Serialization.Mapping.Schemas;
 using Etherna.MongODM.Core.Utility;
 using System;
 using System.Collections.Generic;
@@ -23,26 +22,26 @@ using System.Reflection;
 namespace Etherna.MongODM.Core.Serialization.Mapping
 {
     /// <summary>
-    /// Interface for <see cref="SchemaRegistry"/> implementation.
+    /// Interface for <see cref="MapRegistry"/> implementation.
     /// </summary>
-    public interface ISchemaRegistry : IDbContextInitializable, IFreezableConfig
+    public interface IMapRegistry : IDbContextInitializable, IFreezableConfig
     {
         // Properties.
         Dictionary<string, IMemberMap> MemberMapsDictionary { get; }
 
         /// <summary>
-        /// All registered schemas, indexed by model type
+        /// All registered maps, indexed by model type
         /// </summary>
-        IReadOnlyDictionary<Type, ISchema> Schemas { get; }
+        IReadOnlyDictionary<Type, IMap> Maps { get; }
 
         // Methods.
         /// <summary>
-        /// Register a new schema based on custom serializer
+        /// Register a new map based on custom serializer
         /// </summary>
         /// <typeparam name="TModel">The model type</typeparam>
         /// <param name="customSerializer">Custom serializer</param>
         /// <returns>The new schema</returns>
-        ICustomSerializerSchemaBuilder<TModel> AddCustomSerializerSchema<TModel>(
+        ICustomSerializerMapBuilder<TModel> AddCustomSerializerMap<TModel>(
             IBsonSerializer<TModel> customSerializer)
             where TModel : class;
 
@@ -50,13 +49,13 @@ namespace Etherna.MongODM.Core.Serialization.Mapping
         /// Register a new schema based on model map
         /// </summary>
         /// <typeparam name="TModel">The model type</typeparam>
-        /// <param name="activeModelMapId">The active model map Id</param>
-        /// <param name="activeModelMapInitializer">The active model map inizializer</param>
+        /// <param name="activeModelMapSchemaId">The active model map schema Id</param>
+        /// <param name="activeModelMapSchemaInitializer">The active model map schema inizializer</param>
         /// <param name="customSerializer">Replace default serializer with a custom</param>
-        /// <returns>The new schema</returns>
-        IModelSchemaBuilder<TModel> AddModelSchema<TModel>(
-            string activeModelMapId,
-            Action<BsonClassMap<TModel>>? activeModelMapInitializer = null,
+        /// <returns>The new model map</returns>
+        IRootModelMapBuilder<TModel> AddModelMap<TModel>(
+            string activeModelMapSchemaId,
+            Action<BsonClassMap<TModel>>? activeModelMapSchemaInitializer = null,
             IBsonSerializer<TModel>? customSerializer = null)
             where TModel : class;
 
@@ -81,18 +80,18 @@ namespace Etherna.MongODM.Core.Serialization.Mapping
         IEnumerable<IMemberMap> GetMemberMapsFromMemberInfo(MemberInfo memberInfo);
 
         /// <summary>
-        /// Get a registered model schema for a given model type
+        /// Get a registered model map for a given model type
         /// </summary>
         /// <param name="modelType">The model type</param>
         /// <returns>The registered model schema</returns>
-        IModelSchema GetModelSchema(Type modelType);
+        IModelMap GetModelMap(Type modelType);
 
         /// <summary>
-        /// Try to get a registered model schema for a given model type
+        /// Try to get a registered model map for a given model type
         /// </summary>
         /// <param name="modelType">The model type</param>
-        /// <param name="modelSchema">Output model schema, if exists</param>
+        /// <param name="modelMap">Output model map, if exists</param>
         /// <returns>Operation result</returns>
-        bool TryGetModelSchema(Type modelType, out IModelSchema? modelSchema);
+        bool TryGetModelMap(Type modelType, out IModelMap? modelMap);
     }
 }

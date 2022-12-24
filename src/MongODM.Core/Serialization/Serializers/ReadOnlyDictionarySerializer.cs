@@ -24,7 +24,8 @@ namespace Etherna.MongODM.Core.Serialization.Serializers
     public class ReadOnlyDictionarySerializer<TKey, TValue> :
         DictionarySerializerBase<IReadOnlyDictionary<TKey, TValue>, TKey, TValue>,
         IChildSerializerConfigurable,
-        IDictionaryRepresentationConfigurable<ReadOnlyDictionarySerializer<TKey, TValue>>
+        IDictionaryRepresentationConfigurable<ReadOnlyDictionarySerializer<TKey, TValue>>,
+        IModelMapsContainerSerializer
     {
         // Constructors.
         public ReadOnlyDictionarySerializer()
@@ -43,9 +44,9 @@ namespace Etherna.MongODM.Core.Serialization.Serializers
         { }
 
         // Properties.
-        public IEnumerable<IModelMap> AllChildModelMaps =>
-            (ValueSerializer as IModelMapsContainerSerializer)?.AllChildModelMaps ??
-            Array.Empty<IModelMap>();
+        public IEnumerable<IModelMapSchema> AllChildModelMapSchemas =>
+            (ValueSerializer as IModelMapsContainerSerializer)?.AllChildModelMapSchemas ??
+            Array.Empty<IModelMapSchema>();
 
         public IBsonSerializer ChildSerializer => ValueSerializer;
 

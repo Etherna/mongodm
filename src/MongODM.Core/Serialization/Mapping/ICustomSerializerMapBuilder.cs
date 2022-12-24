@@ -12,9 +12,9 @@
 //   See the License for the specific language governing permissions and
 //   limitations under the License.
 
-namespace Etherna.MongODM.Core.Serialization.Mapping.Schemas
+namespace Etherna.MongODM.Core.Serialization.Mapping
 {
-    public interface ICustomSerializerSchemaBuilder<TModel>
+    public interface ICustomSerializerMapBuilder<TModel>
         where TModel : class
     {
     }

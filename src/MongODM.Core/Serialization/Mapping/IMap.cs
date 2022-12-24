@@ -13,23 +13,16 @@
 //   limitations under the License.
 
 using Etherna.MongoDB.Bson.Serialization;
+using Etherna.MongODM.Core.Utility;
 using System;
 
-namespace Etherna.MongODM.Core.Serialization.Mapping.Schemas
+namespace Etherna.MongODM.Core.Serialization.Mapping
 {
-    class CustomSerializerSchema<TModel> : SchemaBase, ICustomSerializerSchemaBuilder<TModel>
-        where TModel : class
+    public interface IMap : IFreezableConfig
     {
-        // Constructor.
-        public CustomSerializerSchema(
-            IBsonSerializer<TModel> customSerializer)
-            : base(typeof(TModel))
-        {
-            ActiveSerializer = customSerializer;
-        }
-
         // Properties.
-        public override IBsonSerializer ActiveSerializer { get; }
-        public override Type? ProxyModelType => default;
+        IBsonSerializer ActiveSerializer { get; }
+        Type ModelType { get; }
+        Type? ProxyModelType { get; }
     }
 }

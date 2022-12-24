@@ -14,7 +14,6 @@
 
 using Etherna.MongoDB.Bson.Serialization;
 using Etherna.MongODM.Core.Extensions;
-using Etherna.MongODM.Core.Serialization.Mapping.Schemas;
 using System;
 using System.Linq;
 
@@ -37,7 +36,7 @@ namespace Etherna.MongODM.Core.Serialization.Mapping
 
         public MemberPath DefinitionPath { get; }
 
-        public string Id => $"{RootModelMap.Id}|{DefinitionPath.TypedPathAsString}";
+        public string Id => $"{RootModelMapSchema.Id}|{DefinitionPath.TypedPathAsString}";
 
         /// <summary>
         /// True if member is contained into a referenced entity model
@@ -49,15 +48,15 @@ namespace Etherna.MongODM.Core.Serialization.Mapping
         /// </summary>
         public bool IsIdMember => DefinitionPath.ModelMapsPath.Last().Member.IsIdMember();
 
-        public IModelMap? OwnerEntityModelMap => DefinitionPath.EntityModelMaps.LastOrDefault();
+        public IModelMap ModelMap => OwnerModelMapSchema.ModelMap;
 
-        public IModelMap OwnerModelMap => DefinitionPath.ModelMapsPath.Last().OwnerModel;
+        public IModelMapSchema? OwnerEntityModelMapSchema => DefinitionPath.EntityModelMaps.LastOrDefault();
+
+        public IModelMapSchema OwnerModelMapSchema => DefinitionPath.ModelMapsPath.Last().OwnerModelMapSchema;
 
         /// <summary>
         /// The root owning model map
         /// </summary>
-        public IModelMap RootModelMap => DefinitionPath.ModelMapsPath.First().OwnerModel;
-
-        public IModelSchema Schema => OwnerModelMap.Schema;
+        public IModelMapSchema RootModelMapSchema => DefinitionPath.ModelMapsPath.First().OwnerModelMapSchema;
     }
 }

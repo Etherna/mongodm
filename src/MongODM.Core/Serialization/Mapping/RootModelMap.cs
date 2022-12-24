@@ -15,44 +15,44 @@
 using Etherna.MongoDB.Bson.Serialization;
 using System;
 
-namespace Etherna.MongODM.Core.Serialization.Mapping.Schemas
+namespace Etherna.MongODM.Core.Serialization.Mapping
 {
-    internal class ModelSchema<TModel> : ModelSchemaBase, IModelSchemaBuilder<TModel>
+    internal class RootModelMap<TModel> : ModelMapBase, IRootModelMapBuilder<TModel>
         where TModel : class
     {
         // Constructor.
-        public ModelSchema(IDbContext dbContext)
+        public RootModelMap(IDbContext dbContext)
             : base(dbContext, typeof(TModel))
         { }
 
         // Methods.
-        public IModelSchemaBuilder<TModel> AddFallbackCustomSerializer(IBsonSerializer<TModel> fallbackSerializer)
+        public IRootModelMapBuilder<TModel> AddFallbackCustomSerializerMap(IBsonSerializer<TModel> fallbackSerializer)
         {
             AddFallbackCustomSerializerHelper(fallbackSerializer);
             return this;
         }
 
-        public IModelSchemaBuilder<TModel> AddFallbackModelMap(
-            Action<BsonClassMap<TModel>>? modelMapInitializer = null,
-            string? baseModelMapId = null,
+        public IRootModelMapBuilder<TModel> AddFallbackModelMapSchema(
+            Action<BsonClassMap<TModel>>? modelMapSchemaInitializer = null,
+            string? baseModelMapSchemaId = null,
             IBsonSerializer<TModel>? customSerializer = null) =>
-            AddFallbackModelMap(new ModelMap<TModel>(
+            AddFallbackModelMapSchema(new ModelMapSchema<TModel>(
                 "fallback",
-                new BsonClassMap<TModel>(modelMapInitializer ?? (cm => cm.AutoMap())),
-                baseModelMapId,
+                new BsonClassMap<TModel>(modelMapSchemaInitializer ?? (cm => cm.AutoMap())),
+                baseModelMapSchemaId,
                 null,
                 customSerializer,
                 this));
 
-        public IModelSchemaBuilder<TModel> AddFallbackModelMap(IModelMap<TModel> modelMap)
+        public IRootModelMapBuilder<TModel> AddFallbackModelMapSchema(IModelMapSchema<TModel> modelMapSchema)
         {
-            AddFallbackModelMapHelper(modelMap);
+            AddFallbackModelMapSchemaHelper(modelMapSchema);
             return this;
         }
 
-        public IModelSchemaBuilder<TModel> AddSecondaryMap(IModelMap<TModel> modelMap)
+        public IRootModelMapBuilder<TModel> AddSecondaryModelMapSchema(IModelMapSchema<TModel> modelMapSchema)
         {
-            AddSecondaryMapHelper(modelMap);
+            AddSecondaryModelMapSchemaHelper(modelMapSchema);
             return this;
         }
     }

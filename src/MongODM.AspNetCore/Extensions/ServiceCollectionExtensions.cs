@@ -102,8 +102,8 @@ namespace Etherna.MongODM
             services.TryAddTransient<IDbMaintainer, DbMaintainer>();
             services.TryAddTransient<IDbMigrationManager, DbMigrationManager>();
             services.TryAddTransient<IDiscriminatorRegistry, DiscriminatorRegistry>();
+            services.TryAddTransient<IMapRegistry, MapRegistry>();
             services.TryAddTransient<IRepositoryRegistry, RepositoryRegistry>();
-            services.TryAddTransient<ISchemaRegistry, SchemaRegistry>();
             services.TryAddSingleton<ISerializerModifierAccessor, SerializerModifierAccessor>();
 
             //tasks

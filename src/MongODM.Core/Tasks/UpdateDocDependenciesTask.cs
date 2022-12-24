@@ -77,8 +77,8 @@ namespace Etherna.MongODM.Core.Tasks
              * In this case, replace summary with minimal reference with only Id.
              */
             var idMemberMaps = idMemberMapIdentifiers
-                .Select(idMemberMapIdentifier => dbContext.SchemaRegistry.MemberMapsDictionary[idMemberMapIdentifier])
-                .Where(idMemberMap => idMemberMap.Schema.ModelType == referencedModel.GetType());
+                .Select(idMemberMapIdentifier => dbContext.MapRegistry.MemberMapsDictionary[idMemberMapIdentifier])
+                .Where(idMemberMap => idMemberMap.ModelMap.ModelType == referencedModel.GetType());
 
             // Define mapping of serializers and serialized documents.
             /*
@@ -89,11 +89,11 @@ namespace Etherna.MongODM.Core.Tasks
              * This permits to denormalize and optimize the mapping from each id path to all their possible serialized documents.
              */
             var repositoryDictionary = idMemberMaps
-                .GroupBy(idmm => dbContext.RepositoryRegistry.GetRepositoryByHandledModelType(idmm.RootModelMap.ModelType))
+                .GroupBy(idmm => dbContext.RepositoryRegistry.GetRepositoryByHandledModelType(idmm.RootModelMapSchema.ModelType))
                 .ToDictionary(repoGroup => repoGroup.Key,
                               repoGroup => repoGroup.GroupBy(idmm => MemberMapToMongoFindString(idmm))
                                                     .ToDictionary(idFindStringGroup => idFindStringGroup.Key,
-                                                                  idFindStringGroup => idFindStringGroup.Select(idmm => idmm.OwnerModelMap.Serializer)));
+                                                                  idFindStringGroup => idFindStringGroup.Select(idmm => idmm.OwnerModelMapSchema.Serializer)));
             var serializedDocumentDictionary = repositoryDictionary
                 .SelectMany(repoPair => repoPair.Value)
                 .SelectMany(idFindStringPair => idFindStringPair.Value)

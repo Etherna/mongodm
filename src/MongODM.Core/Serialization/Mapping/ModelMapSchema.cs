@@ -14,7 +14,6 @@
 
 using Etherna.MongoDB.Bson.Serialization;
 using Etherna.MongODM.Core.Extensions;
-using Etherna.MongODM.Core.Serialization.Mapping.Schemas;
 using Etherna.MongODM.Core.Serialization.Serializers;
 using Etherna.MongODM.Core.Utility;
 using System;
@@ -25,7 +24,7 @@ using System.Threading.Tasks;
 
 namespace Etherna.MongODM.Core.Serialization.Mapping
 {
-    public abstract class ModelMap : FreezableConfig, IModelMap
+    public abstract class ModelMapSchema : FreezableConfig, IModelMapSchema
     {
         // Fields.
         private readonly Dictionary<string, IMemberMap> _memberMapsDictionary = new(); // Id -> MemberMap
@@ -34,21 +33,21 @@ namespace Etherna.MongODM.Core.Serialization.Mapping
         private readonly IBsonSerializer? customSerializer;
 
         // Constructors.
-        internal protected ModelMap(
+        internal protected ModelMapSchema(
             string id,
-            string? baseModelMapId,
+            string? baseModelMapSchemaId,
             BsonClassMap bsonClassMap,
             IBsonSerializer? customSerializer,
-            IModelSchema schema)
+            IModelMap modelMap)
         {
             if (string.IsNullOrEmpty(id))
                 throw new ArgumentException($"'{nameof(id)}' cannot be null or empty", nameof(id));
 
             Id = id;
-            BaseModelMapId = baseModelMapId;
+            BaseModelMapSchemaId = baseModelMapSchemaId;
             BsonClassMap = bsonClassMap ?? throw new ArgumentNullException(nameof(bsonClassMap));
             this.customSerializer = customSerializer;
-            Schema = schema ?? throw new ArgumentNullException(nameof(schema));
+            ModelMap = modelMap ?? throw new ArgumentNullException(nameof(modelMap));
         }
 
         // Properties.
@@ -56,29 +55,29 @@ namespace Etherna.MongODM.Core.Serialization.Mapping
         public IReadOnlyDictionary<string, IMemberMap> AllChildMemberMapsDictionary => BsonClassMap.AllMemberMaps
             .Select(bsonMemberMap => bsonMemberMap.GetSerializer())
             .OfType<IModelMapsContainerSerializer>()
-            .SelectMany(serializer => serializer.AllChildModelMaps.SelectMany(mm => mm.AllChildMemberMapsDictionary))
+            .SelectMany(serializer => serializer.AllChildModelMapSchemas.SelectMany(mm => mm.AllChildMemberMapsDictionary))
             .ToDictionary(pair => pair.Key, pair => pair.Value);
-        public string? BaseModelMapId { get; private set; }
+        public string? BaseModelMapSchemaId { get; private set; }
         public BsonClassMap BsonClassMap { get; }
         public IMemberMap? IdMemberMap => MemberMapsDictionary.Values.FirstOrDefault(mm => mm.IsIdMember);
         public bool IsEntity => BsonClassMap.IsEntity();
         public IReadOnlyDictionary<string, IMemberMap> MemberMapsDictionary => _memberMapsDictionary;
+        public IModelMap ModelMap { get; }
         public Type ModelType => BsonClassMap.ClassType;
-        public IModelSchema Schema { get; }
         public IBsonSerializer Serializer => _serializer ??= customSerializer ?? BsonClassMap.ToSerializer();
 
         // Methods.
         public Task<object> FixDeserializedModelAsync(object model) =>
             FixDeserializedModelHelperAsync(model);
 
-        public void SetBaseModelMap(IModelMap baseModelMap) =>
+        public void SetBaseModelMapSchema(IModelMapSchema baseModelMapSchema) =>
             ExecuteConfigAction(() =>
             {
-                if (baseModelMap is null)
-                    throw new ArgumentNullException(nameof(baseModelMap));
+                if (baseModelMapSchema is null)
+                    throw new ArgumentNullException(nameof(baseModelMapSchema));
 
-                BaseModelMapId = baseModelMap.Id;
-                BsonClassMap.SetBaseClassMap(baseModelMap.BsonClassMap);
+                BaseModelMapSchemaId = baseModelMapSchema.Id;
+                BsonClassMap.SetBaseClassMap(baseModelMapSchema.BsonClassMap);
             });
 
         public void UseProxyGenerator(IDbContext dbContext) =>
@@ -153,10 +152,10 @@ namespace Etherna.MongODM.Core.Serialization.Mapping
                 // Analize recursion on member.
                 var memberSerializer = bsonMemberMap.GetSerializer();
                 if (memberSerializer is IModelMapsContainerSerializer modelMapsContainerSerializer)
-                    foreach (var childModelMap in modelMapsContainerSerializer.AllChildModelMaps)
+                    foreach (var childModelMapSchema in modelMapsContainerSerializer.AllChildModelMapSchemas)
                     {
-                        childModelMap.Freeze();
-                        ((ModelMap)childModelMap).InitializeMemberMaps(newMemberPath);
+                        childModelMapSchema.Freeze();
+                        ((ModelMapSchema)childModelMapSchema).InitializeMemberMaps(newMemberPath);
                     }
             }
         }
@@ -172,19 +171,19 @@ namespace Etherna.MongODM.Core.Serialization.Mapping
         }
     }
 
-    public class ModelMap<TModel> : ModelMap, IModelMap<TModel>
+    public class ModelMapSchema<TModel> : ModelMapSchema, IModelMapSchema<TModel>
     {
         private readonly Func<TModel, Task<TModel>>? fixDeserializedModelFunc;
 
         // Constructors.
-        internal ModelMap(
+        internal ModelMapSchema(
             string id,
             BsonClassMap<TModel>? bsonClassMap,
-            string? baseModelMapId,
+            string? baseModelMapSchemaId,
             Func<TModel, Task<TModel>>? fixDeserializedModelFunc,
             IBsonSerializer<TModel>? customSerializer,
-            IModelSchema schema)
-            : base(id, baseModelMapId, bsonClassMap ?? new BsonClassMap<TModel>(cm => cm.AutoMap()), customSerializer, schema)
+            IModelMap modelMap)
+            : base(id, baseModelMapSchemaId, bsonClassMap ?? new BsonClassMap<TModel>(cm => cm.AutoMap()), customSerializer, modelMap)
         {
             this.fixDeserializedModelFunc = fixDeserializedModelFunc;
         }
@@ -211,20 +210,20 @@ namespace Etherna.MongODM.Core.Serialization.Mapping
         }
     }
 
-    public class ModelMap<TModel, TOverrideNominal> : ModelMap, IModelMap<TModel>
+    public class ModelMapSchema<TModel, TOverrideNominal> : ModelMapSchema, IModelMapSchema<TModel>
         where TOverrideNominal : class, TModel
     {
         private readonly Func<TOverrideNominal, Task<TOverrideNominal>>? fixDeserializedModelFunc;
 
         // Constructors.
-        internal ModelMap(
+        internal ModelMapSchema(
             string id,
             BsonClassMap<TOverrideNominal>? bsonClassMap,
-            string? baseModelMapId,
+            string? baseModelMapSchemaId,
             Func<TOverrideNominal, Task<TOverrideNominal>>? fixDeserializedModelFunc,
             IBsonSerializer<TOverrideNominal>? customSerializer,
-            IModelSchema schema)
-            : base(id, baseModelMapId, bsonClassMap ?? new BsonClassMap<TOverrideNominal>(cm => cm.AutoMap()), customSerializer, schema)
+            IModelMap modelMap)
+            : base(id, baseModelMapSchemaId, bsonClassMap ?? new BsonClassMap<TOverrideNominal>(cm => cm.AutoMap()), customSerializer, modelMap)
         {
             this.fixDeserializedModelFunc = fixDeserializedModelFunc;
         }

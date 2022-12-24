@@ -90,7 +90,7 @@ namespace Etherna.MongODM.Core.Utility
 
             // Find all possibly involved member maps with changes. Select only referenced members.
             var referenceMemberMaps = updatedModel.ChangedMembers
-                .SelectMany(updatedMemberInfo => dbContext.SchemaRegistry.GetMemberMapsFromMemberInfo(updatedMemberInfo))
+                .SelectMany(updatedMemberInfo => dbContext.MapRegistry.GetMemberMapsFromMemberInfo(updatedMemberInfo))
                 .Where(memberMap => memberMap.IsEntityReferenceMember);
 
             // Find related id member maps.
@@ -101,7 +101,7 @@ namespace Etherna.MongODM.Core.Utility
              * We pass member maps' string ids because strings are better serializable by the task executor.
              * All member maps must be recovered by the task using Ids from the schema register.
              *****/
-            var idMemberMaps = referenceMemberMaps.Select(mm => mm.OwnerEntityModelMap!.IdMemberMap!)
+            var idMemberMaps = referenceMemberMaps.Select(mm => mm.OwnerEntityModelMapSchema!.IdMemberMap!)
                                                   .Distinct();
 
             // Enqueue call of background job.
