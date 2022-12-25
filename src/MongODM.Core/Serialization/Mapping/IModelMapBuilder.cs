@@ -17,7 +17,7 @@ using System;
 
 namespace Etherna.MongODM.Core.Serialization.Mapping
 {
-    public interface IRootModelMapBuilder<TModel>
+    public interface IModelMapBuilder<TModel>
     {
         // Methods.
         /// <summary>
@@ -25,7 +25,7 @@ namespace Etherna.MongODM.Core.Serialization.Mapping
         /// </summary>
         /// <param name="fallbackSerializer">Fallback serializer</param>
         /// <returns>This same model map</returns>
-        IRootModelMapBuilder<TModel> AddFallbackCustomSerializerMap(
+        IModelMapBuilder<TModel> AddFallbackCustomSerializerMap(
             IBsonSerializer<TModel> fallbackSerializer);
 
         /// <summary>
@@ -33,27 +33,21 @@ namespace Etherna.MongODM.Core.Serialization.Mapping
         /// </summary>
         /// <param name="modelMapSchemaInitializer">The model map inizializer</param>
         /// <param name="baseModelMapSchemaId">Id of the base model map for this model map</param>
-        /// <param name="customSerializer">Custom serializer</param>
-        /// <returns>This same model map configuration</returns>
-        IRootModelMapBuilder<TModel> AddFallbackModelMapSchema(
+        /// <returns>This same model map</returns>
+        IModelMapBuilder<TModel> AddFallbackModelMapSchema(
             Action<BsonClassMap<TModel>>? modelMapSchemaInitializer = null,
-            string? baseModelMapSchemaId = null,
-            IBsonSerializer<TModel>? customSerializer = null);
-
-        /// <summary>
-        /// Add a fallback model map invoked in case of unrecognized schema id, and absence of fallback serializer
-        /// </summary>
-        /// <param name="modelMapSchema">The model map schema</param>
-        /// <returns>This same model map configuration</returns>
-        IRootModelMapBuilder<TModel> AddFallbackModelMapSchema(
-            IModelMapSchema<TModel> modelMapSchema);
+            string? baseModelMapSchemaId = null);
 
         /// <summary>
         /// Register a secondary model map schema
         /// </summary>
-        /// <param name="modelMapSchema">The model map schema</param>
-        /// <returns>This same model map configuration</returns>
-        IRootModelMapBuilder<TModel> AddSecondaryModelMapSchema(
-            IModelMapSchema<TModel> modelMapSchema);
+        /// <param name="id">The map Id</param>
+        /// <param name="modelMapSchemaInitializer">The model map schema inizializer</param>
+        /// <param name="baseModelMapSchemaId">Id of the base model map schema for this model map schema</param>
+        /// <returns>This same model map</returns>
+        IModelMapBuilder<TModel> AddSecondaryModelMapSchema(
+            string id,
+            Action<BsonClassMap<TModel>>? modelMapSchemaInitializer = null,
+            string? baseModelMapSchemaId = null);
     }
 }

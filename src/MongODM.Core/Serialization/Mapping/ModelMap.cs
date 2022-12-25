@@ -19,7 +19,7 @@ using System.Linq;
 
 namespace Etherna.MongODM.Core.Serialization.Mapping
 {
-    internal abstract class ModelMapBase : MapBase, IModelMap
+    internal abstract class ModelMap : MapBase, IModelMap
     {
         // Fields.
         private IModelMapSchema _activeModelMapSchema = default!;
@@ -27,7 +27,7 @@ namespace Etherna.MongODM.Core.Serialization.Mapping
         protected readonly List<IModelMapSchema> _secondaryModelMapSchemas = new();
 
         // Constructor.
-        protected ModelMapBase(
+        protected ModelMap(
             IDbContext dbContext,
             Type modelType)
             : base(modelType)
@@ -137,6 +137,51 @@ namespace Etherna.MongODM.Core.Serialization.Mapping
 
                 ((ModelMapSchema)modelMap).InitializeMemberMaps(new MemberPath(Array.Empty<(IModelMapSchema OwnerModel, BsonMemberMap Member)>()));
             }
+        }
+    }
+
+    internal class ModelMap<TModel> : ModelMap, IModelMapBuilder<TModel>
+        where TModel : class
+    {
+        // Constructor.
+        public ModelMap(IDbContext dbContext)
+            : base(dbContext, typeof(TModel))
+        { }
+
+        // Methods.
+        public IModelMapBuilder<TModel> AddFallbackCustomSerializerMap(IBsonSerializer<TModel> fallbackSerializer)
+        {
+            AddFallbackCustomSerializerHelper(fallbackSerializer);
+            return this;
+        }
+
+        public IModelMapBuilder<TModel> AddFallbackModelMapSchema(
+            Action<BsonClassMap<TModel>>? modelMapSchemaInitializer = null,
+            string? baseModelMapSchemaId = null)
+        {
+            AddFallbackModelMapSchemaHelper(new ModelMapSchema<TModel>(
+                "fallback",
+                new BsonClassMap<TModel>(modelMapSchemaInitializer ?? (cm => cm.AutoMap())),
+                baseModelMapSchemaId,
+                null,
+                null,
+                this));
+            return this;
+        }
+
+        public IModelMapBuilder<TModel> AddSecondaryModelMapSchema(
+            string id,
+            Action<BsonClassMap<TModel>>? modelMapSchemaInitializer = null,
+            string? baseModelMapSchemaId = null)
+        {
+            AddFallbackModelMapSchemaHelper(new ModelMapSchema<TModel>(
+                id,
+                new BsonClassMap<TModel>(modelMapSchemaInitializer ?? (cm => cm.AutoMap())),
+                baseModelMapSchemaId,
+                null,
+                null,
+                this));
+            return this;
         }
     }
 }

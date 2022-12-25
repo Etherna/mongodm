@@ -72,7 +72,7 @@ namespace Etherna.MongODM.Core.Serialization.Mapping
                 return customSerializerMap;
             });
 
-        public IRootModelMapBuilder<TModel> AddModelMap<TModel>(
+        public IModelMapBuilder<TModel> AddModelMap<TModel>(
             string activeModelMapSchemaId,
             Action<BsonClassMap<TModel>>? activeModelMapSchemaInitializer = null,
             IBsonSerializer<TModel>? activeCustomSerializer = null)
@@ -80,7 +80,7 @@ namespace Etherna.MongODM.Core.Serialization.Mapping
             ExecuteConfigAction(() =>
             {
                 // Register and add schema configuration.
-                var modelMap = new RootModelMap<TModel>(dbContext);
+                var modelMap = new ModelMap<TModel>(dbContext);
                 _maps.Add(typeof(TModel), modelMap);
 
                 // Create model map and set it as active in schema.
@@ -258,10 +258,10 @@ namespace Etherna.MongODM.Core.Serialization.Mapping
         {
             // Construct.
             //model schema
-            var modelMapDefinition = typeof(RootModelMap<>);
+            var modelMapDefinition = typeof(ModelMap<>);
             var modelMapType = modelMapDefinition.MakeGenericType(modelType);
 
-            var modelMap = (ModelMapBase)Activator.CreateInstance(
+            var modelMap = (ModelMap)Activator.CreateInstance(
                 modelMapType,
                 dbContext);          //IDbContext dbContext
 

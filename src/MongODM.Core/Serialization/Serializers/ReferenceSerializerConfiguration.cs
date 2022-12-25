@@ -43,7 +43,7 @@ namespace Etherna.MongODM.Core.Serialization.Serializers
         public IReadOnlyDictionary<Type, IModelMap> ModelMaps => _modelMaps;
 
         // Methods.
-        public IReferenceModelMapBuilder<TModel> AddModelMap<TModel>(
+        public IModelMapBuilder<TModel> AddModelMap<TModel>(
             string activeModelMapSchemaId,
             Action<BsonClassMap<TModel>>? activeModelMapSchemaInitializer = null,
             string? baseModelMapSchemaId = null)
@@ -51,7 +51,7 @@ namespace Etherna.MongODM.Core.Serialization.Serializers
             ExecuteConfigAction(() =>
             {
                 // Register and return schema configuration.
-                var modelMap = new ReferenceModelMap<TModel>(dbContext);
+                var modelMap = new ModelMap<TModel>(dbContext);
                 _modelMaps.Add(typeof(TModel), modelMap);
 
                 // Create model map and set it as active in schema.
@@ -67,7 +67,7 @@ namespace Etherna.MongODM.Core.Serialization.Serializers
                 // If model schema uses proxy model, register a new one for proxy type.
                 if (modelMap.ProxyModelType != null)
                 {
-                    var proxyModelMap = CreateNewDefaultReferenceModelMap(modelMap.ProxyModelType);
+                    var proxyModelMap = CreateNewDefaultModelMap(modelMap.ProxyModelType);
                     _modelMaps.Add(modelMap.ProxyModelType, proxyModelMap);
                 }
 
@@ -135,13 +135,13 @@ namespace Etherna.MongODM.Core.Serialization.Serializers
         }
 
         // Helpers
-        private IModelMap CreateNewDefaultReferenceModelMap(Type modelType)
+        private IModelMap CreateNewDefaultModelMap(Type modelType)
         {
             //model schema
-            var modelSchemaDefinition = typeof(ReferenceModelMap<>);
+            var modelSchemaDefinition = typeof(ModelMap<>);
             var modelSchemaType = modelSchemaDefinition.MakeGenericType(modelType);
 
-            var modelSchema = (ModelMapBase)Activator.CreateInstance(
+            var modelSchema = (ModelMap)Activator.CreateInstance(
                 modelSchemaType,
                 dbContext);          //IDbContext dbContext
 
@@ -198,7 +198,7 @@ namespace Etherna.MongODM.Core.Serialization.Serializers
                 if (!_modelMaps.TryGetValue(baseModelType, out IModelMap baseModelMap))
                 {
                     // Create schema instance.
-                    baseModelMap = CreateNewDefaultReferenceModelMap(baseModelType);
+                    baseModelMap = CreateNewDefaultModelMap(baseModelType);
 
                     // Register schema instance.
                     _modelMaps.Add(baseModelType, baseModelMap);
