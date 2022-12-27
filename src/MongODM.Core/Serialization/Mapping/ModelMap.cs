@@ -13,6 +13,7 @@
 //   limitations under the License.
 
 using Etherna.MongoDB.Bson.Serialization;
+using Etherna.MongODM.Core.Serialization.Serializers;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -22,9 +23,10 @@ namespace Etherna.MongODM.Core.Serialization.Mapping
     internal abstract class ModelMap : MapBase, IModelMap
     {
         // Fields.
-        private IModelMapSchema _activeModelMapSchema = default!;
-        private Dictionary<string, IModelMapSchema> _allModelMapSchemaDictionary = default!; // Id -> ModelMap
-        protected readonly List<IModelMapSchema> _secondaryModelMapSchemas = new();
+        private IModelMapSchema _activeSchema = default!;
+        private readonly List<IMemberMap> _definedMemberMaps = new();
+        private Dictionary<string, IModelMapSchema> _schemasById = default!;
+        protected readonly List<IModelMapSchema> _secondarySchemas = new();
 
         // Constructor.
         protected ModelMap(
@@ -44,30 +46,39 @@ namespace Etherna.MongODM.Core.Serialization.Mapping
         }
 
         // Properties.
-        public IModelMapSchema ActiveModelMapSchema
+        public IModelMapSchema ActiveSchema
         {
-            get => _activeModelMapSchema;
+            get => _activeSchema;
             internal set
             {
-                _activeModelMapSchema = value;
-                _activeModelMapSchema.TryUseProxyGenerator(DbContext);
+                _activeSchema = value;
+                _activeSchema.TryUseProxyGenerator(DbContext);
             }
         }
-        public override IBsonSerializer ActiveSerializer => ActiveModelMapSchema.Serializer;
+        public override IBsonSerializer ActiveSerializer => ActiveSchema.Serializer;
+        public IEnumerable<IMemberMap> AllDescendingMemberMaps => DefinedMemberMaps.SelectMany(mm => mm.AllDescendingMemberMaps);
         public IDbContext DbContext { get; }
-        public IModelMapSchema? FallbackModelMapSchema { get; protected set; }
-        public IBsonSerializer? FallbackSerializer { get; protected set; }
-        public override Type? ProxyModelType { get; }
-        public IReadOnlyDictionary<string, IModelMapSchema> AllModelMapSchemaDictionary
+        public IEnumerable<IMemberMap> DefinedMemberMaps
         {
             get
             {
-                if (_allModelMapSchemaDictionary is null)
+                Freeze(); //needed for initialization
+                return _definedMemberMaps!;
+            }
+        }
+        public IModelMapSchema? FallbackSchema { get; protected set; }
+        public IBsonSerializer? FallbackSerializer { get; protected set; }
+        public override Type? ProxyModelType { get; }
+        public IReadOnlyDictionary<string, IModelMapSchema> SchemasById
+        {
+            get
+            {
+                if (_schemasById is null)
                 {
-                    var modelMaps = new[] { ActiveModelMapSchema }.Concat(_secondaryModelMapSchemas);
+                    var modelMaps = new[] { ActiveSchema }.Concat(_secondarySchemas);
 
-                    if (FallbackModelMapSchema is not null)
-                        modelMaps = modelMaps.Append(FallbackModelMapSchema);
+                    if (FallbackSchema is not null)
+                        modelMaps = modelMaps.Append(FallbackSchema);
 
                     var result = modelMaps.ToDictionary(modelMap => modelMap.Id);
 
@@ -75,12 +86,12 @@ namespace Etherna.MongODM.Core.Serialization.Mapping
                         return result;
 
                     //optimize performance only if frozen
-                    _allModelMapSchemaDictionary = result;
+                    _schemasById = result;
                 }
-                return _allModelMapSchemaDictionary;
+                return _schemasById;
             }
         }
-        public IEnumerable<IModelMapSchema> SecondaryModelMapSchemas => _secondaryModelMapSchemas;
+        public IEnumerable<IModelMapSchema> SecondarySchemas => _secondarySchemas;
 
         // Protected methods.
         protected void AddFallbackCustomSerializerHelper(IBsonSerializer fallbackSerializer) =>
@@ -94,49 +105,69 @@ namespace Etherna.MongODM.Core.Serialization.Mapping
                 FallbackSerializer = fallbackSerializer;
             });
 
-        protected void AddFallbackModelMapSchemaHelper(IModelMapSchema fallbackModelMapSchema) =>
+        protected void AddFallbackModelMapSchemaHelper(IModelMapSchema fallbackSchema) =>
             ExecuteConfigAction(() =>
             {
-                if (fallbackModelMapSchema is null)
-                    throw new ArgumentNullException(nameof(fallbackModelMapSchema));
-                if (FallbackModelMapSchema is not null)
+                if (fallbackSchema is null)
+                    throw new ArgumentNullException(nameof(fallbackSchema));
+                if (FallbackSchema is not null)
                     throw new InvalidOperationException("Fallback model map schema already setted");
 
-                FallbackModelMapSchema = fallbackModelMapSchema;
+                FallbackSchema = fallbackSchema;
             });
 
-        protected void AddSecondaryModelMapSchemaHelper(IModelMapSchema modelMapSchema) =>
+        protected void AddSecondarySchemaHelper(IModelMapSchema schema) =>
             ExecuteConfigAction(() =>
             {
-                if (modelMapSchema is null)
-                    throw new ArgumentNullException(nameof(modelMapSchema));
+                if (schema is null)
+                    throw new ArgumentNullException(nameof(schema));
 
                 // Try to use proxy model generator.
-                modelMapSchema.TryUseProxyGenerator(DbContext);
+                schema.TryUseProxyGenerator(DbContext);
 
                 // Add schema.
-                _secondaryModelMapSchemas.Add(modelMapSchema);
+                _secondarySchemas.Add(schema);
                 return this;
             });
 
         protected override void FreezeAction()
         {
-            // Freeze model maps.
-            foreach (var modelMap in AllModelMapSchemaDictionary.Values)
-                modelMap.Freeze();
-
-            // Initialize member maps.
-            foreach (var modelMap in AllModelMapSchemaDictionary.Values)
+            // Initialize defined member maps.
+            foreach (var schema in SchemasById.Values)
             {
-                // Ignore model maps of abstract types. (child classes will map all their members)
-                if (modelMap.ModelType.IsAbstract)
-                    return;
-                // Ignore model maps of proxy types.
-                if (DbContext.ProxyGenerator.IsProxyType(modelMap.ModelType))
-                    return;
-
-                ((ModelMapSchema)modelMap).InitializeMemberMaps(new MemberPath(Array.Empty<(IModelMapSchema OwnerModel, BsonMemberMap Member)>()));
+                schema.Freeze();
+                foreach (var bsonMemberMap in schema.BsonClassMap.AllMemberMaps)
+                {
+                    var memberMap = BuildMemberMap(bsonMemberMap, schema, null);
+                    _definedMemberMaps.Add(memberMap);
+                    ((ModelMapSchema)schema).AddGeneratedMemberMap(memberMap);
+                }
             }
+        }
+
+        // Helpers.
+        private static IMemberMap BuildMemberMap(
+            BsonMemberMap bsonMemberMap,
+            IModelMapSchema modelMapSchema,
+            IMemberMap? parentMemberMap)
+        {
+            var memberMap = new MemberMap(bsonMemberMap, modelMapSchema, parentMemberMap);
+
+            // Analize recursion on member.
+            var memberSerializer = bsonMemberMap.GetSerializer();
+            if (memberSerializer is IModelMapsContainerSerializer modelMapsContainerSerializer)
+                foreach (var schema in modelMapsContainerSerializer.AllChildModelMapSchemas)
+                {
+                    schema.Freeze();
+                    foreach (var childBsonMemberMap in schema.BsonClassMap.AllMemberMaps)
+                    {
+                        var childMemberMap = BuildMemberMap(childBsonMemberMap, schema, memberMap);
+                        memberMap.AddChildMemberMap(childMemberMap);
+                        ((ModelMapSchema)schema).AddGeneratedMemberMap(memberMap);
+                    }
+                }
+
+            return memberMap;
         }
     }
 

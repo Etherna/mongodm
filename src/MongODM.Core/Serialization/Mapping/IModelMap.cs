@@ -20,11 +20,13 @@ namespace Etherna.MongODM.Core.Serialization.Mapping
     public interface IModelMap : IMap
     {
         // Properties.
-        IModelMapSchema ActiveModelMapSchema { get; }
-        IReadOnlyDictionary<string, IModelMapSchema> AllModelMapSchemaDictionary { get; }
+        IModelMapSchema ActiveSchema { get; }
+        IEnumerable<IMemberMap> AllDescendingMemberMaps { get; }
         IDbContext DbContext { get; }
-        IModelMapSchema? FallbackModelMapSchema { get; }
+        IEnumerable<IMemberMap> DefinedMemberMaps { get; }
+        IModelMapSchema? FallbackSchema { get; }
         IBsonSerializer? FallbackSerializer { get; }
-        IEnumerable<IModelMapSchema> SecondaryModelMapSchemas { get; }
+        IReadOnlyDictionary<string, IModelMapSchema> SchemasById { get; }
+        IEnumerable<IModelMapSchema> SecondarySchemas { get; }
     }
 }

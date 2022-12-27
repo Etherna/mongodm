@@ -13,40 +13,38 @@
 //   limitations under the License.
 
 using Etherna.MongoDB.Bson.Serialization;
+using System.Collections.Generic;
 
 namespace Etherna.MongODM.Core.Serialization.Mapping
 {
     public interface IMemberMap
     {
         // Properties.
+        IEnumerable<IMemberMap> AllDescendingMemberMaps { get; }
+
         BsonMemberMap BsonMemberMap { get; }
 
-        MemberPath DefinitionPath { get; }
+        IEnumerable<IMemberMap> ChildMemberMaps { get; }
+
+        IEnumerable<IMemberMap> DefinitionMemberPath { get; }
 
         /// <summary>
-        /// An unique identifier per schema
+        /// An unique identifier
         /// </summary>
         string Id { get; }
-
-        /// <summary>
-        /// True if member is an entity Id
-        /// </summary>
-        bool IsIdMember { get; }
 
         /// <summary>
         /// True if member is contained into a referenced entity model
         /// </summary>
         bool IsEntityReferenceMember { get; }
 
-        IModelMap ModelMap { get; }
-
-        IModelMapSchema? OwnerEntityModelMapSchema { get; }
-
-        IModelMapSchema OwnerModelMapSchema { get; }
-
         /// <summary>
-        /// The root owning model map
+        /// True if member is an entity Id
         /// </summary>
-        IModelMapSchema RootModelMapSchema { get; }
+        bool IsIdMember { get; }
+
+        IModelMapSchema ModelMapSchema { get; }
+
+        IMemberMap? ParentMemberMap { get; }
     }
 }

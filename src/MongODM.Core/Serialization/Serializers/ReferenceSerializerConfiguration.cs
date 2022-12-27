@@ -62,7 +62,7 @@ namespace Etherna.MongODM.Core.Serialization.Serializers
                     null,
                     null,
                     modelMap);
-                modelMap.ActiveModelMapSchema = modelMapSchema;
+                modelMap.ActiveSchema = modelMapSchema;
 
                 // If model schema uses proxy model, register a new one for proxy type.
                 if (modelMap.ProxyModelType != null)
@@ -99,8 +99,8 @@ namespace Etherna.MongODM.Core.Serialization.Serializers
             var schema = _modelMaps[modelType];
 
             //if a correct model map is identified with its id, use its bson class map serializer
-            if (modelMapSchemaId != null && schema.AllModelMapSchemaDictionary.ContainsKey(modelMapSchemaId))
-                return schema.AllModelMapSchemaDictionary[modelMapSchemaId].BsonClassMap.ToSerializer();
+            if (modelMapSchemaId != null && schema.SchemasById.ContainsKey(modelMapSchemaId))
+                return schema.SchemasById[modelMapSchemaId].BsonClassMap.ToSerializer();
 
             //else, use fallback serializer if exists. The schema's active serializer otherwise
             return schema.FallbackSerializer ?? schema.ActiveSerializer;
@@ -130,7 +130,7 @@ namespace Etherna.MongODM.Core.Serialization.Serializers
                     modelMap.ModelType,
                     new BsonElement(
                         dbContext.Options.ModelMapVersion.ElementName,
-                        new BsonString(notProxySchema.ActiveModelMapSchema.Id)));
+                        new BsonString(notProxySchema.ActiveSchema.Id)));
             }
         }
 
@@ -171,7 +171,7 @@ namespace Etherna.MongODM.Core.Serialization.Serializers
                 CultureInfo.InvariantCulture);
 
             // Set active model map.
-            modelSchema.ActiveModelMapSchema = activeModelMapSchema;
+            modelSchema.ActiveSchema = activeModelMapSchema;
 
             return modelSchema;
         }
@@ -206,12 +206,12 @@ namespace Etherna.MongODM.Core.Serialization.Serializers
                 }
 
                 // Process model maps' schemas.
-                foreach (var modelMapSchema in modelMap.AllModelMapSchemaDictionary.Values)
+                foreach (var modelMapSchema in modelMap.SchemasById.Values)
                 {
                     // Search base model map.
                     var baseModelMapSchema = modelMapSchema.BaseModelMapSchemaId != null ?
-                        baseModelMap.AllModelMapSchemaDictionary[modelMapSchema.BaseModelMapSchemaId] :
-                        baseModelMap.ActiveModelMapSchema;
+                        baseModelMap.SchemasById[modelMapSchema.BaseModelMapSchemaId] :
+                        baseModelMap.ActiveSchema;
 
                     // Link base model map.
                     modelMapSchema.SetBaseModelMapSchema(baseModelMapSchema);

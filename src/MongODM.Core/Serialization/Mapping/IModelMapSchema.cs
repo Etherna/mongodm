@@ -24,12 +24,11 @@ namespace Etherna.MongODM.Core.Serialization.Mapping
     {
         // Properties.
         string Id { get; }
-        IReadOnlyDictionary<string, IMemberMap> AllChildMemberMapsDictionary { get; }
         string? BaseModelMapSchemaId { get; }
         BsonClassMap BsonClassMap { get; }
+        IEnumerable<IMemberMap> GeneratedMemberMaps { get; }
         IMemberMap? IdMemberMap { get; }
         bool IsEntity { get; }
-        IReadOnlyDictionary<string, IMemberMap> MemberMapsDictionary { get; }
         IModelMap ModelMap { get; }
         Type ModelType { get; }
         /// <summary>

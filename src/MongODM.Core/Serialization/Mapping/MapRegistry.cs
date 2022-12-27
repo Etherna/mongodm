@@ -29,15 +29,14 @@ namespace Etherna.MongODM.Core.Serialization.Mapping
     public class MapRegistry : FreezableConfig, IMapRegistry
     {
         // Fields.
-        private readonly Dictionary<string, IMemberMap> _memberMapsDictionary = new();
         private readonly Dictionary<Type, IMap> _maps = new(); //model type -> map
+        private readonly Dictionary<string, IMemberMap> _memberMapsById = new();
 
         private readonly Dictionary<Type, BsonElement> activeModelMapIdBsonElement = new();
+        private IDbContext dbContext = default!;
         private readonly ConcurrentDictionary<Type, BsonClassMap> defaultClassMapsCache = new();
         private ILogger logger = default!;
-        private readonly Dictionary<MemberInfo, List<IMemberMap>> memberInfoToMemberMapsDictionary = new();
-
-        private IDbContext dbContext = default!;
+        private readonly Dictionary<MemberInfo, List<IMemberMap>> memberMapsByMemberInfo = new();
 
         // Constructor and initializer.
         public void Initialize(IDbContext dbContext, ILogger logger)
@@ -54,8 +53,8 @@ namespace Etherna.MongODM.Core.Serialization.Mapping
 
         // Properties.
         public bool IsInitialized { get; private set; }
-        public Dictionary<string, IMemberMap> MemberMapsDictionary => _memberMapsDictionary;
-        public IReadOnlyDictionary<Type, IMap> Maps => _maps;
+        public IReadOnlyDictionary<Type, IMap> MapsByModelType => _maps;
+        public IReadOnlyDictionary<string, IMemberMap> MemberMapsById => _memberMapsById;
 
         // Methods.
         public ICustomSerializerMapBuilder<TModel> AddCustomSerializerMap<TModel>(
@@ -84,14 +83,14 @@ namespace Etherna.MongODM.Core.Serialization.Mapping
                 _maps.Add(typeof(TModel), modelMap);
 
                 // Create model map and set it as active in schema.
-                var modelMapSchema = new ModelMapSchema<TModel>(
+                var schema = new ModelMapSchema<TModel>(
                     activeModelMapSchemaId,
                     new BsonClassMap<TModel>(activeModelMapSchemaInitializer ?? (cm => cm.AutoMap())),
                     null,
                     null,
                     activeCustomSerializer ?? ModelMapSchema.GetDefaultSerializer<TModel>(dbContext),
                     modelMap);
-                modelMap.ActiveModelMapSchema = modelMapSchema;
+                modelMap.ActiveSchema = schema;
 
                 // If model schema uses proxy model, register a new one for proxy type.
                 if (modelMap.ProxyModelType != null)
@@ -108,7 +107,7 @@ namespace Etherna.MongODM.Core.Serialization.Mapping
             // If a map is registered.
             if (_maps.TryGetValue(modelType, out IMap map) &&
                 map is IModelMap modelMap)
-                return modelMap.ActiveModelMapSchema.BsonClassMap;
+                return modelMap.ActiveSchema.BsonClassMap;
 
             // If we don't have a model map, look for a default classmap, or create it.
             if (defaultClassMapsCache.TryGetValue(modelType, out BsonClassMap bcm))
@@ -143,12 +142,8 @@ namespace Etherna.MongODM.Core.Serialization.Mapping
         public IEnumerable<IMemberMap> GetMemberMapsFromMemberInfo(MemberInfo memberInfo)
         {
             Freeze(); //needed for initialization
-
-            foreach (var pair in memberInfoToMemberMapsDictionary)
-                if (pair.Key.IsSameAs(memberInfo))
-                    return pair.Value;
-
-            return Array.Empty<IMemberMap>();
+            return memberMapsByMemberInfo.FirstOrDefault(p => p.Key.IsSameAs(memberInfo)).Value ??
+                (IEnumerable<IMemberMap>)Array.Empty<IMemberMap>();
         }
 
         public IModelMap GetModelMap(Type modelType)
@@ -200,38 +195,37 @@ namespace Etherna.MongODM.Core.Serialization.Mapping
 
                 // Register discriminators for all bson class maps.
                 if (map is IModelMap modelMap)
-                    foreach (var modelMapSchema in modelMap.AllModelMapSchemaDictionary.Values)
+                    foreach (var modelMapSchema in modelMap.SchemasById.Values)
                         dbContext.DiscriminatorRegistry.AddDiscriminator(modelMapSchema.ModelType, modelMapSchema.BsonClassMap.Discriminator);
             }
 
             // Specific for model maps.
             foreach (var modelMap in _maps.Values.OfType<IModelMap>())
             {
-                // Compile model maps registers.
+                // Initialize member map registers.
                 /*
                  * Only model map based schemas can be analyzed.
                  * Schemas based on custom serializers can't be explored.
                  * 
                  * This operation needs to be executed AFTER that all serializers have been registered.
                  */
-                foreach (var memberMap in modelMap.AllModelMapSchemaDictionary.Values.SelectMany(modelMapSchema => modelMapSchema.AllChildMemberMapsDictionary.Values))
+                foreach (var memberMap in modelMap.AllDescendingMemberMaps)
                 {
                     //map member map with its Id
-                    _memberMapsDictionary.Add(memberMap.Id, memberMap);
+                    _memberMapsById.Add(memberMap.Id, memberMap);
 
-                    //map memberInfo to related member dependencies
+                    //map memberInfo to member maps
                     /*
                      * MemberInfo comparison has to be performed with extension method "IsSameAs". If an equal member info
                      * is found with this equality comparer, it has to be taken as key also for current memberinfo
                      */
                     var memberInfo = memberMap.BsonMemberMap.MemberInfo;
-                    var memberMapList = memberInfoToMemberMapsDictionary.FirstOrDefault(
-                        pair => pair.Key.IsSameAs(memberInfo)).Value;
+                    var memberMapList = memberMapsByMemberInfo.FirstOrDefault(pair => pair.Key.IsSameAs(memberInfo)).Value;
 
                     if (memberMapList is null)
                     {
                         memberMapList = new List<IMemberMap>();
-                        memberInfoToMemberMapsDictionary[memberInfo] = memberMapList;
+                        memberMapsByMemberInfo[memberInfo] = memberMapList;
                     }
 
                     memberMapList.Add(memberMap);
@@ -249,7 +243,7 @@ namespace Etherna.MongODM.Core.Serialization.Mapping
                     modelMap.ModelType,
                     new BsonElement(
                         dbContext.Options.ModelMapVersion.ElementName,
-                        new BsonString(notProxySchema.ActiveModelMapSchema.Id)));
+                        new BsonString(notProxySchema.ActiveSchema.Id)));
             }
         }
 
@@ -291,7 +285,7 @@ namespace Etherna.MongODM.Core.Serialization.Mapping
                 CultureInfo.InvariantCulture);
 
             // Set active model map.
-            modelMap.ActiveModelMapSchema = activeModelMapSchema;
+            modelMap.ActiveSchema = activeModelMapSchema;
 
             return modelMap;
         }
@@ -310,7 +304,7 @@ namespace Etherna.MongODM.Core.Serialization.Mapping
                 var modelMap = processingModelMaps.Pop();
 
                 // Process schema's model maps.
-                foreach (var modelMapSchema in modelMap.AllModelMapSchemaDictionary.Values)
+                foreach (var modelMapSchema in modelMap.SchemasById.Values)
                 {
                     var baseModelType = modelMapSchema.ModelType.BaseType;
 
@@ -331,8 +325,8 @@ namespace Etherna.MongODM.Core.Serialization.Mapping
 
                     // Search base model map schema.
                     var baseModelMapSchema = modelMapSchema.BaseModelMapSchemaId != null ?
-                        ((IModelMap)baseMap).AllModelMapSchemaDictionary[modelMapSchema.BaseModelMapSchemaId] :
-                        ((IModelMap)baseMap).ActiveModelMapSchema;
+                        ((IModelMap)baseMap).SchemasById[modelMapSchema.BaseModelMapSchemaId] :
+                        ((IModelMap)baseMap).ActiveSchema;
 
                     // Link base model map.
                     modelMapSchema.SetBaseModelMapSchema(baseModelMapSchema);

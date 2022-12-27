@@ -125,11 +125,11 @@ namespace Etherna.MongODM.Core.Repositories
 
                 //referenced documents
                 var idMemberMaps = DbContext.MapRegistry.TryGetModelMap(typeof(TModel), out IModelMap? modelMap) ?
-                    modelMap!.ActiveModelMapSchema.AllChildMemberMapsDictionary.Values.Where(mm => mm.IsEntityReferenceMember && mm.IsIdMember) :
+                    modelMap!.AllDescendingMemberMaps.Where(mm => mm.IsEntityReferenceMember && mm.IsIdMember) :
                     Array.Empty<IMemberMap>();
 
                 var idPaths = idMemberMaps
-                    .Select(member => string.Join(".", member.DefinitionPath.ModelMapsPath.Select(pair => pair.Member.ElementName)))
+                    .Select(mm => string.Join(".", mm.DefinitionMemberPath.Select(pathMM => pathMM.BsonMemberMap.ElementName)))
                     .Distinct();
 
                 newIndexes.AddRange(idPaths.Select(path =>

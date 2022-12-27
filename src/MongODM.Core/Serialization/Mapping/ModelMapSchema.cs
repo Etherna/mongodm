@@ -27,7 +27,7 @@ namespace Etherna.MongODM.Core.Serialization.Mapping
     public abstract class ModelMapSchema : FreezableConfig, IModelMapSchema
     {
         // Fields.
-        private readonly Dictionary<string, IMemberMap> _memberMapsDictionary = new(); // Id -> MemberMap
+        private readonly List<IMemberMap> _generatedMemberMaps = new();
         private IBsonSerializer? _serializer;
 
         private readonly IBsonSerializer? customSerializer;
@@ -52,16 +52,11 @@ namespace Etherna.MongODM.Core.Serialization.Mapping
 
         // Properties.
         public string Id { get; }
-        public IReadOnlyDictionary<string, IMemberMap> AllChildMemberMapsDictionary => BsonClassMap.AllMemberMaps
-            .Select(bsonMemberMap => bsonMemberMap.GetSerializer())
-            .OfType<IModelMapsContainerSerializer>()
-            .SelectMany(serializer => serializer.AllChildModelMapSchemas.SelectMany(mm => mm.AllChildMemberMapsDictionary))
-            .ToDictionary(pair => pair.Key, pair => pair.Value);
         public string? BaseModelMapSchemaId { get; private set; }
         public BsonClassMap BsonClassMap { get; }
-        public IMemberMap? IdMemberMap => MemberMapsDictionary.Values.FirstOrDefault(mm => mm.IsIdMember);
+        public IEnumerable<IMemberMap> GeneratedMemberMaps => _generatedMemberMaps;
+        public IMemberMap? IdMemberMap => GeneratedMemberMaps.FirstOrDefault(mm => mm.IsIdMember);
         public bool IsEntity => BsonClassMap.IsEntity();
-        public IReadOnlyDictionary<string, IMemberMap> MemberMapsDictionary => _memberMapsDictionary;
         public IModelMap ModelMap { get; }
         public Type ModelType => BsonClassMap.ClassType;
         public IBsonSerializer Serializer => _serializer ??= customSerializer ?? BsonClassMap.ToSerializer();
@@ -135,30 +130,7 @@ namespace Etherna.MongODM.Core.Serialization.Mapping
         }
 
         // Internal methods.
-        internal void InitializeMemberMaps(MemberPath initialMemberPath)
-        {
-            /* Member inizialization will be moved directly into model mapping, as is for BsonMemberMap */
-            foreach (var bsonMemberMap in BsonClassMap.AllMemberMaps)
-            {
-                // Update path.
-                var newMemberPath = new MemberPath(initialMemberPath.ModelMapsPath.Append((this, bsonMemberMap)));
-
-                // Identify current member with its path from current model map.
-                var memberMap = new MemberMap(newMemberPath);
-
-                // Add member map to dictionary.
-                _memberMapsDictionary.Add(memberMap.Id, memberMap);
-
-                // Analize recursion on member.
-                var memberSerializer = bsonMemberMap.GetSerializer();
-                if (memberSerializer is IModelMapsContainerSerializer modelMapsContainerSerializer)
-                    foreach (var childModelMapSchema in modelMapsContainerSerializer.AllChildModelMapSchemas)
-                    {
-                        childModelMapSchema.Freeze();
-                        ((ModelMapSchema)childModelMapSchema).InitializeMemberMaps(newMemberPath);
-                    }
-            }
-        }
+        internal void AddGeneratedMemberMap(IMemberMap memberMap) => _generatedMemberMaps.Add(memberMap);
 
         // Static methods.
         public static IBsonSerializer<TModel> GetDefaultSerializer<TModel>(IDbContext dbContext)

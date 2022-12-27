@@ -27,12 +27,12 @@ namespace Etherna.MongODM.Core.Serialization.Mapping
     public interface IMapRegistry : IDbContextInitializable, IFreezableConfig
     {
         // Properties.
-        Dictionary<string, IMemberMap> MemberMapsDictionary { get; }
-
         /// <summary>
         /// All registered maps, indexed by model type
         /// </summary>
-        IReadOnlyDictionary<Type, IMap> Maps { get; }
+        IReadOnlyDictionary<Type, IMap> MapsByModelType { get; }
+
+        IReadOnlyDictionary<string, IMemberMap> MemberMapsById { get; }
 
         // Methods.
         /// <summary>
@@ -76,7 +76,7 @@ namespace Etherna.MongODM.Core.Serialization.Mapping
         /// Get all member maps that points to a specific member definition
         /// </summary>
         /// <param name="memberInfo">The member definition</param>
-        /// <returns>The list of member maps</returns>
+        /// <returns>List of member maps</returns>
         IEnumerable<IMemberMap> GetMemberMapsFromMemberInfo(MemberInfo memberInfo);
 
         /// <summary>

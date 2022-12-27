@@ -14,7 +14,7 @@
 
 using Etherna.MongoDB.Bson.Serialization;
 using Etherna.MongODM.Core.Extensions;
-using System;
+using System.Collections.Generic;
 using System.Linq;
 
 namespace Etherna.MongODM.Core.Serialization.Mapping
@@ -24,39 +24,51 @@ namespace Etherna.MongODM.Core.Serialization.Mapping
     /// </summary>
     public class MemberMap : IMemberMap
     {
+        // Fields.
+        private readonly List<IMemberMap> _childMemberMaps = new();
+
         // Constructors.
-        public MemberMap(
-            MemberPath definitionPath)
+        internal MemberMap(
+            BsonMemberMap bsonMemberMap,
+            IModelMapSchema modelMapSchema,
+            IMemberMap? parentMemberMap)
         {
-            DefinitionPath = definitionPath ?? throw new ArgumentNullException(nameof(definitionPath));
+            BsonMemberMap = bsonMemberMap;
+            ModelMapSchema = modelMapSchema;
+            ParentMemberMap = parentMemberMap;
         }
 
         // Properties.
-        public BsonMemberMap BsonMemberMap => DefinitionPath.ModelMapsPath.Last().Member;
+        public IEnumerable<IMemberMap> AllDescendingMemberMaps =>
+            ChildMemberMaps.Concat(ChildMemberMaps.SelectMany(mm => mm.ChildMemberMaps));
 
-        public MemberPath DefinitionPath { get; }
+        public BsonMemberMap BsonMemberMap { get; }
 
-        public string Id => $"{RootModelMapSchema.Id}|{DefinitionPath.TypedPathAsString}";
+        public IEnumerable<IMemberMap> ChildMemberMaps => _childMemberMaps;
+
+        public IEnumerable<IMemberMap> DefinitionMemberPath => ParentMemberMap is null ?
+            new[] { this } :
+            ParentMemberMap.DefinitionMemberPath.Concat(new[] { this });
+
+        public string Id => ModelMapSchema.ModelMap.DbContext.Identifier + "|" + //<dbContextName>|<modelType>|<path;with;schema;ids>
+            ModelMapSchema.ModelMap.ModelType.Name + "|" +
+            string.Join(";", DefinitionMemberPath.Select(mm => mm.ModelMapSchema.Id));
 
         /// <summary>
         /// True if member is contained into a referenced entity model
         /// </summary>
-        public bool IsEntityReferenceMember => DefinitionPath.EntityModelMaps.Count() >= 2;
+        public bool IsEntityReferenceMember => ModelMapSchema.IsEntity;
 
         /// <summary>
         /// True if member is an entity Id
         /// </summary>
-        public bool IsIdMember => DefinitionPath.ModelMapsPath.Last().Member.IsIdMember();
+        public bool IsIdMember => BsonMemberMap.IsIdMember();
 
-        public IModelMap ModelMap => OwnerModelMapSchema.ModelMap;
+        public IModelMapSchema ModelMapSchema { get; }
 
-        public IModelMapSchema? OwnerEntityModelMapSchema => DefinitionPath.EntityModelMaps.LastOrDefault();
+        public IMemberMap? ParentMemberMap { get; }
 
-        public IModelMapSchema OwnerModelMapSchema => DefinitionPath.ModelMapsPath.Last().OwnerModelMapSchema;
-
-        /// <summary>
-        /// The root owning model map
-        /// </summary>
-        public IModelMapSchema RootModelMapSchema => DefinitionPath.ModelMapsPath.First().OwnerModelMapSchema;
+        // Internal methods.
+        internal void AddChildMemberMap(IMemberMap childMemberMap) => _childMemberMaps.Add(childMemberMap);
     }
 }
