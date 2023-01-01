@@ -17,6 +17,7 @@ using Etherna.MongODM.Core.Serialization.Serializers;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
 
 namespace Etherna.MongODM.Core.Serialization.Mapping
 {
@@ -93,6 +94,20 @@ namespace Etherna.MongODM.Core.Serialization.Mapping
         }
         public IEnumerable<IModelMapSchema> SecondarySchemas => _secondarySchemas;
 
+        // Internal methods.
+        internal void InitializeMemberMaps()
+        {
+            foreach (var schema in SchemasById.Values)
+            {
+                foreach (var bsonMemberMap in schema.BsonClassMap.AllMemberMaps)
+                {
+                    var memberMap = BuildMemberMap(bsonMemberMap, schema, null);
+                    _definedMemberMaps.Add(memberMap);
+                    ((ModelMapSchema)schema).AddGeneratedMemberMap(memberMap);
+                }
+            }
+        }
+
         // Protected methods.
         protected void AddFallbackCustomSerializerHelper(IBsonSerializer fallbackSerializer) =>
             ExecuteConfigAction(() =>
@@ -132,17 +147,9 @@ namespace Etherna.MongODM.Core.Serialization.Mapping
 
         protected override void FreezeAction()
         {
-            // Initialize defined member maps.
+            // Freeze schemas.
             foreach (var schema in SchemasById.Values)
-            {
                 schema.Freeze();
-                foreach (var bsonMemberMap in schema.BsonClassMap.AllMemberMaps)
-                {
-                    var memberMap = BuildMemberMap(bsonMemberMap, schema, null);
-                    _definedMemberMaps.Add(memberMap);
-                    ((ModelMapSchema)schema).AddGeneratedMemberMap(memberMap);
-                }
-            }
         }
 
         // Helpers.
@@ -156,16 +163,17 @@ namespace Etherna.MongODM.Core.Serialization.Mapping
             // Analize recursion on member.
             var memberSerializer = bsonMemberMap.GetSerializer();
             if (memberSerializer is IModelMapsContainerSerializer modelMapsContainerSerializer)
-                foreach (var schema in modelMapsContainerSerializer.AllChildModelMapSchemas)
-                {
-                    schema.Freeze();
-                    foreach (var childBsonMemberMap in schema.BsonClassMap.AllMemberMaps)
+                foreach (var modelMap in modelMapsContainerSerializer.ContainedModelMaps)
+                    foreach (var schema in modelMap.SchemasById.Values)
                     {
-                        var childMemberMap = BuildMemberMap(childBsonMemberMap, schema, memberMap);
-                        memberMap.AddChildMemberMap(childMemberMap);
-                        ((ModelMapSchema)schema).AddGeneratedMemberMap(memberMap);
+                        schema.Freeze();
+                        foreach (var childBsonMemberMap in schema.BsonClassMap.AllMemberMaps)
+                        {
+                            var childMemberMap = BuildMemberMap(childBsonMemberMap, schema, memberMap);
+                            memberMap.AddChildMemberMap(childMemberMap);
+                            ((ModelMapSchema)schema).AddGeneratedMemberMap(memberMap);
+                        }
                     }
-                }
 
             return memberMap;
         }
@@ -180,13 +188,13 @@ namespace Etherna.MongODM.Core.Serialization.Mapping
         { }
 
         // Methods.
-        public IModelMapBuilder<TModel> AddFallbackCustomSerializerMap(IBsonSerializer<TModel> fallbackSerializer)
+        public IModelMapBuilder<TModel> AddFallbackCustomSerializer(IBsonSerializer<TModel> fallbackSerializer)
         {
             AddFallbackCustomSerializerHelper(fallbackSerializer);
             return this;
         }
 
-        public IModelMapBuilder<TModel> AddFallbackModelMapSchema(
+        public IModelMapBuilder<TModel> AddFallbackSchema(
             Action<BsonClassMap<TModel>>? modelMapSchemaInitializer = null,
             string? baseModelMapSchemaId = null)
         {
@@ -200,16 +208,17 @@ namespace Etherna.MongODM.Core.Serialization.Mapping
             return this;
         }
 
-        public IModelMapBuilder<TModel> AddSecondaryModelMapSchema(
+        public IModelMapBuilder<TModel> AddSecondarySchema(
             string id,
             Action<BsonClassMap<TModel>>? modelMapSchemaInitializer = null,
-            string? baseModelMapSchemaId = null)
+            string? baseModelMapSchemaId = null,
+            Func<TModel, Task<TModel>>? fixDeserializedModelFunc = null)
         {
-            AddFallbackModelMapSchemaHelper(new ModelMapSchema<TModel>(
+            AddSecondarySchemaHelper(new ModelMapSchema<TModel>(
                 id,
                 new BsonClassMap<TModel>(modelMapSchemaInitializer ?? (cm => cm.AutoMap())),
                 baseModelMapSchemaId,
-                null,
+                fixDeserializedModelFunc,
                 null,
                 this));
             return this;

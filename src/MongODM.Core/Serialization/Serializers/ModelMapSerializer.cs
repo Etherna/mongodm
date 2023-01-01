@@ -50,8 +50,7 @@ namespace Etherna.MongODM.Core.Serialization.Serializers
         }
 
         // Properties.
-        public IEnumerable<IModelMapSchema> AllChildModelMapSchemas =>
-            dbContext.MapRegistry.GetModelMap(typeof(TModel)).SchemasById.Values;
+        public IEnumerable<IModelMap> ContainedModelMaps => new[] { dbContext.MapRegistry.GetModelMap(typeof(TModel)) };
 
         public BsonClassMapSerializer<TModel> DefaultBsonClassMapSerializer =>
             (BsonClassMapSerializer<TModel>)dbContext.MapRegistry.GetModelMap(typeof(TModel)).ActiveSchema.BsonClassMap.ToSerializer();

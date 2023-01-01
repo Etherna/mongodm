@@ -44,11 +44,11 @@ namespace Etherna.MongODM.Core.Serialization.Serializers
         { }
 
         // Properties.
-        public IEnumerable<IModelMapSchema> AllChildModelMapSchemas =>
-            (ValueSerializer as IModelMapsContainerSerializer)?.AllChildModelMapSchemas ??
-            Array.Empty<IModelMapSchema>();
-
         public IBsonSerializer ChildSerializer => ValueSerializer;
+
+        public IEnumerable<IModelMap> ContainedModelMaps =>
+            (ValueSerializer as IModelMapsContainerSerializer)?.ContainedModelMaps ??
+            Array.Empty<IModelMap>();
 
         // Public methods.
         public override void Serialize(BsonSerializationContext context, BsonSerializationArgs args, IDictionary<TKey, TValue> value)

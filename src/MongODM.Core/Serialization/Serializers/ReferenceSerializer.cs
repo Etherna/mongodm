@@ -41,6 +41,7 @@ namespace Etherna.MongODM.Core.Serialization.Serializers
         where TModelBase : class, IEntityModel<TKey>
     {
         // Fields.
+        private readonly ReferenceSerializerConfiguration _configuration;
         private IDiscriminatorConvention _discriminatorConvention = default!;
 
         private readonly ReaderWriterLockSlim configLockAdapters = new(LockRecursionPolicy.SupportsRecursion);
@@ -57,9 +58,8 @@ namespace Etherna.MongODM.Core.Serialization.Serializers
 
             this.dbContext = dbContext ?? throw new ArgumentNullException(nameof(dbContext));
 
-            Configuration = new ReferenceSerializerConfiguration(dbContext);
-            configure(Configuration);
-            Configuration.Freeze();
+            _configuration = new ReferenceSerializerConfiguration(dbContext);
+            configure(_configuration);
         }
 
         // Dispose.
@@ -84,10 +84,16 @@ namespace Etherna.MongODM.Core.Serialization.Serializers
         }
 
         // Properties.
-        public IEnumerable<IModelMapSchema> AllChildModelMapSchemas => Configuration.ModelMaps.Values
-            .SelectMany(schema => schema.SchemasById.Values);
+        public IEnumerable<IModelMap> ContainedModelMaps => Configuration.ModelMaps.Values;
 
-        public ReferenceSerializerConfiguration Configuration { get; }
+        public ReferenceSerializerConfiguration Configuration
+        {
+            get
+            {
+                _configuration.Freeze();
+                return _configuration;
+            }
+        }
 
         public IDiscriminatorConvention DiscriminatorConvention
         {

@@ -50,9 +50,9 @@ namespace Etherna.MongODM.Core.Serialization.Mapping
             new[] { this } :
             ParentMemberMap.DefinitionMemberPath.Concat(new[] { this });
 
-        public string Id => ModelMapSchema.ModelMap.DbContext.Identifier + "|" + //<dbContextName>|<modelType>|<path;with;schema;ids>
-            ModelMapSchema.ModelMap.ModelType.Name + "|" +
-            string.Join(";", DefinitionMemberPath.Select(mm => mm.ModelMapSchema.Id));
+        public string Id => ModelMapSchema.ModelMap.ModelType.Name + "|" + //<modelMapType>|<path;with;schema;ids>|<elementName>
+            string.Join(";", DefinitionMemberPath.Select(mm => mm.ModelMapSchema.Id)) + "|" +
+            BsonMemberMap.ElementName;
 
         /// <summary>
         /// True if member is contained into a referenced entity model

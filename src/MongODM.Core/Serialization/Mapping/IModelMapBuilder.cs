@@ -14,6 +14,7 @@
 
 using Etherna.MongoDB.Bson.Serialization;
 using System;
+using System.Threading.Tasks;
 
 namespace Etherna.MongODM.Core.Serialization.Mapping
 {
@@ -25,7 +26,7 @@ namespace Etherna.MongODM.Core.Serialization.Mapping
         /// </summary>
         /// <param name="fallbackSerializer">Fallback serializer</param>
         /// <returns>This same model map</returns>
-        IModelMapBuilder<TModel> AddFallbackCustomSerializerMap(
+        IModelMapBuilder<TModel> AddFallbackCustomSerializer(
             IBsonSerializer<TModel> fallbackSerializer);
 
         /// <summary>
@@ -34,7 +35,7 @@ namespace Etherna.MongODM.Core.Serialization.Mapping
         /// <param name="modelMapSchemaInitializer">The model map inizializer</param>
         /// <param name="baseModelMapSchemaId">Id of the base model map for this model map</param>
         /// <returns>This same model map</returns>
-        IModelMapBuilder<TModel> AddFallbackModelMapSchema(
+        IModelMapBuilder<TModel> AddFallbackSchema(
             Action<BsonClassMap<TModel>>? modelMapSchemaInitializer = null,
             string? baseModelMapSchemaId = null);
 
@@ -43,11 +44,13 @@ namespace Etherna.MongODM.Core.Serialization.Mapping
         /// </summary>
         /// <param name="id">The map Id</param>
         /// <param name="modelMapSchemaInitializer">The model map schema inizializer</param>
-        /// <param name="baseModelMapSchemaId">Id of the base model map schema for this model map schema</param>
+        /// <param name="baseSchemaId">Id of the base model map schema for this model map schema</param>
+        /// <param name="fixDeserializedModelFunc">Migrate model after loaded</param>
         /// <returns>This same model map</returns>
-        IModelMapBuilder<TModel> AddSecondaryModelMapSchema(
+        IModelMapBuilder<TModel> AddSecondarySchema(
             string id,
             Action<BsonClassMap<TModel>>? modelMapSchemaInitializer = null,
-            string? baseModelMapSchemaId = null);
+            string? baseSchemaId = null,
+            Func<TModel, Task<TModel>>? fixDeserializedModelFunc = null);
     }
 }

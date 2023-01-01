@@ -151,7 +151,7 @@ namespace Etherna.MongODM.Core.Serialization.Mapping
             if (modelType is null)
                 throw new ArgumentNullException(nameof(modelType));
             if (!_maps.ContainsKey(modelType))
-                throw new KeyNotFoundException(modelType.Name + " map is not registered");
+                throw new KeyNotFoundException(modelType.Name + " map is missing");
 
             var map = _maps[modelType];
 
@@ -186,7 +186,7 @@ namespace Etherna.MongODM.Core.Serialization.Mapping
             // Freeze, register serializers and compile registers.
             foreach (var map in _maps.Values)
             {
-                // Freeze schema.
+                // Freeze model map.
                 map.Freeze();
 
                 // Register active serializer.
@@ -200,8 +200,11 @@ namespace Etherna.MongODM.Core.Serialization.Mapping
             }
 
             // Specific for model maps.
-            foreach (var modelMap in _maps.Values.OfType<IModelMap>())
+            foreach (var modelMap in _maps.Values.OfType<ModelMap>())
             {
+                // Initialize member maps.
+                modelMap.InitializeMemberMaps();
+
                 // Initialize member map registers.
                 /*
                  * Only model map based schemas can be analyzed.
