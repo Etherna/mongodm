@@ -45,6 +45,8 @@ namespace Etherna.MongODM.Core.Serialization.Mapping
 
         IModelMapSchema ModelMapSchema { get; }
 
+        IMemberMap? OwnerEntityIdMap { get; }
+
         IMemberMap? ParentMemberMap { get; }
     }
 }

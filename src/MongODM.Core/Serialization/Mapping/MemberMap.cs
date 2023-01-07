@@ -50,14 +50,15 @@ namespace Etherna.MongODM.Core.Serialization.Mapping
             new[] { this } :
             ParentMemberMap.DefinitionMemberPath.Concat(new[] { this });
 
-        public string Id => ModelMapSchema.ModelMap.ModelType.Name + "|" + //<modelMapType>|<path;with;schema;ids>|<elementName>
-            string.Join(";", DefinitionMemberPath.Select(mm => mm.ModelMapSchema.Id)) + "|" +
-            BsonMemberMap.ElementName;
+        //DefinitionMemberPath as: <modelMapType>;<schemaId>;<elementName>(|<modelMapType>;<schemaId>;<elementName>)*
+        public string Id => string.Join("|", DefinitionMemberPath.Select(
+                mm => $"{mm.ModelMapSchema.ModelMap.ModelType.Name};{mm.ModelMapSchema.Id};{mm.BsonMemberMap.ElementName}"));
 
         /// <summary>
         /// True if member is contained into a referenced entity model
         /// </summary>
-        public bool IsEntityReferenceMember => ModelMapSchema.IsEntity;
+        public bool IsEntityReferenceMember => DefinitionMemberPath.Where(mm => mm.ModelMapSchema.IsEntity)
+                                                                   .Count() >= 2;
 
         /// <summary>
         /// True if member is an entity Id
@@ -65,6 +66,22 @@ namespace Etherna.MongODM.Core.Serialization.Mapping
         public bool IsIdMember => BsonMemberMap.IsIdMember();
 
         public IModelMapSchema ModelMapSchema { get; }
+
+        public IMemberMap? OwnerEntityIdMap
+        {
+            get
+            {
+                // Search backward first entity.
+                var entityMemberMap = DefinitionMemberPath.Reverse()
+                                                          .Skip(1) //start from parent
+                                                          .FirstOrDefault(mm => mm.ModelMapSchema.IsEntity);
+
+                // Search id member map with same schema of this.
+                return entityMemberMap?.ChildMemberMaps
+                    ?.Where(mm => mm.ModelMapSchema == ModelMapSchema)
+                    ?.Single(mm => mm.IsIdMember);
+            }
+        }
 
         public IMemberMap? ParentMemberMap { get; }
 
