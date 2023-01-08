@@ -84,7 +84,7 @@ namespace Etherna.MongODM.Core.Serialization.Serializers
         }
 
         // Properties.
-        public IEnumerable<IModelMap> ContainedModelMaps => Configuration.ModelMaps.Values;
+        public IEnumerable<IModelMap> HandledModelMaps => Configuration.ModelMaps.Values;
 
         public ReferenceSerializerConfiguration Configuration
         {

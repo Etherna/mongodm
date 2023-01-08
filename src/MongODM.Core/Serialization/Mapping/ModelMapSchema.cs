@@ -42,6 +42,8 @@ namespace Etherna.MongODM.Core.Serialization.Mapping
         {
             if (string.IsNullOrEmpty(id))
                 throw new ArgumentException($"'{nameof(id)}' cannot be null or empty", nameof(id));
+            if (bsonClassMap.ClassType != modelMap.ModelType)
+                throw new ArgumentException($"'{nameof(bsonClassMap)}'.ClassType must be {modelMap.ModelType.Name}, instead it is {bsonClassMap.ClassType.Name}");
 
             Id = id;
             BaseModelMapSchemaId = baseModelMapSchemaId;
@@ -58,7 +60,6 @@ namespace Etherna.MongODM.Core.Serialization.Mapping
         public IMemberMap? IdMemberMap => GeneratedMemberMaps.FirstOrDefault(mm => mm.IsIdMember);
         public bool IsEntity => BsonClassMap.IsEntity();
         public IModelMap ModelMap { get; }
-        public Type ModelType => BsonClassMap.ClassType;
         public IBsonSerializer Serializer => _serializer ??= customSerializer ?? BsonClassMap.ToSerializer();
 
         // Methods.
@@ -80,7 +81,7 @@ namespace Etherna.MongODM.Core.Serialization.Mapping
             {
                 if (dbContext is null)
                     throw new ArgumentNullException(nameof(dbContext));
-                if (ModelType.IsAbstract)
+                if (ModelMap.ModelType.IsAbstract)
                     throw new InvalidOperationException("Can't generate proxy of an abstract model");
 
                 // Remove CreatorMaps.
@@ -100,7 +101,7 @@ namespace Etherna.MongODM.Core.Serialization.Mapping
                 }
 
                 // Set creator.
-                BsonClassMap.SetCreator(() => dbContext.ProxyGenerator.CreateInstance(ModelType, dbContext));
+                BsonClassMap.SetCreator(() => dbContext.ProxyGenerator.CreateInstance(ModelMap.ModelType, dbContext));
             });
 
         public bool TryUseProxyGenerator(IDbContext dbContext)
@@ -109,9 +110,9 @@ namespace Etherna.MongODM.Core.Serialization.Mapping
                 throw new ArgumentNullException(nameof(dbContext));
 
             // Verify if can use proxy model.
-            if (ModelType != typeof(object) &&
-                !ModelType.IsAbstract &&
-                !dbContext.ProxyGenerator.IsProxyType(ModelType))
+            if (ModelMap.ModelType != typeof(object) &&
+                !ModelMap.ModelType.IsAbstract &&
+                !dbContext.ProxyGenerator.IsProxyType(ModelMap.ModelType))
             {
                 UseProxyGenerator(dbContext);
                 return true;

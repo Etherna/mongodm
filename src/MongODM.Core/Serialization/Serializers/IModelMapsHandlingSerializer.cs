@@ -17,8 +17,8 @@ using System.Collections.Generic;
 
 namespace Etherna.MongODM.Core.Serialization.Serializers
 {
-    public interface IModelMapsContainerSerializer
+    public interface IModelMapsHandlingSerializer
     {
-        IEnumerable<IModelMap> ContainedModelMaps { get; }
+        IEnumerable<IModelMap> HandledModelMaps { get; }
     }
 }

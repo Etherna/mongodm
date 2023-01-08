@@ -30,7 +30,6 @@ namespace Etherna.MongODM.Core.Serialization.Mapping
         IMemberMap? IdMemberMap { get; }
         bool IsEntity { get; }
         IModelMap ModelMap { get; }
-        Type ModelType { get; }
         /// <summary>
         /// ModelMap serializer
         /// </summary>

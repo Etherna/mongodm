@@ -89,7 +89,7 @@ namespace Etherna.MongODM.Core.Tasks
              * This permits to denormalize and optimize the mapping from each id path to all their possible serialized documents.
              */
             var repositoryDictionary = idMemberMaps
-                .GroupBy(idmm => dbContext.RepositoryRegistry.GetRepositoryByHandledModelType(idmm.ModelMapSchema.ModelType))
+                .GroupBy(idmm => dbContext.RepositoryRegistry.GetRepositoryByHandledModelType(idmm.ModelMapSchema.ModelMap.ModelType))
                 .ToDictionary(repoGroup => repoGroup.Key,
                               repoGroup => repoGroup.GroupBy(idmm => MemberMapToMongoFindString(idmm))
                                                     .ToDictionary(idFindStringGroup => idFindStringGroup.Key,

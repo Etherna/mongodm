@@ -196,7 +196,7 @@ namespace Etherna.MongODM.Core.Serialization.Mapping
                 // Register discriminators for all bson class maps.
                 if (map is IModelMap modelMap)
                     foreach (var modelMapSchema in modelMap.SchemasById.Values)
-                        dbContext.DiscriminatorRegistry.AddDiscriminator(modelMapSchema.ModelType, modelMapSchema.BsonClassMap.Discriminator);
+                        dbContext.DiscriminatorRegistry.AddDiscriminator(modelMapSchema.ModelMap.ModelType, modelMapSchema.BsonClassMap.Discriminator);
             }
 
             // Specific for model maps.
@@ -210,43 +210,48 @@ namespace Etherna.MongODM.Core.Serialization.Mapping
                  * Only model map based schemas can be analyzed.
                  * Schemas based on custom serializers can't be explored.
                  * 
+                 * Skip member map analysis of proxy models.
+                 * 
                  * This operation needs to be executed AFTER that all serializers have been registered.
                  */
-                foreach (var memberMap in modelMap.AllDescendingMemberMaps)
+                if (!dbContext.ProxyGenerator.IsProxyType(modelMap.ModelType))
                 {
-                    //map member map with its Id
-                    _memberMapsById.Add(memberMap.Id, memberMap);
-
-                    //map memberInfo to member maps
-                    /*
-                     * MemberInfo comparison has to be performed with extension method "IsSameAs". If an equal member info
-                     * is found with this equality comparer, it has to be taken as key also for current memberinfo
-                     */
-                    var memberInfo = memberMap.BsonMemberMap.MemberInfo;
-                    var memberMapList = memberMapsByMemberInfo.FirstOrDefault(pair => pair.Key.IsSameAs(memberInfo)).Value;
-
-                    if (memberMapList is null)
+                    foreach (var memberMap in modelMap.AllDescendingMemberMaps)
                     {
-                        memberMapList = new List<IMemberMap>();
-                        memberMapsByMemberInfo[memberInfo] = memberMapList;
-                    }
+                        //map member map with its Id
+                        _memberMapsById.Add(memberMap.Id, memberMap);
 
-                    memberMapList.Add(memberMap);
+                        //map memberInfo to member maps
+                        /*
+                         * MemberInfo comparison has to be performed with extension method "IsSameAs". If an equal member info
+                         * is found with this equality comparer, it has to be taken as key also for current memberinfo
+                         */
+                        var memberInfo = memberMap.BsonMemberMap.MemberInfo;
+                        var memberMapList = memberMapsByMemberInfo.FirstOrDefault(pair => pair.Key.IsSameAs(memberInfo)).Value;
+
+                        if (memberMapList is null)
+                        {
+                            memberMapList = new List<IMemberMap>();
+                            memberMapsByMemberInfo[memberInfo] = memberMapList;
+                        }
+
+                        memberMapList.Add(memberMap);
+                    }
                 }
 
                 // Generate active model maps id bson elements.
                 /*
                  * If current model type is proxy, we need to use id of its base type. This because
-                 * when we serialize a proxy model, we don't want that in the proxy's model map id
+                 * when we serialize a proxy model, we don't want that the proxy's model map id
                  * will be reported on document, but we want to serialize its original type's id.
                  */
-                var notProxySchema = GetModelMap(dbContext.ProxyGenerator.PurgeProxyType(modelMap.ModelType));
+                var notProxyModelMap = GetModelMap(dbContext.ProxyGenerator.PurgeProxyType(modelMap.ModelType));
 
                 activeModelMapIdBsonElement.Add(
                     modelMap.ModelType,
                     new BsonElement(
                         dbContext.Options.ModelMapVersion.ElementName,
-                        new BsonString(notProxySchema.ActiveSchema.Id)));
+                        new BsonString(notProxyModelMap.ActiveSchema.Id)));
             }
         }
 
@@ -309,7 +314,7 @@ namespace Etherna.MongODM.Core.Serialization.Mapping
                 // Process schema's model maps.
                 foreach (var modelMapSchema in modelMap.SchemasById.Values)
                 {
-                    var baseModelType = modelMapSchema.ModelType.BaseType;
+                    var baseModelType = modelMapSchema.ModelMap.ModelType.BaseType;
 
                     // If don't need to be linked, because it is typeof(object).
                     if (baseModelType is null)

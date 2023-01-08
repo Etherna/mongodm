@@ -23,7 +23,7 @@ namespace Etherna.MongODM.Core.Serialization.Serializers
     public class EnumerableSerializer<TItem> :
         EnumerableSerializerBase<IEnumerable<TItem>, TItem>,
         IChildSerializerConfigurable,
-        IModelMapsContainerSerializer
+        IModelMapsHandlingSerializer
     {
         // Constructors.
         /// <summary>
@@ -51,8 +51,8 @@ namespace Etherna.MongODM.Core.Serialization.Serializers
         // Properties.
         public IBsonSerializer ChildSerializer => ItemSerializer;
 
-        public IEnumerable<IModelMap> ContainedModelMaps =>
-            (ItemSerializer as IModelMapsContainerSerializer)?.ContainedModelMaps ??
+        public IEnumerable<IModelMap> HandledModelMaps =>
+            (ItemSerializer as IModelMapsHandlingSerializer)?.HandledModelMaps ??
             Array.Empty<IModelMap>();
 
         // Public methods.

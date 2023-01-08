@@ -32,7 +32,7 @@ namespace Etherna.MongODM.Core.Serialization.Serializers
         IBsonSerializer<TModel>,
         IBsonDocumentSerializer,
         IBsonIdProvider,
-        IModelMapsContainerSerializer
+        IModelMapsHandlingSerializer
         where TModel : class
     {
         // Fields.
@@ -50,8 +50,6 @@ namespace Etherna.MongODM.Core.Serialization.Serializers
         }
 
         // Properties.
-        public IEnumerable<IModelMap> ContainedModelMaps => new[] { dbContext.MapRegistry.GetModelMap(typeof(TModel)) };
-
         public BsonClassMapSerializer<TModel> DefaultBsonClassMapSerializer =>
             (BsonClassMapSerializer<TModel>)dbContext.MapRegistry.GetModelMap(typeof(TModel)).ActiveSchema.BsonClassMap.ToSerializer();
 
@@ -63,6 +61,8 @@ namespace Etherna.MongODM.Core.Serialization.Serializers
                 return _discriminatorConvention;
             }
         }
+
+        public IEnumerable<IModelMap> HandledModelMaps => new[] { dbContext.MapRegistry.GetModelMap(typeof(TModel)) };
 
         // Methods.
         public override TModel Deserialize(BsonDeserializationContext context, BsonDeserializationArgs args)
@@ -246,7 +246,7 @@ namespace Etherna.MongODM.Core.Serialization.Serializers
             var modelMapSchemaType = modelMapSchema.GetType();
             if (modelMapSchemaType.IsGenericType &&
                 modelMapSchemaType.GetGenericTypeDefinition() == typeof(ModelMapSchema<,>))
-                args = new BsonDeserializationArgs { NominalType = modelMapSchema.ModelType };
+                args = new BsonDeserializationArgs { NominalType = modelMapSchema.ModelMap.ModelType };
 
             // Deserialize.
             var model = (TModel)serializer.Deserialize(context, args);

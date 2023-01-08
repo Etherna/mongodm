@@ -19,7 +19,7 @@ namespace Etherna.MongODM.Core.Serialization.Serializers
     public interface IReferenceSerializer :
         IBsonDocumentSerializer,
         IBsonIdProvider,
-        IModelMapsContainerSerializer
+        IModelMapsHandlingSerializer
     {
         ReferenceSerializerConfiguration Configuration { get; }
     }

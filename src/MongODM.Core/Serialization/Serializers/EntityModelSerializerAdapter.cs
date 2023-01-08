@@ -26,7 +26,7 @@ namespace Etherna.MongODM.Core.Serialization.Serializers
         IBsonSerializer<TExternalModel>,
         IBsonDocumentSerializer,
         IBsonIdProvider,
-        IModelMapsContainerSerializer
+        IModelMapsHandlingSerializer
         where TInternalModel : class, IEntityModel<TKey>
         where TExternalModel : class, IEntityModel<TKey>
     {
@@ -40,7 +40,7 @@ namespace Etherna.MongODM.Core.Serialization.Serializers
         }
 
         // Properties.
-        public IEnumerable<IModelMap> ContainedModelMaps => (serializerBase as IModelMapsContainerSerializer)?.ContainedModelMaps ?? Array.Empty<IModelMap>();
+        public IEnumerable<IModelMap> HandledModelMaps => (serializerBase as IModelMapsHandlingSerializer)?.HandledModelMaps ?? Array.Empty<IModelMap>();
 
         // Methods.
         public override TExternalModel Deserialize(BsonDeserializationContext context, BsonDeserializationArgs args) =>
