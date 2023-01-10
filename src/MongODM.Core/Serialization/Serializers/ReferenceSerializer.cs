@@ -58,7 +58,7 @@ namespace Etherna.MongODM.Core.Serialization.Serializers
 
             this.dbContext = dbContext ?? throw new ArgumentNullException(nameof(dbContext));
 
-            _configuration = new ReferenceSerializerConfiguration(dbContext);
+            _configuration = new ReferenceSerializerConfiguration(dbContext, this);
             configure(_configuration);
         }
 

@@ -84,32 +84,40 @@ namespace Etherna.MongODM.Core.Tasks
                 .Select(idMemberMapIdentifier => dbContext.MapRegistry.MemberMapsById[idMemberMapIdentifier])
                 .Where(idMemberMap => idMemberMap.ModelMapSchema.ModelMap.ModelType == referencedModelType);
 
-            // Define mapping of serializers and serialized documents.
+            // Define mapping of serialized documents.
             /*
-             * We need to create two dictionary maps:
-             * - repositoryDictionary: repository -> id find strings -> serializer[]
-             * - serializedDocumentDictionary: serializer -> serializated document
+             * We need to create this dictionary map:
+             * - repositoryDictionary: repository -> id path -> serialized documents[]
              * 
-             * This permits to denormalize and optimize the mapping from each id path to all their possible serialized documents.
+             * Different id paths may share also same serializers. 
+             * Because of this, we use an external cache for avoid to serialize multiple times with same serializer.
+             * 
+             * But also different serializers can lead to same serialized document, so we select documents and apply a Distinct at last level.
              */
+            var serializedDocumentsCache = new Dictionary<IBsonSerializer, BsonDocument>();
             var repositoryDictionary = idMemberMaps
                 .GroupBy(idmm => dbContext.RepositoryRegistry.GetRepositoryByHandledModelType(idmm.DefinitionMemberPath.First().ModelMapSchema.ModelMap.ModelType))
                 .ToDictionary(repoGroup => repoGroup.Key,
-                              repoGroup => repoGroup.GroupBy(idmm => MemberMapToMongoFindString(idmm))
-                                                    .ToDictionary(idFindStringGroup => idFindStringGroup.Key,
-                                                                  idFindStringGroup => idFindStringGroup.Select(idmm => idmm.ModelMapSchema.Serializer)));
-            var serializedDocumentDictionary = repositoryDictionary
-                .SelectMany(repoPair => repoPair.Value)
-                .SelectMany(idFindStringPair => idFindStringPair.Value)
-                .ToDictionary(serializer => serializer,
-                              serializer =>
-                              {
-                                  var serializedDocument = new BsonDocument();
-                                  using var bsonWriter = new BsonDocumentWriter(serializedDocument);
-                                  var context = BsonSerializationContext.CreateRoot(bsonWriter);
-                                  serializer.Serialize(context, referencedModel);
-                                  return serializedDocument;
-                              });
+                              repoGroup => repoGroup.GroupBy(idmm => MemberMapToMongoFindMemberPath(idmm))
+                                                    .ToDictionary(
+                                  idPathGroup => idPathGroup.Key,
+                                  idPathGroup => idPathGroup.Select(idmm => idmm.ModelMapSchema.Serializer)
+                                                            .Select(serializer =>
+                                                            {
+                                                                //use cache
+                                                                if (!serializedDocumentsCache.ContainsKey(serializer))
+                                                                {
+                                                                    var serializedDocument = new BsonDocument();
+                                                                    using var bsonWriter = new BsonDocumentWriter(serializedDocument);
+                                                                    var context = BsonSerializationContext.CreateRoot(bsonWriter);
+                                                                    serializer.Serialize(context, referencedModel);
+                                                                    serializedDocumentsCache[serializer] = serializedDocument;
+                                                                }
+                                                                return serializedDocumentsCache[serializer];
+                                                            })
+                                                            //select only documents having a model map id
+                                                            .Where(bsonDoc => bsonDoc.TryGetElement(dbContext.Options.ModelMapVersion.ElementName, out var _))
+                                                            .Distinct()));
 
             // Find Ids of documents that may need to be updated.
             /*
@@ -137,24 +145,36 @@ namespace Etherna.MongODM.Core.Tasks
             // Update models.
             /*
              * Update one document at time using FindOneAndUpdate.
-             * Iterate on repositories, available reference Ids on each repository, and available serializer for each Id.
+             * Iterate on repositories, Id paths for each repo, existing documents to update.
+             * 
+             * For each document, try at first all serialized documents available with its model map id.
+             * If no one is found, try to search without any model map Id. In this case replace with minimal reference.
              */
             foreach (var repoPair in repositoryDictionary)
             {
                 var repository = repoPair.Key;
-                var idFindStringDictionary = repoPair.Value;
-                var updatableDocumentsId = updatableDocumentsIdByRepository[repository];
 
-                foreach (var idFindStringPair in idFindStringDictionary)
+                foreach (var idPathPair in repoPair.Value)
                 {
-                    var idFindString = idFindStringPair.Key;
-                    var serializers = idFindStringPair.Value;
+                    var idPath = idPathPair.Key;
 
-                    foreach (var serializer in serializers)
+                    foreach (var updatableDocumentId in updatableDocumentsIdByRepository[repository])
                     {
-                        var serializedDocument = serializedDocumentDictionary[serializer];
+                        var documentIsUpdated = false;
 
-                        //TODO.
+                        // Try to search for serialized documents.
+                        foreach (var serializedDocument in idPathPair.Value)
+                        {
+                            var modelMapIdElement = serializedDocument.GetElement(dbContext.Options.ModelMapVersion.ElementName).Value.AsString;
+
+                            //TODO.
+                        }
+
+                        // Try to search without any model map Id.
+                        if (!documentIsUpdated)
+                        {
+                            //TODO.
+                        }
                     }
                 }
             }
@@ -185,7 +205,7 @@ namespace Etherna.MongODM.Core.Tasks
             return ids;
         }
 
-        private static string MemberMapToMongoFindString(IMemberMap memberMap) =>
+        private static string MemberMapToMongoFindMemberPath(IMemberMap memberMap) =>
             string.Join(".", memberMap.DefinitionMemberPath.Select(mm => mm.BsonMemberMap.MemberName));
     }
 }

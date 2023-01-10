@@ -32,11 +32,13 @@ namespace Etherna.MongODM.Core.Serialization.Serializers
 
         private readonly Dictionary<Type, BsonElement> activeModelMapIdBsonElement = new();
         private readonly IDbContext dbContext;
+        private readonly IReferenceSerializer serializer;
 
         // Constructor.
-        public ReferenceSerializerConfiguration(IDbContext dbContext)
+        internal ReferenceSerializerConfiguration(IDbContext dbContext, IReferenceSerializer serializer)
         {
             this.dbContext = dbContext;
+            this.serializer = serializer;
         }
 
         // Properties.
@@ -60,7 +62,7 @@ namespace Etherna.MongODM.Core.Serialization.Serializers
                     new BsonClassMap<TModel>(activeModelMapSchemaInitializer ?? (cm => cm.AutoMap())),
                     baseModelMapSchemaId,
                     null,
-                    null,
+                    serializer,
                     modelMap);
                 modelMap.ActiveSchema = modelMapSchema;
 
