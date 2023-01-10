@@ -223,6 +223,7 @@ namespace Etherna.MongODM.Core.Serialization.Mapping
             string id,
             Action<BsonClassMap<TModel>>? modelMapSchemaInitializer = null,
             string? baseModelMapSchemaId = null,
+            IBsonSerializer<TModel>? customSerializer = null,
             Func<TModel, Task<TModel>>? fixDeserializedModelFunc = null)
         {
             AddSecondarySchemaHelper(new ModelMapSchema<TModel>(
@@ -230,7 +231,7 @@ namespace Etherna.MongODM.Core.Serialization.Mapping
                 new BsonClassMap<TModel>(modelMapSchemaInitializer ?? (cm => cm.AutoMap())),
                 baseModelMapSchemaId,
                 fixDeserializedModelFunc,
-                null,
+                customSerializer,
                 this));
             return this;
         }

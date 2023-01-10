@@ -60,7 +60,7 @@ namespace Etherna.MongODM.Core.Serialization.Mapping
         public IMemberMap? IdMemberMap => GeneratedMemberMaps.FirstOrDefault(mm => mm.IsIdMember);
         public bool IsEntity => BsonClassMap.IsEntity();
         public IModelMap ModelMap { get; }
-        public IBsonSerializer Serializer => _serializer ??= customSerializer ?? BsonClassMap.ToSerializer();
+        public IBsonSerializer Serializer => _serializer ??= customSerializer ?? GetDefaultSerializer();
 
         // Methods.
         public Task<object> FixDeserializedModelAsync(object model) =>
@@ -133,14 +133,12 @@ namespace Etherna.MongODM.Core.Serialization.Mapping
         // Internal methods.
         internal void AddGeneratedMemberMap(IMemberMap memberMap) => _generatedMemberMaps.Add(memberMap);
 
-        // Static methods.
-        public static IBsonSerializer<TModel> GetDefaultSerializer<TModel>(IDbContext dbContext)
-            where TModel : class
+        // Helpers.
+        private IBsonSerializer GetDefaultSerializer()
         {
-            if (dbContext is null)
-                throw new ArgumentNullException(nameof(dbContext));
-
-            return new ModelMapSerializer<TModel>(dbContext);
+            var modelMapSerializerDefinition = typeof(ModelMapSerializer<>);
+            var modelMapSerializerType = modelMapSerializerDefinition.MakeGenericType(ModelMap.ModelType);
+            return (IBsonSerializer)Activator.CreateInstance(modelMapSerializerType, ModelMap.DbContext);
         }
     }
 

@@ -21,6 +21,7 @@ using Etherna.MongODM.Core.Extensions;
 using Etherna.MongODM.Core.Repositories;
 using Etherna.MongODM.Core.Serialization.Mapping;
 using Etherna.MongODM.Core.Serialization.Modifiers;
+using Etherna.MongODM.Core.Utility;
 using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
@@ -64,21 +65,24 @@ namespace Etherna.MongODM.Core.Tasks
 
             // Get data.
             var dbContext = (TDbContext)serviceProvider.GetService(typeof(TDbContext));
+            using var dbExecutionContext = new DbExecutionContextHandler(dbContext); //run into a db execution context
+
             var referencedRepository = dbContext.RepositoryRegistry.Repositories.First(r => r.Name == referencedRepositoryName);
             var referencedModel = await referencedRepository.FindOneAsync(referencedModelId);
+            var referencedModelType = dbContext.ProxyGenerator.PurgeProxyType(referencedModel.GetType());
 
             // Recover reference id member maps model's schemas, and all model maps.
             /*
              * At this point idMemberMapIdentifiers contains Ids from all reference Member Maps, also from different ModelMaps/Schemas, also ponting to the same Id paths.
-             * Anyway, we know the referenced model type, and only member maps from the same type schema are valid. We can select only them.
-             * All model maps from this schema will be searched for updates.
+             * Anyway, we know the referenced model type, and only member maps from the same type are valid. We can select only them.
+             * All schemas from this model map will be searched for updates.
              * 
-             * If the reference summary had a different type, the proper id map will not be find.
-             * In this case, replace summary with minimal reference with only Id.
+             * If the referenced model summary in db documents has a different type than the current model, the proper map ids will not be find.
+             * If an Id path can't be find with any model map schema Id, at the end, try to replace summary with a minimal reference with only Id.
              */
             var idMemberMaps = idMemberMapIdentifiers
                 .Select(idMemberMapIdentifier => dbContext.MapRegistry.MemberMapsById[idMemberMapIdentifier])
-                .Where(idMemberMap => idMemberMap.ModelMapSchema.ModelMap.ModelType == referencedModel.GetType());
+                .Where(idMemberMap => idMemberMap.ModelMapSchema.ModelMap.ModelType == referencedModelType);
 
             // Define mapping of serializers and serialized documents.
             /*
@@ -89,7 +93,7 @@ namespace Etherna.MongODM.Core.Tasks
              * This permits to denormalize and optimize the mapping from each id path to all their possible serialized documents.
              */
             var repositoryDictionary = idMemberMaps
-                .GroupBy(idmm => dbContext.RepositoryRegistry.GetRepositoryByHandledModelType(idmm.ModelMapSchema.ModelMap.ModelType))
+                .GroupBy(idmm => dbContext.RepositoryRegistry.GetRepositoryByHandledModelType(idmm.DefinitionMemberPath.First().ModelMapSchema.ModelMap.ModelType))
                 .ToDictionary(repoGroup => repoGroup.Key,
                               repoGroup => repoGroup.GroupBy(idmm => MemberMapToMongoFindString(idmm))
                                                     .ToDictionary(idFindStringGroup => idFindStringGroup.Key,
@@ -182,6 +186,6 @@ namespace Etherna.MongODM.Core.Tasks
         }
 
         private static string MemberMapToMongoFindString(IMemberMap memberMap) =>
-            string.Join(".", memberMap.DefinitionMemberPath.Select(mm => mm.BsonMemberMap.ElementName));
+            string.Join(".", memberMap.DefinitionMemberPath.Select(mm => mm.BsonMemberMap.MemberName));
     }
 }
