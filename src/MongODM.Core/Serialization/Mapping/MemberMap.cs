@@ -46,24 +46,30 @@ namespace Etherna.MongODM.Core.Serialization.Mapping
 
         public IEnumerable<IMemberMap> ChildMemberMaps => _childMemberMaps;
 
-        public IEnumerable<IMemberMap> DefinitionMemberPath => ParentMemberMap is null ?
-            new[] { this } :
-            ParentMemberMap.DefinitionMemberPath.Concat(new[] { this });
+        public IDbContext DbContext => ModelMapSchema.ModelMap.DbContext;
+
+        public string ElementPath => string.Join(".", MemberMapPath.Select(mm => mm.BsonMemberMap.ElementName));
 
         //DefinitionMemberPath as: <modelMapType>;<schemaId>;<elementName>(|<modelMapType>;<schemaId>;<elementName>)*
-        public string Id => string.Join("|", DefinitionMemberPath.Select(
+        public string Id => string.Join("|", MemberMapPath.Select(
                 mm => $"{mm.ModelMapSchema.ModelMap.ModelType.Name};{mm.ModelMapSchema.Id};{mm.BsonMemberMap.ElementName}"));
 
         /// <summary>
         /// True if member is contained into a referenced entity model
         /// </summary>
-        public bool IsEntityReferenceMember => DefinitionMemberPath.Where(mm => mm.ModelMapSchema.IsEntity)
+        public bool IsEntityReferenceMember => MemberMapPath.Where(mm => mm.ModelMapSchema.IsEntity)
                                                                    .Count() >= 2;
 
         /// <summary>
         /// True if member is an entity Id
         /// </summary>
         public bool IsIdMember => BsonMemberMap.IsIdMember();
+
+        public IEnumerable<IMemberMap> MemberMapPath => ParentMemberMap is null ?
+            new[] { this } :
+            ParentMemberMap.MemberMapPath.Concat(new[] { this });
+
+        public string MemberPath => string.Join(".", MemberMapPath.Select(mm => mm.BsonMemberMap.MemberName));
 
         public IModelMapSchema ModelMapSchema { get; }
 
@@ -72,7 +78,7 @@ namespace Etherna.MongODM.Core.Serialization.Mapping
             get
             {
                 // Search backward first entity.
-                var entityMemberMap = DefinitionMemberPath.Reverse()
+                var entityMemberMap = MemberMapPath.Reverse()
                                                           .Skip(1) //start from parent
                                                           .FirstOrDefault(mm => mm.ModelMapSchema.IsEntity);
 
@@ -84,6 +90,8 @@ namespace Etherna.MongODM.Core.Serialization.Mapping
         }
 
         public IMemberMap? ParentMemberMap { get; }
+
+        public IBsonSerializer Serializer => BsonMemberMap.GetSerializer();
 
         // Internal methods.
         internal void AddChildMemberMap(IMemberMap childMemberMap) => _childMemberMaps.Add(childMemberMap);

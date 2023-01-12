@@ -26,7 +26,9 @@ namespace Etherna.MongODM.Core.Serialization.Mapping
 
         IEnumerable<IMemberMap> ChildMemberMaps { get; }
 
-        IEnumerable<IMemberMap> DefinitionMemberPath { get; }
+        IDbContext DbContext { get; }
+
+        string ElementPath { get; }
 
         /// <summary>
         /// An unique identifier
@@ -43,10 +45,16 @@ namespace Etherna.MongODM.Core.Serialization.Mapping
         /// </summary>
         bool IsIdMember { get; }
 
+        IEnumerable<IMemberMap> MemberMapPath { get; }
+
+        string MemberPath { get; }
+
         IModelMapSchema ModelMapSchema { get; }
 
         IMemberMap? OwnerEntityIdMap { get; }
 
         IMemberMap? ParentMemberMap { get; }
+
+        IBsonSerializer Serializer { get; }
     }
 }
