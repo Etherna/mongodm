@@ -15,9 +15,11 @@
 using Etherna.MongoDB.Bson;
 using Etherna.MongoDB.Bson.IO;
 using Etherna.MongoDB.Bson.Serialization;
+using Etherna.MongoDB.Bson.Serialization.Serializers;
 using Etherna.MongoDB.Driver;
 using Etherna.MongODM.Core.Domain.Models;
 using Etherna.MongODM.Core.Extensions;
+using Etherna.MongODM.Core.FieldDefinition;
 using Etherna.MongODM.Core.Repositories;
 using Etherna.MongODM.Core.Serialization.Mapping;
 using Etherna.MongODM.Core.Serialization.Modifiers;
@@ -157,6 +159,12 @@ namespace Etherna.MongODM.Core.Tasks
             {
                 var repository = repoPair.Key;
 
+                var originModelType = repository.ModelType;
+                var originIdType = repository.KeyType;
+                var findAndUpdateAsyncMethodInfo = typeof(UpdateDocDependenciesTask)
+                    .GetMethod(nameof(FindAndUpdateAsync), BindingFlags.NonPublic | BindingFlags.Static)
+                    .MakeGenericMethod(originModelType, originIdType);
+
                 foreach (var idElementPathPair in repoPair.Value)
                 {
                     var idElementPath = idElementPathPair.Key;
@@ -170,9 +178,25 @@ namespace Etherna.MongODM.Core.Tasks
                         {
                             var idMemberMap = memberMapSerializedDocPair.idMemberMap;
                             var serializedDocument = memberMapSerializedDocPair.doc;
-                            var modelMapIdElement = serializedDocument.GetElement(dbContext.Options.ModelMapVersion.ElementName).Value.AsString;
+                            var modelMapId = serializedDocument.GetElement(dbContext.Options.ModelMapVersion.ElementName).Value.AsString;
 
-                            //TODO.
+                            // Invoke find and update function.
+                            var result = findAndUpdateAsyncMethodInfo.Invoke(null, new object[]
+                            {
+                                repository,
+                                idMemberMap,
+                                serializedDocument,
+                                modelMapId,
+                                dbContext.Options.ModelMapVersion.ElementName,
+                                updatableDocumentId,
+                                referencedModelId
+                            });
+
+                            if (await (Task<bool>)result)
+                            {
+                                documentIsUpdated = true;
+                                break;
+                            }
                         }
 
                         // Try to search without any model map Id.
@@ -188,6 +212,42 @@ namespace Etherna.MongODM.Core.Tasks
         }
 
         // Helpers.
+        private static async Task<bool> FindAndUpdateAsync<TOriginModel, TOriginKey>(
+            IRepository<TOriginModel, TOriginKey> repository,
+            IMemberMap idMemberMap,
+            BsonDocument updatedSubDocument,
+            string? modelMapId,
+            string modelMapIdElementName,
+            TOriginKey originModelId,
+            object referencedModelId)
+            where TOriginModel : class, IEntityModel<TOriginKey>
+        {
+            var subDocumentMemberMap = idMemberMap.ParentMemberMap!;
+
+            // Define find filter.
+            var conjunctionFindFilters = new List<FilterDefinition<TOriginModel>>
+            {
+                Builders<TOriginModel>.Filter.Eq(m => m.Id, originModelId),
+                Builders<TOriginModel>.Filter.Eq(new MemberMapFieldDefinition<TOriginModel, object>(idMemberMap), referencedModelId)
+            };
+
+            if (modelMapId is not null)
+                conjunctionFindFilters.Add(Builders<TOriginModel>.Filter.Eq(
+                    new UnmappedFieldDefinition<TOriginModel, string>(
+                        new MemberMapFieldDefinition<TOriginModel>(subDocumentMemberMap),
+                        modelMapIdElementName,
+                        StringSerializer.Instance),
+                    modelMapId));
+
+            // Exec update.
+            var model = await repository.AccessToCollectionAsync(collection =>
+                collection.FindOneAndUpdateAsync(
+                    Builders<TOriginModel>.Filter.And(conjunctionFindFilters),
+                    Builders<TOriginModel>.Update.Set(new MemberMapFieldDefinition<TOriginModel, BsonDocument>(subDocumentMemberMap), updatedSubDocument)));
+
+            return model is not null;
+        }
+
         private static async Task<IEnumerable<object>> FindUpdatableDocumentsIdAsync<TOriginModel, TOriginKey>(
             IRepository<TOriginModel, TOriginKey> repository,
             IEnumerable<IMemberMap> idMemberMaps,

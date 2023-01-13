@@ -4,41 +4,39 @@ using Etherna.MongoDB.Driver.Linq;
 using Etherna.MongODM.Core.Serialization.Mapping;
 using System.Linq;
 
-namespace Etherna.MongODM.Core.Utility
+namespace Etherna.MongODM.Core.FieldDefinition
 {
     public class MemberMapFieldDefinition<TDocument> : FieldDefinition<TDocument>
     {
+        // Fields.
+        private readonly IMemberMap memberMap;
+
         // Constructor.
         public MemberMapFieldDefinition(IMemberMap memberMap)
         {
-            MemberMap = memberMap;
+            this.memberMap = memberMap;
         }
-
-        // Properties.
-        public IMemberMap MemberMap { get; }
 
         // Methods.
         public override RenderedFieldDefinition Render(IBsonSerializer<TDocument> documentSerializer, IBsonSerializerRegistry serializerRegistry, LinqProvider linqProvider) =>
-            new(string.Join(".", MemberMap.MemberMapPath.Select(mm => mm.BsonMemberMap.ElementName)),
-                MemberMap.ModelMapSchema.Serializer);
+            new(string.Join(".", memberMap.MemberMapPath.Select(mm => mm.BsonMemberMap.ElementName)),
+                memberMap.ModelMapSchema.Serializer);
     }
 
     public class MemberMapFieldDefinition<TDocument, TField> : FieldDefinition<TDocument, TField>
     {
         // Fields.
         private readonly IBsonSerializer<TField>? customFieldSerializer;
+        private readonly IMemberMap memberMap;
 
         // Constructor.
         public MemberMapFieldDefinition(
             IMemberMap memberMap,
             IBsonSerializer<TField>? customFieldSerializer = null)
         {
-            MemberMap = memberMap;
+            this.memberMap = memberMap;
             this.customFieldSerializer = customFieldSerializer;
         }
-
-        // Properties.
-        public IMemberMap MemberMap { get; }
 
         // Methods.
         public override RenderedFieldDefinition<TField> Render(IBsonSerializer<TDocument> documentSerializer, IBsonSerializerRegistry serializerRegistry, LinqProvider linqProvider) =>
@@ -49,16 +47,16 @@ namespace Etherna.MongODM.Core.Utility
             IBsonSerializer<TField> valueSerializer =
                 customFieldSerializer ??
                 (IBsonSerializer<TField>)FieldValueSerializerHelper.GetSerializerForValueType(
-                    MemberMap.Serializer,
-                    MemberMap.DbContext.SerializerRegistry,
+                    memberMap.Serializer,
+                    memberMap.DbContext.SerializerRegistry,
                     typeof(TField),
                     allowScalarValueForArrayField);
 
             return new RenderedFieldDefinition<TField>(
-                MemberMap.ElementPath,
+                memberMap.ElementPath,
                 valueSerializer,
                 valueSerializer,
-                MemberMap.Serializer);
+                memberMap.Serializer);
         }
     }
 }
