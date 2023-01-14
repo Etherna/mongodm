@@ -28,8 +28,6 @@ namespace Etherna.MongODM.Core.Serialization.Mapping
 
         IDbContext DbContext { get; }
 
-        string ElementPath { get; }
-
         /// <summary>
         /// An unique identifier
         /// </summary>
@@ -47,8 +45,6 @@ namespace Etherna.MongODM.Core.Serialization.Mapping
 
         IEnumerable<IMemberMap> MemberMapPath { get; }
 
-        string MemberPath { get; }
-
         IModelMapSchema ModelMapSchema { get; }
 
         IMemberMap? OwnerEntityIdMap { get; }
@@ -56,5 +52,10 @@ namespace Etherna.MongODM.Core.Serialization.Mapping
         IMemberMap? ParentMemberMap { get; }
 
         IBsonSerializer Serializer { get; }
+
+        // Methods.
+        string GetElementPath(string arrayItemSymbol = ".$", bool referToArrayItem = false);
+
+        string GetMemberPath(string arrayItemSymbol = ".$", bool referToArrayItem = false);
     }
 }

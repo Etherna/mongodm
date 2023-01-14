@@ -102,7 +102,7 @@ namespace Etherna.MongODM.Core.Tasks
                 .GroupBy(idmm => dbContext.RepositoryRegistry.GetRepositoryByHandledModelType(idmm.MemberMapPath.First().ModelMapSchema.ModelMap.ModelType))
                 .ToDictionary(
                     repoGroup => repoGroup.Key,
-                    repoGroup => repoGroup.GroupBy(idmm => idmm.ElementPath)
+                    repoGroup => repoGroup.GroupBy(idmm => idmm.GetElementPath())
                                           .ToDictionary(
                         idElementPathGroup => idElementPathGroup.Key,
                         idElementPathGroup => idElementPathGroup.Select(
@@ -243,7 +243,9 @@ namespace Etherna.MongODM.Core.Tasks
             var model = await repository.AccessToCollectionAsync(collection =>
                 collection.FindOneAndUpdateAsync(
                     Builders<TOriginModel>.Filter.And(conjunctionFindFilters),
-                    Builders<TOriginModel>.Update.Set(new MemberMapFieldDefinition<TOriginModel, BsonDocument>(subDocumentMemberMap), updatedSubDocument)));
+                    Builders<TOriginModel>.Update.Set(
+                        new MemberMapFieldDefinition<TOriginModel, BsonDocument>(subDocumentMemberMap, arrayItemSymbol: ".$[]", referToArrayItem: true),
+                        updatedSubDocument)));
 
             return model is not null;
         }

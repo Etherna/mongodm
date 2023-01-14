@@ -14,8 +14,10 @@
 
 using Etherna.MongoDB.Bson.Serialization;
 using Etherna.MongODM.Core.Extensions;
+using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text;
 
 namespace Etherna.MongODM.Core.Serialization.Mapping
 {
@@ -48,8 +50,6 @@ namespace Etherna.MongODM.Core.Serialization.Mapping
 
         public IDbContext DbContext => ModelMapSchema.ModelMap.DbContext;
 
-        public string ElementPath => string.Join(".", MemberMapPath.Select(mm => mm.BsonMemberMap.ElementName));
-
         //DefinitionMemberPath as: <modelMapType>;<schemaId>;<elementName>(|<modelMapType>;<schemaId>;<elementName>)*
         public string Id => string.Join("|", MemberMapPath.Select(
                 mm => $"{mm.ModelMapSchema.ModelMap.ModelType.Name};{mm.ModelMapSchema.Id};{mm.BsonMemberMap.ElementName}"));
@@ -68,8 +68,6 @@ namespace Etherna.MongODM.Core.Serialization.Mapping
         public IEnumerable<IMemberMap> MemberMapPath => ParentMemberMap is null ?
             new[] { this } :
             ParentMemberMap.MemberMapPath.Concat(new[] { this });
-
-        public string MemberPath => string.Join(".", MemberMapPath.Select(mm => mm.BsonMemberMap.MemberName));
 
         public IModelMapSchema ModelMapSchema { get; }
 
@@ -93,7 +91,33 @@ namespace Etherna.MongODM.Core.Serialization.Mapping
 
         public IBsonSerializer Serializer => BsonMemberMap.GetSerializer();
 
+        // Public methods.
+        public string GetElementPath(string arrayItemSymbol = ".$", bool referToArrayItem = false) =>
+            PathBuilderHelper(arrayItemSymbol, mm => mm.BsonMemberMap.ElementName, referToArrayItem);
+
+        public string GetMemberPath(string arrayItemSymbol = ".$", bool referToArrayItem = false) =>
+            PathBuilderHelper(arrayItemSymbol, mm => mm.BsonMemberMap.MemberName, referToArrayItem);
+
         // Internal methods.
         internal void AddChildMemberMap(IMemberMap childMemberMap) => _childMemberMaps.Add(childMemberMap);
+
+        // Helpers.
+        private string PathBuilderHelper(string arrayItemSymbol, Func<IMemberMap, string> extractNameFunc, bool referToArrayItem)
+        {
+            var stringBulder = new StringBuilder();
+
+            foreach (var (memberMap, i) in MemberMapPath.Select((mm, i) => (mm, i)))
+            {
+                if (i != 0) stringBulder.Append('.');
+
+                stringBulder.Append(extractNameFunc(memberMap));
+
+                if ((referToArrayItem || i + 1 < MemberMapPath.Count()) &&
+                    memberMap.Serializer is IBsonArraySerializer)
+                    stringBulder.Append(arrayItemSymbol);
+            }
+
+            return stringBulder.ToString();
+        }
     }
 }

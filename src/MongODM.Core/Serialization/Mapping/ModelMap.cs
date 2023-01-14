@@ -165,12 +165,9 @@ namespace Etherna.MongODM.Core.Serialization.Mapping
             var memberSerializer = bsonMemberMap.GetSerializer();
             if (memberSerializer is IModelMapsHandlingSerializer modelMapsContainerSerializer)
             {
-                foreach (var modelMap in modelMapsContainerSerializer.HandledModelMaps)
+                foreach (var modelMap in modelMapsContainerSerializer.HandledModelMaps
+                                            .Where(mm => !DbContext.ProxyGenerator.IsProxyType(mm.ModelType))) //skip model maps on proxy types
                 {
-                    //skip model maps on proxy types
-                    if (DbContext.ProxyGenerator.IsProxyType(modelMap.ModelType))
-                        continue;
-
                     foreach (var schema in modelMap.SchemasById.Values)
                     {
                         schema.Freeze();
