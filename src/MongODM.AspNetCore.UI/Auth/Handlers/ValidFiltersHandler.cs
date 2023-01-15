@@ -19,7 +19,7 @@ using System.Threading.Tasks;
 
 namespace Etherna.MongODM.AspNetCore.UI.Auth.Handlers
 {
-    class ValidFiltersHandler : AuthorizationHandler<ValidFiltersRequirement>
+    internal sealed class ValidFiltersHandler : AuthorizationHandler<ValidFiltersRequirement>
     {
         // Fields.
         private readonly IHttpContextAccessor httpContextAccessor;
