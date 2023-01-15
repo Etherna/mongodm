@@ -12,6 +12,7 @@
 //   See the License for the specific language governing permissions and
 //   limitations under the License.
 
+using Etherna.MongODM.Core.Attributes;
 using Moq;
 using System;
 using System.Linq.Expressions;
@@ -51,6 +52,8 @@ namespace Etherna.MongODM.Core.MockHelpers
             var invocation = GetInvocationMock<TProxy, TDeclaring>(proxyModel);
             var memberInfo = ReflectionHelper.GetMemberInfoFromLambda(memberLambda);
 
+            invocation.Setup(i => i.Method.GetCustomAttributes(typeof(PropertyAltererAttribute), true))
+                .Returns(Array.Empty<PropertyAltererAttribute>());
             invocation.Setup(i => i.Method.Name)
                 .Returns($"get_{memberInfo.Name}");
             invocation.Setup(i => i.Method.ReturnType)
