@@ -40,7 +40,7 @@ namespace Etherna.MongODM.Core.FieldDefinition
         // Constructor.
         public MemberMapFieldDefinition(
             IMemberMap memberMap,
-            string arrayItemSymbol = ".$",
+            string arrayItemSymbol = "",
             IBsonSerializer<TField>? customFieldSerializer = null,
             bool referToArrayItem = false)
         {
