@@ -178,10 +178,8 @@ namespace Etherna.MongODM.Core
             propertyRegistryLock.EnterReadLock();
             try
             {
-                if (propertyRegistry.ContainsKey(objectType))
-                {
-                    return propertyRegistry[objectType];
-                }
+                if (propertyRegistry.TryGetValue(objectType, out IEnumerable<PropertyInfo> value))
+                    return value;
             }
             finally
             {

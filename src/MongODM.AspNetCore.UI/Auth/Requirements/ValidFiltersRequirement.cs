@@ -19,7 +19,7 @@ using System.Collections.Generic;
 
 namespace Etherna.MongODM.AspNetCore.UI.Auth.Requirements
 {
-    class ValidFiltersRequirement : IAuthorizationRequirement
+    internal sealed class ValidFiltersRequirement : IAuthorizationRequirement
     {
         public ValidFiltersRequirement(IEnumerable<IDashboardAuthFilter> filters)
         {

@@ -74,7 +74,6 @@ namespace Etherna.MongODM.Core.Serialization.Mapping
                 return modelSchemaConfiguration;
             });
 
-        [SuppressMessage("Reliability", "CA2000:Dispose objects before losing scope", Justification = "The new model map instance can't be disposed")]
         public IModelMapsSchemaBuilder<TModel> AddModelMapsSchema<TModel>(
             string activeModelMapId,
             Action<BsonClassMap<TModel>>? activeModelMapInitializer = null,
@@ -114,13 +113,13 @@ namespace Etherna.MongODM.Core.Serialization.Mapping
         public BsonClassMap GetActiveClassMap(Type modelType)
         {
             // If a schema is registered.
-            if (_schemas.ContainsKey(modelType) &&
-                _schemas[modelType] is IModelMapsSchema modelMapSchema)
+            if (_schemas.TryGetValue(modelType, out ISchema schema) &&
+                schema is IModelMapsSchema modelMapSchema)
                 return modelMapSchema.ActiveMap.BsonClassMap;
 
             // If we don't have a model schema, look for a default classmap, or create it.
-            if (defaultClassMapsCache.ContainsKey(modelType))
-                return defaultClassMapsCache[modelType];
+            if (defaultClassMapsCache.TryGetValue(modelType, out BsonClassMap bsonClassMap))
+                return bsonClassMap;
 
             var classMapDefinition = typeof(BsonClassMap<>);
             var classMapType = classMapDefinition.MakeGenericType(modelType);
