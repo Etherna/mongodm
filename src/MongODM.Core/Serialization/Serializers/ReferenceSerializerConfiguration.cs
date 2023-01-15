@@ -49,7 +49,6 @@ namespace Etherna.MongODM.Core.Serialization.Serializers
         }
 
         // Methods.
-        [SuppressMessage("Reliability", "CA2000:Dispose objects before losing scope", Justification = "The new model map instance can't be disposed")]
         public IReferenceModelMapsSchemaBuilder<TModel> AddModelMapsSchema<TModel>(
             string activeModelMapId,
             Action<BsonClassMap<TModel>>? activeModelMapInitializer = null,
