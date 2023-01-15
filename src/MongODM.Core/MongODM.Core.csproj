@@ -23,7 +23,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Castle.Core" Version="5.1.0" />
+    <PackageReference Include="Castle.Core" Version="5.1.1" />
     <PackageReference Include="Etherna.MongoDB.Driver" Version="2.18.0" />
     <PackageReference Include="ExecutionContext" Version="1.2.0" />
     <PackageReference Include="GitVersion.MsBuild" Version="5.11.1">
