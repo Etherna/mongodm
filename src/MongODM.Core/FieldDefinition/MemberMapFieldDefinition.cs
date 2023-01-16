@@ -2,52 +2,62 @@
 using Etherna.MongoDB.Driver;
 using Etherna.MongoDB.Driver.Linq;
 using Etherna.MongODM.Core.Serialization.Mapping;
+using System;
 
 namespace Etherna.MongODM.Core.FieldDefinition
 {
     public class MemberMapFieldDefinition<TDocument> : FieldDefinition<TDocument>
     {
         // Fields.
-        private readonly string arrayItemSymbol;
+        private readonly Func<IMemberMap, string> arrayItemSymbolSelector;
         private readonly IMemberMap memberMap;
-        private readonly bool referToArrayItem;
 
         // Constructor.
         public MemberMapFieldDefinition(
             IMemberMap memberMap,
-            string arrayItemSymbol = ".$",
-            bool referToArrayItem = false)
+            string arrayItemSymbol = "",
+            bool referToArrayItem = false) :
+            this(memberMap, mm => referToArrayItem || mm != memberMap ? arrayItemSymbol : "")
+        { }
+
+        public MemberMapFieldDefinition(
+            IMemberMap memberMap,
+            Func<IMemberMap, string> arrayItemSymbolSelector)
         {
-            this.arrayItemSymbol = arrayItemSymbol;
+            this.arrayItemSymbolSelector = arrayItemSymbolSelector;
             this.memberMap = memberMap;
-            this.referToArrayItem = referToArrayItem;
         }
 
         // Methods.
         public override RenderedFieldDefinition Render(IBsonSerializer<TDocument> documentSerializer, IBsonSerializerRegistry serializerRegistry, LinqProvider linqProvider) =>
-            new(memberMap.GetElementPath(arrayItemSymbol, referToArrayItem),
+            new(memberMap.GetElementPath(arrayItemSymbolSelector),
                 memberMap.Serializer);
     }
 
     public class MemberMapFieldDefinition<TDocument, TField> : FieldDefinition<TDocument, TField>
     {
         // Fields.
-        private readonly string arrayItemSymbol;
+        private readonly Func<IMemberMap, string> arrayItemSymbolSelector;
         private readonly IBsonSerializer<TField>? customFieldSerializer;
         private readonly IMemberMap memberMap;
-        private readonly bool referToArrayItem;
 
         // Constructor.
         public MemberMapFieldDefinition(
             IMemberMap memberMap,
             string arrayItemSymbol = "",
             IBsonSerializer<TField>? customFieldSerializer = null,
-            bool referToArrayItem = false)
+            bool referToArrayItem = false) :
+            this(memberMap, mm => referToArrayItem || mm != memberMap ? arrayItemSymbol : "", customFieldSerializer)
+        { }
+
+        public MemberMapFieldDefinition(
+            IMemberMap memberMap,
+            Func<IMemberMap, string> arrayItemSymbolSelector,
+            IBsonSerializer<TField>? customFieldSerializer = null)
         {
+            this.arrayItemSymbolSelector = arrayItemSymbolSelector;
             this.customFieldSerializer = customFieldSerializer;
             this.memberMap = memberMap;
-            this.arrayItemSymbol = arrayItemSymbol;
-            this.referToArrayItem = referToArrayItem;
         }
 
         // Methods.
@@ -65,7 +75,7 @@ namespace Etherna.MongODM.Core.FieldDefinition
                     allowScalarValueForArrayField);
 
             return new RenderedFieldDefinition<TField>(
-                memberMap.GetElementPath(arrayItemSymbol, referToArrayItem),
+                memberMap.GetElementPath(arrayItemSymbolSelector),
                 valueSerializer,
                 valueSerializer,
                 memberMap.Serializer);

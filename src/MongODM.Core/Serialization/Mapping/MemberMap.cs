@@ -65,6 +65,8 @@ namespace Etherna.MongODM.Core.Serialization.Mapping
         /// </summary>
         public bool IsIdMember => BsonMemberMap.IsIdMember();
 
+        public bool IsSerializedAsArray => Serializer is IBsonArraySerializer;
+
         public IEnumerable<IMemberMap> MemberMapPath => ParentMemberMap is null ?
             new[] { this } :
             ParentMemberMap.MemberMapPath.Concat(new[] { this });
@@ -92,17 +94,19 @@ namespace Etherna.MongODM.Core.Serialization.Mapping
         public IBsonSerializer Serializer => BsonMemberMap.GetSerializer();
 
         // Public methods.
-        public string GetElementPath(string arrayItemSymbol = ".$", bool referToArrayItem = false) =>
-            PathBuilderHelper(arrayItemSymbol, mm => mm.BsonMemberMap.ElementName, referToArrayItem);
+        public string GetElementPath(Func<IMemberMap, string> arrayItemSymbolSelector) =>
+            PathBuilderHelper(arrayItemSymbolSelector, mm => mm.BsonMemberMap.ElementName);
 
-        public string GetMemberPath(string arrayItemSymbol = ".$", bool referToArrayItem = false) =>
-            PathBuilderHelper(arrayItemSymbol, mm => mm.BsonMemberMap.MemberName, referToArrayItem);
+        public string GetMemberPath(Func<IMemberMap, string> arrayItemSymbolSelector) =>
+            PathBuilderHelper(arrayItemSymbolSelector, mm => mm.BsonMemberMap.MemberName);
 
         // Internal methods.
         internal void AddChildMemberMap(IMemberMap childMemberMap) => _childMemberMaps.Add(childMemberMap);
 
         // Helpers.
-        private string PathBuilderHelper(string arrayItemSymbol, Func<IMemberMap, string> extractNameFunc, bool referToArrayItem)
+        private string PathBuilderHelper(
+            Func<IMemberMap, string> arrayItemSymbolSelector,
+            Func<IMemberMap, string> extractNameFunc)
         {
             var stringBulder = new StringBuilder();
 
@@ -112,9 +116,8 @@ namespace Etherna.MongODM.Core.Serialization.Mapping
 
                 stringBulder.Append(extractNameFunc(memberMap));
 
-                if ((referToArrayItem || i + 1 < MemberMapPath.Count()) &&
-                    memberMap.Serializer is IBsonArraySerializer)
-                    stringBulder.Append(arrayItemSymbol);
+                if (memberMap.IsSerializedAsArray)
+                    stringBulder.Append(arrayItemSymbolSelector(memberMap));
             }
 
             return stringBulder.ToString();

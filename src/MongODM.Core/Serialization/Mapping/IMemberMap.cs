@@ -13,6 +13,7 @@
 //   limitations under the License.
 
 using Etherna.MongoDB.Bson.Serialization;
+using System;
 using System.Collections.Generic;
 
 namespace Etherna.MongODM.Core.Serialization.Mapping
@@ -43,6 +44,8 @@ namespace Etherna.MongODM.Core.Serialization.Mapping
         /// </summary>
         bool IsIdMember { get; }
 
+        bool IsSerializedAsArray { get; }
+
         IEnumerable<IMemberMap> MemberMapPath { get; }
 
         IModelMapSchema ModelMapSchema { get; }
@@ -54,8 +57,8 @@ namespace Etherna.MongODM.Core.Serialization.Mapping
         IBsonSerializer Serializer { get; }
 
         // Methods.
-        string GetElementPath(string arrayItemSymbol = ".$", bool referToArrayItem = false);
+        string GetElementPath(Func<IMemberMap, string> arrayItemSymbolSelector);
 
-        string GetMemberPath(string arrayItemSymbol = ".$", bool referToArrayItem = false);
+        string GetMemberPath(Func<IMemberMap, string> arrayItemSymbolSelector);
     }
 }

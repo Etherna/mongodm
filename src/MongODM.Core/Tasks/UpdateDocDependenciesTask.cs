@@ -102,7 +102,7 @@ namespace Etherna.MongODM.Core.Tasks
                 .GroupBy(idmm => dbContext.RepositoryRegistry.GetRepositoryByHandledModelType(idmm.MemberMapPath.First().ModelMapSchema.ModelMap.ModelType))
                 .ToDictionary(
                     repoGroup => repoGroup.Key,
-                    repoGroup => repoGroup.GroupBy(idmm => idmm.GetElementPath())
+                    repoGroup => repoGroup.GroupBy(idmm => idmm.GetElementPath(_ => ".$"))
                                           .ToDictionary(
                         idElementPathGroup => idElementPathGroup.Key,
                         idElementPathGroup => idElementPathGroup.Select(
