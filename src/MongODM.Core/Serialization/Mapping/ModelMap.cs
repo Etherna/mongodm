@@ -163,25 +163,40 @@ namespace Etherna.MongODM.Core.Serialization.Mapping
 
             // Analize recursion on member.
             var memberSerializer = bsonMemberMap.GetSerializer();
-            if (memberSerializer is IModelMapsHandlingSerializer modelMapsContainerSerializer)
+            bool iterateOnArrayItem;
+            do
             {
-                foreach (var modelMap in modelMapsContainerSerializer.HandledModelMaps
-                                            .Where(mm => !DbContext.ProxyGenerator.IsProxyType(mm.ModelType))) //skip model maps on proxy types
-                {
-                    foreach (var schema in modelMap.SchemasById.Values)
-                    {
-                        schema.Freeze();
+                iterateOnArrayItem = false;
 
-                        // Recursion on child member maps.
-                        foreach (var childBsonMemberMap in schema.BsonClassMap.AllMemberMaps)
+                if (memberSerializer is IModelMapsHandlingSerializer modelMapsContainerSerializer)
+                {
+                    foreach (var modelMap in modelMapsContainerSerializer.HandledModelMaps
+                        .Where(mm => !DbContext.ProxyGenerator.IsProxyType(mm.ModelType))) //skip model maps on proxy types
+                    {
+                        foreach (var schema in modelMap.SchemasById.Values)
                         {
-                            var childMemberMap = BuildMemberMap(childBsonMemberMap, schema, memberMap);
-                            memberMap.AddChildMemberMap(childMemberMap);
-                            ((ModelMapSchema)schema).AddGeneratedMemberMap(memberMap);
+                            schema.Freeze();
+
+                            // Recursion on child member maps.
+                            foreach (var childBsonMemberMap in schema.BsonClassMap.AllMemberMaps)
+                            {
+                                var childMemberMap = BuildMemberMap(childBsonMemberMap, schema, memberMap);
+                                memberMap.AddChildMemberMap(childMemberMap);
+                                ((ModelMapSchema)schema).AddGeneratedMemberMap(memberMap);
+                            }
                         }
                     }
                 }
-            }
+
+                //in case of array serializers not defined by mongodm (as mongo driver's default)
+                else if (memberSerializer is IBsonArraySerializer bsonArraySerializer &&
+                    bsonArraySerializer.TryGetItemSerializationInfo(out BsonSerializationInfo itemSerializationInfo))
+                {
+                    // Iterate on item serializer.
+                    memberSerializer = itemSerializationInfo.Serializer;
+                    iterateOnArrayItem = true;
+                }
+            } while (iterateOnArrayItem);
 
             return memberMap;
         }

@@ -30,6 +30,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
+using System.Text;
 using System.Threading.Tasks;
 
 namespace Etherna.MongODM.Core.Tasks
@@ -239,13 +240,41 @@ namespace Etherna.MongODM.Core.Tasks
                         StringSerializer.Instance),
                     modelMapId));
 
+            var filter = Builders<TOriginModel>.Filter.And(conjunctionFindFilters);
+
+            // Define update operator.
+            var update = Builders<TOriginModel>.Update.Set(
+                new MemberMapFieldDefinition<TOriginModel, BsonDocument>(
+                    subDocumentMemberMap,
+                    mm =>
+                    {
+                        var sb = new StringBuilder();
+                        var maxArrayItemDepth = mm.MaxArrayItemDepth;
+
+                        for (int i = 0; i < maxArrayItemDepth; i++)
+                        {
+                            if (mm == subDocumentMemberMap && //if sub document is defined as item of this array
+                                i + 1 == maxArrayItemDepth) //and this is max item depth for this array
+                                sb.Append(".$[idfilter]"); //filter in array items
+                            else
+                                sb.Append(".$[]"); //select all array items
+                        }
+                        return sb.ToString();
+                    }),
+                updatedSubDocument);
+
+            var arrayFilters = new List<ArrayFilterDefinition>();
+            if (subDocumentMemberMap.IsSerializedAsArray)
+                arrayFilters.Add(new BsonDocumentArrayFilterDefinition<BsonDocument>(
+                    new BsonDocument($"idfilter.{idMemberMap.BsonMemberMap.ElementName}",
+                        new BsonDocument("$eq", updatedSubDocument.GetValue(idMemberMap.BsonMemberMap.ElementName)))));
+
             // Exec update.
             var model = await repository.AccessToCollectionAsync(collection =>
                 collection.FindOneAndUpdateAsync(
-                    Builders<TOriginModel>.Filter.And(conjunctionFindFilters),
-                    Builders<TOriginModel>.Update.Set(
-                        new MemberMapFieldDefinition<TOriginModel, BsonDocument>(subDocumentMemberMap, arrayItemSymbol: ".$[]", referToArrayItem: true),
-                        updatedSubDocument)));
+                    filter,
+                    update,
+                    new FindOneAndUpdateOptions<TOriginModel> { ArrayFilters = arrayFilters }));
 
             return model is not null;
         }

@@ -28,6 +28,7 @@ namespace Etherna.MongODM.Core.Serialization.Mapping
     {
         // Fields.
         private readonly List<IMemberMap> _childMemberMaps = new();
+        private int? _maxArrayItemDepth;
 
         // Constructors.
         internal MemberMap(
@@ -67,6 +68,28 @@ namespace Etherna.MongODM.Core.Serialization.Mapping
 
         public bool IsSerializedAsArray => Serializer is IBsonArraySerializer;
 
+        public int MaxArrayItemDepth
+        {
+            get
+            {
+                if (_maxArrayItemDepth == null)
+                {
+                    var serializer = Serializer;
+                    var depth = 0;
+                    while (serializer is IBsonArraySerializer arraySerializer)
+                    {
+                        depth++;
+                        arraySerializer.TryGetItemSerializationInfo(out var itemSerializationInfo);
+                        serializer = itemSerializationInfo.Serializer;
+                    }
+
+                    _maxArrayItemDepth = depth;
+                }
+
+                return _maxArrayItemDepth.Value;
+            }
+        }
+
         public IEnumerable<IMemberMap> MemberMapPath => ParentMemberMap is null ?
             new[] { this } :
             ParentMemberMap.MemberMapPath.Concat(new[] { this });
@@ -79,8 +102,8 @@ namespace Etherna.MongODM.Core.Serialization.Mapping
             {
                 // Search backward first entity.
                 var entityMemberMap = MemberMapPath.Reverse()
-                                                          .Skip(1) //start from parent
-                                                          .FirstOrDefault(mm => mm.ModelMapSchema.IsEntity);
+                                                   .FirstOrDefault(mm => mm.ModelMapSchema.IsEntity)
+                                                   ?.ParentMemberMap;
 
                 // Search id member map with same schema of this.
                 return entityMemberMap?.ChildMemberMaps

@@ -46,6 +46,8 @@ namespace Etherna.MongODM.Core.Serialization.Mapping
 
         bool IsSerializedAsArray { get; }
 
+        int MaxArrayItemDepth { get; }
+
         IEnumerable<IMemberMap> MemberMapPath { get; }
 
         IModelMapSchema ModelMapSchema { get; }
