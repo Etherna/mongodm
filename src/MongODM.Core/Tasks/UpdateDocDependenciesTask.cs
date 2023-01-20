@@ -287,7 +287,7 @@ namespace Etherna.MongODM.Core.Tasks
         {
             var cursor = await repository.FindAsync(
                 Builders<TOriginModel>.Filter.Or(
-                    idMemberMaps.Select(idmm => Builders<TOriginModel>.Filter.Eq(new MemberMapFieldDefinition<TOriginModel, object>(idmm), referencedModelId))),
+                    idMemberMaps.Select(idmm => BuildFindFilterHelper<TOriginModel>(idmm.MemberMapPath, referencedModelId))),
                 new FindOptions<TOriginModel, TOriginModel>
                 {
                     NoCursorTimeout = true,
@@ -295,10 +295,91 @@ namespace Etherna.MongODM.Core.Tasks
                 }).ConfigureAwait(false);
 
             List<object> ids = new();
-            while(await cursor.MoveNextAsync())
+            while (await cursor.MoveNextAsync())
                 ids.AddRange(cursor.Current.Select(m => (object)m.Id!));
 
             return ids;
         }
+
+        private static FilterDefinition<TModel> BuildFindFilterHelper<TModel>(
+            IEnumerable<IMemberMap> memberMapPath,
+            object value)
+        {
+            var fieldAccumulator = new StringBuilder();
+            var fieldCounter = 0;
+
+            foreach (var memberMap in memberMapPath)
+            {
+                fieldCounter++;
+
+                if (fieldAccumulator.Length != 0)
+                    fieldAccumulator.Append('.');
+
+                fieldAccumulator.Append(memberMap.BsonMemberMap.MemberName);
+
+                if (memberMap.IsSerializedAsArray)
+                {
+                    var elemMatchResult = BuildFindFilterElemMatchHelper<TModel>(
+                        fieldAccumulator.ToString(),
+                        memberMapPath.Skip(fieldCounter),
+                        memberMap.MaxArrayItemDepth,
+                        value);
+
+                    return elemMatchResult;
+                }
+            }
+
+            var eqResult = Builders<TModel>.Filter.Eq(fieldAccumulator.ToString(), value);
+
+            return eqResult;
+        }
+
+        private static FilterDefinition<TModel> BuildFindFilterElemMatchHelper<TModel>(
+            string currentFieldName,
+            IEnumerable<IMemberMap> memberMapPath,
+            int itemDepth,
+            object value)
+        {
+            if (itemDepth > 0)
+            {
+                var memberMapModelType = memberMapPath.First().ModelMapSchema.ModelMap.ModelType;
+
+                /* We must build the elemMatch item type considering the itemDepth at this level.
+                 * For example, if itemDepth == 1, the item type will be simply TItem.
+                 * If itemDepth == 2, the item type will be IEnumerable<TItem>.
+                 * If itemDepth == 3, the item type will be IEnumerable<IEnumerable<TItem>>, and so on.
+                 */
+                var elemMatchItemType = memberMapModelType;
+                for (int i = 1; i < itemDepth; i++)
+                    elemMatchItemType = typeof(IEnumerable<>).MakeGenericType(elemMatchItemType);
+
+                var genericElemMatchBuilderMethod = typeof(UpdateDocDependenciesTask).GetMethod(nameof(GenericElemMatchBuilderHelper), BindingFlags.NonPublic | BindingFlags.Static)
+                    .MakeGenericMethod(
+                    typeof(TModel),
+                    elemMatchItemType);
+
+                return (FilterDefinition<TModel>)genericElemMatchBuilderMethod.Invoke(null,
+                    new[]
+                    {
+                        currentFieldName,
+                        itemDepth,
+                        memberMapPath,
+                        value
+                    });
+            }
+            else return BuildFindFilterHelper<TModel>(memberMapPath, value);
+        }
+
+        private static FilterDefinition<TModel> GenericElemMatchBuilderHelper<TModel, TItem>(
+            string currentFieldName,
+            int itemDepth,
+            IEnumerable<IMemberMap> memberMapPath,
+            object value) =>
+            currentFieldName.Length != 0 ?
+                Builders<TModel>.Filter.ElemMatch(
+                    currentFieldName,
+                    BuildFindFilterElemMatchHelper<TItem>("", memberMapPath, itemDepth - 1, value)) :
+                Builders<TModel>.Filter.ElemMatch(
+                    BuildFindFilterElemMatchHelper<TItem>("", memberMapPath, itemDepth - 1, value));
     }
 }
