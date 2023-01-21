@@ -1,58 +1,71 @@
 ﻿using Etherna.MongoDB.Bson.Serialization;
 using Etherna.MongoDB.Driver;
 using Etherna.MongoDB.Driver.Linq;
+using System;
 using System.Text;
 
 namespace Etherna.MongODM.Core.FieldDefinition
 {
     public class UnmappedFieldDefinition<TDocument> : FieldDefinition<TDocument>
     {
-        // Fields.
-        private readonly FieldDefinition<TDocument>? baseDocumentField;
-        private readonly string fieldName;
-        private readonly IBsonSerializer fieldSerializer;
-
         // Constructor.
         public UnmappedFieldDefinition(
             FieldDefinition<TDocument>? baseDocumentField,
-            string fieldName,
-            IBsonSerializer fieldSerializer)
+            string unmappedFieldName,
+            IBsonSerializer unmappedFieldSerializer)
         {
-            this.baseDocumentField = baseDocumentField;
-            this.fieldName = fieldName;
-            this.fieldSerializer = fieldSerializer;
+            if (unmappedFieldName.Contains("."))
+                throw new ArgumentException("Field name can't navigate nested documents", nameof(unmappedFieldName));
+
+            BaseDocumentField = baseDocumentField;
+            UnmappedFieldName = unmappedFieldName;
+            UnmappedFieldSerializer = unmappedFieldSerializer;
         }
+
+        // Properties.
+        public FieldDefinition<TDocument>? BaseDocumentField { get; }
+        public string UnmappedFieldName { get; }
+        public IBsonSerializer UnmappedFieldSerializer { get; }
 
         // Methods.
         public override RenderedFieldDefinition Render(IBsonSerializer<TDocument> documentSerializer, IBsonSerializerRegistry serializerRegistry, LinqProvider linqProvider) =>
-            new(UnmappedFieldDefinitionHelper.BuildFieldPath(baseDocumentField, fieldName, documentSerializer, serializerRegistry, linqProvider),
-                fieldSerializer);
+            new(UnmappedFieldDefinitionHelper.BuildFieldPath(BaseDocumentField, UnmappedFieldName, documentSerializer, serializerRegistry, linqProvider),
+                UnmappedFieldSerializer);
+
+        public Type? TryGetBaseDocumentType(IBsonSerializer<TDocument> documentSerializer, IBsonSerializerRegistry serializerRegistry) =>
+            UnmappedFieldDefinitionHelper.TryGetBaseDocumentType(BaseDocumentField, documentSerializer, serializerRegistry);
     }
 
     public class UnmappedFieldDefinition<TDocument, TField> : FieldDefinition<TDocument, TField>
     {
-        // Fields.
-        private readonly FieldDefinition<TDocument>? baseDocumentField;
-        private readonly string fieldName;
-        private readonly IBsonSerializer<TField> fieldSerializer;
-
         // Constructor.
         public UnmappedFieldDefinition(
             FieldDefinition<TDocument>? baseDocumentField,
-            string fieldName,
-            IBsonSerializer<TField> fieldSerializer)
+            string unmappedFieldName,
+            IBsonSerializer<TField> unmappedFieldSerializer)
         {
-            this.baseDocumentField = baseDocumentField;
-            this.fieldName = fieldName;
-            this.fieldSerializer = fieldSerializer;
+            if (unmappedFieldName.Contains("."))
+                throw new ArgumentException("Field name can't navigate nested documents", nameof(unmappedFieldName));
+
+            BaseDocumentField = baseDocumentField;
+            UnmappedFieldName = unmappedFieldName;
+            UnmappedFieldSerializer = unmappedFieldSerializer;
         }
+
+        // Properties.
+        public FieldDefinition<TDocument>? BaseDocumentField { get; }
+        public string UnmappedFieldName { get; }
+        public IBsonSerializer<TField> UnmappedFieldSerializer { get; }
 
         // Methods.
         public override RenderedFieldDefinition<TField> Render(IBsonSerializer<TDocument> documentSerializer, IBsonSerializerRegistry serializerRegistry, LinqProvider linqProvider) =>
-            new(UnmappedFieldDefinitionHelper.BuildFieldPath(baseDocumentField, fieldName, documentSerializer, serializerRegistry, linqProvider),
-                fieldSerializer,
-                fieldSerializer,
-                fieldSerializer);
+            new(UnmappedFieldDefinitionHelper.BuildFieldPath(BaseDocumentField, UnmappedFieldName, documentSerializer, serializerRegistry, linqProvider),
+                UnmappedFieldSerializer,
+                UnmappedFieldSerializer,
+                UnmappedFieldSerializer);
+
+        public Type? TryGetBaseDocumentType(IBsonSerializer<TDocument> documentSerializer, IBsonSerializerRegistry serializerRegistry) =>
+            UnmappedFieldDefinitionHelper.TryGetBaseDocumentType(BaseDocumentField, documentSerializer, serializerRegistry);
     }
 
     internal static class UnmappedFieldDefinitionHelper
@@ -75,6 +88,29 @@ namespace Etherna.MongODM.Core.FieldDefinition
             sb.Append(fieldName);
 
             return sb.ToString();
+        }
+
+        public static Type? TryGetBaseDocumentType<TDocument>(
+            FieldDefinition<TDocument>? baseDocumentField,
+            IBsonSerializer<TDocument> documentSerializer,
+            IBsonSerializerRegistry serializerRegistry)
+        {
+            if (baseDocumentField is null)
+                return null;
+
+            var renderedBaseDocumentField = baseDocumentField.Render(documentSerializer, serializerRegistry);
+            var baseDocumentFieldSerializer = renderedBaseDocumentField.FieldSerializer;
+
+            // Until serializer is an array serializer, go down to its item serializer.
+            var baseDocumentSerializer = baseDocumentFieldSerializer;
+            while (baseDocumentSerializer is IBsonArraySerializer arraySerializer)
+            {
+                if (!arraySerializer.TryGetItemSerializationInfo(out var itemSerializationInfo))
+                    return null;
+                baseDocumentSerializer = itemSerializationInfo.Serializer;
+            }
+
+            return baseDocumentSerializer.ValueType;
         }
     }
 }

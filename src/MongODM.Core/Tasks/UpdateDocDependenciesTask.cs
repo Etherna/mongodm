@@ -190,7 +190,8 @@ namespace Etherna.MongODM.Core.Tasks
                                 modelMapId,
                                 dbContext.Options.ModelMapVersion.ElementName,
                                 updatableDocumentId,
-                                referencedModelId
+                                referencedModelId,
+                                dbContext.SerializerRegistry
                             });
 
                             if (await (Task<bool>)result)
@@ -217,10 +218,11 @@ namespace Etherna.MongODM.Core.Tasks
             IRepository<TOriginModel, TOriginKey> repository,
             IMemberMap idMemberMap,
             BsonDocument updatedSubDocument,
-            string? modelMapId,
+            string? modelMapSchemaId,
             string modelMapIdElementName,
             TOriginKey originModelId,
-            object referencedModelId)
+            object referencedModelId,
+            IBsonSerializerRegistry serializerRegistry)
             where TOriginModel : class, IEntityModel<TOriginKey>
         {
             var subDocumentMemberMap = idMemberMap.ParentMemberMap!;
@@ -229,16 +231,20 @@ namespace Etherna.MongODM.Core.Tasks
             var conjunctionFindFilters = new List<FilterDefinition<TOriginModel>>
             {
                 Builders<TOriginModel>.Filter.Eq(m => m.Id, originModelId),
-                Builders<TOriginModel>.Filter.Eq(new MemberMapFieldDefinition<TOriginModel, object>(idMemberMap), referencedModelId)
+                BuildFindFilterHelper<TOriginModel, object>(idMemberMap.MemberMapPath, null, null, null, referencedModelId),
             };
 
-            if (modelMapId is not null)
-                conjunctionFindFilters.Add(Builders<TOriginModel>.Filter.Eq(
-                    new UnmappedFieldDefinition<TOriginModel, string>(
-                        new MemberMapFieldDefinition<TOriginModel>(subDocumentMemberMap),
+            if (modelMapSchemaId is not null)
+                conjunctionFindFilters.Add(
+                    BuildFindFilterHelper<TOriginModel, string>(
+                        subDocumentMemberMap.MemberMapPath,
                         modelMapIdElementName,
-                        StringSerializer.Instance),
-                    modelMapId));
+                        UnmappedFieldDefinitionHelper.TryGetBaseDocumentType(
+                            new MemberMapFieldDefinition<TOriginModel>(subDocumentMemberMap),
+                            serializerRegistry.GetSerializer<TOriginModel>(),
+                            serializerRegistry),
+                        StringSerializer.Instance,
+                        modelMapSchemaId));
 
             var filter = Builders<TOriginModel>.Filter.And(conjunctionFindFilters);
 
@@ -287,7 +293,7 @@ namespace Etherna.MongODM.Core.Tasks
         {
             var cursor = await repository.FindAsync(
                 Builders<TOriginModel>.Filter.Or(
-                    idMemberMaps.Select(idmm => BuildFindFilterHelper<TOriginModel>(idmm.MemberMapPath, referencedModelId))),
+                    idMemberMaps.Select(idmm => BuildFindFilterHelper<TOriginModel, object>(idmm.MemberMapPath, null, null, null, referencedModelId))),
                 new FindOptions<TOriginModel, TOriginModel>
                 {
                     NoCursorTimeout = true,
@@ -301,10 +307,20 @@ namespace Etherna.MongODM.Core.Tasks
             return ids;
         }
 
-        private static FilterDefinition<TModel> BuildFindFilterHelper<TModel>(
+        private static FilterDefinition<TModel> BuildFindFilterHelper<TModel, TField>(
             IEnumerable<IMemberMap> memberMapPath,
-            object value)
+            string? unmappedElementName,
+            Type? unmappedElementParentType,
+            IBsonSerializer<TField>? unmappedElementSerializer,
+            TField value)
         {
+            if (unmappedElementName is not null &&
+                unmappedElementParentType is null)
+                throw new ArgumentNullException(nameof(unmappedElementParentType), "Pointing to an unmapped element requires to pass its parent type too");
+            if (unmappedElementName is not null &&
+                unmappedElementSerializer is null)
+                throw new ArgumentNullException(nameof(unmappedElementSerializer), "Pointing to an unmapped element requires to pass its serializer too");
+
             var fieldAccumulator = new StringBuilder();
             var fieldCounter = 0;
 
@@ -319,67 +335,80 @@ namespace Etherna.MongODM.Core.Tasks
 
                 if (memberMap.IsSerializedAsArray)
                 {
-                    var elemMatchResult = BuildFindFilterElemMatchHelper<TModel>(
+                    return BuildFindFilterElemMatchHelper<TModel, TField>(
                         fieldAccumulator.ToString(),
                         memberMapPath.Skip(fieldCounter),
+                        unmappedElementName,
+                        unmappedElementParentType,
+                        unmappedElementSerializer,
                         memberMap.MaxArrayItemDepth,
                         value);
-
-                    return elemMatchResult;
                 }
             }
 
-            var eqResult = Builders<TModel>.Filter.Eq(fieldAccumulator.ToString(), value);
+            FieldDefinition<TModel, TField> fieldDefinition = new StringFieldDefinition<TModel, TField>(fieldAccumulator.ToString());
+            if (unmappedElementName != null)
+                fieldDefinition = new UnmappedFieldDefinition<TModel, TField>(fieldDefinition, unmappedElementName, unmappedElementSerializer!);
 
-            return eqResult;
+            return Builders<TModel>.Filter.Eq(fieldDefinition, value);
         }
 
-        private static FilterDefinition<TModel> BuildFindFilterElemMatchHelper<TModel>(
+        private static FilterDefinition<TModel> BuildFindFilterElemMatchHelper<TModel, TField>(
             string currentFieldName,
             IEnumerable<IMemberMap> memberMapPath,
+            string? unmappedElementName,
+            Type? unmappedElementParentType,
+            IBsonSerializer<TField>? unmappedElementSerializer,
             int itemDepth,
-            object value)
+            TField value)
         {
             if (itemDepth > 0)
             {
-                var memberMapModelType = memberMapPath.First().ModelMapSchema.ModelMap.ModelType;
-
                 /* We must build the elemMatch item type considering the itemDepth at this level.
                  * For example, if itemDepth == 1, the item type will be simply TItem.
                  * If itemDepth == 2, the item type will be IEnumerable<TItem>.
                  * If itemDepth == 3, the item type will be IEnumerable<IEnumerable<TItem>>, and so on.
                  */
-                var elemMatchItemType = memberMapModelType;
+                var elemMatchItemType = memberMapPath.Any() ?
+                    memberMapPath.First().ModelMapSchema.ModelMap.ModelType :
+                    unmappedElementParentType; //in case only unmapped element is missing
                 for (int i = 1; i < itemDepth; i++)
                     elemMatchItemType = typeof(IEnumerable<>).MakeGenericType(elemMatchItemType);
 
                 var genericElemMatchBuilderMethod = typeof(UpdateDocDependenciesTask).GetMethod(nameof(GenericElemMatchBuilderHelper), BindingFlags.NonPublic | BindingFlags.Static)
                     .MakeGenericMethod(
-                    typeof(TModel),
-                    elemMatchItemType);
+                        typeof(TModel),
+                        elemMatchItemType,
+                        typeof(TField));
 
                 return (FilterDefinition<TModel>)genericElemMatchBuilderMethod.Invoke(null,
-                    new[]
+                    new object[]
                     {
                         currentFieldName,
                         itemDepth,
                         memberMapPath,
-                        value
+                        unmappedElementName!,
+                        unmappedElementParentType!,
+                        unmappedElementSerializer!,
+                        value!
                     });
             }
-            else return BuildFindFilterHelper<TModel>(memberMapPath, value);
+            else return BuildFindFilterHelper<TModel, TField>(memberMapPath, unmappedElementName, unmappedElementParentType, unmappedElementSerializer, value);
         }
 
-        private static FilterDefinition<TModel> GenericElemMatchBuilderHelper<TModel, TItem>(
+        private static FilterDefinition<TModel> GenericElemMatchBuilderHelper<TModel, TItem, TField>(
             string currentFieldName,
             int itemDepth,
             IEnumerable<IMemberMap> memberMapPath,
-            object value) =>
+            string? unmappedElementName,
+            Type? unmappedElementParentType,
+            IBsonSerializer<TField>? unmappedElementSerializer,
+            TField value) =>
             currentFieldName.Length != 0 ?
                 Builders<TModel>.Filter.ElemMatch(
                     currentFieldName,
-                    BuildFindFilterElemMatchHelper<TItem>("", memberMapPath, itemDepth - 1, value)) :
+                    BuildFindFilterElemMatchHelper<TItem, TField>("", memberMapPath, unmappedElementName, unmappedElementParentType, unmappedElementSerializer, itemDepth - 1, value)) :
                 Builders<TModel>.Filter.ElemMatch(
-                    BuildFindFilterElemMatchHelper<TItem>("", memberMapPath, itemDepth - 1, value));
+                    BuildFindFilterElemMatchHelper<TItem, TField>("", memberMapPath, unmappedElementName, unmappedElementParentType, unmappedElementSerializer, itemDepth - 1, value));
     }
 }

@@ -10,7 +10,6 @@ namespace Etherna.MongODM.Core.FieldDefinition
     {
         // Fields.
         private readonly Func<IMemberMap, string> arrayItemSymbolSelector;
-        private readonly IMemberMap memberMap;
 
         // Constructor.
         public MemberMapFieldDefinition(
@@ -25,13 +24,16 @@ namespace Etherna.MongODM.Core.FieldDefinition
             Func<IMemberMap, string> arrayItemSymbolSelector)
         {
             this.arrayItemSymbolSelector = arrayItemSymbolSelector;
-            this.memberMap = memberMap;
+            MemberMap = memberMap;
         }
+
+        // Properties.
+        private IMemberMap MemberMap { get; }
 
         // Methods.
         public override RenderedFieldDefinition Render(IBsonSerializer<TDocument> documentSerializer, IBsonSerializerRegistry serializerRegistry, LinqProvider linqProvider) =>
-            new(memberMap.GetElementPath(arrayItemSymbolSelector),
-                memberMap.Serializer);
+            new(MemberMap.GetElementPath(arrayItemSymbolSelector),
+                MemberMap.Serializer);
     }
 
     public class MemberMapFieldDefinition<TDocument, TField> : FieldDefinition<TDocument, TField>
@@ -39,7 +41,6 @@ namespace Etherna.MongODM.Core.FieldDefinition
         // Fields.
         private readonly Func<IMemberMap, string> arrayItemSymbolSelector;
         private readonly IBsonSerializer<TField>? customFieldSerializer;
-        private readonly IMemberMap memberMap;
 
         // Constructor.
         public MemberMapFieldDefinition(
@@ -57,8 +58,11 @@ namespace Etherna.MongODM.Core.FieldDefinition
         {
             this.arrayItemSymbolSelector = arrayItemSymbolSelector;
             this.customFieldSerializer = customFieldSerializer;
-            this.memberMap = memberMap;
+            MemberMap = memberMap;
         }
+
+        // Properties.
+        private IMemberMap MemberMap { get; }
 
         // Methods.
         public override RenderedFieldDefinition<TField> Render(IBsonSerializer<TDocument> documentSerializer, IBsonSerializerRegistry serializerRegistry, LinqProvider linqProvider) =>
@@ -69,16 +73,16 @@ namespace Etherna.MongODM.Core.FieldDefinition
             IBsonSerializer<TField> valueSerializer =
                 customFieldSerializer ??
                 (IBsonSerializer<TField>)FieldValueSerializerHelper.GetSerializerForValueType(
-                    memberMap.Serializer,
-                    memberMap.DbContext.SerializerRegistry,
+                    MemberMap.Serializer,
+                    MemberMap.DbContext.SerializerRegistry,
                     typeof(TField),
                     allowScalarValueForArrayField);
 
             return new RenderedFieldDefinition<TField>(
-                memberMap.GetElementPath(arrayItemSymbolSelector),
+                MemberMap.GetElementPath(arrayItemSymbolSelector),
                 valueSerializer,
                 valueSerializer,
-                memberMap.Serializer);
+                MemberMap.Serializer);
         }
     }
 }
