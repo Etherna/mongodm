@@ -182,7 +182,7 @@ namespace Etherna.MongODM.Core.Serialization.Mapping
                             {
                                 var childMemberMap = BuildMemberMap(childBsonMemberMap, schema, memberMap);
                                 memberMap.AddChildMemberMap(childMemberMap);
-                                ((ModelMapSchema)schema).AddGeneratedMemberMap(memberMap);
+                                ((ModelMapSchema)schema).AddGeneratedMemberMap(childMemberMap);
                             }
                         }
                     }
