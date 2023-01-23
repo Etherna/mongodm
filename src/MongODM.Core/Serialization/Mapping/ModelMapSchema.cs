@@ -58,6 +58,7 @@ namespace Etherna.MongODM.Core.Serialization.Mapping
         public BsonClassMap BsonClassMap { get; }
         public IEnumerable<IMemberMap> GeneratedMemberMaps => _generatedMemberMaps;
         public IMemberMap? IdMemberMap => GeneratedMemberMaps.FirstOrDefault(mm => mm.IsIdMember);
+        public bool IsCurrentActive => ModelMap.ActiveSchema == this;
         public bool IsEntity => BsonClassMap.IsEntity();
         public IModelMap ModelMap { get; }
         public IBsonSerializer Serializer => _serializer ??= customSerializer ?? GetDefaultSerializer();

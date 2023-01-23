@@ -39,6 +39,8 @@ namespace Etherna.MongODM.Core.Serialization.Mapping
         /// </summary>
         bool IsEntityReferenceMember { get; }
 
+        bool IsGeneratedByActiveSchemas { get; }
+
         /// <summary>
         /// True if member is an entity Id
         /// </summary>

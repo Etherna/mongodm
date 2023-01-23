@@ -61,6 +61,8 @@ namespace Etherna.MongODM.Core.Serialization.Mapping
         public bool IsEntityReferenceMember => MemberMapPath.Where(mm => mm.ModelMapSchema.IsEntity)
                                                                    .Count() >= 2;
 
+        public bool IsGeneratedByActiveSchemas => !MemberMapPath.Any(mm => !mm.ModelMapSchema.IsCurrentActive);
+
         /// <summary>
         /// True if member is an entity Id
         /// </summary>

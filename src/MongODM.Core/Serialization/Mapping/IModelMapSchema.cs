@@ -28,6 +28,7 @@ namespace Etherna.MongODM.Core.Serialization.Mapping
         BsonClassMap BsonClassMap { get; }
         IEnumerable<IMemberMap> GeneratedMemberMaps { get; }
         IMemberMap? IdMemberMap { get; }
+        bool IsCurrentActive { get; }
         bool IsEntity { get; }
         IModelMap ModelMap { get; }
         /// <summary>

@@ -15,7 +15,6 @@
 using Etherna.MongoDB.Bson;
 using Etherna.MongoDB.Bson.IO;
 using Etherna.MongoDB.Bson.Serialization;
-using Etherna.MongoDB.Bson.Serialization.Serializers;
 using Etherna.MongoDB.Driver;
 using Etherna.MongODM.Core.Domain.Models;
 using Etherna.MongODM.Core.Extensions;
@@ -25,7 +24,6 @@ using Etherna.MongODM.Core.Serialization.Mapping;
 using Etherna.MongODM.Core.Serialization.Modifiers;
 using Etherna.MongODM.Core.Utility;
 using Microsoft.Extensions.Logging;
-using MoreLinq;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -79,51 +77,61 @@ namespace Etherna.MongODM.Core.Tasks
             /*
              * At this point idMemberMapIdentifiers contains Ids from all reference Member Maps, also from different ModelMaps/Schemas, also ponting to the same Id paths.
              * Anyway, we know the referenced model type, and only member maps from the same type are valid. We can select only them.
-             * All schemas from this model map will be searched for updates.
              * 
-             * If the referenced model summary in db documents has a different type than the current model, the proper map ids will not be find.
-             * If an Id path can't be find with any model map schema Id, at the end, try to replace summary with a minimal reference with only Id.
+             * Verify that member map exists, because a scheduled task could be executed with a different configuration respectly to when it has been generated.
+             * This could happen for example if the software is upgraded in the meanwhile.
              */
             var idMemberMaps = idMemberMapIdentifiers
-                .Select(idMemberMapIdentifier => dbContext.MapRegistry.MemberMapsById[idMemberMapIdentifier])
-                .Where(idMemberMap => idMemberMap.ModelMapSchema.ModelMap.ModelType == referencedModelType);
+                .Select(idMemberMapIdentifier => dbContext.MapRegistry.MemberMapsById.TryGetValue(idMemberMapIdentifier, out var idmm) ? idmm : null!)
+                .Where(idMemberMap => idMemberMap is not null && idMemberMap.ModelMapSchema.ModelMap.ModelType == referencedModelType);
 
             // Define mapping of serialized documents.
             /*
              * We need to create this dictionary map:
-             * - repositoryDictionary: repository -> id element path -> (member map, serialized document)[]
+             * - repositoryDictionary: repository -> id member map -> serialized document
+             * 
+             * Each document is serialized with its current active schema serializer.
              * 
              * Different id paths may share also same serializers. 
              * Because of this, we use an external cache for avoid to serialize multiple times with same serializer.
-             * 
-             * Also different serializers can lead to same serialized document, so we select documents and apply a Distinct at last level.
              */
             var serializedDocumentsCache = new Dictionary<IBsonSerializer, BsonDocument>();
             var repositoryDictionary = idMemberMaps
                 .GroupBy(idmm => dbContext.RepositoryRegistry.GetRepositoryByHandledModelType(idmm.MemberMapPath.First().ModelMapSchema.ModelMap.ModelType))
-                .ToDictionary(
-                    repoGroup => repoGroup.Key,
-                    repoGroup => repoGroup.GroupBy(idmm => idmm.GetElementPath(_ => ".$"))
-                                          .ToDictionary(
-                        idElementPathGroup => idElementPathGroup.Key,
-                        idElementPathGroup => idElementPathGroup.Select(
-                            idmm =>
-                            {
-                                var documentSerializer = idmm.ModelMapSchema.Serializer;
+                .ToDictionary(repoGroup => repoGroup.Key,
+                              repoGroup => repoGroup
+                    .Select(idmm =>
+                    {
+                        //select active schema serializer
+                        var documentSerializer = idmm.ModelMapSchema.ModelMap.ActiveSchema.Serializer;
 
-                                //use cache
-                                if (!serializedDocumentsCache.ContainsKey(documentSerializer))
-                                {
-                                    var serializedDocument = new BsonDocument();
-                                    using var bsonWriter = new BsonDocumentWriter(serializedDocument);
-                                    var context = BsonSerializationContext.CreateRoot(bsonWriter);
-                                    documentSerializer.Serialize(context, referencedModel);
-                                    serializedDocumentsCache[documentSerializer] = serializedDocument;
-                                }
-                                return (idMemberMap: idmm, doc: serializedDocumentsCache[documentSerializer]);
-                            })
-                            .Where(pair => pair.doc.TryGetElement(dbContext.Options.ModelMapVersion.ElementName, out var _)) //select only documents having a model map id
-                            .DistinctBy(pair => pair.doc))); //ignore member maps instances. Member maps with same pair (element path, serialized document) are equivalent
+                        //use cache
+                        if (!serializedDocumentsCache.ContainsKey(documentSerializer))
+                        {
+                            var serializedDocument = new BsonDocument();
+                            using var bsonWriter = new BsonDocumentWriter(serializedDocument);
+                            var context = BsonSerializationContext.CreateRoot(bsonWriter);
+                            documentSerializer.Serialize(context, referencedModel);
+                            serializedDocumentsCache[documentSerializer] = serializedDocument;
+                        }
+                        return (idMemberMap: idmm, doc: serializedDocumentsCache[documentSerializer]);
+                    })
+                    //take one id member map for each generated path. Drop equivalent member maps generated by secondary schemas, but with same path
+                    .GroupBy(pair => pair.idMemberMap.GetElementPath(_ => ".$"))
+                    //take idmm with longer active schemas sequence in path.
+                    .Select(pathGroup => pathGroup.Aggregate(
+                        (default(ValueTuple<IMemberMap, BsonDocument>), -1), //starting value for longest active schema sequence from root
+                        (accumulator, newPair) =>
+                        {
+                            var prevBestLength = accumulator.Item2;
+                            var memberMap = newPair.idMemberMap;
+                            var activeSchemeSequenceLength = memberMap.MemberMapPath.TakeWhile(mm => mm.ModelMapSchema.IsCurrentActive).Count();
+                            return activeSchemeSequenceLength > prevBestLength ?
+                                (newPair, activeSchemeSequenceLength) :
+                                accumulator;
+                        },
+                        accumulator => accumulator.Item1))
+                    .ToDictionary(pair => pair.Item1, pair => pair.Item2));
 
             // Find Ids of documents that may need to be updated.
             /*
@@ -136,7 +144,7 @@ namespace Etherna.MongODM.Core.Tasks
             foreach (var repositoryGroup in repositoryDictionary)
             {
                 var repository = repositoryGroup.Key;
-                var selectedIdMemberMaps = repositoryGroup.Value.Values.Select(pair => pair.First().idMemberMap);
+                var selectedIdMemberMaps = repositoryGroup.Value.Keys;
 
                 var originModelType = repository.ModelType;
                 var originIdType = repository.KeyType;
@@ -151,10 +159,7 @@ namespace Etherna.MongODM.Core.Tasks
             // Update models.
             /*
              * Update one document at time using FindOneAndUpdate.
-             * Iterate on repositories, Id paths for each repo, existing documents to update.
-             * 
-             * For each document, try at first all serialized documents available with its model map id.
-             * If no one is found, try to search without any model map Id. In this case replace with minimal reference.
+             * Iterate on repositories, updatable documents, and Id member maps on different paths.
              */
             foreach (var repoPair in repositoryDictionary)
             {
@@ -166,46 +171,22 @@ namespace Etherna.MongODM.Core.Tasks
                     .GetMethod(nameof(FindAndUpdateAsync), BindingFlags.NonPublic | BindingFlags.Static)
                     .MakeGenericMethod(originModelType, originIdType);
 
-                foreach (var idElementPathPair in repoPair.Value)
+                foreach (var updatableDocumentId in updatableDocumentsIdByRepository[repository])
                 {
-                    var idElementPath = idElementPathPair.Key;
-
-                    foreach (var updatableDocumentId in updatableDocumentsIdByRepository[repository])
+                    foreach (var memberMapPair in repoPair.Value)
                     {
-                        var documentIsUpdated = false;
+                        var idMemberMap = memberMapPair.Key;
+                        var serializedDocument = memberMapPair.Value;
 
-                        // Try to search for serialized documents.
-                        foreach (var memberMapSerializedDocPair in idElementPathPair.Value)
+                        // Invoke find and update function.
+                        var result = findAndUpdateAsyncMethodInfo.Invoke(null, new object[]
                         {
-                            var idMemberMap = memberMapSerializedDocPair.idMemberMap;
-                            var serializedDocument = memberMapSerializedDocPair.doc;
-                            var modelMapId = serializedDocument.GetElement(dbContext.Options.ModelMapVersion.ElementName).Value.AsString;
-
-                            // Invoke find and update function.
-                            var result = findAndUpdateAsyncMethodInfo.Invoke(null, new object[]
-                            {
-                                repository,
-                                idMemberMap,
-                                serializedDocument,
-                                modelMapId,
-                                dbContext.Options.ModelMapVersion.ElementName,
-                                updatableDocumentId,
-                                referencedModelId,
-                                dbContext.SerializerRegistry
-                            });
-
-                            if (await (Task<bool>)result)
-                            {
-                                documentIsUpdated = true;
-                                break;
-                            }
-                        }
-
-                        // Try to search without any model map Id.
-                        if (!documentIsUpdated)
-                        {
-                            //TODO.
-                        }
+                            repository,
+                            idMemberMap,
+                            serializedDocument,
+                            updatableDocumentId,
+                            referencedModelId
+                        });
                     }
                 }
             }
@@ -218,37 +199,21 @@ namespace Etherna.MongODM.Core.Tasks
             IRepository<TOriginModel, TOriginKey> repository,
             IMemberMap idMemberMap,
             BsonDocument updatedSubDocument,
-            string? modelMapSchemaId,
-            string modelMapIdElementName,
             TOriginKey originModelId,
-            object referencedModelId,
-            IBsonSerializerRegistry serializerRegistry)
+            object referencedModelId)
             where TOriginModel : class, IEntityModel<TOriginKey>
         {
             var subDocumentMemberMap = idMemberMap.ParentMemberMap!;
 
             // Define find filter.
-            var conjunctionFindFilters = new List<FilterDefinition<TOriginModel>>
+            var filter = Builders<TOriginModel>.Filter.And(new[]
             {
                 Builders<TOriginModel>.Filter.Eq(m => m.Id, originModelId),
-                BuildFindFilterHelper<TOriginModel, object>(idMemberMap.MemberMapPath, null, null, null, referencedModelId),
-            };
-
-            if (modelMapSchemaId is not null)
-                conjunctionFindFilters.Add(
-                    BuildFindFilterHelper<TOriginModel, string>(
-                        subDocumentMemberMap.MemberMapPath,
-                        modelMapIdElementName,
-                        UnmappedFieldDefinitionHelper.TryGetBaseDocumentType(
-                            new MemberMapFieldDefinition<TOriginModel>(subDocumentMemberMap),
-                            serializerRegistry.GetSerializer<TOriginModel>(),
-                            serializerRegistry),
-                        StringSerializer.Instance,
-                        modelMapSchemaId));
-
-            var filter = Builders<TOriginModel>.Filter.And(conjunctionFindFilters);
+                BuildFindFilterHelper<TOriginModel, object>(idMemberMap.MemberMapPath, referencedModelId),
+            });
 
             // Define update operator.
+            var lastArrayMemberMap = subDocumentMemberMap.MemberMapPath.Reverse().FirstOrDefault(mm => mm.IsSerializedAsArray);
             var update = Builders<TOriginModel>.Update.Set(
                 new MemberMapFieldDefinition<TOriginModel, BsonDocument>(
                     subDocumentMemberMap,
@@ -259,7 +224,7 @@ namespace Etherna.MongODM.Core.Tasks
 
                         for (int i = 0; i < maxArrayItemDepth; i++)
                         {
-                            if (mm == subDocumentMemberMap && //if sub document is defined as item of this array
+                            if (mm == lastArrayMemberMap && //if this is the last array member map
                                 i + 1 == maxArrayItemDepth) //and this is max item depth for this array
                                 sb.Append(".$[idfilter]"); //filter in array items
                             else
@@ -270,9 +235,13 @@ namespace Etherna.MongODM.Core.Tasks
                 updatedSubDocument);
 
             var arrayFilters = new List<ArrayFilterDefinition>();
-            if (subDocumentMemberMap.IsSerializedAsArray)
+            if (lastArrayMemberMap is not null)
                 arrayFilters.Add(new BsonDocumentArrayFilterDefinition<BsonDocument>(
-                    new BsonDocument($"idfilter.{idMemberMap.BsonMemberMap.ElementName}",
+                    new BsonDocument($"idfilter.{string.Join(".",
+                        idMemberMap.MemberMapPath.Reverse()
+                                                 .TakeWhile(mm => mm != lastArrayMemberMap)
+                                                 .Reverse()
+                                                 .Select(mm => mm.BsonMemberMap.ElementName))}",
                         new BsonDocument("$eq", updatedSubDocument.GetValue(idMemberMap.BsonMemberMap.ElementName)))));
 
             // Exec update.
@@ -293,7 +262,7 @@ namespace Etherna.MongODM.Core.Tasks
         {
             var cursor = await repository.FindAsync(
                 Builders<TOriginModel>.Filter.Or(
-                    idMemberMaps.Select(idmm => BuildFindFilterHelper<TOriginModel, object>(idmm.MemberMapPath, null, null, null, referencedModelId))),
+                    idMemberMaps.Select(idmm => BuildFindFilterHelper<TOriginModel, object>(idmm.MemberMapPath, referencedModelId))),
                 new FindOptions<TOriginModel, TOriginModel>
                 {
                     NoCursorTimeout = true,
@@ -309,18 +278,8 @@ namespace Etherna.MongODM.Core.Tasks
 
         private static FilterDefinition<TModel> BuildFindFilterHelper<TModel, TField>(
             IEnumerable<IMemberMap> memberMapPath,
-            string? unmappedElementName,
-            Type? unmappedElementParentType,
-            IBsonSerializer<TField>? unmappedElementSerializer,
             TField value)
         {
-            if (unmappedElementName is not null &&
-                unmappedElementParentType is null)
-                throw new ArgumentNullException(nameof(unmappedElementParentType), "Pointing to an unmapped element requires to pass its parent type too");
-            if (unmappedElementName is not null &&
-                unmappedElementSerializer is null)
-                throw new ArgumentNullException(nameof(unmappedElementSerializer), "Pointing to an unmapped element requires to pass its serializer too");
-
             var fieldAccumulator = new StringBuilder();
             var fieldCounter = 0;
 
@@ -338,27 +297,17 @@ namespace Etherna.MongODM.Core.Tasks
                     return BuildFindFilterElemMatchHelper<TModel, TField>(
                         fieldAccumulator.ToString(),
                         memberMapPath.Skip(fieldCounter),
-                        unmappedElementName,
-                        unmappedElementParentType,
-                        unmappedElementSerializer,
                         memberMap.MaxArrayItemDepth,
                         value);
                 }
             }
 
-            FieldDefinition<TModel, TField> fieldDefinition = new StringFieldDefinition<TModel, TField>(fieldAccumulator.ToString());
-            if (unmappedElementName != null)
-                fieldDefinition = new UnmappedFieldDefinition<TModel, TField>(fieldDefinition, unmappedElementName, unmappedElementSerializer!);
-
-            return Builders<TModel>.Filter.Eq(fieldDefinition, value);
+            return Builders<TModel>.Filter.Eq(new StringFieldDefinition<TModel, TField>(fieldAccumulator.ToString()), value);
         }
 
         private static FilterDefinition<TModel> BuildFindFilterElemMatchHelper<TModel, TField>(
             string currentFieldName,
             IEnumerable<IMemberMap> memberMapPath,
-            string? unmappedElementName,
-            Type? unmappedElementParentType,
-            IBsonSerializer<TField>? unmappedElementSerializer,
             int itemDepth,
             TField value)
         {
@@ -369,9 +318,7 @@ namespace Etherna.MongODM.Core.Tasks
                  * If itemDepth == 2, the item type will be IEnumerable<TItem>.
                  * If itemDepth == 3, the item type will be IEnumerable<IEnumerable<TItem>>, and so on.
                  */
-                var elemMatchItemType = memberMapPath.Any() ?
-                    memberMapPath.First().ModelMapSchema.ModelMap.ModelType :
-                    unmappedElementParentType; //in case only unmapped element is missing
+                var elemMatchItemType = memberMapPath.First().ModelMapSchema.ModelMap.ModelType;
                 for (int i = 1; i < itemDepth; i++)
                     elemMatchItemType = typeof(IEnumerable<>).MakeGenericType(elemMatchItemType);
 
@@ -387,28 +334,22 @@ namespace Etherna.MongODM.Core.Tasks
                         currentFieldName,
                         itemDepth,
                         memberMapPath,
-                        unmappedElementName!,
-                        unmappedElementParentType!,
-                        unmappedElementSerializer!,
                         value!
                     });
             }
-            else return BuildFindFilterHelper<TModel, TField>(memberMapPath, unmappedElementName, unmappedElementParentType, unmappedElementSerializer, value);
+            else return BuildFindFilterHelper<TModel, TField>(memberMapPath, value);
         }
 
         private static FilterDefinition<TModel> GenericElemMatchBuilderHelper<TModel, TItem, TField>(
             string currentFieldName,
             int itemDepth,
             IEnumerable<IMemberMap> memberMapPath,
-            string? unmappedElementName,
-            Type? unmappedElementParentType,
-            IBsonSerializer<TField>? unmappedElementSerializer,
             TField value) =>
             currentFieldName.Length != 0 ?
                 Builders<TModel>.Filter.ElemMatch(
                     currentFieldName,
-                    BuildFindFilterElemMatchHelper<TItem, TField>("", memberMapPath, unmappedElementName, unmappedElementParentType, unmappedElementSerializer, itemDepth - 1, value)) :
+                    BuildFindFilterElemMatchHelper<TItem, TField>("", memberMapPath, itemDepth - 1, value)) :
                 Builders<TModel>.Filter.ElemMatch(
-                    BuildFindFilterElemMatchHelper<TItem, TField>("", memberMapPath, unmappedElementName, unmappedElementParentType, unmappedElementSerializer, itemDepth - 1, value));
+                    BuildFindFilterElemMatchHelper<TItem, TField>("", memberMapPath, itemDepth - 1, value));
     }
 }
