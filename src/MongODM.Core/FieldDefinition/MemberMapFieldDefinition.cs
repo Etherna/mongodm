@@ -15,24 +15,28 @@ namespace Etherna.MongODM.Core.FieldDefinition
         public MemberMapFieldDefinition(
             IMemberMap memberMap,
             string arrayItemSymbol = "",
-            bool referToArrayItem = false) :
-            this(memberMap, mm => referToArrayItem || mm != memberMap ? arrayItemSymbol : "")
+            bool referToArrayItem = false,
+            int skipElementsInPath = 0) :
+            this(memberMap, mm => referToArrayItem || mm != memberMap ? arrayItemSymbol : "", skipElementsInPath)
         { }
 
         public MemberMapFieldDefinition(
             IMemberMap memberMap,
-            Func<IMemberMap, string> arrayItemSymbolSelector)
+            Func<IMemberMap, string> arrayItemSymbolSelector,
+            int skipElementsInPath = 0)
         {
             this.arrayItemSymbolSelector = arrayItemSymbolSelector;
             MemberMap = memberMap;
+            SkipElementsInPath = skipElementsInPath;
         }
 
         // Properties.
         private IMemberMap MemberMap { get; }
+        public int SkipElementsInPath { get; }
 
         // Methods.
         public override RenderedFieldDefinition Render(IBsonSerializer<TDocument> documentSerializer, IBsonSerializerRegistry serializerRegistry, LinqProvider linqProvider) =>
-            new(MemberMap.GetElementPath(arrayItemSymbolSelector),
+            new(MemberMap.GetElementPath(arrayItemSymbolSelector, SkipElementsInPath),
                 MemberMap.Serializer);
     }
 
@@ -47,22 +51,26 @@ namespace Etherna.MongODM.Core.FieldDefinition
             IMemberMap memberMap,
             string arrayItemSymbol = "",
             IBsonSerializer<TField>? customFieldSerializer = null,
+            int skipElementsInPath = 0,
             bool referToArrayItem = false) :
-            this(memberMap, mm => referToArrayItem || mm != memberMap ? arrayItemSymbol : "", customFieldSerializer)
+            this(memberMap, mm => referToArrayItem || mm != memberMap ? arrayItemSymbol : "", customFieldSerializer, skipElementsInPath)
         { }
 
         public MemberMapFieldDefinition(
             IMemberMap memberMap,
             Func<IMemberMap, string> arrayItemSymbolSelector,
-            IBsonSerializer<TField>? customFieldSerializer = null)
+            IBsonSerializer<TField>? customFieldSerializer = null,
+            int skipElementsInPath = 0)
         {
             this.arrayItemSymbolSelector = arrayItemSymbolSelector;
             this.customFieldSerializer = customFieldSerializer;
             MemberMap = memberMap;
+            SkipElementsInPath = skipElementsInPath;
         }
 
         // Properties.
         private IMemberMap MemberMap { get; }
+        public int SkipElementsInPath { get; }
 
         // Methods.
         public override RenderedFieldDefinition<TField> Render(IBsonSerializer<TDocument> documentSerializer, IBsonSerializerRegistry serializerRegistry, LinqProvider linqProvider) =>
@@ -79,7 +87,7 @@ namespace Etherna.MongODM.Core.FieldDefinition
                     allowScalarValueForArrayField);
 
             return new RenderedFieldDefinition<TField>(
-                MemberMap.GetElementPath(arrayItemSymbolSelector),
+                MemberMap.GetElementPath(arrayItemSymbolSelector, SkipElementsInPath),
                 valueSerializer,
                 valueSerializer,
                 MemberMap.Serializer);

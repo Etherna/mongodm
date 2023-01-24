@@ -24,6 +24,7 @@ using Etherna.MongODM.Core.Serialization.Mapping;
 using Etherna.MongODM.Core.Serialization.Modifiers;
 using Etherna.MongODM.Core.Utility;
 using Microsoft.Extensions.Logging;
+using MoreLinq;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -280,33 +281,25 @@ namespace Etherna.MongODM.Core.Tasks
             IEnumerable<IMemberMap> memberMapPath,
             TField value)
         {
-            var fieldAccumulator = new StringBuilder();
-            var fieldCounter = 0;
-
-            foreach (var memberMap in memberMapPath)
-            {
-                fieldCounter++;
-
-                if (fieldAccumulator.Length != 0)
-                    fieldAccumulator.Append('.');
-
-                fieldAccumulator.Append(memberMap.BsonMemberMap.MemberName);
-
-                if (memberMap.IsSerializedAsArray)
-                {
-                    return BuildFindFilterElemMatchHelper<TModel, TField>(
-                        fieldAccumulator.ToString(),
-                        memberMapPath.Skip(fieldCounter),
-                        memberMap.MaxArrayItemDepth,
+            foreach (var (mm, i) in memberMapPath.Select((mm, i) => (mm, i)))
+                if (mm.IsSerializedAsArray)
+                    return BuildFindFilterElemMatchHelper(
+                        new MemberMapFieldDefinition<TModel>(memberMapPath.ElementAt(i)),
+                        memberMapPath.Skip(i + 1),
+                        mm.MaxArrayItemDepth,
                         value);
-                }
-            }
 
-            return Builders<TModel>.Filter.Eq(new StringFieldDefinition<TModel, TField>(fieldAccumulator.ToString()), value);
+            var lastMemberMap = memberMapPath.Last();
+            var elementsToSkip = lastMemberMap.MemberMapPath.Count() - memberMapPath.Count();
+            return Builders<TModel>.Filter.Eq(
+                new MemberMapFieldDefinition<TModel, TField>(
+                    lastMemberMap,
+                    skipElementsInPath: elementsToSkip),
+                value);
         }
 
         private static FilterDefinition<TModel> BuildFindFilterElemMatchHelper<TModel, TField>(
-            string currentFieldName,
+            FieldDefinition<TModel>? currentFieldDefinition,
             IEnumerable<IMemberMap> memberMapPath,
             int itemDepth,
             TField value)
@@ -331,7 +324,7 @@ namespace Etherna.MongODM.Core.Tasks
                 return (FilterDefinition<TModel>)genericElemMatchBuilderMethod.Invoke(null,
                     new object[]
                     {
-                        currentFieldName,
+                        currentFieldDefinition!,
                         itemDepth,
                         memberMapPath,
                         value!
@@ -341,15 +334,15 @@ namespace Etherna.MongODM.Core.Tasks
         }
 
         private static FilterDefinition<TModel> GenericElemMatchBuilderHelper<TModel, TItem, TField>(
-            string currentFieldName,
+            FieldDefinition<TModel>? currentFieldDefinition,
             int itemDepth,
             IEnumerable<IMemberMap> memberMapPath,
             TField value) =>
-            currentFieldName.Length != 0 ?
+            currentFieldDefinition is not null ?
                 Builders<TModel>.Filter.ElemMatch(
-                    currentFieldName,
-                    BuildFindFilterElemMatchHelper<TItem, TField>("", memberMapPath, itemDepth - 1, value)) :
+                    currentFieldDefinition,
+                    BuildFindFilterElemMatchHelper<TItem, TField>(null, memberMapPath, itemDepth - 1, value)) :
                 Builders<TModel>.Filter.ElemMatch(
-                    BuildFindFilterElemMatchHelper<TItem, TField>("", memberMapPath, itemDepth - 1, value));
+                    BuildFindFilterElemMatchHelper<TItem, TField>(null, memberMapPath, itemDepth - 1, value));
     }
 }

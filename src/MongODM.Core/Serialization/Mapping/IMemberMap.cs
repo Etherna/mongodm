@@ -61,8 +61,12 @@ namespace Etherna.MongODM.Core.Serialization.Mapping
         IBsonSerializer Serializer { get; }
 
         // Methods.
-        string GetElementPath(Func<IMemberMap, string> arrayItemSymbolSelector);
+        string GetElementPath(
+            Func<IMemberMap, string> arrayItemSymbolSelector,
+            int skipElements = 0);
 
-        string GetMemberPath(Func<IMemberMap, string> arrayItemSymbolSelector);
+        string GetMemberPath(
+            Func<IMemberMap, string> arrayItemSymbolSelector,
+            int skipElements = 0);
     }
 }

@@ -119,11 +119,11 @@ namespace Etherna.MongODM.Core.Serialization.Mapping
         public IBsonSerializer Serializer => BsonMemberMap.GetSerializer();
 
         // Public methods.
-        public string GetElementPath(Func<IMemberMap, string> arrayItemSymbolSelector) =>
-            PathBuilderHelper(arrayItemSymbolSelector, mm => mm.BsonMemberMap.ElementName);
+        public string GetElementPath(Func<IMemberMap, string> arrayItemSymbolSelector, int skipElements = 0) =>
+            PathBuilderHelper(arrayItemSymbolSelector, mm => mm.BsonMemberMap.ElementName, skipElements);
 
-        public string GetMemberPath(Func<IMemberMap, string> arrayItemSymbolSelector) =>
-            PathBuilderHelper(arrayItemSymbolSelector, mm => mm.BsonMemberMap.MemberName);
+        public string GetMemberPath(Func<IMemberMap, string> arrayItemSymbolSelector, int skipElements = 0) =>
+            PathBuilderHelper(arrayItemSymbolSelector, mm => mm.BsonMemberMap.MemberName, skipElements);
 
         // Internal methods.
         internal void AddChildMemberMap(IMemberMap childMemberMap) => _childMemberMaps.Add(childMemberMap);
@@ -131,11 +131,12 @@ namespace Etherna.MongODM.Core.Serialization.Mapping
         // Helpers.
         private string PathBuilderHelper(
             Func<IMemberMap, string> arrayItemSymbolSelector,
-            Func<IMemberMap, string> extractNameFunc)
+            Func<IMemberMap, string> extractNameFunc,
+            int skipElements)
         {
             var stringBulder = new StringBuilder();
 
-            foreach (var (memberMap, i) in MemberMapPath.Select((mm, i) => (mm, i)))
+            foreach (var (memberMap, i) in MemberMapPath.Skip(skipElements).Select((mm, i) => (mm, i)))
             {
                 if (i != 0) stringBulder.Append('.');
 
