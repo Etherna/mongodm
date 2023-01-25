@@ -35,10 +35,6 @@ namespace Etherna.MongODM.Core.Serialization.Serializers
             : base(dictionaryRepresentation)
         { }
 
-        public DictionarySerializer(DictionaryRepresentation dictionaryRepresentation, IBsonSerializerRegistry serializerRegistry)
-            : base(dictionaryRepresentation, serializerRegistry)
-        { }
-
         public DictionarySerializer(DictionaryRepresentation dictionaryRepresentation, IBsonSerializer<TKey> keySerializer, IBsonSerializer<TValue> valueSerializer)
             : base(dictionaryRepresentation, keySerializer, valueSerializer)
         { }

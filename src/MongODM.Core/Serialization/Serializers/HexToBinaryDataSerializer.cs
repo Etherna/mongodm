@@ -21,6 +21,7 @@ namespace Etherna.MongODM.Core.Serialization.Serializers
 {
     public class HexToBinaryDataSerializer : SerializerBase<string>
     {
+        // Methods.
         public override string Deserialize(BsonDeserializationContext context, BsonDeserializationArgs args)
         {
             if (context is null)

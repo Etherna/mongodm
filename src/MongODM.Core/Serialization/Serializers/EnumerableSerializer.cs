@@ -40,14 +40,6 @@ namespace Etherna.MongODM.Core.Serialization.Serializers
             : base(itemSerializer)
         { }
 
-        /// <summary>
-        /// Initializes a new instance of the <see cref="StackSerializer{TItem}" /> class.
-        /// </summary>
-        /// <param name="serializerRegistry">The serializer registry.</param>
-        public EnumerableSerializer(IBsonSerializerRegistry serializerRegistry)
-            : base(serializerRegistry)
-        { }
-
         // Properties.
         public IBsonSerializer ChildSerializer => ItemSerializer;
 
