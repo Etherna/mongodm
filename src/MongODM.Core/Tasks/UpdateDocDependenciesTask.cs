@@ -176,15 +176,11 @@ namespace Etherna.MongODM.Core.Tasks
                 {
                     foreach (var memberMapPair in repoPair.Value)
                     {
-                        var idMemberMap = memberMapPair.Key;
-                        var serializedDocument = memberMapPair.Value;
-
-                        // Invoke find and update function.
-                        var result = findAndUpdateAsyncMethodInfo.Invoke(null, new object[]
+                        findAndUpdateAsyncMethodInfo.Invoke(null, new object[]
                         {
                             repository,
-                            idMemberMap,
-                            serializedDocument,
+                            memberMapPair.Key,
+                            memberMapPair.Value,
                             updatableDocumentId,
                             referencedModelId
                         });

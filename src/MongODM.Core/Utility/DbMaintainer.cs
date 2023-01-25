@@ -94,23 +94,34 @@ namespace Etherna.MongODM.Core.Utility
                 .Where(memberMap => memberMap.IsEntityReferenceMember);
 
             // Find related id member maps.
-            /*****
+            /*
              * idMemberMaps contains reference Ids for sub-documents summary of the updated document, containing updated property.
              * These are taken from all schemas and all model maps.
-             * 
-             * We pass member maps' string ids because strings are better serializable by the task executor.
-             * All member maps must be recovered by the task using Ids from the schema register.
-             *****/
+             */
             var idMemberMaps = referenceMemberMaps
                 .Select(mm => mm.OwnerEntityIdMap!) //must exist, because we have selected only referenced member maps
                 .Distinct();
 
+            // Select all id member maps with same element path of previously selected.
+            /*
+             * We need to keep all id member maps with same element path, even if these new doesn't have any reference data involved in changes.
+             * Reason of this is that when we choose how to serialize a proper subdocument, we need to have all possibility in hand.
+             * Otherwise, if for example active schema serialize only reference Id, it will be never considered has a valid serialization schema by task.
+             */
+            var allIdMemberMaps = idMemberMaps
+                .SelectMany(dbContext.MapRegistry.GetMemberMapsWithSameElementPath)
+                .Distinct();
+
             // Enqueue call of background job.
+            /*
+             * We pass member maps' string ids because strings are better serializable by the task executor.
+             * All member maps must be recovered by the task using Ids from the schema register.
+             */
             taskRunner.RunUpdateDocDependenciesTask(
                 dbContext.GetType(),
                 referenceRepository.Name,
                 ((IEntityModel<TKey>)updatedModel).Id!,
-                idMemberMaps.Select(mm => mm.Id));
+                allIdMemberMaps.Select(mm => mm.Id));
         }
     }
 }

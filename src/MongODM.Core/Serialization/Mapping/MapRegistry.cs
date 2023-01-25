@@ -36,6 +36,7 @@ namespace Etherna.MongODM.Core.Serialization.Mapping
         private IDbContext dbContext = default!;
         private readonly ConcurrentDictionary<Type, BsonClassMap> defaultClassMapsCache = new();
         private ILogger logger = default!;
+        private readonly Dictionary<IModelMap, Dictionary<string, List<IMemberMap>>> memberMapsByElementPath = new(); //model map -> element path -> member map[]
         private readonly Dictionary<MemberInfo, List<IMemberMap>> memberMapsByMemberInfo = new();
 
         // Constructor and initializer.
@@ -146,6 +147,15 @@ namespace Etherna.MongODM.Core.Serialization.Mapping
                 (IEnumerable<IMemberMap>)Array.Empty<IMemberMap>();
         }
 
+        public IEnumerable<IMemberMap> GetMemberMapsWithSameElementPath(IMemberMap memberMap)
+        {
+            Freeze(); //needed for initialization
+            return memberMapsByElementPath.TryGetValue(memberMap.MemberMapPath.First().ModelMapSchema.ModelMap, out var elementPathDictionary) &&
+                elementPathDictionary.TryGetValue(GetMemberMapElementPath(memberMap), out var samePathMemberMaps) ?
+                samePathMemberMaps :
+                Array.Empty<IMemberMap>();
+        }
+
         public IModelMap GetModelMap(Type modelType)
         {
             if (modelType is null)
@@ -218,24 +228,10 @@ namespace Etherna.MongODM.Core.Serialization.Mapping
                 {
                     foreach (var memberMap in modelMap.AllDescendingMemberMaps)
                     {
-                        //map member map with its Id
-                        _memberMapsById.Add(memberMap.Id, memberMap);
-
-                        //map memberInfo to member maps
-                        /*
-                         * MemberInfo comparison has to be performed with extension method "IsSameAs". If an equal member info
-                         * is found with this equality comparer, it has to be taken as key also for current memberinfo
-                         */
-                        var memberInfo = memberMap.BsonMemberMap.MemberInfo;
-                        var memberMapList = memberMapsByMemberInfo.FirstOrDefault(pair => pair.Key.IsSameAs(memberInfo)).Value;
-
-                        if (memberMapList is null)
-                        {
-                            memberMapList = new List<IMemberMap>();
-                            memberMapsByMemberInfo[memberInfo] = memberMapList;
-                        }
-
-                        memberMapList.Add(memberMap);
+                        //map member map into registers
+                        _memberMapsById[memberMap.Id] = memberMap;
+                        MapMemberMapsByMemberInfo(memberMap);
+                        MapMemberMapsByRootModelMapAndElementPath(memberMap);
                     }
                 }
 
@@ -298,6 +294,8 @@ namespace Etherna.MongODM.Core.Serialization.Mapping
             return modelMap;
         }
 
+        private static string GetMemberMapElementPath(IMemberMap memberMap) => memberMap.GetElementPath(_ => ".$");
+
         private void LinkBaseModelMaps()
         {
             /* A stack with a while iteration is needed, instead of a foreach construct,
@@ -340,6 +338,42 @@ namespace Etherna.MongODM.Core.Serialization.Mapping
                     modelMapSchema.SetBaseModelMapSchema(baseModelMapSchema);
                 }
             }
+        }
+
+        private void MapMemberMapsByMemberInfo(IMemberMap memberMap)
+        {
+            /*
+             * MemberInfo comparison has to be performed with extension method "IsSameAs". If an equal member info
+             * is found with this equality comparer, it has to be taken as key also for current memberinfo
+             */
+            var memberInfo = memberMap.BsonMemberMap.MemberInfo;
+            var memberMapListByMemberInfo = memberMapsByMemberInfo.FirstOrDefault(pair => pair.Key.IsSameAs(memberInfo)).Value;
+
+            if (memberMapListByMemberInfo is null)
+            {
+                memberMapListByMemberInfo = new List<IMemberMap>();
+                memberMapsByMemberInfo[memberInfo] = memberMapListByMemberInfo;
+            }
+
+            memberMapListByMemberInfo.Add(memberMap);
+        }
+
+        private void MapMemberMapsByRootModelMapAndElementPath(IMemberMap memberMap)
+        {
+            var rootModelMap = memberMap.MemberMapPath.First().ModelMapSchema.ModelMap;
+            var memberMapElementPath = GetMemberMapElementPath(memberMap);
+            if (!memberMapsByElementPath.TryGetValue(rootModelMap, out var memberMapDictionaryByElementPath))
+            {
+                memberMapDictionaryByElementPath = new Dictionary<string, List<IMemberMap>>();
+                memberMapsByElementPath[rootModelMap] = memberMapDictionaryByElementPath;
+            }
+            if (!memberMapDictionaryByElementPath.TryGetValue(memberMapElementPath, out var memberMapListByElementPath))
+            {
+                memberMapListByElementPath = new List<IMemberMap>();
+                memberMapDictionaryByElementPath[memberMapElementPath] = memberMapListByElementPath;
+            }
+
+            memberMapListByElementPath.Add(memberMap);
         }
     }
 }

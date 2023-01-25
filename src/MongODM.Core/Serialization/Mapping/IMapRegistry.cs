@@ -79,6 +79,8 @@ namespace Etherna.MongODM.Core.Serialization.Mapping
         /// <returns>List of member maps</returns>
         IEnumerable<IMemberMap> GetMemberMapsFromMemberInfo(MemberInfo memberInfo);
 
+        IEnumerable<IMemberMap> GetMemberMapsWithSameElementPath(IMemberMap memberMap);
+
         /// <summary>
         /// Get a registered model map for a given model type
         /// </summary>
