@@ -54,5 +54,13 @@ namespace Etherna.MongODM.Core.Serialization.Mapping
             string? baseSchemaId = null,
             IBsonSerializer<TModel>? customSerializer = null,
             Func<TModel, Task<TModel>>? fixDeserializedModelFunc = null);
+
+        IModelMapBuilder<TModel> AddSecondarySchema<TOverrideNominal>(
+            string id,
+            Action<BsonClassMap<TOverrideNominal>>? modelMapSchemaInitializer = null,
+            string? baseModelMapSchemaId = null,
+            IBsonSerializer<TOverrideNominal>? customSerializer = null,
+            Func<TOverrideNominal, Task<TOverrideNominal>>? fixDeserializedModelFunc = null)
+            where TOverrideNominal : class, TModel;
     }
 }

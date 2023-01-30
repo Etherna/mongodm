@@ -42,8 +42,8 @@ namespace Etherna.MongODM.Core.Serialization.Mapping
         {
             if (string.IsNullOrEmpty(id))
                 throw new ArgumentException($"'{nameof(id)}' cannot be null or empty", nameof(id));
-            if (bsonClassMap.ClassType != modelMap.ModelType)
-                throw new ArgumentException($"'{nameof(bsonClassMap)}'.ClassType must be {modelMap.ModelType.Name}, instead it is {bsonClassMap.ClassType.Name}");
+            if (!modelMap.ModelType.IsAssignableFrom(bsonClassMap.ClassType))
+                throw new ArgumentException($"'{nameof(bsonClassMap)}'.ClassType must be {modelMap.ModelType.Name} or derivated, instead it is {bsonClassMap.ClassType.Name}");
 
             Id = id;
             BaseModelMapSchemaId = baseModelMapSchemaId;

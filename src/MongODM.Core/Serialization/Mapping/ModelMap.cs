@@ -247,5 +247,23 @@ namespace Etherna.MongODM.Core.Serialization.Mapping
                 this));
             return this;
         }
+
+        public IModelMapBuilder<TModel> AddSecondarySchema<TOverrideNominal>(
+            string id,
+            Action<BsonClassMap<TOverrideNominal>>? modelMapSchemaInitializer = null,
+            string? baseModelMapSchemaId = null,
+            IBsonSerializer<TOverrideNominal>? customSerializer = null,
+            Func<TOverrideNominal, Task<TOverrideNominal>>? fixDeserializedModelFunc = null)
+            where TOverrideNominal : class, TModel
+        {
+            AddSecondarySchemaHelper(new ModelMapSchema<TModel, TOverrideNominal>(
+                id,
+                new BsonClassMap<TOverrideNominal>(modelMapSchemaInitializer ?? (cm => cm.AutoMap())),
+                baseModelMapSchemaId,
+                fixDeserializedModelFunc,
+                customSerializer,
+                this));
+            return this;
+        }
     }
 }
