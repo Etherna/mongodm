@@ -294,7 +294,7 @@ namespace Etherna.MongODM.Core.Serialization.Mapping
             return modelMap;
         }
 
-        private static string GetMemberMapElementPath(IMemberMap memberMap) => memberMap.GetElementPath(_ => ".$");
+        private static string GetMemberMapElementPath(IMemberMap memberMap) => memberMap.RenderElementPath(false, _ => ".$", _ => ".*");
 
         private void LinkBaseModelMaps()
         {

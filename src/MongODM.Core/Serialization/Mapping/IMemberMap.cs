@@ -29,10 +29,16 @@ namespace Etherna.MongODM.Core.Serialization.Mapping
 
         IDbContext DbContext { get; }
 
+        bool ElementPathHasUndefinedArrayIndex { get; }
+
+        bool ElementPathHasUndefinedDocumentElement { get; }
+
         /// <summary>
         /// An unique identifier
         /// </summary>
         string Id { get; }
+
+        IEnumerable<ElementRepresentationBase> InternalElementPath { get; }
 
         /// <summary>
         /// True if member is contained into a referenced entity model
@@ -46,10 +52,6 @@ namespace Etherna.MongODM.Core.Serialization.Mapping
         /// </summary>
         bool IsIdMember { get; }
 
-        bool IsSerializedAsArray { get; }
-
-        int MaxArrayItemDepth { get; }
-
         IEnumerable<IMemberMap> MemberMapPath { get; }
 
         IModelMapSchema ModelMapSchema { get; }
@@ -61,12 +63,13 @@ namespace Etherna.MongODM.Core.Serialization.Mapping
         IBsonSerializer Serializer { get; }
 
         // Methods.
-        string GetElementPath(
-            Func<IMemberMap, string> arrayItemSymbolSelector,
-            int skipElements = 0);
+        string RenderElementPath(
+            bool referToFinalItem,
+            Func<ArrayElementRepresentation, string> undefinedArrayIndexSymbolSelector,
+            Func<DocumentElementRepresentation, string> undefinedDocumentElementSymbolSelector);
 
-        string GetMemberPath(
-            Func<IMemberMap, string> arrayItemSymbolSelector,
-            int skipElements = 0);
+        string RenderInternalItemElementPath(
+            Func<ArrayElementRepresentation, string> undefinedArrayIndexSymbolSelector,
+            Func<DocumentElementRepresentation, string> undefinedDocumentElementSymbolSelector);
     }
 }

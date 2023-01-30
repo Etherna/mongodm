@@ -13,11 +13,12 @@
 //   limitations under the License.
 
 using Etherna.MongoDB.Bson.Serialization;
+using Etherna.MongoDB.Bson.Serialization.Options;
 using Etherna.MongODM.Core.Extensions;
+using MoreLinq;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
 
 namespace Etherna.MongODM.Core.Serialization.Mapping
 {
@@ -28,7 +29,7 @@ namespace Etherna.MongODM.Core.Serialization.Mapping
     {
         // Fields.
         private readonly List<IMemberMap> _childMemberMaps = new();
-        private int? _maxArrayItemDepth;
+        private List<ElementRepresentationBase>? _internalElementPath;
 
         // Constructors.
         internal MemberMap(
@@ -51,6 +52,10 @@ namespace Etherna.MongODM.Core.Serialization.Mapping
 
         public IDbContext DbContext => ModelMapSchema.ModelMap.DbContext;
 
+        public bool ElementPathHasUndefinedArrayIndex => MemberMapPath.Any(mm => mm.InternalElementPath.OfType<ArrayElementRepresentation>().Any(e => e.ItemIndex == null));
+
+        public bool ElementPathHasUndefinedDocumentElement => MemberMapPath.Any(mm => mm.InternalElementPath.OfType<DocumentElementRepresentation>().Any(e => e.ElementName == null));
+
         //DefinitionMemberPath as: <modelMapType>;<schemaId>;<elementName>(|<modelMapType>;<schemaId>;<elementName>)*
         public string Id => string.Join("|", MemberMapPath.Select(
                 mm => $"{mm.ModelMapSchema.ModelMap.ModelType.Name};{mm.ModelMapSchema.Id};{mm.BsonMemberMap.ElementName}"));
@@ -68,27 +73,64 @@ namespace Etherna.MongODM.Core.Serialization.Mapping
         /// </summary>
         public bool IsIdMember => BsonMemberMap.IsIdMember();
 
-        public bool IsSerializedAsArray => Serializer is IBsonArraySerializer;
-
-        public int MaxArrayItemDepth
+        public IEnumerable<ElementRepresentationBase> InternalElementPath
         {
             get
             {
-                if (_maxArrayItemDepth == null)
+                if (_internalElementPath == null)
                 {
+                    _internalElementPath = new List<ElementRepresentationBase>();
                     var serializer = Serializer;
-                    var depth = 0;
-                    while (serializer is IBsonArraySerializer arraySerializer)
-                    {
-                        depth++;
-                        arraySerializer.TryGetItemSerializationInfo(out var itemSerializationInfo);
-                        serializer = itemSerializationInfo.Serializer;
-                    }
 
-                    _maxArrayItemDepth = depth;
+                    while (true)
+                    {
+                        /*
+                         * Several serializers implements interfaces also if they are not able to provide required information.
+                         * Because of this we have to try with different interfaces, if necessary.
+                         * Start with more complex and go try simpler.
+                         */
+
+                        //dictionary
+                        if (serializer is IBsonDictionarySerializer dictionarySerializer)
+                        {
+                            try
+                            {
+                                switch (dictionarySerializer.DictionaryRepresentation)
+                                {
+                                    case DictionaryRepresentation.ArrayOfArrays:
+                                        _internalElementPath.Add(new ArrayElementRepresentation(this));
+                                        _internalElementPath.Add(new ArrayElementRepresentation(this, 1));
+                                        break;
+                                    case DictionaryRepresentation.ArrayOfDocuments:
+                                        _internalElementPath.Add(new ArrayElementRepresentation(this));
+                                        _internalElementPath.Add(new DocumentElementRepresentation(this, "v"));
+                                        break;
+                                    case DictionaryRepresentation.Document:
+                                        _internalElementPath.Add(new DocumentElementRepresentation(this));
+                                        break;
+                                    default: throw new NotSupportedException();
+                                }
+                                serializer = dictionarySerializer.ValueSerializer;
+                                continue;
+                            }
+                            catch { }
+                        }
+
+                        //array
+                        if (serializer is IBsonArraySerializer arraySerializer &&
+                            arraySerializer.TryGetItemSerializationInfo(out var itemSerializationInfo))
+                        {
+                            _internalElementPath.Add(new ArrayElementRepresentation(this));
+                            serializer = itemSerializationInfo.Serializer;
+                            continue;
+                        }
+
+                        // We tried all know types. We could be at final item serializer, or we could have found an unknown custom serializer.
+                        break;
+                    }
                 }
 
-                return _maxArrayItemDepth.Value;
+                return _internalElementPath;
             }
         }
 
@@ -119,34 +161,18 @@ namespace Etherna.MongODM.Core.Serialization.Mapping
         public IBsonSerializer Serializer => BsonMemberMap.GetSerializer();
 
         // Public methods.
-        public string GetElementPath(Func<IMemberMap, string> arrayItemSymbolSelector, int skipElements = 0) =>
-            PathBuilderHelper(arrayItemSymbolSelector, mm => mm.BsonMemberMap.ElementName, skipElements);
+        public string RenderElementPath(
+            bool referToFinalItem,
+            Func<ArrayElementRepresentation, string> undefinedArrayIndexSymbolSelector,
+            Func<DocumentElementRepresentation, string> undefinedDocumentElementSymbolSelector) =>
+            MemberMapRenderHelper.RenderElementPath(MemberMapPath, referToFinalItem, undefinedArrayIndexSymbolSelector, undefinedDocumentElementSymbolSelector);
 
-        public string GetMemberPath(Func<IMemberMap, string> arrayItemSymbolSelector, int skipElements = 0) =>
-            PathBuilderHelper(arrayItemSymbolSelector, mm => mm.BsonMemberMap.MemberName, skipElements);
+        public string RenderInternalItemElementPath(
+            Func<ArrayElementRepresentation, string> undefinedArrayIndexSymbolSelector,
+            Func<DocumentElementRepresentation, string> undefinedDocumentElementSymbolSelector) =>
+            MemberMapRenderHelper.RenderInternalItemElementPath(InternalElementPath, undefinedArrayIndexSymbolSelector, undefinedDocumentElementSymbolSelector);
 
         // Internal methods.
         internal void AddChildMemberMap(IMemberMap childMemberMap) => _childMemberMaps.Add(childMemberMap);
-
-        // Helpers.
-        private string PathBuilderHelper(
-            Func<IMemberMap, string> arrayItemSymbolSelector,
-            Func<IMemberMap, string> extractNameFunc,
-            int skipElements)
-        {
-            var stringBulder = new StringBuilder();
-
-            foreach (var (memberMap, i) in MemberMapPath.Skip(skipElements).Select((mm, i) => (mm, i)))
-            {
-                if (i != 0) stringBulder.Append('.');
-
-                stringBulder.Append(extractNameFunc(memberMap));
-
-                if (memberMap.IsSerializedAsArray)
-                    stringBulder.Append(arrayItemSymbolSelector(memberMap));
-            }
-
-            return stringBulder.ToString();
-        }
     }
 }
