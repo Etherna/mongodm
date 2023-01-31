@@ -18,17 +18,21 @@ using Etherna.MongoDB.Bson.Serialization;
 using Etherna.MongoDB.Bson.Serialization.Conventions;
 using Etherna.MongoDB.Bson.Serialization.Serializers;
 using Etherna.MongODM.Core.Domain.Models;
+using Etherna.MongODM.Core.Extensions;
 using Etherna.MongODM.Core.ProxyModels;
 using Etherna.MongODM.Core.Serialization.Mapping;
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Threading.Tasks;
 
 namespace Etherna.MongODM.Core.Serialization.Serializers
 {
     public class ModelMapSerializer<TModel> :
-        SerializerBase<TModel>, IBsonSerializer<TModel>, IBsonDocumentSerializer, IBsonIdProvider, IModelMapsContainerSerializer
+        SerializerBase<TModel>,
+        IBsonSerializer<TModel>,
+        IBsonDocumentSerializer,
+        IBsonIdProvider,
+        IModelMapsHandlingSerializer
         where TModel : class
     {
         // Fields.
@@ -46,11 +50,8 @@ namespace Etherna.MongODM.Core.Serialization.Serializers
         }
 
         // Properties.
-        public IEnumerable<BsonClassMap> AllChildClassMaps => dbContext.SchemaRegistry.GetModelMapsSchema(typeof(TModel))
-            .AllMapsDictionary.Values.Select(map => map.BsonClassMap);
-
         public BsonClassMapSerializer<TModel> DefaultBsonClassMapSerializer =>
-            (BsonClassMapSerializer<TModel>)dbContext.SchemaRegistry.GetModelMapsSchema(typeof(TModel)).ActiveMap.BsonClassMapSerializer;
+            (BsonClassMapSerializer<TModel>)dbContext.MapRegistry.GetModelMap(typeof(TModel)).ActiveSchema.BsonClassMap.ToSerializer();
 
         public IDiscriminatorConvention DiscriminatorConvention
         {
@@ -60,6 +61,8 @@ namespace Etherna.MongODM.Core.Serialization.Serializers
                 return _discriminatorConvention;
             }
         }
+
+        public IEnumerable<IModelMap> HandledModelMaps => new[] { dbContext.MapRegistry.GetModelMap(typeof(TModel)) };
 
         // Methods.
         public override TModel Deserialize(BsonDeserializationContext context, BsonDeserializationArgs args)
@@ -77,7 +80,7 @@ namespace Etherna.MongODM.Core.Serialization.Serializers
             // Find pre-deserialization informations.
             //get actual type and schema
             var actualType = DiscriminatorConvention.GetActualType(context.Reader, args.NominalType);
-            var actualTypeSchema = dbContext.SchemaRegistry.GetModelMapsSchema(actualType);
+            var actualTypeModelMap = dbContext.MapRegistry.GetModelMap(actualType);
 
             //deserialize on document
             var bsonDocument = BsonDocumentSerializer.Instance.Deserialize(context, args);
@@ -103,31 +106,31 @@ namespace Etherna.MongODM.Core.Serialization.Serializers
             TModel model;
 
             //if a correct model map is identified with its id
-            if (modelMapId != null && actualTypeSchema.AllMapsDictionary.ContainsKey(modelMapId))
+            if (modelMapId != null && actualTypeModelMap.SchemasById.ContainsKey(modelMapId))
             {
-                var task = DeserializeModelMapHelperAsync(actualTypeSchema.AllMapsDictionary[modelMapId], localContext, args);
+                var task = DeserializeModelMapSchemaHelperAsync(actualTypeModelMap.SchemasById[modelMapId], localContext, args);
                 task.Wait();
                 model = task.Result;
             }
 
             //else, if a fallback serializator exists
-            else if (actualTypeSchema.FallbackSerializer != null)
+            else if (actualTypeModelMap.FallbackSerializer != null)
             {
-                model = (TModel)actualTypeSchema.FallbackSerializer.Deserialize(localContext, args);
+                model = (TModel)actualTypeModelMap.FallbackSerializer.Deserialize(localContext, args);
             }
 
             //else, if a fallback model map exists
-            else if (actualTypeSchema.FallbackModelMap != null)
+            else if (actualTypeModelMap.FallbackSchema != null)
             {
-                var task = DeserializeModelMapHelperAsync(actualTypeSchema.FallbackModelMap, localContext, args);
+                var task = DeserializeModelMapSchemaHelperAsync(actualTypeModelMap.FallbackSchema, localContext, args);
                 task.Wait();
                 model = task.Result;
             }
 
-            //else, deserialize wih current active model map
+            //else, deserialize wih current active model map schema
             else
             {
-                var task = DeserializeModelMapHelperAsync(actualTypeSchema.ActiveMap, localContext, args);
+                var task = DeserializeModelMapSchemaHelperAsync(actualTypeModelMap.ActiveSchema, localContext, args);
                 task.Wait();
                 model = task.Result;
             }
@@ -192,10 +195,10 @@ namespace Etherna.MongODM.Core.Serialization.Serializers
 
             // Get default schema.
             var actualType = value.GetType();
-            var modelMapsSchema = dbContext.SchemaRegistry.GetModelMapsSchema(actualType);
+            var modelMap = dbContext.MapRegistry.GetModelMap(actualType);
 
             // Serialize.
-            modelMapsSchema.ActiveBsonClassMapSerializer.Serialize(localContext, args, value);
+            modelMap.ActiveSchema.BsonClassMap.ToSerializer().Serialize(localContext, args, value);
 
             // Add additional data.
             //add model map id
@@ -206,7 +209,7 @@ namespace Etherna.MongODM.Core.Serialization.Serializers
              * don't have to replace it with the one wrong of the basic collection model type.
              */
             if (!bsonDocument.Contains(dbContext.Options.ModelMapVersion.ElementName))
-                bsonDocument.InsertAt(0, dbContext.SchemaRegistry.GetActiveModelMapIdBsonElement(actualType));
+                bsonDocument.InsertAt(0, dbContext.MapRegistry.GetActiveModelMapIdBsonElement(actualType));
 
             // Serialize document.
             BsonDocumentSerializer.Instance.Serialize(context, args, bsonDocument);
@@ -227,29 +230,29 @@ namespace Etherna.MongODM.Core.Serialization.Serializers
                 _ => throw new NotSupportedException(),
             };
 
-        private static async Task<TModel> DeserializeModelMapHelperAsync(
-            IModelMap modelMap,
+        private static async Task<TModel> DeserializeModelMapSchemaHelperAsync(
+            IModelMapSchema modelMapSchema,
             BsonDeserializationContext context,
             BsonDeserializationArgs args)
         {
             /* If is mapped a different serializer than the current one, choose it.
              * Otherwise, if doesn't exist or is already the current, deserialize with BsonClassMap
              */
-            var serializer = modelMap.Serializer is not null && modelMap.Serializer.GetType() != typeof(ModelMapSerializer<TModel>) ?
-                modelMap.Serializer :
-                modelMap.BsonClassMapSerializer;
+            var serializer = modelMapSchema.Serializer.GetType() != typeof(ModelMapSerializer<TModel>) ?
+                modelMapSchema.Serializer :
+                modelMapSchema.BsonClassMap.ToSerializer();
 
-            // If model map ask to override the nominal type, override it on args.
-            var modelMapType = modelMap.GetType();
-            if (modelMapType.IsGenericType &&
-                modelMapType.GetGenericTypeDefinition() == typeof(ModelMap<,>))
-                args = new BsonDeserializationArgs { NominalType = modelMap.ModelType };
+            // If model map schema ask to override the nominal type, override it on args.
+            var modelMapSchemaType = modelMapSchema.GetType();
+            if (modelMapSchemaType.IsGenericType &&
+                modelMapSchemaType.GetGenericTypeDefinition() == typeof(ModelMapSchema<,>))
+                args = new BsonDeserializationArgs { NominalType = modelMapSchema.BsonClassMap.ClassType };
 
             // Deserialize.
             var model = (TModel)serializer.Deserialize(context, args);
 
             // Fix model.
-            return (TModel)await modelMap.FixDeserializedModelAsync(model).ConfigureAwait(false);
+            return (TModel)await modelMapSchema.FixDeserializedModelAsync(model).ConfigureAwait(false);
         }
     }
 }

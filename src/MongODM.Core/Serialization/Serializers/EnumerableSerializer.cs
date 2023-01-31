@@ -14,6 +14,7 @@
 
 using Etherna.MongoDB.Bson.Serialization;
 using Etherna.MongoDB.Bson.Serialization.Serializers;
+using Etherna.MongODM.Core.Serialization.Mapping;
 using System;
 using System.Collections.Generic;
 
@@ -22,7 +23,7 @@ namespace Etherna.MongODM.Core.Serialization.Serializers
     public class EnumerableSerializer<TItem> :
         EnumerableSerializerBase<IEnumerable<TItem>, TItem>,
         IChildSerializerConfigurable,
-        IReferenceContainerSerializer
+        IModelMapsHandlingSerializer
     {
         // Constructors.
         /// <summary>
@@ -39,23 +40,12 @@ namespace Etherna.MongODM.Core.Serialization.Serializers
             : base(itemSerializer)
         { }
 
-        /// <summary>
-        /// Initializes a new instance of the <see cref="StackSerializer{TItem}" /> class.
-        /// </summary>
-        /// <param name="serializerRegistry">The serializer registry.</param>
-        public EnumerableSerializer(IBsonSerializerRegistry serializerRegistry)
-            : base(serializerRegistry)
-        { }
-
         // Properties.
-        public IEnumerable<BsonClassMap> AllChildClassMaps =>
-            (ItemSerializer as IModelMapsContainerSerializer)?.AllChildClassMaps ??
-            Array.Empty<BsonClassMap>();
-
         public IBsonSerializer ChildSerializer => ItemSerializer;
 
-        public bool UseCascadeDelete =>
-            (ItemSerializer as IReferenceContainerSerializer)?.UseCascadeDelete ?? false;
+        public IEnumerable<IModelMap> HandledModelMaps =>
+            (ItemSerializer as IModelMapsHandlingSerializer)?.HandledModelMaps ??
+            Array.Empty<IModelMap>();
 
         // Public methods.
         public override void Serialize(BsonSerializationContext context, BsonSerializationArgs args, IEnumerable<TItem> value)

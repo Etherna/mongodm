@@ -20,7 +20,6 @@ using Etherna.MongODM.Core.Migration;
 using Etherna.MongODM.Core.Options;
 using Etherna.MongODM.Core.ProxyModels;
 using Etherna.MongODM.Core.Repositories;
-using Etherna.MongODM.Core.Serialization;
 using Etherna.MongODM.Core.Serialization.Mapping;
 using Etherna.MongODM.Core.Serialization.Modifiers;
 using Etherna.MongODM.Core.Utility;
@@ -87,6 +86,11 @@ namespace Etherna.MongODM.Core
         bool IsSeeded { get; }
 
         /// <summary>
+        /// Registry for model serialization and maps information.
+        /// </summary>
+        IMapRegistry MapRegistry { get; }
+
+        /// <summary>
         /// Db context options.
         /// </summary>
         IDbContextOptions Options { get; }
@@ -105,11 +109,6 @@ namespace Etherna.MongODM.Core
         /// Local instance of a serializer registry.
         /// </summary>
         IBsonSerializerRegistry SerializerRegistry { get; }
-
-        /// <summary>
-        /// Registry for model serialization and schema information.
-        /// </summary>
-        ISchemaRegistry SchemaRegistry { get; }
 
         /// <summary>
         /// Serializer modifier accessor.

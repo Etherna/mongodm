@@ -13,211 +13,257 @@
 //   limitations under the License.
 
 using Etherna.MongoDB.Bson.Serialization;
-using Etherna.MongODM.Core.Extensions;
 using Etherna.MongODM.Core.Serialization.Serializers;
-using Etherna.MongODM.Core.Utility;
 using System;
+using System.Collections.Generic;
 using System.Linq;
-using System.Reflection;
 using System.Threading.Tasks;
 
 namespace Etherna.MongODM.Core.Serialization.Mapping
 {
-    public abstract class ModelMap : FreezableConfig, IModelMap
+    internal abstract class ModelMap : MapBase, IModelMap
     {
         // Fields.
-        private IBsonSerializer _bsonClassMapSerializer = default!;
+        private IModelMapSchema _activeSchema = default!;
+        private readonly List<IMemberMap> _definedMemberMaps = new();
+        private Dictionary<string, IModelMapSchema> _schemasById = default!;
+        protected readonly List<IModelMapSchema> _secondarySchemas = new();
 
-        // Constructors.
+        // Constructor.
         protected ModelMap(
-            string id,
-            string? baseModelMapId,
-            BsonClassMap bsonClassMap,
-            IBsonSerializer? serializer)
+            IDbContext dbContext,
+            Type modelType)
+            : base(modelType)
         {
-            if (string.IsNullOrEmpty(id))
-                throw new ArgumentException($"'{nameof(id)}' cannot be null or empty", nameof(id));
+            DbContext = dbContext ?? throw new ArgumentNullException(nameof(dbContext));
 
-            Id = id;
-            BaseModelMapId = baseModelMapId;
-            BsonClassMap = bsonClassMap ?? throw new ArgumentNullException(nameof(bsonClassMap));
-            Serializer = serializer;
+            // Verify if have to use proxy model.
+            if (modelType != typeof(object) &&
+                !modelType.IsAbstract &&
+                !dbContext.ProxyGenerator.IsProxyType(modelType))
+            {
+                ProxyModelType = dbContext.ProxyGenerator.CreateInstance(modelType, dbContext).GetType();
+            }
         }
 
         // Properties.
-        public string Id { get; }
-        public string? BaseModelMapId { get; private set; }
-        public BsonClassMap BsonClassMap { get; }
-        public IBsonSerializer BsonClassMapSerializer
+        public IModelMapSchema ActiveSchema
+        {
+            get => _activeSchema;
+            internal set
+            {
+                _activeSchema = value;
+                _activeSchema.TryUseProxyGenerator(DbContext);
+            }
+        }
+        public override IBsonSerializer ActiveSerializer => ActiveSchema.Serializer;
+        public IEnumerable<IMemberMap> AllDescendingMemberMaps => DefinedMemberMaps.Concat(
+                                                                  DefinedMemberMaps.SelectMany(mm => mm.AllDescendingMemberMaps));
+        public IDbContext DbContext { get; }
+        public IEnumerable<IMemberMap> DefinedMemberMaps
         {
             get
             {
-                if (_bsonClassMapSerializer is null)
-                {
-                    var classMapSerializerDefinition = typeof(BsonClassMapSerializer<>);
-                    var classMapSerializerType = classMapSerializerDefinition.MakeGenericType(ModelType);
-                    _bsonClassMapSerializer = (IBsonSerializer)Activator.CreateInstance(classMapSerializerType, BsonClassMap);
-                }
-                return _bsonClassMapSerializer;
+                Freeze(); //needed for initialization
+                return _definedMemberMaps;
             }
         }
-        public bool IsEntity => BsonClassMap.IsEntity();
-        public Type ModelType => BsonClassMap.ClassType;
-        public IBsonSerializer? Serializer { get; }
-
-        // Methods.
-        public Task<object> FixDeserializedModelAsync(object model) =>
-            FixDeserializedModelHelperAsync(model);
-
-        public void SetBaseModelMap(IModelMap baseModelMap) =>
-            ExecuteConfigAction(() =>
-            {
-                if (baseModelMap is null)
-                    throw new ArgumentNullException(nameof(baseModelMap));
-
-                BaseModelMapId = baseModelMap.Id;
-                BsonClassMap.SetBaseClassMap(baseModelMap.BsonClassMap);
-            });
-
-        public void UseProxyGenerator(IDbContext dbContext) =>
-            ExecuteConfigAction(() =>
-            {
-                if (dbContext is null)
-                    throw new ArgumentNullException(nameof(dbContext));
-                if (ModelType.IsAbstract)
-                    throw new InvalidOperationException("Can't generate proxy of an abstract model");
-
-                // Remove CreatorMaps.
-                while (BsonClassMap.CreatorMaps.Any())
-                {
-                    var memberInfo = BsonClassMap.CreatorMaps.First().MemberInfo;
-                    switch (memberInfo)
-                    {
-                        case ConstructorInfo constructorInfo:
-                            BsonClassMap.UnmapConstructor(constructorInfo);
-                            break;
-                        case MethodInfo methodInfo:
-                            BsonClassMap.UnmapFactoryMethod(methodInfo);
-                            break;
-                        default: throw new InvalidOperationException();
-                    }
-                }
-
-                // Set creator.
-                BsonClassMap.SetCreator(() => dbContext.ProxyGenerator.CreateInstance(ModelType, dbContext));
-            });
-
-        public bool TryUseProxyGenerator(IDbContext dbContext)
+        public IModelMapSchema? FallbackSchema { get; protected set; }
+        public IBsonSerializer? FallbackSerializer { get; protected set; }
+        public override Type? ProxyModelType { get; }
+        public IReadOnlyDictionary<string, IModelMapSchema> SchemasById
         {
-            if (dbContext is null)
-                throw new ArgumentNullException(nameof(dbContext));
-
-            // Verify if can use proxy model.
-            if (ModelType != typeof(object) &&
-                !ModelType.IsAbstract &&
-                !dbContext.ProxyGenerator.IsProxyType(ModelType))
+            get
             {
-                UseProxyGenerator(dbContext);
-                return true;
-            }
+                if (_schemasById is null)
+                {
+                    var modelMaps = new[] { ActiveSchema }.Concat(_secondarySchemas);
 
-            return false;
+                    if (FallbackSchema is not null)
+                        modelMaps = modelMaps.Append(FallbackSchema);
+
+                    var result = modelMaps.ToDictionary(modelMap => modelMap.Id);
+
+                    if (!IsFrozen)
+                        return result;
+
+                    //optimize performance only if frozen
+                    _schemasById = result;
+                }
+                return _schemasById;
+            }
+        }
+        public IEnumerable<IModelMapSchema> SecondarySchemas => _secondarySchemas;
+
+        // Internal methods.
+        internal void InitializeMemberMaps()
+        {
+            foreach (var schema in SchemasById.Values)
+            {
+                foreach (var bsonMemberMap in schema.BsonClassMap.AllMemberMaps)
+                {
+                    var memberMap = BuildMemberMap(bsonMemberMap, schema, null);
+                    _definedMemberMaps.Add(memberMap);
+                    ((ModelMapSchema)schema).AddGeneratedMemberMap(memberMap);
+                }
+            }
         }
 
         // Protected methods.
-        protected abstract Task<object> FixDeserializedModelHelperAsync(object model);
+        protected void AddFallbackCustomSerializerHelper(IBsonSerializer fallbackSerializer) =>
+            ExecuteConfigAction(() =>
+            {
+                if (fallbackSerializer is null)
+                    throw new ArgumentNullException(nameof(fallbackSerializer));
+                if (FallbackSerializer is not null)
+                    throw new InvalidOperationException("Fallback serializer already setted");
+
+                FallbackSerializer = fallbackSerializer;
+            });
+
+        protected void AddFallbackModelMapSchemaHelper(IModelMapSchema fallbackSchema) =>
+            ExecuteConfigAction(() =>
+            {
+                if (fallbackSchema is null)
+                    throw new ArgumentNullException(nameof(fallbackSchema));
+                if (FallbackSchema is not null)
+                    throw new InvalidOperationException("Fallback model map schema already setted");
+
+                FallbackSchema = fallbackSchema;
+            });
+
+        protected void AddSecondarySchemaHelper(IModelMapSchema schema) =>
+            ExecuteConfigAction(() =>
+            {
+                if (schema is null)
+                    throw new ArgumentNullException(nameof(schema));
+
+                // Try to use proxy model generator.
+                schema.TryUseProxyGenerator(DbContext);
+
+                // Add schema.
+                _secondarySchemas.Add(schema);
+                return this;
+            });
 
         protected override void FreezeAction()
         {
-            // Freeze bson class maps.
-            BsonClassMap.Freeze();
+            // Freeze schemas.
+            foreach (var schema in SchemasById.Values)
+                schema.Freeze();
         }
 
-        // Static methods.
-        public static IBsonSerializer<TModel> GetDefaultSerializer<TModel>(IDbContext dbContext)
-            where TModel : class
+        // Helpers.
+        private IMemberMap BuildMemberMap(
+            BsonMemberMap bsonMemberMap,
+            IModelMapSchema modelMapSchema,
+            IMemberMap? parentMemberMap)
         {
-            if (dbContext is null)
-                throw new ArgumentNullException(nameof(dbContext));
+            var memberMap = new MemberMap(bsonMemberMap, modelMapSchema, parentMemberMap);
 
-            return new ModelMapSerializer<TModel>(dbContext);
+            // Analize recursion on member.
+            var memberSerializer = bsonMemberMap.GetSerializer();
+            bool iterateOnArrayItem;
+            do
+            {
+                iterateOnArrayItem = false;
+
+                if (memberSerializer is IModelMapsHandlingSerializer modelMapsContainerSerializer)
+                {
+                    foreach (var modelMap in modelMapsContainerSerializer.HandledModelMaps
+                        .Where(mm => !DbContext.ProxyGenerator.IsProxyType(mm.ModelType))) //skip model maps on proxy types
+                    {
+                        foreach (var schema in modelMap.SchemasById.Values)
+                        {
+                            schema.Freeze();
+
+                            // Recursion on child member maps.
+                            foreach (var childBsonMemberMap in schema.BsonClassMap.AllMemberMaps)
+                            {
+                                var childMemberMap = BuildMemberMap(childBsonMemberMap, schema, memberMap);
+                                memberMap.AddChildMemberMap(childMemberMap);
+                                ((ModelMapSchema)schema).AddGeneratedMemberMap(childMemberMap);
+                            }
+                        }
+                    }
+                }
+
+                //in case of array serializers not defined by mongodm (as mongo driver's default)
+                else if (memberSerializer is IBsonArraySerializer bsonArraySerializer &&
+                    bsonArraySerializer.TryGetItemSerializationInfo(out BsonSerializationInfo itemSerializationInfo))
+                {
+                    // Iterate on item serializer.
+                    memberSerializer = itemSerializationInfo.Serializer;
+                    iterateOnArrayItem = true;
+                }
+            } while (iterateOnArrayItem);
+
+            return memberMap;
         }
     }
 
-    public class ModelMap<TModel> : ModelMap, IModelMap<TModel>
+    internal class ModelMap<TModel> : ModelMap, IModelMapBuilder<TModel>
+        where TModel : class
     {
-        private readonly Func<TModel, Task<TModel>>? fixDeserializedModelFunc;
-
-        // Constructors.
-        public ModelMap(
-            string id,
-            BsonClassMap<TModel>? bsonClassMap = null,
-            string? baseModelMapId = null,
-            Func<TModel, Task<TModel>>? fixDeserializedModelFunc = null,
-            IBsonSerializer<TModel>? serializer = null)
-            : base(id, baseModelMapId, bsonClassMap ?? new BsonClassMap<TModel>(cm => cm.AutoMap()), serializer)
-        {
-            this.fixDeserializedModelFunc = fixDeserializedModelFunc;
-        }
+        // Constructor.
+        public ModelMap(IDbContext dbContext)
+            : base(dbContext, typeof(TModel))
+        { }
 
         // Methods.
-        public async Task<TModel> FixDeserializedModelAsync(TModel model)
+        public IModelMapBuilder<TModel> AddFallbackCustomSerializer(IBsonSerializer<TModel> fallbackSerializer)
         {
-            if (model is null)
-                throw new ArgumentNullException(nameof(model));
-
-            return (TModel)await FixDeserializedModelHelperAsync(model).ConfigureAwait(false);
+            AddFallbackCustomSerializerHelper(fallbackSerializer);
+            return this;
         }
 
-        // Protected methods.
-        protected override async Task<object> FixDeserializedModelHelperAsync(
-            object model)
+        public IModelMapBuilder<TModel> AddFallbackSchema(
+            Action<BsonClassMap<TModel>>? modelMapSchemaInitializer = null,
+            string? baseModelMapSchemaId = null)
         {
-            if (model is null)
-                throw new ArgumentNullException(nameof(model));
-
-            return fixDeserializedModelFunc is not null ?
-                (await fixDeserializedModelFunc((TModel)model).ConfigureAwait(false))! :
-                model;
+            AddFallbackModelMapSchemaHelper(new ModelMapSchema<TModel>(
+                "fallback",
+                new BsonClassMap<TModel>(modelMapSchemaInitializer ?? (cm => cm.AutoMap())),
+                baseModelMapSchemaId,
+                null,
+                null,
+                this));
+            return this;
         }
-    }
 
-    public class ModelMap<TModel, TOverrideNominal> : ModelMap, IModelMap<TModel>
-        where TOverrideNominal : class, TModel
-    {
-        private readonly Func<TOverrideNominal, Task<TOverrideNominal>>? fixDeserializedModelFunc;
-
-        // Constructors.
-        public ModelMap(
+        public IModelMapBuilder<TModel> AddSecondarySchema(
             string id,
-            BsonClassMap<TOverrideNominal>? bsonClassMap = null,
-            string? baseModelMapId = null,
-            Func<TOverrideNominal, Task<TOverrideNominal>>? fixDeserializedModelFunc = null,
-            IBsonSerializer<TOverrideNominal>? serializer = null)
-            : base(id, baseModelMapId, bsonClassMap ?? new BsonClassMap<TOverrideNominal>(cm => cm.AutoMap()), serializer)
+            Action<BsonClassMap<TModel>>? modelMapSchemaInitializer = null,
+            string? baseModelMapSchemaId = null,
+            IBsonSerializer<TModel>? customSerializer = null,
+            Func<TModel, Task<TModel>>? fixDeserializedModelFunc = null)
         {
-            this.fixDeserializedModelFunc = fixDeserializedModelFunc;
+            AddSecondarySchemaHelper(new ModelMapSchema<TModel>(
+                id,
+                new BsonClassMap<TModel>(modelMapSchemaInitializer ?? (cm => cm.AutoMap())),
+                baseModelMapSchemaId,
+                fixDeserializedModelFunc,
+                customSerializer,
+                this));
+            return this;
         }
 
-        // Methods.
-        public async Task<TModel> FixDeserializedModelAsync(TModel model)
+        public IModelMapBuilder<TModel> AddSecondarySchema<TOverrideNominal>(
+            string id,
+            Action<BsonClassMap<TOverrideNominal>>? modelMapSchemaInitializer = null,
+            string? baseModelMapSchemaId = null,
+            IBsonSerializer<TOverrideNominal>? customSerializer = null,
+            Func<TOverrideNominal, Task<TOverrideNominal>>? fixDeserializedModelFunc = null)
+            where TOverrideNominal : class, TModel
         {
-            if (model is null)
-                throw new ArgumentNullException(nameof(model));
-
-            return (TModel)await FixDeserializedModelHelperAsync(model).ConfigureAwait(false);
-        }
-
-        // Protected methods.
-        protected override async Task<object> FixDeserializedModelHelperAsync(
-            object model)
-        {
-            if (model is null)
-                throw new ArgumentNullException(nameof(model));
-
-            return fixDeserializedModelFunc is not null ?
-                (await fixDeserializedModelFunc((TOverrideNominal)model).ConfigureAwait(false))! :
-                model;
+            AddSecondarySchemaHelper(new ModelMapSchema<TModel, TOverrideNominal>(
+                id,
+                new BsonClassMap<TOverrideNominal>(modelMapSchemaInitializer ?? (cm => cm.AutoMap())),
+                baseModelMapSchemaId,
+                fixDeserializedModelFunc,
+                customSerializer,
+                this));
+            return this;
         }
     }
 }

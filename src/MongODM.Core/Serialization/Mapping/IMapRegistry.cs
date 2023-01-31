@@ -14,7 +14,6 @@
 
 using Etherna.MongoDB.Bson;
 using Etherna.MongoDB.Bson.Serialization;
-using Etherna.MongODM.Core.Serialization.Mapping.Schemas;
 using Etherna.MongODM.Core.Utility;
 using System;
 using System.Collections.Generic;
@@ -23,24 +22,26 @@ using System.Reflection;
 namespace Etherna.MongODM.Core.Serialization.Mapping
 {
     /// <summary>
-    /// Interface for <see cref="SchemaRegistry"/> implementation.
+    /// Interface for <see cref="MapRegistry"/> implementation.
     /// </summary>
-    public interface ISchemaRegistry : IDbContextInitializable, IFreezableConfig
+    public interface IMapRegistry : IDbContextInitializable, IFreezableConfig
     {
         // Properties.
         /// <summary>
-        /// All registered schemas, indexed by model type
+        /// All registered maps, indexed by model type
         /// </summary>
-        IReadOnlyDictionary<Type, ISchema> Schemas { get; }
+        IReadOnlyDictionary<Type, IMap> MapsByModelType { get; }
+
+        IReadOnlyDictionary<string, IMemberMap> MemberMapsById { get; }
 
         // Methods.
         /// <summary>
-        /// Register a new schema based on custom serializer
+        /// Register a new map based on custom serializer
         /// </summary>
         /// <typeparam name="TModel">The model type</typeparam>
         /// <param name="customSerializer">Custom serializer</param>
         /// <returns>The new schema</returns>
-        ICustomSerializerSchemaBuilder<TModel> AddCustomSerializerSchema<TModel>(
+        ICustomSerializerMapBuilder<TModel> AddCustomSerializerMap<TModel>(
             IBsonSerializer<TModel> customSerializer)
             where TModel : class;
 
@@ -48,24 +49,14 @@ namespace Etherna.MongODM.Core.Serialization.Mapping
         /// Register a new schema based on model map
         /// </summary>
         /// <typeparam name="TModel">The model type</typeparam>
-        /// <param name="activeModelMapId">The active model map Id</param>
-        /// <param name="activeModelMapInitializer">The active model map inizializer</param>
+        /// <param name="activeModelMapSchemaId">The active model map schema Id</param>
+        /// <param name="activeModelMapSchemaInitializer">The active model map schema inizializer</param>
         /// <param name="customSerializer">Replace default serializer with a custom</param>
-        /// <returns>The new schema</returns>
-        IModelMapsSchemaBuilder<TModel> AddModelMapsSchema<TModel>(
-            string activeModelMapId,
-            Action<BsonClassMap<TModel>>? activeModelMapInitializer = null,
+        /// <returns>The new model map</returns>
+        IModelMapBuilder<TModel> AddModelMap<TModel>(
+            string activeModelMapSchemaId,
+            Action<BsonClassMap<TModel>>? activeModelMapSchemaInitializer = null,
             IBsonSerializer<TModel>? customSerializer = null)
-            where TModel : class;
-
-        /// <summary>
-        /// Register a new schema based on model map
-        /// </summary>
-        /// <typeparam name="TModel">The model type</typeparam>
-        /// <param name="activeModelMap">The active model map</param>
-        /// <returns>The new schema</returns>
-        IModelMapsSchemaBuilder<TModel> AddModelMapsSchema<TModel>(
-            ModelMap<TModel> activeModelMap)
             where TModel : class;
 
         /// <summary>
@@ -82,25 +73,27 @@ namespace Etherna.MongODM.Core.Serialization.Mapping
         BsonElement GetActiveModelMapIdBsonElement(Type modelType);
 
         /// <summary>
-        /// Get all id member dependencies from a root model type
-        /// </summary>
-        /// <param name="modelType">The model type</param>
-        /// <param name="onlyFromActiveModelMap">If true, ignore secondary model maps</param>
-        /// <returns>The list of member dependencies</returns>
-        IEnumerable<MemberDependency> GetIdMemberDependenciesFromRootModel(Type modelType, bool onlyFromActiveModelMap = false);
-
-        /// <summary>
-        /// Get all member dependencies that points to a specific member definition
+        /// Get all member maps that points to a specific member definition
         /// </summary>
         /// <param name="memberInfo">The member definition</param>
-        /// <returns>The list of member dependencies</returns>
-        IEnumerable<MemberDependency> GetMemberDependenciesFromMemberInfo(MemberInfo memberInfo);
+        /// <returns>List of member maps</returns>
+        IEnumerable<IMemberMap> GetMemberMapsFromMemberInfo(MemberInfo memberInfo);
+
+        IEnumerable<IMemberMap> GetMemberMapsWithSameElementPath(IMemberMap memberMap);
 
         /// <summary>
-        /// Get a registered model map schema for a given model type
+        /// Get a registered model map for a given model type
         /// </summary>
         /// <param name="modelType">The model type</param>
-        /// <returns>The registered model maps schema</returns>
-        IModelMapsSchema GetModelMapsSchema(Type modelType);
+        /// <returns>The registered model schema</returns>
+        IModelMap GetModelMap(Type modelType);
+
+        /// <summary>
+        /// Try to get a registered model map for a given model type
+        /// </summary>
+        /// <param name="modelType">The model type</param>
+        /// <param name="modelMap">Output model map, if exists</param>
+        /// <returns>Operation result</returns>
+        bool TryGetModelMap(Type modelType, out IModelMap? modelMap);
     }
 }

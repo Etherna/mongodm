@@ -77,10 +77,10 @@ namespace Etherna.MongODM.Core
             DbOperations = new Repository<OperationBase, string>(options.DbOperationsCollectionName);
             DiscriminatorRegistry = dependencies.DiscriminatorRegistry;
             ExecutionContext = dependencies.ExecutionContext;
+            MapRegistry = dependencies.MapRegistry;
             Options = options;
             ProxyGenerator = dependencies.ProxyGenerator;
             RepositoryRegistry = dependencies.RepositoryRegistry;
-            SchemaRegistry = dependencies.SchemaRegistry;
             SerializerModifierAccessor = dependencies.SerializerModifierAccessor;
             _serializerRegistry = (BsonSerializerRegistry)dependencies.BsonSerializerRegistry;
 
@@ -92,12 +92,12 @@ namespace Etherna.MongODM.Core
             DbMaintainer.Initialize(this, logger);
             DbMigrationManager.Initialize(this, logger);
             DiscriminatorRegistry.Initialize(this, logger);
+            MapRegistry.Initialize(this, logger);
             RepositoryRegistry.Initialize(this, logger);
-            SchemaRegistry.Initialize(this, logger);
             InitializeSerializerRegistry();
 
             // Initialize repositories.
-            foreach (var repository in RepositoryRegistry.RepositoriesByModelType.Values)
+            foreach (var repository in RepositoryRegistry.Repositories)
                 repository.Initialize(this, logger);
 
             // Register model maps.
@@ -111,8 +111,8 @@ namespace Etherna.MongODM.Core
             foreach (var maps in ModelMapsCollectors)
                 maps.Register(this);
 
-            // Build and freeze schema registry.
-            SchemaRegistry.Freeze();
+            // Build and freeze map registry.
+            MapRegistry.Freeze();
 
             // Initialize MongoDB database.
             Client = mongoClient;
@@ -191,11 +191,11 @@ namespace Etherna.MongODM.Core
                 }
             }
         }
+        public IMapRegistry MapRegistry { get; private set; } = default!;
         public IDbContextOptions Options { get; private set; } = default!;
         public IProxyGenerator ProxyGenerator { get; private set; } = default!;
         public IRepositoryRegistry RepositoryRegistry { get; private set; } = default!;
         public IBsonSerializerRegistry SerializerRegistry => _serializerRegistry;
-        public ISchemaRegistry SchemaRegistry { get; private set; } = default!;
         public ISerializerModifierAccessor SerializerModifierAccessor { get; private set; } = default!;
 
         // Protected properties.
@@ -238,21 +238,13 @@ namespace Etherna.MongODM.Core
             foreach (var model in ChangedModelsList)
             {
                 var modelType = ProxyGenerator.PurgeProxyType(model.GetType());
-                while (modelType != typeof(object)) //try to find right collection
+
+                var repository = RepositoryRegistry.TryGetRepositoryByHandledModelType(modelType);
+                if (repository != null)
                 {
-                    if (RepositoryRegistry.RepositoriesByModelType.ContainsKey(modelType))
-                    {
-                        var repository = RepositoryRegistry.RepositoriesByModelType[modelType];
-                        await repository.ReplaceAsync(model, cancellationToken: cancellationToken).ConfigureAwait(false);
+                    await repository.ReplaceAsync(model, cancellationToken: cancellationToken).ConfigureAwait(false);
 
-                        logger.DbContextSavedChangedModelToRepository(Options.DbName, repository.ModelIdToString(model), repository.Name);
-
-                        break;
-                    }
-                    else
-                    {
-                        modelType = modelType.BaseType;
-                    }
+                    logger.DbContextSavedChangedModelToRepository(Options.DbName, repository.ModelIdToString(model), repository.Name);
                 }
             }
 

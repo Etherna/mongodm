@@ -13,34 +13,20 @@
 //   limitations under the License.
 
 using Etherna.MongoDB.Bson.Serialization;
-using Etherna.MongODM.Core.Serialization.Serializers;
-using Etherna.MongODM.Core.Utility;
-using System;
-using System.Threading.Tasks;
+using System.Collections.Generic;
 
 namespace Etherna.MongODM.Core.Serialization.Mapping
 {
-    public interface IModelMap : IFreezableConfig
+    public interface IModelMap : IMap
     {
         // Properties.
-        string Id { get; }
-        string? BaseModelMapId { get; }
-        BsonClassMap BsonClassMap { get; }
-        IBsonSerializer BsonClassMapSerializer { get; }
-        bool IsEntity { get; }
-        Type ModelType { get; }
-        IBsonSerializer? Serializer { get; }
-
-        // Methods.
-        Task<object> FixDeserializedModelAsync(object model);
-        void SetBaseModelMap(IModelMap baseModelMap);
-        bool TryUseProxyGenerator(IDbContext dbContext);
-        void UseProxyGenerator(IDbContext dbContext);
-    }
-
-    public interface IModelMap<TModel> : IModelMap
-    {
-        // Methods.
-        Task<TModel> FixDeserializedModelAsync(TModel model);
+        IModelMapSchema ActiveSchema { get; }
+        IEnumerable<IMemberMap> AllDescendingMemberMaps { get; }
+        IDbContext DbContext { get; }
+        IEnumerable<IMemberMap> DefinedMemberMaps { get; }
+        IModelMapSchema? FallbackSchema { get; }
+        IBsonSerializer? FallbackSerializer { get; }
+        IReadOnlyDictionary<string, IModelMapSchema> SchemasById { get; }
+        IEnumerable<IModelMapSchema> SecondarySchemas { get; }
     }
 }

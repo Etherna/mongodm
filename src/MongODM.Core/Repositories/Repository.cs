@@ -22,9 +22,7 @@ using Etherna.MongODM.Core.ProxyModels;
 using Etherna.MongODM.Core.Serialization.Mapping;
 using Etherna.MongODM.Core.Utility;
 using Microsoft.Extensions.Logging;
-using MoreLinq;
 using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
@@ -67,8 +65,8 @@ namespace Etherna.MongODM.Core.Repositories
 
         // Properties.
         public IDbContext DbContext { get; private set; } = default!;
-        public Type GetKeyType => typeof(TKey);
-        public Type GetModelType => typeof(TModel);
+        public Type KeyType => typeof(TKey);
+        public Type ModelType => typeof(TModel);
         public bool IsInitialized { get; private set; }
         public string Name => options.Name;
 
@@ -126,10 +124,12 @@ namespace Etherna.MongODM.Core.Repositories
                 }));
 
                 //referenced documents
-                var dependencies = DbContext.SchemaRegistry.GetIdMemberDependenciesFromRootModel(typeof(TModel), true);
+                var idMemberMaps = DbContext.MapRegistry.TryGetModelMap(typeof(TModel), out IModelMap? modelMap) ?
+                    modelMap!.AllDescendingMemberMaps.Where(mm => mm.IsEntityReferenceMember && mm.IsIdMember) :
+                    Array.Empty<IMemberMap>();
 
-                var idPaths = dependencies
-                    .Select(dependency => dependency.MemberPathToString())
+                var idPaths = idMemberMaps
+                    .Select(mm => string.Join(".", mm.MemberMapPath.Select(pathMM => pathMM.BsonMemberMap.ElementName)))
                     .Distinct();
 
                 newIndexes.AddRange(idPaths.Select(path =>
@@ -202,16 +202,6 @@ namespace Etherna.MongODM.Core.Repositories
         {
             if (model is null)
                 throw new ArgumentNullException(nameof(model));
-
-            // Process cascade delete.
-            var referencesIdsPaths = DbContext.SchemaRegistry.GetIdMemberDependenciesFromRootModel(typeof(TModel))
-                .Where(d => d.UseCascadeDelete)
-                .Where(d => d.EntityClassMapPath.Count() == 2) //ignore references of references
-                .DistinctBy(d => d.FullPathToString())
-                .Select(d => d.MemberPath);
-
-            foreach (var idPath in referencesIdsPaths)
-                await CascadeDeleteMembersAsync(model, idPath).ConfigureAwait(false);
 
             // Unlink dependent models.
             model.DisposeForDelete();
@@ -423,44 +413,6 @@ namespace Etherna.MongODM.Core.Repositories
         }
 
         // Helpers.
-        private async Task CascadeDeleteMembersAsync(object currentModel, IEnumerable<OwnedBsonMemberMap> idPath)
-        {
-            if (!idPath.Any())
-                throw new ArgumentException("Member path can't be empty", nameof(idPath));
-
-            var currentMember = idPath.First();
-            var memberTail = idPath.Skip(1);
-
-            if (currentMember.Member.IsIdMember())
-            {
-                //cascade delete model
-                var repository = DbContext.RepositoryRegistry.RepositoriesByModelType[currentModel.GetType().BaseType];
-                try { await repository.DeleteAsync((IEntityModel)currentModel).ConfigureAwait(false); }
-                catch { }
-            }
-            else
-            {
-                //recursion on value
-                var memberInfo = currentMember.Member.MemberInfo;
-                var memberValue = ReflectionHelper.GetValue(currentModel, memberInfo);
-                if (memberValue == null)
-                    return;
-
-                if (memberValue is IEnumerable enumerableMemberValue) //if enumerable
-                {
-                    if (enumerableMemberValue is IDictionary dictionaryMemberValue)
-                        enumerableMemberValue = dictionaryMemberValue.Values;
-
-                    foreach (var itemValue in enumerableMemberValue.Cast<object>().ToArray())
-                        await CascadeDeleteMembersAsync(itemValue, memberTail).ConfigureAwait(false);
-                }
-                else
-                {
-                    await CascadeDeleteMembersAsync(memberValue, memberTail).ConfigureAwait(false);
-                }
-            }
-        }
-
         private Task<TModel> FindOneOnDBAsync(
             Expression<Func<TModel, bool>> predicate,
             CancellationToken cancellationToken = default) =>
@@ -510,7 +462,7 @@ namespace Etherna.MongODM.Core.Repositories
 
                 // Update dependent documents.
                 if (updateDependentDocuments)
-                    DbContext.DbMaintainer.OnUpdatedModel((IAuditable)model, model.Id);
+                    DbContext.DbMaintainer.OnUpdatedModel<TKey>((IAuditable)model);
 
                 // Reset changed members.
                 ((IAuditable)model).ResetChangedMembers();

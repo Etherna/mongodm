@@ -15,6 +15,7 @@
 using Etherna.MongoDB.Bson.Serialization;
 using Etherna.MongoDB.Bson.Serialization.Options;
 using Etherna.MongoDB.Bson.Serialization.Serializers;
+using Etherna.MongODM.Core.Serialization.Mapping;
 using System;
 using System.Collections.Generic;
 
@@ -23,8 +24,8 @@ namespace Etherna.MongODM.Core.Serialization.Serializers
     public class ReadOnlyDictionarySerializer<TKey, TValue> :
         DictionarySerializerBase<IReadOnlyDictionary<TKey, TValue>, TKey, TValue>,
         IChildSerializerConfigurable,
-        IReferenceContainerSerializer,
-        IDictionaryRepresentationConfigurable<ReadOnlyDictionarySerializer<TKey, TValue>>
+        IDictionaryRepresentationConfigurable<ReadOnlyDictionarySerializer<TKey, TValue>>,
+        IModelMapsHandlingSerializer
     {
         // Constructors.
         public ReadOnlyDictionarySerializer()
@@ -34,23 +35,16 @@ namespace Etherna.MongODM.Core.Serialization.Serializers
             : base(dictionaryRepresentation)
         { }
 
-        public ReadOnlyDictionarySerializer(DictionaryRepresentation dictionaryRepresentation, IBsonSerializerRegistry serializerRegistry)
-            : base(dictionaryRepresentation, serializerRegistry)
-        { }
-
         public ReadOnlyDictionarySerializer(DictionaryRepresentation dictionaryRepresentation, IBsonSerializer<TKey> keySerializer, IBsonSerializer<TValue> valueSerializer)
             : base(dictionaryRepresentation, keySerializer, valueSerializer)
         { }
 
         // Properties.
-        public IEnumerable<BsonClassMap> AllChildClassMaps =>
-            (ValueSerializer as IModelMapsContainerSerializer)?.AllChildClassMaps ??
-            Array.Empty<BsonClassMap>();
-
         public IBsonSerializer ChildSerializer => ValueSerializer;
 
-        public bool UseCascadeDelete =>
-            (ValueSerializer as IReferenceContainerSerializer)?.UseCascadeDelete ?? false;
+        public IEnumerable<IModelMap> HandledModelMaps =>
+            (ValueSerializer as IModelMapsHandlingSerializer)?.HandledModelMaps ??
+            Array.Empty<IModelMap>();
 
         // Public methods.
         public override void Serialize(BsonSerializationContext context, BsonSerializationArgs args, IReadOnlyDictionary<TKey, TValue> value)

@@ -18,7 +18,9 @@ using Etherna.MongoDB.Bson.Serialization;
 using Etherna.MongoDB.Bson.Serialization.Conventions;
 using Etherna.MongoDB.Bson.Serialization.Serializers;
 using Etherna.MongODM.Core.Domain.Models;
+using Etherna.MongODM.Core.Extensions;
 using Etherna.MongODM.Core.ProxyModels;
+using Etherna.MongODM.Core.Serialization.Mapping;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -26,22 +28,25 @@ using System.Threading;
 
 namespace Etherna.MongODM.Core.Serialization.Serializers
 {
+    /// <summary>
+    /// Use ActiveModelMap.BsonClassMap definition in specific configuration to serialize reference documents.
+    /// </summary>
+    /// <typeparam name="TModelBase">Nominal model type</typeparam>
+    /// <typeparam name="TKey">Model Id type</typeparam>
     public class ReferenceSerializer<TModelBase, TKey> :
         SerializerBase<TModelBase>,
         IBsonSerializer<TModelBase>,
-        IBsonDocumentSerializer,
-        IBsonIdProvider,
-        IReferenceContainerSerializer,
-        IDisposable
+        IDisposable,
+        IReferenceSerializer
         where TModelBase : class, IEntityModel<TKey>
     {
         // Fields.
+        private readonly ReferenceSerializerConfiguration _configuration;
         private IDiscriminatorConvention _discriminatorConvention = default!;
 
         private readonly ReaderWriterLockSlim configLockAdapters = new(LockRecursionPolicy.SupportsRecursion);
         private readonly IDbContext dbContext;
         private bool disposed;
-        private readonly ReferenceSerializerConfiguration configuration;
 
         // Constructor.
         public ReferenceSerializer(
@@ -53,9 +58,8 @@ namespace Etherna.MongODM.Core.Serialization.Serializers
 
             this.dbContext = dbContext ?? throw new ArgumentNullException(nameof(dbContext));
 
-            configuration = new ReferenceSerializerConfiguration(dbContext);
-            configure(configuration);
-            configuration.Freeze();
+            _configuration = new ReferenceSerializerConfiguration(dbContext, this);
+            configure(_configuration);
         }
 
         // Dispose.
@@ -73,16 +77,23 @@ namespace Etherna.MongODM.Core.Serialization.Serializers
             if (disposing)
             {
                 configLockAdapters.Dispose();
-                configuration.Dispose();
+                Configuration.Dispose();
             }
 
             disposed = true;
         }
 
         // Properties.
-        public IEnumerable<BsonClassMap> AllChildClassMaps => configuration.Schemas.Values
-            .SelectMany(schema => schema.AllMapsDictionary.Values
-                .Select(map => map.BsonClassMap));
+        public IEnumerable<IModelMap> HandledModelMaps => Configuration.ModelMaps.Values;
+
+        public ReferenceSerializerConfiguration Configuration
+        {
+            get
+            {
+                _configuration.Freeze();
+                return _configuration;
+            }
+        }
 
         public IDiscriminatorConvention DiscriminatorConvention
         {
@@ -92,8 +103,6 @@ namespace Etherna.MongODM.Core.Serialization.Serializers
                 return _discriminatorConvention;
             }
         }
-
-        public bool UseCascadeDelete => configuration.UseCascadeDelete;
 
         // Methods.
         public override TModelBase Deserialize(BsonDeserializationContext context, BsonDeserializationArgs args)
@@ -141,7 +150,7 @@ namespace Etherna.MongODM.Core.Serialization.Serializers
 
             // Deserialize.
             //get serializer
-            var serializer = configuration.GetSerializer(actualType, modelMapId);
+            var serializer = Configuration.GetSerializer(actualType, modelMapId);
             if (serializer is null)
                 throw new InvalidOperationException($"Can't identify a valid serializer for type {actualType.Name}");
 
@@ -221,7 +230,7 @@ namespace Etherna.MongODM.Core.Serialization.Serializers
             if (document is null)
                 throw new ArgumentNullException(nameof(document));
 
-            var serializer = configuration.Schemas[document.GetType()].ActiveBsonClassMapSerializer;
+            var serializer = Configuration.ModelMaps[document.GetType()].ActiveSchema.BsonClassMap.ToSerializer();
 
             if (serializer is IBsonIdProvider idProvider)
                 return idProvider.GetDocumentId(document, out id, out idNominalType, out idGenerator);
@@ -255,14 +264,14 @@ namespace Etherna.MongODM.Core.Serialization.Serializers
                 builder => builder.IsDynamicType = context.IsDynamicType);
 
             // Serialize.
-            var serializer = configuration.Schemas[value.GetType()].ActiveBsonClassMapSerializer;
+            var serializer = Configuration.ModelMaps[value.GetType()].ActiveSchema.BsonClassMap.ToSerializer();
             serializer.Serialize(localContext, args, value);
 
             // Add additional data.
             //add model map id
             if (bsonDocument.Contains(dbContext.Options.ModelMapVersion.ElementName))
                 bsonDocument.Remove(dbContext.Options.ModelMapVersion.ElementName);
-            var modelMapIdElement = configuration.GetActiveModelMapIdBsonElement(
+            var modelMapIdElement = Configuration.GetActiveModelMapIdBsonElement(
                 dbContext.ProxyGenerator.PurgeProxyType(value.GetType()));
             bsonDocument.InsertAt(0, modelMapIdElement);
 
@@ -275,7 +284,7 @@ namespace Etherna.MongODM.Core.Serialization.Serializers
             if (document is null)
                 throw new ArgumentNullException(nameof(document));
 
-            var serializer = configuration.Schemas[document.GetType()].ActiveBsonClassMapSerializer;
+            var serializer = Configuration.ModelMaps[document.GetType()].ActiveSchema.BsonClassMap.ToSerializer();
 
             if (serializer is IBsonIdProvider idProvider)
                 idProvider.SetDocumentId(document, id);
@@ -287,15 +296,15 @@ namespace Etherna.MongODM.Core.Serialization.Serializers
         {
             serializationInfo = default!;
 
-            var classMap = configuration.Schemas.Values
-                .Select(s => s.ActiveMap.BsonClassMap)
+            var classMap = Configuration.ModelMaps.Values
+                .Select(s => s.ActiveSchema.BsonClassMap)
                 .Where(cm => cm.GetMemberMap(memberName) != null)
                 .FirstOrDefault();
 
             if (classMap is null)
                 return false;
 
-            var serializer = configuration.Schemas[classMap.ClassType].ActiveBsonClassMapSerializer;
+            var serializer = Configuration.ModelMaps[classMap.ClassType].ActiveSchema.BsonClassMap.ToSerializer();
             if (serializer is IBsonDocumentSerializer documentSerializer)
                 return documentSerializer.TryGetMemberSerializationInfo(memberName, out serializationInfo);
             else

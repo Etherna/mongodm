@@ -65,5 +65,13 @@ namespace Etherna.MongODM.Core.Extensions
             else
                 return classMap.SetMemberSerializer(memberLambda, new EntityModelSerializerAdapter<TMember, TSerializer, TKey>(serializer));
         }
+
+        public static IBsonSerializer ToSerializer(
+            this BsonClassMap classMap)
+        {
+            var classMapSerializerDefinition = typeof(BsonClassMapSerializer<>);
+            var classMapSerializerType = classMapSerializerDefinition.MakeGenericType(classMap.ClassType);
+            return (IBsonSerializer)Activator.CreateInstance(classMapSerializerType, classMap);
+        }
     }
 }

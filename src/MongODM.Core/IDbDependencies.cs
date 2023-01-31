@@ -30,9 +30,9 @@ namespace Etherna.MongODM.Core
         IDbMigrationManager DbMigrationManager { get; }
         IDiscriminatorRegistry DiscriminatorRegistry { get; }
         IExecutionContext ExecutionContext { get; }
+        IMapRegistry MapRegistry { get; }
         IProxyGenerator ProxyGenerator { get; }
         IRepositoryRegistry RepositoryRegistry { get; }
-        ISchemaRegistry SchemaRegistry { get; }
         ISerializerModifierAccessor SerializerModifierAccessor { get; }
     }
 }

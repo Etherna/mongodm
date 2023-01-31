@@ -127,7 +127,7 @@ namespace Etherna.MongODM.Core.Conventions
             actualType = DbContext.ProxyGenerator.PurgeProxyType(actualType);
 
             // Find active class map for model type.
-            var classMap = DbContext.SchemaRegistry.GetActiveClassMap(actualType);
+            var classMap = DbContext.MapRegistry.GetActiveClassMap(actualType);
 
             // Get discriminator from class map.
             if (actualType != nominalType || classMap.DiscriminatorIsRequired || classMap.HasRootClass)

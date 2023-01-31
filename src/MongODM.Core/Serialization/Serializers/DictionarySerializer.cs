@@ -15,6 +15,7 @@
 using Etherna.MongoDB.Bson.Serialization;
 using Etherna.MongoDB.Bson.Serialization.Options;
 using Etherna.MongoDB.Bson.Serialization.Serializers;
+using Etherna.MongODM.Core.Serialization.Mapping;
 using System;
 using System.Collections.Generic;
 
@@ -23,8 +24,8 @@ namespace Etherna.MongODM.Core.Serialization.Serializers
     public class DictionarySerializer<TKey, TValue> :
         DictionarySerializerBase<IDictionary<TKey, TValue>, TKey, TValue>,
         IChildSerializerConfigurable,
-        IReferenceContainerSerializer,
-        IDictionaryRepresentationConfigurable<DictionarySerializer<TKey, TValue>>
+        IDictionaryRepresentationConfigurable<DictionarySerializer<TKey, TValue>>,
+        IModelMapsHandlingSerializer
     {
         // Constructors.
         public DictionarySerializer()
@@ -34,23 +35,16 @@ namespace Etherna.MongODM.Core.Serialization.Serializers
             : base(dictionaryRepresentation)
         { }
 
-        public DictionarySerializer(DictionaryRepresentation dictionaryRepresentation, IBsonSerializerRegistry serializerRegistry)
-            : base(dictionaryRepresentation, serializerRegistry)
-        { }
-
         public DictionarySerializer(DictionaryRepresentation dictionaryRepresentation, IBsonSerializer<TKey> keySerializer, IBsonSerializer<TValue> valueSerializer)
             : base(dictionaryRepresentation, keySerializer, valueSerializer)
         { }
 
         // Properties.
-        public IEnumerable<BsonClassMap> AllChildClassMaps =>
-            (ValueSerializer as IModelMapsContainerSerializer)?.AllChildClassMaps ??
-            Array.Empty<BsonClassMap>();
-
         public IBsonSerializer ChildSerializer => ValueSerializer;
-        
-        public bool UseCascadeDelete =>
-            (ValueSerializer as IReferenceContainerSerializer)?.UseCascadeDelete ?? false;
+
+        public IEnumerable<IModelMap> HandledModelMaps =>
+            (ValueSerializer as IModelMapsHandlingSerializer)?.HandledModelMaps ??
+            Array.Empty<IModelMap>();
 
         // Public methods.
         public override void Serialize(BsonSerializationContext context, BsonSerializationArgs args, IDictionary<TKey, TValue> value)

@@ -134,17 +134,17 @@ namespace Etherna.MongODM.Core.Extensions
                 new EventId(17, nameof(RepositoryReplacedDocument)),
                 "Repository {RepositoryName} of DbContext {DbName} replaced document with Id: {ModelId}");
 
-        private static readonly Action<ILogger, string, string, string, Exception> _updateDocDependenciesTaskEnded =
-            LoggerMessage.Define<string, string, string>(
+        private static readonly Action<ILogger, Type, string, string, Exception> _updateDocDependenciesTaskEnded =
+            LoggerMessage.Define<Type, string, string>(
                 LogLevel.Information,
                 new EventId(20, nameof(UpdateDocDependenciesTaskEnded)),
-                "UpdateDocDependenciesTask ended on DbContext {DbName} repository {RepositoryName} searching for model Id {ModelId}");
+                "UpdateDocDependenciesTask ended on DbContext {DbContextType} with reference repository {ReferenceRepositoryName} to model Id {ModelId}");
 
-        private static readonly Action<ILogger, string, string, string, IEnumerable<string>, Exception> _updateDocDependenciesTaskStarted =
-            LoggerMessage.Define<string, string, string, IEnumerable<string>>(
+        private static readonly Action<ILogger, Type, string, string, IEnumerable<string>, Exception> _updateDocDependenciesTaskStarted =
+            LoggerMessage.Define<Type, string, string, IEnumerable<string>>(
                 LogLevel.Information,
                 new EventId(19, nameof(UpdateDocDependenciesTaskStarted)),
-                "UpdateDocDependenciesTask started on DbContext {DbName} repository {RepositoryName} searching for model Id {ModelId} on these paths: {IdPaths}");
+                "UpdateDocDependenciesTask started on DbContext {DbContextType} with reference repository {ReferenceRepositoryName}, searching for model Id {ModelId} on Id's member maps: {IdMemberMapIdentifiers}");
 
         //*** WARNING LOGS ***
 
@@ -213,10 +213,10 @@ namespace Etherna.MongODM.Core.Extensions
         public static void SummaryModelFullLoaded(this ILogger logger, Type modelType, string modelId) =>
             _summaryModelFullLoaded(logger, modelType, modelId, null!);
 
-        public static void UpdateDocDependenciesTaskEnded(this ILogger logger, string dbName, string repositoryName, string modelId) =>
-            _updateDocDependenciesTaskEnded(logger, dbName, repositoryName, modelId, null!);
+        public static void UpdateDocDependenciesTaskEnded(this ILogger logger, Type dbContextType, string referencedRepositoryName, string modelId) =>
+            _updateDocDependenciesTaskEnded(logger, dbContextType, referencedRepositoryName, modelId, null!);
 
-        public static void UpdateDocDependenciesTaskStarted(this ILogger logger, string dbName, string repositoryName, string modelId, IEnumerable<string> idPaths) =>
-            _updateDocDependenciesTaskStarted(logger, dbName, repositoryName, modelId, idPaths, null!);
+        public static void UpdateDocDependenciesTaskStarted(this ILogger logger, Type dbContextType, string referencedRepositoryName, string modelId, IEnumerable<string> idMemberMapIdentifiers) =>
+            _updateDocDependenciesTaskStarted(logger, dbContextType, referencedRepositoryName, modelId, idMemberMapIdentifiers, null!);
     }
 }

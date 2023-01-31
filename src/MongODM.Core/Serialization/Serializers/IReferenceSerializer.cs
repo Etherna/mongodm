@@ -13,19 +13,14 @@
 //   limitations under the License.
 
 using Etherna.MongoDB.Bson.Serialization;
-using System.Collections.Generic;
 
-namespace Etherna.MongODM.Core.Serialization.Mapping.Schemas
+namespace Etherna.MongODM.Core.Serialization.Serializers
 {
-    public interface IModelMapsSchema : ISchema
+    public interface IReferenceSerializer :
+        IBsonDocumentSerializer,
+        IBsonIdProvider,
+        IModelMapsHandlingSerializer
     {
-        // Properties.
-        IBsonSerializer ActiveBsonClassMapSerializer { get; }
-        IModelMap ActiveMap { get; }
-        IReadOnlyDictionary<string, IModelMap> AllMapsDictionary { get; }
-        IDbContext DbContext { get; }
-        IModelMap? FallbackModelMap { get; }
-        IBsonSerializer? FallbackSerializer { get; }
-        IEnumerable<IModelMap> SecondaryMaps { get; }
+        ReferenceSerializerConfiguration Configuration { get; }
     }
 }

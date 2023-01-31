@@ -12,10 +12,24 @@
 //   See the License for the specific language governing permissions and
 //   limitations under the License.
 
-namespace Etherna.MongODM.Core.Serialization.Serializers
+using Etherna.MongoDB.Bson.Serialization;
+using Etherna.MongODM.Core.Utility;
+using System;
+
+namespace Etherna.MongODM.Core.Serialization.Mapping
 {
-    public interface IReferenceContainerSerializer : IModelMapsContainerSerializer
+    internal abstract class MapBase : FreezableConfig, IMap
     {
-        bool UseCascadeDelete { get; }
+        // Constructor.
+        protected MapBase(
+            Type modelType)
+        {
+            ModelType = modelType;
+        }
+
+        // Properties.
+        public abstract IBsonSerializer ActiveSerializer { get; }
+        public Type ModelType { get; }
+        public abstract Type? ProxyModelType { get; }
     }
 }

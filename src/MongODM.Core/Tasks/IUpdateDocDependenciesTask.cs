@@ -12,7 +12,6 @@
 //   See the License for the specific language governing permissions and
 //   limitations under the License.
 
-using Etherna.MongODM.Core.Domain.Models;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 
@@ -20,10 +19,10 @@ namespace Etherna.MongODM.Core.Tasks
 {
     public interface IUpdateDocDependenciesTask
     {
-        Task RunAsync<TDbContext, TModel, TKey>(
-            IEnumerable<string> idPaths,
-            TKey modelId)
-            where TModel : class, IEntityModel<TKey>
+        Task RunAsync<TDbContext>(
+            string referencedRepositoryName,
+            object referencedModelId,
+            IEnumerable<string> idMemberMapIdentifiers)
             where TDbContext : class, IDbContext;
     }
 }

@@ -22,13 +22,13 @@ namespace Etherna.MongODM.Core.Domain.ModelMaps
     {
         public void Register(IDbContext dbContext)
         {
-            dbContext.SchemaRegistry.AddModelMapsSchema<DbMigrationOperation>("afdb63c9-791b-41f8-8216-556e233df0de");
+            dbContext.MapRegistry.AddModelMap<DbMigrationOperation>("afdb63c9-791b-41f8-8216-556e233df0de");
 
-            dbContext.SchemaRegistry.AddModelMapsSchema<MigrationLogBase>("1696c0c9-d615-44d9-ab9b-4e3618164185");
+            dbContext.MapRegistry.AddModelMap<MigrationLogBase>("1696c0c9-d615-44d9-ab9b-4e3618164185");
 
-            dbContext.SchemaRegistry.AddModelMapsSchema<DocumentMigrationLog>("d2b49514-464e-4b28-8b38-ad2d0cc69d3e");
+            dbContext.MapRegistry.AddModelMap<DocumentMigrationLog>("d2b49514-464e-4b28-8b38-ad2d0cc69d3e");
 
-            dbContext.SchemaRegistry.AddModelMapsSchema<IndexMigrationLog>("24d65670-a3c3-443c-977a-51112df04e2a");
+            dbContext.MapRegistry.AddModelMap<IndexMigrationLog>("24d65670-a3c3-443c-977a-51112df04e2a");
         }
     }
 }
