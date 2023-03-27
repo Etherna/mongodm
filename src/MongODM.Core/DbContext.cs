@@ -130,7 +130,7 @@ namespace Etherna.MongODM.Core
         // Public properties.
         public IReadOnlyCollection<IEntityModel> ChangedModelsList =>
             DbCache.LoadedModels.Values
-                .Where(model => (model as IAuditable)?.IsChanged == true)
+                .Where(model => model is IAuditable { IsChanged: true })
                 .ToList();
         public IMongoClient Client { get; private set; } = default!;
         public IMongoDatabase Database { get; private set; } = default!;

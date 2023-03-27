@@ -247,7 +247,7 @@ namespace Etherna.MongODM.Core.Repositories
             if (DbContext.DbCache.LoadedModels.ContainsKey(id!))
             {
                 var cachedModel = DbContext.DbCache.LoadedModels[id!] as TModel;
-                if ((cachedModel as IReferenceable)?.IsSummary == false)
+                if (cachedModel is IReferenceable { IsSummary: false })
                     return cachedModel!;
             }
 

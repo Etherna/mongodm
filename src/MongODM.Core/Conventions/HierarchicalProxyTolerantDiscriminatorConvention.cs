@@ -72,11 +72,8 @@ namespace Etherna.MongODM.Core.Conventions
                 if (executionContext is null)
                     throw new InvalidOperationException();
 
-                var dbContext = DbExecutionContextHandler.TryGetCurrentDbContext(executionContext);
-                if (dbContext is null)
-                    throw new InvalidOperationException();
-
-                return dbContext;
+                return DbExecutionContextHandler.TryGetCurrentDbContext(executionContext)
+                    ?? throw new InvalidOperationException();
             }
         }
         public string ElementName { get; }

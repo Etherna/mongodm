@@ -150,10 +150,8 @@ namespace Etherna.MongODM.Core.Serialization.Serializers
 
             // Deserialize.
             //get serializer
-            var serializer = Configuration.GetSerializer(actualType, modelMapId);
-            if (serializer is null)
-                throw new InvalidOperationException($"Can't identify a valid serializer for type {actualType.Name}");
-
+            var serializer = Configuration.GetSerializer(actualType, modelMapId)
+                ?? throw new InvalidOperationException($"Can't identify a valid serializer for type {actualType.Name}");
             var model = serializer.Deserialize(localContext, args) as TModelBase;
 
             // Process model (if proxy).
