@@ -60,9 +60,13 @@ namespace Etherna.MongODM.Core.Serialization.Serializers
                 }
                 context.Writer.WriteEndArray();
             }
+            else if (value is null)
+            {
+                context.Writer.WriteNull();
+            }
             else
             {
-                var serializer = dbContext.SerializerRegistry.GetSerializer<object>();
+                var serializer = dbContext.SerializerRegistry.GetSerializer(value.GetType());
                 serializer.Serialize(context, value);
             }
         }
