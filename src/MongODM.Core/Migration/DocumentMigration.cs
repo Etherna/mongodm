@@ -47,8 +47,7 @@ namespace Etherna.MongODM.Core.Migration
     {
         // Fields.
         private readonly IRepository<TModel, TKey> _sourceRepository;
-        private readonly Func<TModel, IRepository?> destinationRepositorySelector;
-        private readonly Func<TModel, object> modelConverter;
+        private readonly Func<TModel, Task> sourceModelProcessorActionAsync;
 
         // Constructors.
         public DocumentMigration(IRepository<TModel, TKey> repository)
@@ -66,10 +65,30 @@ namespace Etherna.MongODM.Core.Migration
             IRepository<TModel, TKey> sourceRepository,
             Func<TModel, IRepository?> destinationRepositorySelector,
             Func<TModel, object> modelConverter)
+            : this(
+                sourceRepository,
+                async m =>
+                {
+                    var destinationRepository = destinationRepositorySelector(m);
+
+                    // Verify if needs to skip this model.
+                    if (destinationRepository is null)
+                        return;
+
+                    // Replace if it's the same collection, insert one otherwise.
+                    if (sourceRepository == destinationRepository)
+                        await destinationRepository.ReplaceAsync(m, updateDependentDocuments: false).ConfigureAwait(false);
+                    else
+                        await destinationRepository.CreateAsync(modelConverter(m)).ConfigureAwait(false);
+                })
+        { }
+
+        public DocumentMigration(
+            IRepository<TModel, TKey> sourceRepository,
+            Func<TModel, Task> sourceModelProcessorActionAsync)
         {
             _sourceRepository = sourceRepository ?? throw new ArgumentNullException(nameof(sourceRepository));
-            this.destinationRepositorySelector = destinationRepositorySelector ?? throw new ArgumentNullException(nameof(destinationRepositorySelector));
-            this.modelConverter = modelConverter ?? throw new ArgumentNullException(nameof(modelConverter));
+            this.sourceModelProcessorActionAsync = sourceModelProcessorActionAsync;
         }
 
         // Properties.
@@ -92,25 +111,15 @@ namespace Etherna.MongODM.Core.Migration
                     await sourceCollection.Find(FilterDefinition<TModel>.Empty, new FindOptions { NoCursorTimeout = true })
                         .ForEachAsync(async model =>
                         {
-                            var destinationRepository = destinationRepositorySelector(model);
-
-                            // Verify if needs to skip this model.
-                            if (destinationRepository is null)
-                                return;
-
-                            // Replace if it's the same collection, insert one otherwise.
-                            if (SourceRepository == destinationRepository)
-                                await destinationRepository.ReplaceAsync(model, updateDependentDocuments: false).ConfigureAwait(false);
-                            else
-                                await destinationRepository.CreateAsync(modelConverter(model)).ConfigureAwait(false);
+                            await sourceModelProcessorActionAsync(model);
 
                             // Increment counter.
                             totMigratedDocuments++;
 
                             // Execute callback.
                             if (callbackEveryTotDocuments > 0 &&
-                                    totMigratedDocuments % callbackEveryTotDocuments == 0 &&
-                                    callbackAsync != null)
+                                totMigratedDocuments % callbackEveryTotDocuments == 0 &&
+                                callbackAsync != null)
                                 await callbackAsync(totMigratedDocuments).ConfigureAwait(false);
 
                         }, cancellationToken).ConfigureAwait(false);
