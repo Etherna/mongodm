@@ -235,12 +235,16 @@ namespace Etherna.MongODM.Core.Serialization.Serializers
             BsonDeserializationContext context,
             BsonDeserializationArgs args)
         {
-            /* If is mapped a different serializer than the current one, choose it.
-             * Otherwise, if doesn't exist or is already the current, deserialize with BsonClassMap
+            /*
+             * ModelMapSerializer can't invoke another ModelMapSerializer instance.
+             * If schema has a serializer with this type, invoke BsonClassMap's serializer.
+             * Otherwise, if different, deserialize with schema's serializer.
              */
-            var serializer = modelMapSchema.Serializer.GetType() != typeof(ModelMapSerializer<TModel>) ?
-                modelMapSchema.Serializer :
-                modelMapSchema.BsonClassMap.ToSerializer();
+            var schemaSerializerType = modelMapSchema.Serializer.GetType();
+            var serializer = schemaSerializerType.IsGenericType &&
+                             schemaSerializerType.GetGenericTypeDefinition() == typeof(ModelMapSerializer<>) ?
+                modelMapSchema.BsonClassMap.ToSerializer() :
+                modelMapSchema.Serializer;
 
             // If model map schema ask to override the nominal type, override it on args.
             var modelMapSchemaType = modelMapSchema.GetType();
