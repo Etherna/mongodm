@@ -282,7 +282,7 @@ namespace Etherna.MongODM.Core.Tasks
             object referencedModelId)
             where TOriginModel : class, IEntityModel<TOriginKey>
         {
-            var cursor = await repository.FindAsync(
+            using var cursor = await repository.FindAsync(
                 Builders<TOriginModel>.Filter.Or(
                     idMemberMaps.Where(idmm => !idmm.ElementPathHasUndefinedDocumentElement) //clean out unrenderable member map filters
                                 .Select(idmm => new MemberMapEqFilterDefinition<TOriginModel, object>(idmm, referencedModelId))),
