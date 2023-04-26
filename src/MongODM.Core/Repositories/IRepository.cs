@@ -76,9 +76,13 @@ namespace Etherna.MongODM.Core.Repositories
     public interface IRepository<TModel, TKey> : IRepository
         where TModel : class, IEntityModel<TKey>
     {
-        Task AccessToCollectionAsync(Func<IMongoCollection<TModel>, Task> action);
+        Task AccessToCollectionAsync(
+            Func<IMongoCollection<TModel>, Task> action,
+            bool handleImplicitDbExecutionContext = true);
 
-        Task<TResult> AccessToCollectionAsync<TResult>(Func<IMongoCollection<TModel>, Task<TResult>> func);
+        Task<TResult> AccessToCollectionAsync<TResult>(
+            Func<IMongoCollection<TModel>, Task<TResult>> func,
+            bool handleImplicitDbExecutionContext = true);
 
         Task CreateAsync(
             TModel model,

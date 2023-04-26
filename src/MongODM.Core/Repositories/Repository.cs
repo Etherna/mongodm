@@ -71,14 +71,18 @@ namespace Etherna.MongODM.Core.Repositories
         public string Name => options.Name;
 
         // Public methods.
-        public Task AccessToCollectionAsync(Func<IMongoCollection<TModel>, Task> action) =>
+        public Task AccessToCollectionAsync(
+            Func<IMongoCollection<TModel>, Task> action,
+            bool handleImplicitDbExecutionContext = true) =>
             AccessToCollectionAsync(async collection =>
             {
                 await action(collection).ConfigureAwait(false);
                 return 0;
-            });
+            }, handleImplicitDbExecutionContext);
 
-        public async Task<TResult> AccessToCollectionAsync<TResult>(Func<IMongoCollection<TModel>, Task<TResult>> func)
+        public async Task<TResult> AccessToCollectionAsync<TResult>(
+            Func<IMongoCollection<TModel>, Task<TResult>> func,
+            bool handleImplicitDbExecutionContext = true)
         {
             if (func is null)
                 throw new ArgumentNullException(nameof(func));
@@ -86,15 +90,18 @@ namespace Etherna.MongODM.Core.Repositories
             // Initialize collection cache.
             _collection ??= DbContext.Database.GetCollection<TModel>(options.Name);
 
-            // Execute func into execution context.
-            using (new DbExecutionContextHandler(DbContext))
-            {
-                var result = await func(_collection).ConfigureAwait(false);
+            // Invoke func into optional implicit execution context.
+            DbExecutionContextHandler? dbExecContextHandler = null;
+            if (handleImplicitDbExecutionContext)
+                dbExecContextHandler = new DbExecutionContextHandler(DbContext);
 
-                logger.RepositoryAccessedCollection(Name, DbContext.Options.DbName);
+            var result = await func(_collection).ConfigureAwait(false);
 
-                return result;
-            }
+            dbExecContextHandler?.Dispose();
+
+            logger.RepositoryAccessedCollection(Name, DbContext.Options.DbName);
+
+            return result;
         }
 
         public virtual Task BuildIndexesAsync(CancellationToken cancellationToken = default) =>
@@ -224,18 +231,24 @@ namespace Etherna.MongODM.Core.Repositories
             await DeleteAsync(castedModel, cancellationToken).ConfigureAwait(false);
         }
 
-        public virtual Task<IAsyncCursor<TProjection>> FindAsync<TProjection>(
+        public virtual async Task<IAsyncCursor<TProjection>> FindAsync<TProjection>(
             FilterDefinition<TModel> filter,
             FindOptions<TModel, TProjection>? options = null,
-            CancellationToken cancellationToken = default) =>
-            AccessToCollectionAsync(collection =>
+            CancellationToken cancellationToken = default)
+        {
+            // Create an explicit db execution context. It needs to survive until cursor is alive.
+            var dbExecContextHandler = new DbExecutionContextHandler(DbContext);
+
+            return await AccessToCollectionAsync(async collection =>
             {
-                var result = collection.FindAsync(filter, options, cancellationToken);
+                var resultCursor = await collection.FindAsync(filter, options, cancellationToken);
+                var wrappedCursor = new AsyncCursorWrapper<TProjection>(resultCursor, dbExecContextHandler);
 
                 logger.RepositoryQueriedCollection(Name, DbContext.Options.DbName);
 
-                return result;
-            });
+                return wrappedCursor;
+            }, false);
+        }
 
         public async Task<object> FindOneAsync(object id, CancellationToken cancellationToken = default) =>
             await FindOneAsync((TKey)id, cancellationToken).ConfigureAwait(false);
