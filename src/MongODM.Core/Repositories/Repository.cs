@@ -371,7 +371,8 @@ namespace Etherna.MongODM.Core.Repositories
             {
                 return await FindOneAsync(id, cancellationToken).ConfigureAwait(false);
             }
-            catch (MongodmEntityNotFoundException)
+            catch (Exception e) when (e is FormatException or
+                                           MongodmEntityNotFoundException)
             {
                 return null;
             }
