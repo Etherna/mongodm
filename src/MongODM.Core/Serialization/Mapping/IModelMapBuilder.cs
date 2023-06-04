@@ -33,13 +33,13 @@ namespace Etherna.MongODM.Core.Serialization.Mapping
         /// Add a fallback model map invoked in case of unrecognized schema id, and absence of fallback serializer
         /// </summary>
         /// <param name="modelMapSchemaInitializer">The model map inizializer</param>
-        /// <param name="baseModelMapSchemaId">Id of the base model map for this model map</param>
+        /// <param name="baseSchemaId">Id of the base model map for this model map</param>
         /// <param name="customSerializer">Replace default serializer with a custom</param>
         /// <param name="fixDeserializedModelFunc">Migrate model after loaded</param>
         /// <returns>This same model map</returns>
         IModelMapBuilder<TModel> AddFallbackSchema(
             Action<BsonClassMap<TModel>>? modelMapSchemaInitializer = null,
-            string? baseModelMapSchemaId = null,
+            string? baseSchemaId = null,
             IBsonSerializer<TModel>? customSerializer = null,
             Func<TModel, Task<TModel>>? fixDeserializedModelFunc = null);
 
@@ -48,21 +48,21 @@ namespace Etherna.MongODM.Core.Serialization.Mapping
         /// </summary>
         /// <param name="id">The map Id</param>
         /// <param name="modelMapSchemaInitializer">The model map schema inizializer</param>
-        /// <param name="baseModelMapSchemaId">Id of the base model map schema for this model map schema</param>
+        /// <param name="baseSchemaId">Id of the base model map schema for this model map schema</param>
         /// <param name="customSerializer">Replace default serializer with a custom</param>
         /// <param name="fixDeserializedModelFunc">Migrate model after loaded</param>
         /// <returns>This same model map</returns>
         IModelMapBuilder<TModel> AddSecondarySchema(
             string id,
             Action<BsonClassMap<TModel>>? modelMapSchemaInitializer = null,
-            string? baseModelMapSchemaId = null,
+            string? baseSchemaId = null,
             IBsonSerializer<TModel>? customSerializer = null,
             Func<TModel, Task<TModel>>? fixDeserializedModelFunc = null);
 
         IModelMapBuilder<TModel> AddSecondarySchema<TOverrideNominal>(
             string id,
             Action<BsonClassMap<TOverrideNominal>>? modelMapSchemaInitializer = null,
-            string? baseModelMapSchemaId = null,
+            string? baseSchemaId = null,
             IBsonSerializer<TOverrideNominal>? customSerializer = null,
             Func<TOverrideNominal, Task<TOverrideNominal>>? fixDeserializedModelFunc = null)
             where TOverrideNominal : class, TModel;

@@ -219,14 +219,14 @@ namespace Etherna.MongODM.Core.Serialization.Mapping
 
         public IModelMapBuilder<TModel> AddFallbackSchema(
             Action<BsonClassMap<TModel>>? modelMapSchemaInitializer = null,
-            string? baseModelMapSchemaId = null,
+            string? baseSchemaId = null,
             IBsonSerializer<TModel>? customSerializer = null,
             Func<TModel, Task<TModel>>? fixDeserializedModelFunc = null)
         {
             AddFallbackModelMapSchemaHelper(new ModelMapSchema<TModel>(
                 "fallback",
                 new BsonClassMap<TModel>(modelMapSchemaInitializer ?? (cm => cm.AutoMap())),
-                baseModelMapSchemaId,
+                baseSchemaId,
                 fixDeserializedModelFunc,
                 customSerializer,
                 this));
@@ -236,14 +236,14 @@ namespace Etherna.MongODM.Core.Serialization.Mapping
         public IModelMapBuilder<TModel> AddSecondarySchema(
             string id,
             Action<BsonClassMap<TModel>>? modelMapSchemaInitializer = null,
-            string? baseModelMapSchemaId = null,
+            string? baseSchemaId = null,
             IBsonSerializer<TModel>? customSerializer = null,
             Func<TModel, Task<TModel>>? fixDeserializedModelFunc = null)
         {
             AddSecondarySchemaHelper(new ModelMapSchema<TModel>(
                 id,
                 new BsonClassMap<TModel>(modelMapSchemaInitializer ?? (cm => cm.AutoMap())),
-                baseModelMapSchemaId,
+                baseSchemaId,
                 fixDeserializedModelFunc,
                 customSerializer,
                 this));
@@ -253,7 +253,7 @@ namespace Etherna.MongODM.Core.Serialization.Mapping
         public IModelMapBuilder<TModel> AddSecondarySchema<TOverrideNominal>(
             string id,
             Action<BsonClassMap<TOverrideNominal>>? modelMapSchemaInitializer = null,
-            string? baseModelMapSchemaId = null,
+            string? baseSchemaId = null,
             IBsonSerializer<TOverrideNominal>? customSerializer = null,
             Func<TOverrideNominal, Task<TOverrideNominal>>? fixDeserializedModelFunc = null)
             where TOverrideNominal : class, TModel
@@ -261,7 +261,7 @@ namespace Etherna.MongODM.Core.Serialization.Mapping
             AddSecondarySchemaHelper(new ModelMapSchema<TModel, TOverrideNominal>(
                 id,
                 new BsonClassMap<TOverrideNominal>(modelMapSchemaInitializer ?? (cm => cm.AutoMap())),
-                baseModelMapSchemaId,
+                baseSchemaId,
                 fixDeserializedModelFunc,
                 customSerializer,
                 this));

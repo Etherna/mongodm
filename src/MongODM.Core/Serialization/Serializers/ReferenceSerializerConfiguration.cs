@@ -48,7 +48,7 @@ namespace Etherna.MongODM.Core.Serialization.Serializers
         public IModelMapBuilder<TModel> AddModelMap<TModel>(
             string activeModelMapSchemaId,
             Action<BsonClassMap<TModel>>? activeModelMapSchemaInitializer = null,
-            string? baseModelMapSchemaId = null)
+            string? baseSchemaId = null)
             where TModel : class =>
             ExecuteConfigAction(() =>
             {
@@ -60,7 +60,7 @@ namespace Etherna.MongODM.Core.Serialization.Serializers
                 var modelMapSchema = new ModelMapSchema<TModel>(
                     activeModelMapSchemaId,
                     new BsonClassMap<TModel>(activeModelMapSchemaInitializer ?? (cm => cm.AutoMap())),
-                    baseModelMapSchemaId,
+                    baseSchemaId,
                     null,
                     serializer,
                     modelMap);
@@ -211,8 +211,8 @@ namespace Etherna.MongODM.Core.Serialization.Serializers
                 foreach (var modelMapSchema in modelMap.SchemasById.Values)
                 {
                     // Search base model map.
-                    var baseModelMapSchema = modelMapSchema.BaseModelMapSchemaId != null ?
-                        baseModelMap.SchemasById[modelMapSchema.BaseModelMapSchemaId] :
+                    var baseModelMapSchema = modelMapSchema.BaseSchemaId != null ?
+                        baseModelMap.SchemasById[modelMapSchema.BaseSchemaId] :
                         baseModelMap.ActiveSchema;
 
                     // Link base model map.

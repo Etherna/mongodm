@@ -24,7 +24,7 @@ namespace Etherna.MongODM.Core.Serialization.Mapping
     {
         // Properties.
         string Id { get; }
-        string? BaseModelMapSchemaId { get; }
+        string? BaseSchemaId { get; }
         BsonClassMap BsonClassMap { get; }
         IEnumerable<IMemberMap> GeneratedMemberMaps { get; }
         IMemberMap? IdMemberMap { get; }

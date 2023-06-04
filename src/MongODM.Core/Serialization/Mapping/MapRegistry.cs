@@ -330,8 +330,8 @@ namespace Etherna.MongODM.Core.Serialization.Mapping
                     }
 
                     // Search base model map schema.
-                    var baseModelMapSchema = modelMapSchema.BaseModelMapSchemaId != null ?
-                        ((IModelMap)baseMap).SchemasById[modelMapSchema.BaseModelMapSchemaId] :
+                    var baseModelMapSchema = modelMapSchema.BaseSchemaId != null ?
+                        ((IModelMap)baseMap).SchemasById[modelMapSchema.BaseSchemaId] :
                         ((IModelMap)baseMap).ActiveSchema;
 
                     // Link base model map.
