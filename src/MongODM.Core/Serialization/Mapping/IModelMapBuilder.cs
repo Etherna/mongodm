@@ -34,24 +34,28 @@ namespace Etherna.MongODM.Core.Serialization.Mapping
         /// </summary>
         /// <param name="modelMapSchemaInitializer">The model map inizializer</param>
         /// <param name="baseModelMapSchemaId">Id of the base model map for this model map</param>
+        /// <param name="customSerializer">Replace default serializer with a custom</param>
+        /// <param name="fixDeserializedModelFunc">Migrate model after loaded</param>
         /// <returns>This same model map</returns>
         IModelMapBuilder<TModel> AddFallbackSchema(
             Action<BsonClassMap<TModel>>? modelMapSchemaInitializer = null,
-            string? baseModelMapSchemaId = null);
+            string? baseModelMapSchemaId = null,
+            IBsonSerializer<TModel>? customSerializer = null,
+            Func<TModel, Task<TModel>>? fixDeserializedModelFunc = null);
 
         /// <summary>
         /// Register a secondary model map schema
         /// </summary>
         /// <param name="id">The map Id</param>
         /// <param name="modelMapSchemaInitializer">The model map schema inizializer</param>
-        /// <param name="baseSchemaId">Id of the base model map schema for this model map schema</param>
+        /// <param name="baseModelMapSchemaId">Id of the base model map schema for this model map schema</param>
         /// <param name="customSerializer">Replace default serializer with a custom</param>
         /// <param name="fixDeserializedModelFunc">Migrate model after loaded</param>
         /// <returns>This same model map</returns>
         IModelMapBuilder<TModel> AddSecondarySchema(
             string id,
             Action<BsonClassMap<TModel>>? modelMapSchemaInitializer = null,
-            string? baseSchemaId = null,
+            string? baseModelMapSchemaId = null,
             IBsonSerializer<TModel>? customSerializer = null,
             Func<TModel, Task<TModel>>? fixDeserializedModelFunc = null);
 
