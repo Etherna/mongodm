@@ -24,19 +24,13 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution 
 		README.md = README.md
 	EndProjectSection
 EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "workflows", "workflows", "{D4BB5972-5F7B-43ED-81C1-69ECF0E62D1E}"
-	ProjectSection(SolutionItems) = preProject
-		.github\workflows\myget-unstable-deploy.yml = .github\workflows\myget-unstable-deploy.yml
-		.github\workflows\nuget-stable-deploy.yml = .github\workflows\nuget-stable-deploy.yml
-	EndProjectSection
-EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "samples", "samples", "{00FD3F85-6217-4947-9D26-7B2E9A8920CF}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MongODM", "src\MongODM\MongODM.csproj", "{0C53354C-B5F3-438A-A5EA-26C6F7E92E38}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MongODM.AspNetCore.UI", "src\MongODM.AspNetCore.UI\MongODM.AspNetCore.UI.csproj", "{A1821261-1FEE-430E-84CC-8D88867D4011}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AspNetCoreSample", "samples\AspNetCoreSample\AspNetCoreSample.csproj", "{E4DE982C-B684-40B0-A647-565363332BF3}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "AspNetCoreSample", "samples\AspNetCoreSample\AspNetCoreSample.csproj", "{E4DE982C-B684-40B0-A647-565363332BF3}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -81,7 +75,6 @@ Global
 		{6374F645-5D17-494E-9529-7F83426900B3} = {490DAED7-DAD8-459A-A20E-F57F2F6F619E}
 		{4F2498A9-D60D-4D49-95B9-BC78EE2917B5} = {490DAED7-DAD8-459A-A20E-F57F2F6F619E}
 		{50D6BEE5-54B5-43F3-BA92-6107AB6E311E} = {CF1ABDEA-794F-4474-858D-BCB61F367D72}
-		{D4BB5972-5F7B-43ED-81C1-69ECF0E62D1E} = {03C64D98-FF9F-4760-AE82-203953FF4940}
 		{0C53354C-B5F3-438A-A5EA-26C6F7E92E38} = {490DAED7-DAD8-459A-A20E-F57F2F6F619E}
 		{A1821261-1FEE-430E-84CC-8D88867D4011} = {490DAED7-DAD8-459A-A20E-F57F2F6F619E}
 		{E4DE982C-B684-40B0-A647-565363332BF3} = {00FD3F85-6217-4947-9D26-7B2E9A8920CF}
