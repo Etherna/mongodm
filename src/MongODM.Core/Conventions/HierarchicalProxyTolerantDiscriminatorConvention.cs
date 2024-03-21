@@ -21,6 +21,7 @@ using Etherna.MongoDB.Bson.Serialization.Serializers;
 using Etherna.MongODM.Core.Utility;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 
 namespace Etherna.MongODM.Core.Conventions
@@ -32,6 +33,8 @@ namespace Etherna.MongODM.Core.Conventions
         private readonly IExecutionContext? executionContext;
 
         // Constructors.
+        [SuppressMessage("Usage", "CA2249:Consider using \'string.Contains\' instead of \'string.IndexOf\'")]
+        [SuppressMessage("Globalization", "CA1307:Specify StringComparison for clarity")]
         public HierarchicalProxyTolerantDiscriminatorConvention(
             IDbContext dbContext,
             string elementName)
@@ -49,6 +52,8 @@ namespace Etherna.MongODM.Core.Conventions
         /// </summary>
         /// <param name="elementName">Discriminator element name</param>
         /// <param name="executionContext">Execution context</param>
+        [SuppressMessage("Usage", "CA2249:Consider using \'string.Contains\' instead of \'string.IndexOf\'")]
+        [SuppressMessage("Globalization", "CA1307:Specify StringComparison for clarity")]
         public HierarchicalProxyTolerantDiscriminatorConvention(
             string elementName,
             IExecutionContext executionContext)
@@ -81,8 +86,7 @@ namespace Etherna.MongODM.Core.Conventions
         // Methods.
         public Type GetActualType(IBsonReader bsonReader, Type nominalType)
         {
-            if (bsonReader is null)
-                throw new ArgumentNullException(nameof(bsonReader));
+            ArgumentNullException.ThrowIfNull(bsonReader, nameof(bsonReader));
 
             //the BsonReader is sitting at the value whose actual type needs to be found
             var bsonType = bsonReader.GetCurrentBsonType();

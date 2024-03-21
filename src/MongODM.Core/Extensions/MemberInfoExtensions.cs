@@ -20,16 +20,23 @@ namespace Etherna.MongODM.Core.Extensions
     public static class MemberInfoExtensions
     {
         public static bool IsSameAs(this MemberInfo memberInfo, MemberInfo otherMemberInfo)
-            => memberInfo == null
-                ? otherMemberInfo == null
-                : (otherMemberInfo != null &&
-                    (Equals(memberInfo, otherMemberInfo)
-                        || (memberInfo.Name == otherMemberInfo.Name
-                            && (memberInfo.DeclaringType == otherMemberInfo.DeclaringType
-                                || memberInfo.DeclaringType.GetTypeInfo().IsSubclassOf(otherMemberInfo.DeclaringType)
-                                || otherMemberInfo.DeclaringType.GetTypeInfo().IsSubclassOf(memberInfo.DeclaringType)
-                                || memberInfo.DeclaringType.GetTypeInfo().ImplementedInterfaces.Contains(otherMemberInfo.DeclaringType)
-                                || otherMemberInfo.DeclaringType.GetTypeInfo().ImplementedInterfaces
-                                    .Contains(memberInfo.DeclaringType)))));
+        {
+            if (memberInfo == null)
+                return otherMemberInfo == null;
+            if (otherMemberInfo == null)
+                return false;
+            if (Equals(memberInfo, otherMemberInfo))
+                return true;
+            if (memberInfo.Name != otherMemberInfo.Name)
+                return false;
+            
+            var memberInfoDeclaringType = memberInfo.DeclaringType!;
+            var otherMemberInfoDeclaringType = otherMemberInfo.DeclaringType!;
+            return memberInfoDeclaringType == otherMemberInfoDeclaringType ||
+                   memberInfoDeclaringType.GetTypeInfo().IsSubclassOf(otherMemberInfoDeclaringType) ||
+                   otherMemberInfoDeclaringType.GetTypeInfo().IsSubclassOf(memberInfoDeclaringType) ||
+                   memberInfoDeclaringType.GetTypeInfo().ImplementedInterfaces.Contains(otherMemberInfo.DeclaringType) ||
+                   otherMemberInfoDeclaringType.GetTypeInfo().ImplementedInterfaces.Contains(memberInfo.DeclaringType);
+        }
     }
 }

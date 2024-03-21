@@ -78,8 +78,7 @@ namespace Etherna.MongODM.Core.Serialization.Serializers
 
         public BsonElement GetActiveModelMapIdBsonElement(Type modelType)
         {
-            if (modelType is null)
-                throw new ArgumentNullException(nameof(modelType));
+            ArgumentNullException.ThrowIfNull(modelType, nameof(modelType));
 
             Freeze(); //needed for initialization
 
@@ -92,14 +91,11 @@ namespace Etherna.MongODM.Core.Serialization.Serializers
 
         public IBsonSerializer? GetSerializer(Type modelType, string? modelMapSchemaId)
         {
-            if (modelType is null)
-                throw new ArgumentNullException(nameof(modelType));
-            if (!_modelMaps.ContainsKey(modelType))
+            ArgumentNullException.ThrowIfNull(modelType, nameof(modelType));
+            if (!_modelMaps.TryGetValue(modelType, out var modelMap))
                 throw new InvalidOperationException("Can't identify registered schema for type " + modelType.Name);
 
             // Find serializer.
-            var modelMap = _modelMaps[modelType];
-
             //if a correct model map is identified with its id, use its bson class map serializer
             if (modelMapSchemaId != null && modelMap.SchemasById.ContainsKey(modelMapSchemaId))
                 return modelMap.SchemasById[modelMapSchemaId].BsonClassMap.ToSerializer();
@@ -137,7 +133,7 @@ namespace Etherna.MongODM.Core.Serialization.Serializers
         }
 
         // Helpers
-        private IModelMap CreateNewDefaultModelMap(Type modelType)
+        private ModelMap CreateNewDefaultModelMap(Type modelType)
         {
             //model schema
             var modelSchemaDefinition = typeof(ModelMap<>);
@@ -145,13 +141,13 @@ namespace Etherna.MongODM.Core.Serialization.Serializers
 
             var modelSchema = (ModelMap)Activator.CreateInstance(
                 modelSchemaType,
-                dbContext);          //IDbContext dbContext
+                dbContext)!;          //IDbContext dbContext
 
             //class map
             var classMapDefinition = typeof(BsonClassMap<>);
             var classMapType = classMapDefinition.MakeGenericType(modelType);
 
-            var classMap = (BsonClassMap)Activator.CreateInstance(classMapType);
+            var classMap = (BsonClassMap)Activator.CreateInstance(classMapType)!;
 
             //model map
             var modelMapSchemaDefinition = typeof(ModelMapSchema<>);
@@ -170,7 +166,7 @@ namespace Etherna.MongODM.Core.Serialization.Serializers
                     null!,                     //IBsonSerializer<TModel>? customSerializer
                     modelSchema                //IModelSchema schema
                 },
-                CultureInfo.InvariantCulture);
+                CultureInfo.InvariantCulture)!;
 
             // Set active model map.
             modelSchema.ActiveSchema = activeModelMapSchema;
@@ -187,7 +183,7 @@ namespace Etherna.MongODM.Core.Serialization.Serializers
              */
             var processingModelMaps = new Stack<IModelMap>(_modelMaps.Values);
 
-            while (processingModelMaps.Any())
+            while (processingModelMaps.Count != 0)
             {
                 var modelMap = processingModelMaps.Pop();
                 var baseModelType = modelMap.ModelType.BaseType;
@@ -197,7 +193,7 @@ namespace Etherna.MongODM.Core.Serialization.Serializers
                     continue;
 
                 // Get base type schema, or generate it.
-                if (!_modelMaps.TryGetValue(baseModelType, out IModelMap baseModelMap))
+                if (!_modelMaps.TryGetValue(baseModelType, out IModelMap? baseModelMap))
                 {
                     // Create schema instance.
                     baseModelMap = CreateNewDefaultModelMap(baseModelType);

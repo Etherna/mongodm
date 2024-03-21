@@ -21,8 +21,7 @@ namespace Etherna.MongODM.Core.Domain.Models
         // Constructors and dispose.
         protected OperationBase(IDbContext dbContext)
         {
-            if (dbContext is null)
-                throw new ArgumentNullException(nameof(dbContext));
+            ArgumentNullException.ThrowIfNull(dbContext, nameof(dbContext));
 
             CreationDateTime = DateTime.Now;
             DbContextName = dbContext.Identifier;

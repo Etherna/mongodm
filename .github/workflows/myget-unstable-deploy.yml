@@ -3,33 +3,36 @@ name: Unstable release deploy to MyGet
 on:
   push:
     branches:
-    - dev
-    - 'release/**'
+      - dev
+      - 'hotfix/**'
+      - 'release/**'
 
 jobs:
   build-test-package:
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v3
-      with:
-        fetch-depth: 0
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
-    - name: Setup dotnet
-      uses: actions/setup-dotnet@v3
-      with:
-        dotnet-version: | 
-          6.0.x
-          7.0.x
+      - name: Setup dotnet
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: |
+            6.0.x
+            7.0.x
+            8.0.x
 
-    - name: Build with dotnet
-      run: dotnet build --configuration Release
+      - name: Build with dotnet
+        run: dotnet build --configuration Release
 
-    - name: Run unit tests
-      run: dotnet test --configuration Release
+      - name: Run unit tests
+        run: dotnet test --configuration Release
       
-    - name: Generate nuget package
-      run: dotnet pack --configuration Release -o nupkg
+      - name: Generate nuget package
+        run: dotnet pack --configuration Release -o nupkg
 
-    - name: Push packages
-      run: dotnet nuget push './nupkg/*.nupkg' --api-key ${{secrets.MYGET_APIKEY}} --source https://www.myget.org/F/etherna/api/v3/index.json
+      - name: Push packages
+        run: dotnet nuget push './nupkg/*.nupkg' --api-key ${{secrets.MYGET_APIKEY}} --source https://www.myget.org/F/etherna/api/v3/index.json

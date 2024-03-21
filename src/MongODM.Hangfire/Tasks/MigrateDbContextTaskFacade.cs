@@ -20,7 +20,7 @@ using System.Threading.Tasks;
 
 namespace Etherna.MongODM.HF.Tasks
 {
-    class MigrateDbContextTaskFacade
+    internal sealed class MigrateDbContextTaskFacade
     {
         // Fields.
         private readonly IMigrateDbContextTask task;
@@ -35,10 +35,10 @@ namespace Etherna.MongODM.HF.Tasks
         public Task RunAsync(Type dbContextType, string dbMigrationOpId, PerformContext context)
         {
             var method = typeof(MigrateDbContextTask).GetMethod(
-                nameof(MigrateDbContextTask.RunAsync), BindingFlags.Public | BindingFlags.Instance)
+                nameof(MigrateDbContextTask.RunAsync), BindingFlags.Public | BindingFlags.Instance)!
                 .MakeGenericMethod(dbContextType);
 
-            return (Task)method.Invoke(task, new object[] { dbMigrationOpId, context.BackgroundJob.Id });
+            return (Task)method.Invoke(task, new object[] { dbMigrationOpId, context.BackgroundJob.Id })!;
         }
     }
 }

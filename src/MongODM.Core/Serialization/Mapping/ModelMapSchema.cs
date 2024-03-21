@@ -40,6 +40,8 @@ namespace Etherna.MongODM.Core.Serialization.Mapping
             IBsonSerializer? customSerializer,
             IModelMap modelMap)
         {
+            ArgumentNullException.ThrowIfNull(bsonClassMap, nameof(bsonClassMap));
+            ArgumentNullException.ThrowIfNull(modelMap, nameof(modelMap));
             if (string.IsNullOrEmpty(id))
                 throw new ArgumentException($"'{nameof(id)}' cannot be null or empty", nameof(id));
             if (!modelMap.ModelType.IsAssignableFrom(bsonClassMap.ClassType))
@@ -70,8 +72,7 @@ namespace Etherna.MongODM.Core.Serialization.Mapping
         public void SetBaseModelMapSchema(IModelMapSchema baseModelMapSchema) =>
             ExecuteConfigAction(() =>
             {
-                if (baseModelMapSchema is null)
-                    throw new ArgumentNullException(nameof(baseModelMapSchema));
+                ArgumentNullException.ThrowIfNull(baseModelMapSchema, nameof(baseModelMapSchema));
 
                 BaseSchemaId = baseModelMapSchema.Id;
                 BsonClassMap.SetBaseClassMap(baseModelMapSchema.BsonClassMap);
@@ -80,8 +81,7 @@ namespace Etherna.MongODM.Core.Serialization.Mapping
         public void UseProxyGenerator(IDbContext dbContext) =>
             ExecuteConfigAction(() =>
             {
-                if (dbContext is null)
-                    throw new ArgumentNullException(nameof(dbContext));
+                ArgumentNullException.ThrowIfNull(dbContext, nameof(dbContext));
                 if (ModelMap.ModelType.IsAbstract)
                     throw new InvalidOperationException("Can't generate proxy of an abstract model");
 
@@ -107,8 +107,7 @@ namespace Etherna.MongODM.Core.Serialization.Mapping
 
         public bool TryUseProxyGenerator(IDbContext dbContext)
         {
-            if (dbContext is null)
-                throw new ArgumentNullException(nameof(dbContext));
+            ArgumentNullException.ThrowIfNull(dbContext, nameof(dbContext));
 
             // Verify if can use proxy model.
             if (ModelMap.ModelType != typeof(object) &&
@@ -139,7 +138,7 @@ namespace Etherna.MongODM.Core.Serialization.Mapping
         {
             var modelMapSerializerDefinition = typeof(ModelMapSerializer<>);
             var modelMapSerializerType = modelMapSerializerDefinition.MakeGenericType(ModelMap.ModelType);
-            return (IBsonSerializer)Activator.CreateInstance(modelMapSerializerType, ModelMap.DbContext);
+            return (IBsonSerializer)Activator.CreateInstance(modelMapSerializerType, ModelMap.DbContext)!;
         }
     }
 
@@ -173,8 +172,7 @@ namespace Etherna.MongODM.Core.Serialization.Mapping
         protected override async Task<object> FixDeserializedModelHelperAsync(
             object model)
         {
-            if (model is null)
-                throw new ArgumentNullException(nameof(model));
+            ArgumentNullException.ThrowIfNull(model, nameof(model));
 
             return fixDeserializedModelFunc is not null ?
                 (await fixDeserializedModelFunc((TModel)model).ConfigureAwait(false))! :
@@ -213,8 +211,7 @@ namespace Etherna.MongODM.Core.Serialization.Mapping
         protected override async Task<object> FixDeserializedModelHelperAsync(
             object model)
         {
-            if (model is null)
-                throw new ArgumentNullException(nameof(model));
+            ArgumentNullException.ThrowIfNull(model, nameof(model));
 
             return fixDeserializedModelFunc is not null ?
                 (await fixDeserializedModelFunc((TOverrideNominal)model).ConfigureAwait(false))! :

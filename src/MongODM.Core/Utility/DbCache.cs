@@ -35,8 +35,7 @@ namespace Etherna.MongODM.Core.Utility
         // Constructors.
         public void Initialize(IDbContext dbContext, ILogger logger)
         {
-            if (dbContext is null)
-                throw new ArgumentNullException(nameof(dbContext));
+            ArgumentNullException.ThrowIfNull(dbContext, nameof(dbContext));
             if (IsInitialized)
                 throw new InvalidOperationException("Instance already initialized");
 
@@ -78,10 +77,8 @@ namespace Etherna.MongODM.Core.Utility
         public void AddModel<TModel>(object id, TModel model)
             where TModel : class, IEntityModel
         {
-            if (id == null)
-                throw new ArgumentNullException(nameof(id));
-            if (model == null)
-                throw new ArgumentNullException(nameof(model));
+            ArgumentNullException.ThrowIfNull(id, nameof(id));
+            ArgumentNullException.ThrowIfNull(model, nameof(model));
             if (executionContext.Items is null)
                 throw new InvalidOperationException("Execution context can't have null Items here");
 

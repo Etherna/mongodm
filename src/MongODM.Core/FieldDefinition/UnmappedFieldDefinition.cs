@@ -28,7 +28,8 @@ namespace Etherna.MongODM.Core.FieldDefinition
             string unmappedFieldName,
             IBsonSerializer unmappedFieldSerializer)
         {
-            if (unmappedFieldName.Contains("."))
+            ArgumentNullException.ThrowIfNull(unmappedFieldName, nameof(unmappedFieldName));
+            if (unmappedFieldName.Contains('.', StringComparison.InvariantCulture))
                 throw new ArgumentException("Field name can't navigate nested documents", nameof(unmappedFieldName));
 
             BaseDocumentField = baseDocumentField;
@@ -58,7 +59,8 @@ namespace Etherna.MongODM.Core.FieldDefinition
             string unmappedFieldName,
             IBsonSerializer<TField> unmappedFieldSerializer)
         {
-            if (unmappedFieldName.Contains("."))
+            ArgumentNullException.ThrowIfNull(unmappedFieldName, nameof(unmappedFieldName));
+            if (unmappedFieldName.Contains('.', StringComparison.InvariantCulture))
                 throw new ArgumentException("Field name can't navigate nested documents", nameof(unmappedFieldName));
 
             BaseDocumentField = baseDocumentField;

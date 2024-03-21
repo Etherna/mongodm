@@ -17,7 +17,7 @@ namespace Etherna.MongODM.Core.Serialization.Mapping
     public abstract class ElementRepresentationBase
     {
         // Constructor.
-        public ElementRepresentationBase(IMemberMap memberMap)
+        protected ElementRepresentationBase(IMemberMap memberMap)
         {
             MemberMap = memberMap;
         }

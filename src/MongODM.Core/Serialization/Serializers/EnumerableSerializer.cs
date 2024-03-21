@@ -50,8 +50,7 @@ namespace Etherna.MongODM.Core.Serialization.Serializers
         // Public methods.
         public override void Serialize(BsonSerializationContext context, BsonSerializationArgs args, IEnumerable<TItem> value)
         {
-            if (value is null)
-                throw new ArgumentNullException(nameof(value));
+            ArgumentNullException.ThrowIfNull(value, nameof(value));
 
             // Force to exclude enumerable actual type from serialization.
             args = new BsonSerializationArgs(value.GetType(), true, args.SerializeIdFirst);
@@ -75,8 +74,7 @@ namespace Etherna.MongODM.Core.Serialization.Serializers
         // Protected methods.
         protected override void AddItem(object accumulator, TItem item)
         {
-            if (accumulator is null)
-                throw new ArgumentNullException(nameof(accumulator));
+            ArgumentNullException.ThrowIfNull(accumulator, nameof(accumulator));
 
             ((List<TItem>)accumulator).Add(item);
         }

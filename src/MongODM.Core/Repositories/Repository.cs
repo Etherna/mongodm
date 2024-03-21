@@ -84,8 +84,7 @@ namespace Etherna.MongODM.Core.Repositories
             Func<IMongoCollection<TModel>, Task<TResult>> func,
             bool handleImplicitDbExecutionContext = true)
         {
-            if (func is null)
-                throw new ArgumentNullException(nameof(func));
+            ArgumentNullException.ThrowIfNull(func, nameof(func));
 
             // Initialize collection cache.
             _collection ??= DbContext.Database.GetCollection<TModel>(options.Name);
@@ -166,7 +165,7 @@ namespace Etherna.MongODM.Core.Repositories
                 }
 
                 // Build new indexes.
-                if (newIndexes.Any())
+                if (newIndexes.Count != 0)
                     await collection.Indexes.CreateManyAsync(newIndexes.Select(i => i.createIndex), cancellationToken).ConfigureAwait(false);
 
                 logger.RepositoryBuiltIndexes(Name, DbContext.Options.DbName);
@@ -182,19 +181,18 @@ namespace Etherna.MongODM.Core.Repositories
         {
             await CreateOnDBAsync(models, cancellationToken).ConfigureAwait(false);
 
-            logger.RepositoryCreatedDocuments(Name, DbContext.Options.DbName, models.Select(m => m.Id!.ToString()));
+            logger.RepositoryCreatedDocuments(Name, DbContext.Options.DbName, models.Select(m => m.Id!.ToString()!));
 
             await DbContext.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
         }
 
         public virtual async Task CreateAsync(TModel model, CancellationToken cancellationToken = default)
         {
-            if (model is null)
-                throw new ArgumentNullException(nameof(model));
+            ArgumentNullException.ThrowIfNull(model, nameof(model));
 
             await CreateOnDBAsync(model, cancellationToken).ConfigureAwait(false);
 
-            logger.RepositoryCreatedDocument(Name, DbContext.Options.DbName, model.Id!.ToString());
+            logger.RepositoryCreatedDocument(Name, DbContext.Options.DbName, model.Id!.ToString()!);
 
             await DbContext.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
         }
@@ -207,8 +205,7 @@ namespace Etherna.MongODM.Core.Repositories
 
         public virtual async Task DeleteAsync(TModel model, CancellationToken cancellationToken = default)
         {
-            if (model is null)
-                throw new ArgumentNullException(nameof(model));
+            ArgumentNullException.ThrowIfNull(model, nameof(model));
 
             // Unlink dependent models.
             model.DisposeForDelete();
@@ -221,7 +218,7 @@ namespace Etherna.MongODM.Core.Repositories
             if (DbContext.DbCache.LoadedModels.ContainsKey(model.Id!))
                 DbContext.DbCache.RemoveModel(model.Id!);
 
-            logger.RepositoryDeletedDocument(Name, DbContext.Options.DbName, model.Id!.ToString());
+            logger.RepositoryDeletedDocument(Name, DbContext.Options.DbName, model.Id!.ToString()!);
         }
 
         public async Task DeleteAsync(IEntityModel model, CancellationToken cancellationToken = default)
@@ -241,13 +238,13 @@ namespace Etherna.MongODM.Core.Repositories
 
             return await AccessToCollectionAsync(async collection =>
             {
-                var resultCursor = await collection.FindAsync(filter, options, cancellationToken);
+                var resultCursor = await collection.FindAsync(filter, options, cancellationToken).ConfigureAwait(false);
                 var wrappedCursor = new AsyncCursorWrapper<TProjection>(resultCursor, dbExecContextHandler);
 
                 logger.RepositoryQueriedCollection(Name, DbContext.Options.DbName);
 
                 return wrappedCursor;
-            }, false);
+            }, false).ConfigureAwait(false);
         }
 
         public async Task<object> FindOneAsync(object id, CancellationToken cancellationToken = default) =>
@@ -274,14 +271,13 @@ namespace Etherna.MongODM.Core.Repositories
 
         public string ModelIdToString(object model)
         {
-            if (model is null)
-                throw new ArgumentNullException(nameof(model));
+            ArgumentNullException.ThrowIfNull(model, nameof(model));
             if (model is not TModel typedModel)
                 throw new ArgumentException($"Model is not of {model.GetType().Name} type", nameof(model));
             if (typedModel.Id is null)
                 throw new InvalidOperationException("Model Id can't be null");
 
-            return typedModel.Id.ToString();
+            return typedModel.Id.ToString()!;
         }
 
         public virtual Task<TResult> QueryElementsAsync<TResult>(
@@ -289,8 +285,7 @@ namespace Etherna.MongODM.Core.Repositories
             AggregateOptions? aggregateOptions = null) =>
             AccessToCollectionAsync(collection =>
             {
-                if (query is null)
-                    throw new ArgumentNullException(nameof(query));
+                ArgumentNullException.ThrowIfNull(query, nameof(query));
 
                 var result = query(collection.AsQueryable(aggregateOptions));
 
@@ -380,8 +375,7 @@ namespace Etherna.MongODM.Core.Repositories
 
         public async Task<TModel?> TryFindOneAsync(Expression<Func<TModel, bool>> predicate, CancellationToken cancellationToken = default)
         {
-            if (predicate is null)
-                throw new ArgumentNullException(nameof(predicate));
+            ArgumentNullException.ThrowIfNull(predicate, nameof(predicate));
 
             try
             {
@@ -403,8 +397,7 @@ namespace Etherna.MongODM.Core.Repositories
         protected virtual Task DeleteOnDBAsync(TModel model, CancellationToken cancellationToken) =>
             AccessToCollectionAsync(collection =>
             {
-                if (model is null)
-                    throw new ArgumentNullException(nameof(model));
+                ArgumentNullException.ThrowIfNull(model, nameof(model));
 
                 return collection.DeleteOneAsync(
                     Builders<TModel>.Filter.Eq(m => m.Id, model.Id),
@@ -432,8 +425,7 @@ namespace Etherna.MongODM.Core.Repositories
             CancellationToken cancellationToken = default) =>
             AccessToCollectionAsync(async collection =>
             {
-                if (predicate is null)
-                    throw new ArgumentNullException(nameof(predicate));
+                ArgumentNullException.ThrowIfNull(predicate, nameof(predicate));
 
                 using var cursor = await collection.FindAsync(predicate, cancellationToken: cancellationToken).ConfigureAwait(false);
                 var model = await cursor.FirstOrDefaultAsync(cancellationToken).ConfigureAwait(false);
@@ -441,7 +433,7 @@ namespace Etherna.MongODM.Core.Repositories
                 if (model == default(TModel))
                     throw new MongodmEntityNotFoundException("Can't find element");
 
-                logger.RepositoryFoundDocument(Name, DbContext.Options.DbName, model.Id!.ToString());
+                logger.RepositoryFoundDocument(Name, DbContext.Options.DbName, model.Id!.ToString()!);
 
                 return model;
             });
@@ -454,8 +446,7 @@ namespace Etherna.MongODM.Core.Repositories
             CancellationToken cancellationToken) =>
             AccessToCollectionAsync(async collection =>
             {
-                if (model == null)
-                    throw new ArgumentNullException(nameof(model));
+                ArgumentNullException.ThrowIfNull(model, nameof(model));
 
                 // Replace on db.
                 if (session == null)
@@ -481,7 +472,7 @@ namespace Etherna.MongODM.Core.Repositories
                 // Reset changed members.
                 ((IAuditable)model).ResetChangedMembers();
 
-                logger.RepositoryReplacedDocument(Name, DbContext.Options.DbName, model.Id!.ToString());
+                logger.RepositoryReplacedDocument(Name, DbContext.Options.DbName, model.Id!.ToString()!);
             });
     }
 }

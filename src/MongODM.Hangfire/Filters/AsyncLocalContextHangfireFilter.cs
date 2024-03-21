@@ -32,28 +32,26 @@ namespace Etherna.MongODM.HF.Filters
         }
 
         // Properties.
-        public void OnPerforming(PerformingContext filterContext)
+        public void OnPerforming(PerformingContext context)
         {
-            if (filterContext is null)
-                throw new ArgumentNullException(nameof(filterContext));
+            ArgumentNullException.ThrowIfNull(context, nameof(context));
 
             lock (contextHandlers)
             {
-                contextHandlers.Add(filterContext.BackgroundJob.Id, asyncLocalContext.InitAsyncLocalContext());
+                contextHandlers.Add(context.BackgroundJob.Id, asyncLocalContext.InitAsyncLocalContext());
             }
         }
 
-        public void OnPerformed(PerformedContext filterContext)
+        public void OnPerformed(PerformedContext context)
         {
-            if (filterContext is null)
-                throw new ArgumentNullException(nameof(filterContext));
+            ArgumentNullException.ThrowIfNull(context, nameof(context));
 
             lock (contextHandlers)
             {
-                var jobId = filterContext.BackgroundJob.Id;
-                var context = contextHandlers[jobId];
+                var jobId = context.BackgroundJob.Id;
+                var contextHandler = contextHandlers[jobId];
                 contextHandlers.Remove(jobId);
-                context.Dispose();
+                contextHandler.Dispose();
             }
         }
     }

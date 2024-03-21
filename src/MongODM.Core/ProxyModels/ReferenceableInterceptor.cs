@@ -43,8 +43,7 @@ namespace Etherna.MongODM.Core.ProxyModels
             ILogger<ReferenceableInterceptor<TModel, TKey>> logger)
             : base(additionalInterfaces)
         {
-            if (dbContext is null)
-                throw new ArgumentNullException(nameof(dbContext));
+            ArgumentNullException.ThrowIfNull(dbContext, nameof(dbContext));
 
             repository = dbContext.RepositoryRegistry.GetRepositoryByHandledModelType(typeof(TModel));
             this.logger = logger;
@@ -53,8 +52,7 @@ namespace Etherna.MongODM.Core.ProxyModels
         // Protected methods.
         protected override bool InterceptInterface(IInvocation invocation)
         {
-            if (invocation is null)
-                throw new ArgumentNullException(nameof(invocation));
+            ArgumentNullException.ThrowIfNull(invocation, nameof(invocation));
 
             // Intercept ISummarizable invocations
             if (invocation.Method.DeclaringType == typeof(IReferenceable))
@@ -79,7 +77,7 @@ namespace Etherna.MongODM.Core.ProxyModels
                 {
                     isSummary = true;
 
-                    var summaryLoadedMemberNames = (invocation.GetArgumentValue(0) as IEnumerable<string>).ToArray();
+                    var summaryLoadedMemberNames = ((IEnumerable<string>)invocation.GetArgumentValue(0)).ToArray();
                     foreach (var memberName in summaryLoadedMemberNames)
                         settedMemberNames[memberName] = true;
                 }
@@ -95,8 +93,7 @@ namespace Etherna.MongODM.Core.ProxyModels
 
         protected override void InterceptModel(IInvocation invocation)
         {
-            if (invocation is null)
-                throw new ArgumentNullException(nameof(invocation));
+            ArgumentNullException.ThrowIfNull(invocation, nameof(invocation));
 
             // Filter gets.
             if (invocation.Method.Name.StartsWith("get_", StringComparison.InvariantCulture) && isSummary)
@@ -161,7 +158,7 @@ namespace Etherna.MongODM.Core.ProxyModels
                 var fullModel = (await repository.TryFindOneAsync(model.Id).ConfigureAwait(false)) as TModel;
                 MergeFullModel(model, fullModel);
 
-                logger.SummaryModelFullLoaded(typeof(TModel), model.Id.ToString());
+                logger.SummaryModelFullLoaded(typeof(TModel), model.Id.ToString()!);
             }
         }
 

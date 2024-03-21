@@ -35,7 +35,7 @@ namespace Etherna.MongODM.Core.Tasks
         public async Task RunAsync<TDbContext>(string dbMigrationOpId, string taskId)
             where TDbContext : class, IDbContext
         {
-            var dbContext = (TDbContext)serviceProvider.GetService(typeof(TDbContext));
+            var dbContext = (TDbContext)serviceProvider.GetService(typeof(TDbContext))!;
             var dbMigrationOp = (DbMigrationOperation)await dbContext.DbOperations.FindOneAsync(dbMigrationOpId).ConfigureAwait(false);
             var completedWithErrors = false;
 

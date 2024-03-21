@@ -41,8 +41,7 @@ namespace Etherna.MongODM.AspNetCore
             IRepositoryRegistry repositoryRegistry,
             ISerializerModifierAccessor serializerModifierAccessor)
         {
-            if (mongODMOptions is null)
-                throw new ArgumentNullException(nameof(mongODMOptions));
+            ArgumentNullException.ThrowIfNull(mongODMOptions, nameof(mongODMOptions));
             BsonSerializerRegistry = bsonSerializerRegistry;
             DbCache = dbCache;
             DbMaintainer = dbMaintainer;

@@ -31,8 +31,7 @@ namespace Etherna.MongODM.AspNetCore.UI
             this IServiceCollection services,
             DashboardOptions? dashboardOptions = null)
         {
-            if (services is null)
-                throw new ArgumentNullException(nameof(services));
+            ArgumentNullException.ThrowIfNull(services, nameof(services));
 
             dashboardOptions ??= new DashboardOptions();
 

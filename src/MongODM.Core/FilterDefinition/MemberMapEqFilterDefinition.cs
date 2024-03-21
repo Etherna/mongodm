@@ -40,6 +40,8 @@ namespace Etherna.MongODM.Core.FilterDefinition
             IMemberMap memberMap,
             TItem value)
         {
+            ArgumentNullException.ThrowIfNull(memberMap, nameof(memberMap));
+            
             if (memberMap.ElementPathHasUndefinedDocumentElement)
                 throw new ArgumentException("Can't create filter with member map path having undefined document elements");
 
@@ -61,7 +63,7 @@ namespace Etherna.MongODM.Core.FilterDefinition
         }
 
         // Helpers.
-        private BsonDocument BuildBsonDocument(IEnumerable<string> segmentedField, TItem value, IBsonSerializer<TItem> valueSerializer)
+        private static BsonDocument BuildBsonDocument(IEnumerable<string> segmentedField, TItem value, IBsonSerializer<TItem> valueSerializer)
         {
             // Recursion building elemMatch filters.
             var sb = new StringBuilder();
