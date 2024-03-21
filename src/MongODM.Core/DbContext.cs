@@ -39,12 +39,13 @@ using System.Threading.Tasks;
 
 namespace Etherna.MongODM.Core
 {
-    public abstract class DbContext : IDbContext, IDbContextBuilder
+    public abstract class DbContext : IDbContext, IDbContextBuilder, IDisposable
     {
         // Fields.
         private bool? _isSeeded;
         private BsonSerializerRegistry _serializerRegistry = default!;
         private IEnumerable<IDbContext> childDbContexts = default!;
+        private bool disposed;
         private bool isInitialized;
         private readonly ReaderWriterLockSlim isSeededLock = new(); //support read/write locks
         private readonly ILogger logger;
@@ -64,10 +65,8 @@ namespace Etherna.MongODM.Core
         {
             if (isInitialized)
                 throw new InvalidOperationException("DbContext already initialized");
-            if (dependencies is null)
-                throw new ArgumentNullException(nameof(dependencies));
-            if (options is null)
-                throw new ArgumentNullException(nameof(options));
+            ArgumentNullException.ThrowIfNull(dependencies, nameof(dependencies));
+            ArgumentNullException.ThrowIfNull(options, nameof(options));
 
             // Set dependencies.
             this.childDbContexts = childDbContexts;
@@ -125,6 +124,27 @@ namespace Etherna.MongODM.Core
             isInitialized = true;
 
             logger.DbContextInitialized(options.DbName);
+        }
+        
+        // Dispose.
+        public void Dispose()
+        {
+            Dispose(true);
+            GC.SuppressFinalize(this);
+        }
+
+        protected virtual void Dispose(bool disposing)
+        {
+            if (disposed) return;
+
+            // Dispose managed resources.
+            if (disposing)
+            {
+                isSeededLock.Dispose();
+                seedingSemaphore.Dispose();
+            }
+
+            disposed = true;
         }
 
         // Public properties.

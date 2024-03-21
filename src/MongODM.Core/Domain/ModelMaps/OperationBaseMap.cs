@@ -18,7 +18,7 @@ using Etherna.MongODM.Core.Serialization.Serializers;
 
 namespace Etherna.MongODM.Core.Domain.ModelMaps
 {
-    class OperationBaseMap : IModelMapsCollector
+    internal sealed class OperationBaseMap : IModelMapsCollector
     {
         public void Register(IDbContext dbContext)
         {

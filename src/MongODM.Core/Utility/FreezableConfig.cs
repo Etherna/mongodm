@@ -78,8 +78,7 @@ namespace Etherna.MongODM.Core.Utility
         // Protected methods.
         protected void ExecuteConfigAction(Action configAction)
         {
-            if (configAction is null)
-                throw new ArgumentNullException(nameof(configAction));
+            ArgumentNullException.ThrowIfNull(configAction, nameof(configAction));
 
             ExecuteConfigAction(() =>
             {
@@ -90,8 +89,7 @@ namespace Etherna.MongODM.Core.Utility
 
         protected TReturn ExecuteConfigAction<TReturn>(Func<TReturn> configAction)
         {
-            if (configAction is null)
-                throw new ArgumentNullException(nameof(configAction));
+            ArgumentNullException.ThrowIfNull(configAction, nameof(configAction));
 
             configLock.EnterWriteLock();
             try

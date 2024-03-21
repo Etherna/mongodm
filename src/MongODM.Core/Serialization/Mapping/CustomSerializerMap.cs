@@ -17,7 +17,7 @@ using System;
 
 namespace Etherna.MongODM.Core.Serialization.Mapping
 {
-    class CustomSerializerMap<TModel> : MapBase, ICustomSerializerMapBuilder<TModel>
+    internal sealed class CustomSerializerMap<TModel> : MapBase, ICustomSerializerMapBuilder<TModel>
         where TModel : class
     {
         // Constructor.

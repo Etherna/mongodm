@@ -25,15 +25,14 @@ namespace Etherna.MongODM.Core.Extensions
     {
         public static bool IsEntity(this BsonClassMap classMap)
         {
-            if (classMap is null)
-                throw new ArgumentNullException(nameof(classMap));
+            ArgumentNullException.ThrowIfNull(classMap, nameof(classMap));
 
             return classMap.IdMemberMap != null;
         }
 
         public static void SetBaseClassMap(this BsonClassMap classMap, BsonClassMap baseClassMap)
         {
-            typeof(BsonClassMap).GetField("_baseClassMap", BindingFlags.Instance | BindingFlags.NonPublic)
+            typeof(BsonClassMap).GetField("_baseClassMap", BindingFlags.Instance | BindingFlags.NonPublic)!
                 .SetValue(classMap, baseClassMap);
         }
 
@@ -42,8 +41,7 @@ namespace Etherna.MongODM.Core.Extensions
             Expression<Func<TModel, TMember>> memberLambda,
             IBsonSerializer<TMember> serializer)
         {
-            if (classMap is null)
-                throw new ArgumentNullException(nameof(classMap));
+            ArgumentNullException.ThrowIfNull(classMap, nameof(classMap));
 
             var member = classMap.GetMemberMap(memberLambda);
             member ??= classMap.MapMember(memberLambda);
@@ -57,8 +55,7 @@ namespace Etherna.MongODM.Core.Extensions
         where TMember : class, TSerializer
         where TSerializer : class, IEntityModel<TKey>
         {
-            if (serializer is null)
-                throw new ArgumentNullException(nameof(serializer));
+            ArgumentNullException.ThrowIfNull(serializer, nameof(serializer));
 
             if (typeof(TMember) == typeof(TSerializer))
                 return classMap.SetMemberSerializer(memberLambda, (IBsonSerializer<TMember>)serializer);
@@ -69,9 +66,11 @@ namespace Etherna.MongODM.Core.Extensions
         public static IBsonSerializer ToSerializer(
             this BsonClassMap classMap)
         {
+            ArgumentNullException.ThrowIfNull(classMap, nameof(classMap));
+            
             var classMapSerializerDefinition = typeof(BsonClassMapSerializer<>);
             var classMapSerializerType = classMapSerializerDefinition.MakeGenericType(classMap.ClassType);
-            return (IBsonSerializer)Activator.CreateInstance(classMapSerializerType, classMap);
+            return (IBsonSerializer)Activator.CreateInstance(classMapSerializerType, classMap)!;
         }
     }
 }

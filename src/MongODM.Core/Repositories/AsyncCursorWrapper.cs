@@ -21,7 +21,7 @@ using System.Threading.Tasks;
 
 namespace Etherna.MongODM.Core.Repositories
 {
-    internal class AsyncCursorWrapper<TProjection> : IAsyncCursor<TProjection>
+    internal sealed class AsyncCursorWrapper<TProjection> : IAsyncCursor<TProjection>
     {
         // Fields.
         private readonly IAsyncCursor<TProjection> cursor;
@@ -39,22 +39,14 @@ namespace Etherna.MongODM.Core.Repositories
 
         public void Dispose()
         {
-            Dispose(true);
-            GC.SuppressFinalize(this);
-        }
-
-        protected virtual void Dispose(bool disposing)
-        {
             if (disposed) return;
 
             // Dispose managed resources.
-            if (disposing)
-            {
-                cursor.Dispose();
-                dbExecutionContextHandler.Dispose();
-            }
+            cursor.Dispose();
+            dbExecutionContextHandler.Dispose();
 
             disposed = true;
+            GC.SuppressFinalize(this);
         }
 
         // Properties.

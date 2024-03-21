@@ -35,8 +35,7 @@ namespace Etherna.MongODM.Core.ProxyModels
         // Protected methods.
         protected override bool InterceptInterface(IInvocation invocation)
         {
-            if (invocation is null)
-                throw new ArgumentNullException(nameof(invocation));
+            ArgumentNullException.ThrowIfNull(invocation, nameof(invocation));
 
             // Intercept ISummarizable invocations
             if (invocation.Method.DeclaringType == typeof(IAuditable))
@@ -44,7 +43,7 @@ namespace Etherna.MongODM.Core.ProxyModels
                 if (invocation.Method.Name == $"get_{nameof(IAuditable.IsAuditingEnabled)}")
                     invocation.ReturnValue = isAuditingEnabled;
                 else if (invocation.Method.Name == $"get_{nameof(IAuditable.IsChanged)}")
-                    invocation.ReturnValue = changedMembers.Any();
+                    invocation.ReturnValue = changedMembers.Count != 0;
                 else if (invocation.Method.Name == $"get_{nameof(IAuditable.ChangedMembers)}")
                     invocation.ReturnValue = changedMembers;
                 else if (invocation.Method.Name == nameof(IAuditable.DisableAuditing))
@@ -64,8 +63,7 @@ namespace Etherna.MongODM.Core.ProxyModels
 
         protected override void InterceptModel(IInvocation invocation)
         {
-            if (invocation is null)
-                throw new ArgumentNullException(nameof(invocation));
+            ArgumentNullException.ThrowIfNull(invocation, nameof(invocation));
 
             // Filter sets.
             if (isAuditingEnabled)

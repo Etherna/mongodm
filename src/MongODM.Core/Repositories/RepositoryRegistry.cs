@@ -26,11 +26,12 @@ namespace Etherna.MongODM.Core.Repositories
     {
         // Fields.
         private ILogger logger = default!;
-        private IReadOnlyDictionary<Type, IRepository> _repositoriesByModelType = default!;
+        private Dictionary<Type, IRepository> _repositoriesByModelType = default!;
 
         // Initializer.
         public void Initialize(IDbContext dbContext, ILogger logger)
         {
+            ArgumentNullException.ThrowIfNull(dbContext, nameof(dbContext));
             this.logger = logger ?? throw new ArgumentNullException(nameof(logger));
 
             if (IsInitialized)
@@ -59,8 +60,8 @@ namespace Etherna.MongODM.Core.Repositories
 
             //initialize registry
             _repositoriesByModelType = repos.ToDictionary(
-                prop => ((IRepository)prop.GetValue(dbContext)).ModelType,
-                prop => (IRepository)prop.GetValue(dbContext));
+                prop => ((IRepository)prop.GetValue(dbContext)!).ModelType,
+                prop => (IRepository)prop.GetValue(dbContext)!);
 
             IsInitialized = true;
 
@@ -78,11 +79,13 @@ namespace Etherna.MongODM.Core.Repositories
 
         public IRepository GetRepositoryByHandledModelType(Type modelType)
         {
+            ArgumentNullException.ThrowIfNull(modelType, nameof(modelType));
+            
             while (!_repositoriesByModelType.ContainsKey(modelType))
             {
                 if (modelType == typeof(object))
                     throw new InvalidOperationException($"Cant find valid repository for model type {modelType}");
-                modelType = modelType.BaseType;
+                modelType = modelType.BaseType!;
             }
 
             return _repositoriesByModelType[modelType];

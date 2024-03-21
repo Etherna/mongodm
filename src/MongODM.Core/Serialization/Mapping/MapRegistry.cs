@@ -62,8 +62,7 @@ namespace Etherna.MongODM.Core.Serialization.Mapping
             IBsonSerializer<TModel> customSerializer) where TModel : class =>
             ExecuteConfigAction(() =>
             {
-                if (customSerializer is null)
-                    throw new ArgumentNullException(nameof(customSerializer));
+                ArgumentNullException.ThrowIfNull(customSerializer, nameof(customSerializer));
 
                 // Register and return map configuration.
                 var customSerializerMap = new CustomSerializerMap<TModel>(customSerializer);
@@ -75,7 +74,7 @@ namespace Etherna.MongODM.Core.Serialization.Mapping
         public IModelMapBuilder<TModel> AddModelMap<TModel>(
             string activeModelMapSchemaId,
             Action<BsonClassMap<TModel>>? activeModelMapSchemaInitializer = null,
-            IBsonSerializer<TModel>? activeCustomSerializer = null)
+            IBsonSerializer<TModel>? customSerializer = null)
             where TModel : class =>
             ExecuteConfigAction(() =>
             {
@@ -89,7 +88,7 @@ namespace Etherna.MongODM.Core.Serialization.Mapping
                     new BsonClassMap<TModel>(activeModelMapSchemaInitializer ?? (cm => cm.AutoMap())),
                     null,
                     null,
-                    activeCustomSerializer,
+                    customSerializer,
                     modelMap);
                 modelMap.ActiveSchema = schema;
 
@@ -106,17 +105,17 @@ namespace Etherna.MongODM.Core.Serialization.Mapping
         public BsonClassMap GetActiveClassMap(Type modelType)
         {
             // If a map is registered.
-            if (_maps.TryGetValue(modelType, out IMap map) &&
+            if (_maps.TryGetValue(modelType, out IMap? map) &&
                 map is IModelMap modelMap)
                 return modelMap.ActiveSchema.BsonClassMap;
 
             // If we don't have a model map, look for a default classmap, or create it.
-            if (defaultClassMapsCache.TryGetValue(modelType, out BsonClassMap bcm))
+            if (defaultClassMapsCache.TryGetValue(modelType, out BsonClassMap? bcm))
                 return bcm;
 
             var classMapDefinition = typeof(BsonClassMap<>);
             var classMapType = classMapDefinition.MakeGenericType(modelType);
-            var classMap = (BsonClassMap)Activator.CreateInstance(classMapType);
+            var classMap = (BsonClassMap)Activator.CreateInstance(classMapType)!;
             classMap.AutoMap();
 
             // Register classMap (if doesn't exist) with discriminator.
@@ -128,8 +127,7 @@ namespace Etherna.MongODM.Core.Serialization.Mapping
 
         public BsonElement GetActiveModelMapIdBsonElement(Type modelType)
         {
-            if (modelType is null)
-                throw new ArgumentNullException(nameof(modelType));
+            ArgumentNullException.ThrowIfNull(modelType, nameof(modelType));
 
             Freeze(); //needed for initialization
 
@@ -149,6 +147,8 @@ namespace Etherna.MongODM.Core.Serialization.Mapping
 
         public IEnumerable<IMemberMap> GetMemberMapsWithSameElementPath(IMemberMap memberMap)
         {
+            ArgumentNullException.ThrowIfNull(memberMap, nameof(memberMap));
+            
             Freeze(); //needed for initialization
             return memberMapsByElementPath.TryGetValue(memberMap.MemberMapPath.First().ModelMapSchema.ModelMap, out var elementPathDictionary) &&
                 elementPathDictionary.TryGetValue(GetMemberMapElementPath(memberMap), out var samePathMemberMaps) ?
@@ -158,12 +158,9 @@ namespace Etherna.MongODM.Core.Serialization.Mapping
 
         public IModelMap GetModelMap(Type modelType)
         {
-            if (modelType is null)
-                throw new ArgumentNullException(nameof(modelType));
-            if (!_maps.ContainsKey(modelType))
+            ArgumentNullException.ThrowIfNull(modelType, nameof(modelType));
+            if (!_maps.TryGetValue(modelType, out var map))
                 throw new KeyNotFoundException(modelType.Name + " map is missing");
-
-            var map = _maps[modelType];
 
             if (map is not IModelMap modelMap)
                 throw new InvalidOperationException(modelType.Name + " map is not a model map");
@@ -173,10 +170,9 @@ namespace Etherna.MongODM.Core.Serialization.Mapping
 
         public bool TryGetModelMap(Type modelType, out IModelMap? modelMap)
         {
-            if (modelType is null)
-                throw new ArgumentNullException(nameof(modelType));
+            ArgumentNullException.ThrowIfNull(modelType, nameof(modelType));
 
-            if (_maps.TryGetValue(modelType, out IMap map) &&
+            if (_maps.TryGetValue(modelType, out IMap? map) &&
                 map is IModelMap foundModelMap)
             {
                 modelMap = foundModelMap;
@@ -252,7 +248,7 @@ namespace Etherna.MongODM.Core.Serialization.Mapping
         }
 
         // Helpers.
-        private IModelMap CreateNewDefaultModelMap(Type modelType)
+        private ModelMap CreateNewDefaultModelMap(Type modelType)
         {
             // Construct.
             //model schema
@@ -261,13 +257,13 @@ namespace Etherna.MongODM.Core.Serialization.Mapping
 
             var modelMap = (ModelMap)Activator.CreateInstance(
                 modelMapType,
-                dbContext);          //IDbContext dbContext
+                dbContext)!;          //IDbContext dbContext
 
             //class map
             var classMapDefinition = typeof(BsonClassMap<>);
             var classMapType = classMapDefinition.MakeGenericType(modelType);
 
-            var classMap = (BsonClassMap)Activator.CreateInstance(classMapType);
+            var classMap = (BsonClassMap)Activator.CreateInstance(classMapType)!;
 
             //model map
             var modelMapSchemaDefinition = typeof(ModelMapSchema<>);
@@ -286,7 +282,7 @@ namespace Etherna.MongODM.Core.Serialization.Mapping
                     null!,                     //IBsonSerializer<TModel>? customSerializer
                     modelMap                   //IModelMap modelMap
                 },
-                CultureInfo.InvariantCulture);
+                CultureInfo.InvariantCulture)!;
 
             // Set active model map.
             modelMap.ActiveSchema = activeModelMapSchema;
@@ -305,7 +301,7 @@ namespace Etherna.MongODM.Core.Serialization.Mapping
              */
             var processingModelMaps = new Stack<IModelMap>(_maps.Values.OfType<IModelMap>());
 
-            while (processingModelMaps.Any())
+            while (processingModelMaps.Count != 0)
             {
                 var modelMap = processingModelMaps.Pop();
 
@@ -319,7 +315,7 @@ namespace Etherna.MongODM.Core.Serialization.Mapping
                         continue;
 
                     // Get base type map, or generate it.
-                    if (!_maps.TryGetValue(baseModelType, out IMap baseMap))
+                    if (!_maps.TryGetValue(baseModelType, out IMap? baseMap))
                     {
                         // Create schema instance.
                         baseMap = CreateNewDefaultModelMap(baseModelType);

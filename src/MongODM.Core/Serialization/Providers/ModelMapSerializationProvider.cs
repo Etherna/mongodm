@@ -35,8 +35,7 @@ namespace Etherna.MongODM.Core.Serialization.Providers
         // Methods.
         public override IBsonSerializer? GetSerializer(Type type, IBsonSerializerRegistry serializerRegistry)
         {
-            if (type == null)
-                throw new ArgumentNullException(nameof(type));
+            ArgumentNullException.ThrowIfNull(type, nameof(type));
 
             var typeInfo = type.GetTypeInfo();
             if (typeInfo.IsGenericType && typeInfo.ContainsGenericParameters)
@@ -51,7 +50,7 @@ namespace Etherna.MongODM.Core.Serialization.Providers
             {
                 var modelMapSerializerDefinition = typeof(ModelMapSerializer<>);
                 var modelMapSerializerType = modelMapSerializerDefinition.MakeGenericType(type);
-                return (IBsonSerializer)Activator.CreateInstance(modelMapSerializerType, dbContext);
+                return (IBsonSerializer)Activator.CreateInstance(modelMapSerializerType, dbContext)!;
             }
 
             return null;

@@ -75,10 +75,8 @@ namespace Etherna.MongODM.Core.ProxyModels
             IDbContext dbContext,
             params object[] constructorArguments)
         {
-            if (dbContext is null)
-                throw new ArgumentNullException(nameof(dbContext));
-            if (type is null)
-                throw new ArgumentNullException(nameof(type));
+            ArgumentNullException.ThrowIfNull(dbContext, nameof(dbContext));
+            ArgumentNullException.ThrowIfNull(type, nameof(type));
 
             // If creation of proxy models are disabled, create a simple model instance.
             if (DisableCreationWithProxyTypes)
@@ -88,7 +86,7 @@ namespace Etherna.MongODM.Core.ProxyModels
                     BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance,
                     null,
                     constructorArguments,
-                    null);
+                    null)!;
             }
 
             // Get configuration.
@@ -97,9 +95,9 @@ namespace Etherna.MongODM.Core.ProxyModels
             bool configurationFound = false;
             try
             {
-                if (modelConfigurationDictionary.ContainsKey(type))
+                if (modelConfigurationDictionary.TryGetValue(type, out var conf))
                 {
-                    configuration = modelConfigurationDictionary[type];
+                    configuration = conf;
                     configurationFound = true;
                 }
             }
@@ -113,9 +111,9 @@ namespace Etherna.MongODM.Core.ProxyModels
                 modelConfigurationDictionaryLock.EnterWriteLock();
                 try
                 {
-                    if (modelConfigurationDictionary.ContainsKey(type))
+                    if (modelConfigurationDictionary.TryGetValue(type, out var conf))
                     {
-                        configuration = modelConfigurationDictionary[type];
+                        configuration = conf;
                     }
                     else
                     {
@@ -187,11 +185,10 @@ namespace Etherna.MongODM.Core.ProxyModels
 
         public Type PurgeProxyType(Type type)
         {
-            if (type is null)
-                throw new ArgumentNullException(nameof(type));
+            ArgumentNullException.ThrowIfNull(type, nameof(type));
 
             return IsProxyType(type) ?
-                type.BaseType :
+                type.BaseType! :
                 type;
         }
 
@@ -241,7 +238,7 @@ namespace Etherna.MongODM.Core.ProxyModels
 
                 interceptorInstancers.Add(dbContext => (IInterceptor)Activator.CreateInstance(
                     auditableInterceptorType,
-                    additionalInterfaces));
+                    additionalInterfaces)!);
 
                 //referenceableInterceptor
                 var referenceableInterceptorType = typeof(ReferenceableInterceptor<,>).MakeGenericType(modelType, entityModelKeyType);
@@ -253,7 +250,7 @@ namespace Etherna.MongODM.Core.ProxyModels
                     referenceableInterceptorType,
                     additionalInterfaces,
                     dbContext,
-                    referenceableInterceptorLogger));
+                    referenceableInterceptorLogger)!);
             }
 
             return dbContext => (from instancer in interceptorInstancers

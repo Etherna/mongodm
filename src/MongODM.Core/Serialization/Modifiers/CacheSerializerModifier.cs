@@ -21,7 +21,7 @@ using System.Linq;
 
 namespace Etherna.MongODM.Core.Serialization.Modifiers
 {
-    class CacheSerializerModifier : IDisposable
+    internal sealed class CacheSerializerModifier : IDisposable
     {
         // Consts.
         private const string ModifierKey = "CacheSerializerModifier";
@@ -32,8 +32,7 @@ namespace Etherna.MongODM.Core.Serialization.Modifiers
         // Constructors and dispose.
         public CacheSerializerModifier(IExecutionContext context)
         {
-            if (context is null)
-                throw new ArgumentNullException(nameof(context));
+            ArgumentNullException.ThrowIfNull(context, nameof(context));
             if (context.Items is null)
                 throw new ExecutionContextNotFoundException();
 

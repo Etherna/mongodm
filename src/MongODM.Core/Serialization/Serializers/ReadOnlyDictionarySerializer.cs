@@ -26,6 +26,7 @@ namespace Etherna.MongODM.Core.Serialization.Serializers
         IChildSerializerConfigurable,
         IDictionaryRepresentationConfigurable<ReadOnlyDictionarySerializer<TKey, TValue>>,
         IModelMapsHandlingSerializer
+        where TKey : notnull
     {
         // Constructors.
         public ReadOnlyDictionarySerializer()
@@ -49,8 +50,7 @@ namespace Etherna.MongODM.Core.Serialization.Serializers
         // Public methods.
         public override void Serialize(BsonSerializationContext context, BsonSerializationArgs args, IReadOnlyDictionary<TKey, TValue> value)
         {
-            if (value is null)
-                throw new ArgumentNullException(nameof(value));
+            ArgumentNullException.ThrowIfNull(value, nameof(value));
 
             // Force to exclude enumerable actual type from serialization.
             args = new BsonSerializationArgs(value.GetType(), true, args.SerializeIdFirst);

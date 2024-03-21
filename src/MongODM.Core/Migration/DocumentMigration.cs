@@ -111,7 +111,7 @@ namespace Etherna.MongODM.Core.Migration
                     await sourceCollection.Find(FilterDefinition<TModel>.Empty, new FindOptions { NoCursorTimeout = true })
                         .ForEachAsync(async model =>
                         {
-                            await sourceModelProcessorActionAsync(model);
+                            await sourceModelProcessorActionAsync(model).ConfigureAwait(false);
 
                             // Increment counter.
                             totMigratedDocuments++;

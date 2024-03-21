@@ -43,8 +43,7 @@ namespace Etherna.MongODM.Core.Serialization.Serializers
         public ModelMapSerializer(
             IDbContext dbContext)
         {
-            if (dbContext is null)
-                throw new ArgumentNullException(nameof(dbContext));
+            ArgumentNullException.ThrowIfNull(dbContext, nameof(dbContext));
 
             this.dbContext = dbContext;
         }
@@ -67,8 +66,7 @@ namespace Etherna.MongODM.Core.Serialization.Serializers
         // Methods.
         public override TModel Deserialize(BsonDeserializationContext context, BsonDeserializationArgs args)
         {
-            if (context is null)
-                throw new ArgumentNullException(nameof(context));
+            ArgumentNullException.ThrowIfNull(context, nameof(context));
 
             // Check if null.
             if (context.Reader.CurrentBsonType == BsonType.Null)
@@ -169,8 +167,7 @@ namespace Etherna.MongODM.Core.Serialization.Serializers
 
         public override void Serialize(BsonSerializationContext context, BsonSerializationArgs args, TModel value)
         {
-            if (context is null)
-                throw new ArgumentNullException(nameof(context));
+            ArgumentNullException.ThrowIfNull(context, nameof(context));
 
             // Serialize null object.
             if (value == null)

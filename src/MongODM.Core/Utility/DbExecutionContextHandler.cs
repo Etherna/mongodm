@@ -64,8 +64,7 @@ namespace Etherna.MongODM.Core.Utility
         // Static methods.
         public static IDbContext? TryGetCurrentDbContext(IExecutionContext executionContext)
         {
-            if (executionContext is null)
-                throw new ArgumentNullException(nameof(executionContext));
+            ArgumentNullException.ThrowIfNull(executionContext, nameof(executionContext));
 
             if (executionContext.Items is null ||
                 !executionContext.Items.ContainsKey(HandlerKey))

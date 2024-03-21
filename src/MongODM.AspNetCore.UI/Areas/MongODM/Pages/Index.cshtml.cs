@@ -35,8 +35,7 @@ namespace Etherna.MongODM.AspNetCore.UI.Areas.MongODM.Pages
             IOptions<MongODMOptions> options,
             IServiceProvider serviceProvider)
         {
-            if (options is null)
-                throw new ArgumentNullException(nameof(options));
+            ArgumentNullException.ThrowIfNull(options, nameof(options));
 
             this.options = options.Value;
             this.serviceProvider = serviceProvider;

@@ -30,8 +30,7 @@ namespace Etherna.MongODM.Core.ProxyModels
 
         public void Intercept(IInvocation invocation)
         {
-            if (invocation is null)
-                throw new ArgumentNullException(nameof(invocation));
+            ArgumentNullException.ThrowIfNull(invocation, nameof(invocation));
 
             if (additionalInterfaces.Contains(invocation.Method.DeclaringType))
             {
@@ -44,7 +43,7 @@ namespace Etherna.MongODM.Core.ProxyModels
             {
                 // Check model type.
                 if (invocation.Method.DeclaringType != typeof(TModel) &&
-                    !invocation.Method.DeclaringType.IsAssignableFrom(typeof(TModel)))
+                    !invocation.Method.DeclaringType!.IsAssignableFrom(typeof(TModel)))
                 {
                     throw new InvalidOperationException();
                 }
@@ -69,8 +68,7 @@ namespace Etherna.MongODM.Core.ProxyModels
         /// <param name="invocation">Current invocation</param>
         protected virtual void InterceptModel(IInvocation invocation)
         {
-            if (invocation is null)
-                throw new ArgumentNullException(nameof(invocation));
+            ArgumentNullException.ThrowIfNull(invocation, nameof(invocation));
 
             invocation.Proceed();
         }

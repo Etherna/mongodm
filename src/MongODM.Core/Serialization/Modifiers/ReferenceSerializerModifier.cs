@@ -21,7 +21,7 @@ using System.Linq;
 
 namespace Etherna.MongODM.Core.Serialization.Modifiers
 {
-    class ReferenceSerializerModifier : IDisposable
+    internal sealed class ReferenceSerializerModifier : IDisposable
     {
         // Consts.
         private const string ModifierKey = "ReferenceSerializerModifier";
@@ -32,8 +32,7 @@ namespace Etherna.MongODM.Core.Serialization.Modifiers
         // Constructors and dispose.
         public ReferenceSerializerModifier(IExecutionContext context)
         {
-            if (context is null)
-                throw new ArgumentNullException(nameof(context));
+            ArgumentNullException.ThrowIfNull(context, nameof(context));
             if (context.Items is null)
                 throw new ExecutionContextNotFoundException();
 
@@ -58,8 +57,7 @@ namespace Etherna.MongODM.Core.Serialization.Modifiers
         // Static methods.
         public static bool IsReadOnlyIdEnabled(IExecutionContext context)
         {
-            if (context is null)
-                throw new ArgumentNullException(nameof(context));
+            ArgumentNullException.ThrowIfNull(context, nameof(context));
             if (context.Items is null)
                 throw new ExecutionContextNotFoundException();
 

@@ -14,6 +14,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Text;
 
@@ -21,12 +22,15 @@ namespace Etherna.MongODM.Core.Serialization.Mapping
 {
     public static class MemberMapRenderHelper
     {
+        [SuppressMessage("Performance", "CA1851:Possible multiple enumerations of \'IEnumerable\' collection")]
         public static string RenderElementPath(
             IEnumerable<IMemberMap> memberMapsPath,
             bool referToFinalItem,
             Func<ArrayElementRepresentation, string> undefinedArrayIndexSymbolSelector,
             Func<DocumentElementRepresentation, string> undefinedDocumentElementSymbolSelector)
         {
+            ArgumentNullException.ThrowIfNull(memberMapsPath, nameof(memberMapsPath));
+            
             var sb = new StringBuilder();
 
             foreach (var memberMap in memberMapsPath)
@@ -51,6 +55,10 @@ namespace Etherna.MongODM.Core.Serialization.Mapping
             Func<ArrayElementRepresentation, string> undefinedArrayIndexSymbolSelector,
             Func<DocumentElementRepresentation, string> undefinedDocumentElementSymbolSelector)
         {
+            ArgumentNullException.ThrowIfNull(elementsPath, nameof(elementsPath));
+            ArgumentNullException.ThrowIfNull(undefinedArrayIndexSymbolSelector, nameof(undefinedArrayIndexSymbolSelector));
+            ArgumentNullException.ThrowIfNull(undefinedDocumentElementSymbolSelector, nameof(undefinedDocumentElementSymbolSelector));
+            
             var sb = new StringBuilder();
 
             foreach (var element in elementsPath)

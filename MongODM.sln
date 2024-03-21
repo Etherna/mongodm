@@ -31,6 +31,12 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MongODM.AspNetCore.UI", "sr
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "AspNetCoreSample", "samples\AspNetCoreSample\AspNetCoreSample.csproj", "{E4DE982C-B684-40B0-A647-565363332BF3}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "workflows", "workflows", "{5F6B8B10-C8E6-458C-9CF7-52ACDECF662D}"
+	ProjectSection(SolutionItems) = preProject
+		.github\workflows\myget-unstable-deploy.yml = .github\workflows\myget-unstable-deploy.yml
+		.github\workflows\nuget-stable-deploy.yml = .github\workflows\nuget-stable-deploy.yml
+	EndProjectSection
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -77,6 +83,7 @@ Global
 		{0C53354C-B5F3-438A-A5EA-26C6F7E92E38} = {490DAED7-DAD8-459A-A20E-F57F2F6F619E}
 		{A1821261-1FEE-430E-84CC-8D88867D4011} = {490DAED7-DAD8-459A-A20E-F57F2F6F619E}
 		{E4DE982C-B684-40B0-A647-565363332BF3} = {00FD3F85-6217-4947-9D26-7B2E9A8920CF}
+		{5F6B8B10-C8E6-458C-9CF7-52ACDECF662D} = {03C64D98-FF9F-4760-AE82-203953FF4940}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {43A8089E-9445-4DE1-B509-F049E211B555}

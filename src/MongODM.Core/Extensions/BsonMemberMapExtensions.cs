@@ -21,8 +21,7 @@ namespace Etherna.MongODM.Core.Extensions
     {
         public static bool IsIdMember(this BsonMemberMap memberMap)
         {
-            if (memberMap is null)
-                throw new ArgumentNullException(nameof(memberMap));
+            ArgumentNullException.ThrowIfNull(memberMap, nameof(memberMap));
 
             return memberMap.ClassMap.IdMemberMap == memberMap;
         }

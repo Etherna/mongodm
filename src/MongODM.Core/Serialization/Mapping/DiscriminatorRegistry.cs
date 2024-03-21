@@ -24,18 +24,19 @@ using System.Threading;
 
 namespace Etherna.MongODM.Core.Serialization.Mapping
 {
-    public class DiscriminatorRegistry : IDiscriminatorRegistry
+    public class DiscriminatorRegistry : IDiscriminatorRegistry, IDisposable
     {
         // Fields.
         private readonly ReaderWriterLockSlim configLock = new(LockRecursionPolicy.SupportsRecursion);
         private readonly Dictionary<Type, IDiscriminatorConvention> discriminatorConventions = new();
         private readonly Dictionary<BsonValue, HashSet<Type>> discriminators = new();
         private readonly HashSet<Type> discriminatedTypes = new();
+        
+        private bool disposed;
         private ILogger logger = default!;
-
         private IDbContext dbContext = default!;
 
-        // Constructor and initializer.
+        // Initializer.
         public void Initialize(IDbContext dbContext, ILogger logger)
         {
             if (IsInitialized)
@@ -47,6 +48,26 @@ namespace Etherna.MongODM.Core.Serialization.Mapping
 
             this.logger.DiscriminatorRegistryInitialized(dbContext.Options.DbName);
         }
+        
+        // Dispose.
+        public void Dispose()
+        {
+            Dispose(true);
+            GC.SuppressFinalize(this);
+        }
+
+        protected virtual void Dispose(bool disposing)
+        {
+            if (disposed) return;
+
+            // Dispose managed resources.
+            if (disposing)
+            {
+                configLock.Dispose();
+            }
+
+            disposed = true;
+        }
 
         // Properties.
         public bool IsInitialized { get; private set; }
@@ -55,10 +76,8 @@ namespace Etherna.MongODM.Core.Serialization.Mapping
         public void AddDiscriminator(Type type, BsonValue discriminator)
         {
             // Checks.
-            if (type is null)
-                throw new ArgumentNullException(nameof(type));
-            if (discriminator is null)
-                throw new ArgumentNullException(nameof(discriminator));
+            ArgumentNullException.ThrowIfNull(type, nameof(type));
+            ArgumentNullException.ThrowIfNull(discriminator, nameof(discriminator));
 
             var typeInfo = type.GetTypeInfo();
             if (typeInfo.IsInterface)
@@ -68,16 +87,14 @@ namespace Etherna.MongODM.Core.Serialization.Mapping
             configLock.EnterWriteLock();
             try
             {
-                if (!discriminators.TryGetValue(discriminator, out HashSet<Type> hashSet))
+                if (!discriminators.TryGetValue(discriminator, out HashSet<Type>? hashSet))
                 {
                     hashSet = new HashSet<Type>();
                     discriminators.Add(discriminator, hashSet);
                 }
 
-                if (!hashSet.Contains(type))
+                if (hashSet.Add(type))
                 {
-                    hashSet.Add(type);
-
                     //mark all base types as discriminated (so we know that it's worth reading a discriminator)
                     for (var baseType = typeInfo.BaseType; baseType != null; baseType = baseType.GetTypeInfo().BaseType)
                         discriminatedTypes.Add(baseType);
@@ -91,17 +108,13 @@ namespace Etherna.MongODM.Core.Serialization.Mapping
 
         public void AddDiscriminatorConvention(Type type, IDiscriminatorConvention convention)
         {
-            if (type is null)
-                throw new ArgumentNullException(nameof(type));
-            if (convention is null)
-                throw new ArgumentNullException(nameof(convention));
+            ArgumentNullException.ThrowIfNull(type, nameof(type));
+            ArgumentNullException.ThrowIfNull(convention, nameof(convention));
 
             configLock.EnterWriteLock();
             try
             {
-                if (!discriminatorConventions.ContainsKey(type))
-                    discriminatorConventions.Add(type, convention);
-                else
+                if (!discriminatorConventions.TryAdd(type, convention))
                     throw new BsonSerializationException($"There is already a discriminator convention registered for type {type.FullName}.");
             }
             finally
@@ -127,7 +140,7 @@ namespace Etherna.MongODM.Core.Serialization.Mapping
                 Type? actualType = null;
 
                 var nominalTypeInfo = nominalType.GetTypeInfo();
-                if (discriminators.TryGetValue(discriminator, out HashSet<Type> hashSet))
+                if (discriminators.TryGetValue(discriminator, out HashSet<Type>? hashSet))
                 {
                     foreach (var type in hashSet)
                     {
@@ -157,7 +170,7 @@ namespace Etherna.MongODM.Core.Serialization.Mapping
             configLock.EnterReadLock();
             try
             {
-                if (discriminatorConventions.TryGetValue(type, out IDiscriminatorConvention convention))
+                if (discriminatorConventions.TryGetValue(type, out IDiscriminatorConvention? convention))
                     return convention;
             }
             finally
@@ -168,7 +181,7 @@ namespace Etherna.MongODM.Core.Serialization.Mapping
             configLock.EnterWriteLock();
             try
             {
-                if (!discriminatorConventions.TryGetValue(type, out IDiscriminatorConvention convention))
+                if (!discriminatorConventions.TryGetValue(type, out IDiscriminatorConvention? convention))
                 {
                     var typeInfo = type.GetTypeInfo();
                     if (type == typeof(object))
@@ -186,7 +199,7 @@ namespace Etherna.MongODM.Core.Serialization.Mapping
                     else //type is not typeof(object), or interface
                     {
                         //inherit the discriminator convention from the closest parent that has one
-                        convention = LookupDiscriminatorConvention(typeInfo.BaseType);
+                        convention = LookupDiscriminatorConvention(typeInfo.BaseType!);
 
                         //register the convention for current type
                         AddDiscriminatorConvention(type, convention);

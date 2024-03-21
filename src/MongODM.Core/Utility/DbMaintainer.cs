@@ -80,8 +80,7 @@ namespace Etherna.MongODM.Core.Utility
          */
         public void OnUpdatedModel<TKey>(IAuditable updatedModel)
         {
-            if (updatedModel is null)
-                throw new ArgumentNullException(nameof(updatedModel));
+            ArgumentNullException.ThrowIfNull(updatedModel, nameof(updatedModel));
             if (updatedModel is not IEntityModel<TKey>)
                 throw new ArgumentException($"Model is not of type {nameof(IEntityModel<TKey>)}", nameof(updatedModel));
 

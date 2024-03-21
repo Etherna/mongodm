@@ -30,8 +30,7 @@ namespace Etherna.MongODM
         public static IApplicationBuilder SeedDbContexts(
             this IApplicationBuilder builder)
         {
-            if (builder is null)
-                throw new ArgumentNullException(nameof(builder));
+            ArgumentNullException.ThrowIfNull(builder, nameof(builder));
 
             var serviceProvider = builder.ApplicationServices;
             var mongODMOptions = serviceProvider.GetRequiredService<IOptions<MongODMOptions>>();

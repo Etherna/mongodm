@@ -16,6 +16,7 @@ using Etherna.MongoDB.Bson.Serialization;
 using Etherna.MongODM.Core.Serialization.Serializers;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Threading.Tasks;
 
@@ -113,8 +114,7 @@ namespace Etherna.MongODM.Core.Serialization.Mapping
         protected void AddFallbackCustomSerializerHelper(IBsonSerializer fallbackSerializer) =>
             ExecuteConfigAction(() =>
             {
-                if (fallbackSerializer is null)
-                    throw new ArgumentNullException(nameof(fallbackSerializer));
+                ArgumentNullException.ThrowIfNull(fallbackSerializer, nameof(fallbackSerializer));
                 if (FallbackSerializer is not null)
                     throw new InvalidOperationException("Fallback serializer already setted");
 
@@ -124,8 +124,7 @@ namespace Etherna.MongODM.Core.Serialization.Mapping
         protected void AddFallbackModelMapSchemaHelper(IModelMapSchema fallbackSchema) =>
             ExecuteConfigAction(() =>
             {
-                if (fallbackSchema is null)
-                    throw new ArgumentNullException(nameof(fallbackSchema));
+                ArgumentNullException.ThrowIfNull(fallbackSchema, nameof(fallbackSchema));
                 if (FallbackSchema is not null)
                     throw new InvalidOperationException("Fallback model map schema already setted");
 
@@ -135,8 +134,7 @@ namespace Etherna.MongODM.Core.Serialization.Mapping
         protected void AddSecondarySchemaHelper(IModelMapSchema schema) =>
             ExecuteConfigAction(() =>
             {
-                if (schema is null)
-                    throw new ArgumentNullException(nameof(schema));
+                ArgumentNullException.ThrowIfNull(schema, nameof(schema));
 
                 // Try to use proxy model generator.
                 schema.TryUseProxyGenerator(DbContext);
@@ -154,7 +152,7 @@ namespace Etherna.MongODM.Core.Serialization.Mapping
         }
 
         // Helpers.
-        private IMemberMap BuildMemberMap(
+        private MemberMap BuildMemberMap(
             BsonMemberMap bsonMemberMap,
             IModelMapSchema modelMapSchema,
             IMemberMap? parentMemberMap)
@@ -202,7 +200,8 @@ namespace Etherna.MongODM.Core.Serialization.Mapping
         }
     }
 
-    internal class ModelMap<TModel> : ModelMap, IModelMapBuilder<TModel>
+    [SuppressMessage("Reliability", "CA2000:Dispose objects before losing scope")]
+    internal sealed class ModelMap<TModel> : ModelMap, IModelMapBuilder<TModel>
         where TModel : class
     {
         // Constructor.
