@@ -4,7 +4,7 @@
     <TargetFramework>netstandard2.0</TargetFramework>
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
     <RootNamespace>Etherna.MongODM.Core</RootNamespace>
-    <Authors>Etherna Sagl</Authors>
+    <Authors>Etherna SA</Authors>
     <Description>ODM framework for MongoDB</Description>
     <LangVersion>11.0</LangVersion>
     <Nullable>enable</Nullable>
