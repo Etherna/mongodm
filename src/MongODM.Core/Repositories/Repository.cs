@@ -398,6 +398,19 @@ namespace Etherna.MongODM.Core.Repositories
         }
 
         public Task<TModel> UpsertAddToSetAsync<TItem>(
+            Expression<Func<TModel, bool>> filter,
+            Expression<Func<TModel, IEnumerable<TItem>>> setField,
+            TItem itemValue,
+            TModel onInsertModel,
+            CancellationToken cancellationToken = default) =>
+            UpsertAddToSetAsync(
+                new ExpressionFilterDefinition<TModel>(filter),
+                setField,
+                itemValue,
+                onInsertModel,
+                cancellationToken);
+
+        public Task<TModel> UpsertAddToSetAsync<TItem>(
             FilterDefinition<TModel> filter,
             Expression<Func<TModel, IEnumerable<TItem>>> setField,
             TItem itemValue,
