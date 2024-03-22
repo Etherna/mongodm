@@ -97,6 +97,12 @@ namespace Etherna.MongODM.Core.Repositories
             FindOptions<TModel, TProjection>? options = null,
             CancellationToken cancellationToken = default);
 
+        Task<TModel> FindOneAndUpdateAsync(
+            FilterDefinition<TModel> filter,
+            UpdateDefinition<TModel> update,
+            FindOneAndUpdateOptions<TModel> options,
+            CancellationToken cancellationToken = default);
+
         Task<TModel> FindOneAsync(
             TKey id,
             CancellationToken cancellationToken = default);
@@ -154,6 +160,24 @@ namespace Etherna.MongODM.Core.Repositories
         /// <returns>The model, null if it doesn't exist</returns>
         Task<TModel?> TryFindOneAsync(
             Expression<Func<TModel, bool>> predicate,
+            CancellationToken cancellationToken = default);
+
+        /// <summary>
+        /// Find one and modify atomically with an upsert "add to set" operation.
+        /// Create a new document if doesn't exists, add the element to the set if not present, or do nothing if element is already present
+        /// </summary>
+        /// <param name="filter">The document find filter</param>
+        /// <param name="setField">The set where add the item</param>
+        /// <param name="itemValue">The item to add</param>
+        /// <param name="onInsertModel">A new model, in case of insert</param>
+        /// <param name="cancellationToken">The cancellation token</param>
+        /// <typeparam name="TItem">Item type</typeparam>
+        /// <returns>The model as result from find before update</returns>
+        Task<TModel> UpsertAddToSetAsync<TItem>(
+            FilterDefinition<TModel> filter,
+            Expression<Func<TModel, IEnumerable<TItem>>> setField,
+            TItem itemValue,
+            TModel onInsertModel,
             CancellationToken cancellationToken = default);
     }
 }
