@@ -13,6 +13,8 @@
 // limitations under the License.
 
 using Etherna.MongoDB.Bson;
+using Etherna.MongoDB.Bson.IO;
+using Etherna.MongoDB.Bson.Serialization;
 using Etherna.MongoDB.Driver;
 using Etherna.MongoDB.Driver.Linq;
 using Etherna.MongODM.Core.Domain.Models;
@@ -269,6 +271,14 @@ namespace Etherna.MongODM.Core.Repositories
             CancellationToken cancellationToken = default) =>
             FindOneOnDBAsync(predicate, cancellationToken);
 
+        public Task<TModel> FindOneAndUpdateAsync(
+            FilterDefinition<TModel> filter,
+            UpdateDefinition<TModel> update,
+            FindOneAndUpdateOptions<TModel> options,
+            CancellationToken cancellationToken = default) =>
+            AccessToCollectionAsync(collection =>
+                collection.FindOneAndUpdateAsync(filter, update, options, cancellationToken));
+
         public string ModelIdToString(object model)
         {
             ArgumentNullException.ThrowIfNull(model, nameof(model));
@@ -386,6 +396,44 @@ namespace Etherna.MongODM.Core.Repositories
                 return null;
             }
         }
+
+        public Task<TModel> UpsertAddToSetAsync<TItem>(
+            FilterDefinition<TModel> filter,
+            Expression<Func<TModel, IEnumerable<TItem>>> setField,
+            TItem itemValue,
+            TModel onInsertModel,
+            CancellationToken cancellationToken = default) =>
+            AccessToCollectionAsync(collection =>
+            {
+                var modelMap = DbContext.MapRegistry.GetModelMap(typeof(TModel));
+                var fieldDefinition = new ExpressionFieldDefinition<TModel>(setField);
+                var fieldRendered = fieldDefinition.Render((IBsonSerializer<TModel>)modelMap.ActiveSerializer, DbContext.SerializerRegistry);
+                
+                // Serialize model.
+                var modelBsonDoc = new BsonDocument();
+                using (var bsonWriter = new BsonDocumentWriter(modelBsonDoc))
+                {
+                    var context = BsonSerializationContext.CreateRoot(bsonWriter);
+                    bsonWriter.WriteStartDocument();
+                    bsonWriter.WriteName("model");
+                    modelMap.ActiveSerializer.Serialize(context, onInsertModel);
+                    bsonWriter.WriteEndDocument();
+                }
+
+                // Update "update" definition with OnInsert instructions.
+                var onInsertUpdate = modelBsonDoc[0].AsBsonDocument.Elements
+                    .Where(element => element.Name != modelMap.ActiveSchema.IdMemberMap!.BsonMemberMap.ElementName &&
+                                      element.Name != fieldRendered.FieldName.Split('.').First())
+                    .Select(element => Builders<TModel>.Update.SetOnInsert(element.Name, element.Value));
+                var upsertUpdate = Builders<TModel>.Update.Combine(onInsertUpdate.Append(
+                    Builders<TModel>.Update.AddToSet(fieldDefinition, itemValue)));
+
+                // Exec on db.
+                return collection.FindOneAndUpdateAsync(filter, upsertUpdate, new FindOneAndUpdateOptions<TModel>()
+                {
+                    IsUpsert = true, 
+                }, cancellationToken);
+            });
 
         // Protected virtual methods.
         protected virtual Task CreateOnDBAsync(IEnumerable<TModel> models, CancellationToken cancellationToken) =>
