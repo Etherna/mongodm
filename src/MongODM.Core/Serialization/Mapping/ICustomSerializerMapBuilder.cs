@@ -15,7 +15,6 @@
 namespace Etherna.MongODM.Core.Serialization.Mapping
 {
     public interface ICustomSerializerMapBuilder<TModel>
-        where TModel : class
     {
     }
 }

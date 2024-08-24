@@ -38,8 +38,9 @@ namespace Etherna.MongODM.Core.Serialization.Mapping
         {
             DbContext = dbContext ?? throw new ArgumentNullException(nameof(dbContext));
 
-            // Verify if have to use proxy model.
-            if (modelType != typeof(object) &&
+            // Verify if uses proxy model.
+            if (modelType.IsClass &&
+                modelType != typeof(object) &&
                 !modelType.IsAbstract &&
                 !dbContext.ProxyGenerator.IsProxyType(modelType))
             {
@@ -202,7 +203,6 @@ namespace Etherna.MongODM.Core.Serialization.Mapping
 
     [SuppressMessage("Reliability", "CA2000:Dispose objects before losing scope")]
     internal sealed class ModelMap<TModel> : ModelMap, IModelMapBuilder<TModel>
-        where TModel : class
     {
         // Constructor.
         public ModelMap(IDbContext dbContext)

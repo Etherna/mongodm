@@ -59,7 +59,7 @@ namespace Etherna.MongODM.Core.Serialization.Mapping
 
         // Methods.
         public ICustomSerializerMapBuilder<TModel> AddCustomSerializerMap<TModel>(
-            IBsonSerializer<TModel> customSerializer) where TModel : class =>
+            IBsonSerializer<TModel> customSerializer) =>
             ExecuteConfigAction(() =>
             {
                 ArgumentNullException.ThrowIfNull(customSerializer, nameof(customSerializer));
@@ -74,8 +74,7 @@ namespace Etherna.MongODM.Core.Serialization.Mapping
         public IModelMapBuilder<TModel> AddModelMap<TModel>(
             string activeModelMapSchemaId,
             Action<BsonClassMap<TModel>>? activeModelMapSchemaInitializer = null,
-            IBsonSerializer<TModel>? customSerializer = null)
-            where TModel : class =>
+            IBsonSerializer<TModel>? customSerializer = null) =>
             ExecuteConfigAction(() =>
             {
                 // Register and add schema configuration.

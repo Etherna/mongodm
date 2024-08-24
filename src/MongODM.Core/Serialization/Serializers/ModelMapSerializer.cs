@@ -29,11 +29,9 @@ namespace Etherna.MongODM.Core.Serialization.Serializers
 {
     public class ModelMapSerializer<TModel> :
         SerializerBase<TModel>,
-        IBsonSerializer<TModel>,
         IBsonDocumentSerializer,
         IBsonIdProvider,
         IModelMapsHandlingSerializer
-        where TModel : class
     {
         // Fields.
         private IDiscriminatorConvention _discriminatorConvention = default!;
@@ -72,7 +70,7 @@ namespace Etherna.MongODM.Core.Serialization.Serializers
             if (context.Reader.CurrentBsonType == BsonType.Null)
             {
                 context.Reader.ReadNull();
-                return null!;
+                return default!;
             }
 
             // Find pre-deserialization informations.
@@ -139,15 +137,15 @@ namespace Etherna.MongODM.Core.Serialization.Serializers
              * In this case, don't add any not-proxy models in cache.
              */
             if (!dbContext.SerializerModifierAccessor.IsNoCacheEnabled &&
-                GetDocumentId(model, out var id, out _, out _) && id != null &&
-                dbContext.ProxyGenerator.IsProxyType(model.GetType()))
+                dbContext.ProxyGenerator.IsProxyType(model!.GetType()) &&
+                GetDocumentId(model, out var id, out _, out _) && id != null)
             {
                 if (dbContext.DbCache.LoadedModels.ContainsKey(id))
                 {
                     var fullModel = model;
                     model = (TModel)dbContext.DbCache.LoadedModels[id];
 
-                    if (((IReferenceable)model).IsSummary)
+                    if (((IReferenceable)model!).IsSummary)
                         ((IReferenceable)model).MergeFullModel(fullModel);
                 }
                 else
