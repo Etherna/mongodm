@@ -173,7 +173,7 @@ namespace Etherna.MongODM.Core.Repositories
         /// <param name="cancellationToken">The cancellation token</param>
         /// <typeparam name="TItem">Item type</typeparam>
         /// <returns>The model as result from find before update</returns>
-        Task<TModel> UpsertAddToSetAsync<TItem>(
+        Task<TModel?> UpsertAddToSetAsync<TItem>(
             Expression<Func<TModel, bool>> filter,
             Expression<Func<TModel, IEnumerable<TItem>>> setField,
             TItem itemValue,
@@ -191,9 +191,9 @@ namespace Etherna.MongODM.Core.Repositories
         /// <param name="cancellationToken">The cancellation token</param>
         /// <typeparam name="TItem">Item type</typeparam>
         /// <returns>The model as result from find before update</returns>
-        Task<TModel> UpsertAddToSetAsync<TItem>(
+        Task<TModel?> UpsertAddToSetAsync<TItem>(
             FilterDefinition<TModel> filter,
-            Expression<Func<TModel, IEnumerable<TItem>>> setField,
+            FieldDefinition<TModel> setField,
             TItem itemValue,
             TModel onInsertModel,
             CancellationToken cancellationToken = default);

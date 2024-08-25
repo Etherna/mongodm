@@ -397,7 +397,7 @@ namespace Etherna.MongODM.Core.Repositories
             }
         }
 
-        public Task<TModel> UpsertAddToSetAsync<TItem>(
+        public Task<TModel?> UpsertAddToSetAsync<TItem>(
             Expression<Func<TModel, bool>> filter,
             Expression<Func<TModel, IEnumerable<TItem>>> setField,
             TItem itemValue,
@@ -405,22 +405,21 @@ namespace Etherna.MongODM.Core.Repositories
             CancellationToken cancellationToken = default) =>
             UpsertAddToSetAsync(
                 new ExpressionFilterDefinition<TModel>(filter),
-                setField,
+                new ExpressionFieldDefinition<TModel>(setField),
                 itemValue,
                 onInsertModel,
                 cancellationToken);
 
-        public Task<TModel> UpsertAddToSetAsync<TItem>(
+        public Task<TModel?> UpsertAddToSetAsync<TItem>(
             FilterDefinition<TModel> filter,
-            Expression<Func<TModel, IEnumerable<TItem>>> setField,
+            FieldDefinition<TModel> setField,
             TItem itemValue,
             TModel onInsertModel,
             CancellationToken cancellationToken = default) =>
-            AccessToCollectionAsync(collection =>
+            AccessToCollectionAsync(async collection =>
             {
                 var modelMap = DbContext.MapRegistry.GetModelMap(typeof(TModel));
-                var fieldDefinition = new ExpressionFieldDefinition<TModel>(setField);
-                var fieldRendered = fieldDefinition.Render((IBsonSerializer<TModel>)modelMap.ActiveSerializer, DbContext.SerializerRegistry);
+                var fieldRendered = setField.Render((IBsonSerializer<TModel>)modelMap.ActiveSerializer, DbContext.SerializerRegistry);
                 
                 // Serialize model.
                 var modelBsonDoc = new BsonDocument();
@@ -435,17 +434,23 @@ namespace Etherna.MongODM.Core.Repositories
 
                 // Update "update" definition with OnInsert instructions.
                 var onInsertUpdate = modelBsonDoc[0].AsBsonDocument.Elements
-                    .Where(element => element.Name != modelMap.ActiveSchema.IdMemberMap!.BsonMemberMap.ElementName &&
-                                      element.Name != fieldRendered.FieldName.Split('.').First())
+                    .Where(element => element.Name != modelMap.ActiveSchema.IdMemberMap!.BsonMemberMap.ElementName && //exclude ID
+                                      element.Name != fieldRendered.FieldName.Split('.').First())                     //and the field itself
                     .Select(element => Builders<TModel>.Update.SetOnInsert(element.Name, element.Value));
                 var upsertUpdate = Builders<TModel>.Update.Combine(onInsertUpdate.Append(
-                    Builders<TModel>.Update.AddToSet(fieldDefinition, itemValue)));
+                    Builders<TModel>.Update.AddToSet(setField, itemValue)));
 
                 // Exec on db.
-                return collection.FindOneAndUpdateAsync(filter, upsertUpdate, new FindOneAndUpdateOptions<TModel>()
+                var oldDocument = await collection.FindOneAndUpdateAsync(filter, upsertUpdate, new FindOneAndUpdateOptions<TModel>()
                 {
                     IsUpsert = true, 
-                }, cancellationToken);
+                }, cancellationToken).ConfigureAwait(false);
+                
+                // Remove old document from cache, if present.
+                if (oldDocument is not null)
+                    DbContext.DbCache.RemoveModel(oldDocument.Id!);
+
+                return oldDocument;
             });
 
         // Protected virtual methods.
