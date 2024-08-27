@@ -161,7 +161,7 @@ namespace Etherna.MongODM.Core
         public IDiscriminatorRegistry DiscriminatorRegistry { get; private set; } = default!;
         public virtual IEnumerable<DocumentMigration> DocumentMigrationList { get; } = Array.Empty<DocumentMigration>();
         public IExecutionContext ExecutionContext { get; private set; } = default!;
-        public string Identifier => Options?.Identifier ?? GetType().Name;
+        public string Identifier => Options.Identifier ?? GetType().Name;
         public bool IsSeeded
         {
             get

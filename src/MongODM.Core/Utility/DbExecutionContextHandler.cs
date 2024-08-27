@@ -72,7 +72,7 @@ namespace Etherna.MongODM.Core.Utility
 
             var requestes = (ICollection<DbExecutionContextHandler>)executionContext.Items[HandlerKey]!;
 
-            //get the last with a stack system, for recursing calls betweem different dbContexts
+            //get the last with a stack system, for recursing calls between different dbContexts
             lock (((ICollection)requestes).SyncRoot)
                 return requestes.Reverse().FirstOrDefault()?.DbContext;
         }
