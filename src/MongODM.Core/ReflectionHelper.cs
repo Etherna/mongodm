@@ -1,16 +1,16 @@
-﻿//   Copyright 2020-present Etherna Sagl
-//
-//   Licensed under the Apache License, Version 2.0 (the "License");
-//   you may not use this file except in compliance with the License.
-//   You may obtain a copy of the License at
-//
-//       http://www.apache.org/licenses/LICENSE-2.0
-//
-//   Unless required by applicable law or agreed to in writing, software
-//   distributed under the License is distributed on an "AS IS" BASIS,
-//   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-//   See the License for the specific language governing permissions and
-//   limitations under the License.
+﻿// Copyright 2020-present Etherna SA
+// This file is part of MongODM.
+// 
+// MongODM is free software: you can redistribute it and/or modify it under the terms of the
+// GNU Lesser General Public License as published by the Free Software Foundation,
+// either version 3 of the License, or (at your option) any later version.
+// 
+// MongODM is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
+// without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+// See the GNU Lesser General Public License for more details.
+// 
+// You should have received a copy of the GNU Lesser General Public License along with MongODM.
+// If not, see <https://www.gnu.org/licenses/>.
 
 using System;
 using System.Collections.Generic;
@@ -28,8 +28,7 @@ namespace Etherna.MongODM.Core
 
         public static MemberInfo FindProperty(LambdaExpression lambdaExpression)
         {
-            if (lambdaExpression is null)
-                throw new ArgumentNullException(nameof(lambdaExpression));
+            ArgumentNullException.ThrowIfNull(lambdaExpression, nameof(lambdaExpression));
 
             Expression expressionToCheck = lambdaExpression;
 
@@ -48,7 +47,7 @@ namespace Etherna.MongODM.Core
                     case ExpressionType.MemberAccess:
                         var memberExpression = (MemberExpression)expressionToCheck;
 
-                        if (memberExpression.Expression.NodeType != ExpressionType.Parameter &&
+                        if (memberExpression.Expression!.NodeType != ExpressionType.Parameter &&
                             memberExpression.Expression.NodeType != ExpressionType.Convert)
                         {
                             throw new ArgumentException(
@@ -70,12 +69,10 @@ namespace Etherna.MongODM.Core
 
         public static PropertyInfo FindPropertyImplementation(PropertyInfo interfacePropertyInfo, Type actualType)
         {
-            if (interfacePropertyInfo is null)
-                throw new ArgumentNullException(nameof(interfacePropertyInfo));
-            if (actualType is null)
-                throw new ArgumentNullException(nameof(actualType));
+            ArgumentNullException.ThrowIfNull(interfacePropertyInfo, nameof(interfacePropertyInfo));
+            ArgumentNullException.ThrowIfNull(actualType, nameof(actualType));
 
-            var interfaceType = interfacePropertyInfo.DeclaringType;
+            var interfaceType = interfacePropertyInfo.DeclaringType!;
 
             // An interface map must be used because because there is no
             // other officially documented way to derive the explicitly
@@ -106,8 +103,7 @@ namespace Etherna.MongODM.Core
             Expression<Func<TModel, TMember>> memberLambda,
             Type? actualType = null)
         {
-            if (memberLambda is null)
-                throw new ArgumentNullException(nameof(memberLambda));
+            ArgumentNullException.ThrowIfNull(memberLambda, nameof(memberLambda));
 
             var body = memberLambda.Body;
             MemberExpression memberExpression;
@@ -130,7 +126,7 @@ namespace Etherna.MongODM.Core
                     break;
                 case MemberTypes.Property:
                     if (actualType?.IsInterface == false &&
-                        memberInfo.DeclaringType.IsInterface)
+                        memberInfo.DeclaringType!.IsInterface)
                     {
                         memberInfo = FindPropertyImplementation((PropertyInfo)memberInfo, actualType);
                     }
@@ -172,16 +168,13 @@ namespace Etherna.MongODM.Core
         /// <returns>The list of properties</returns>
         public static IEnumerable<PropertyInfo> GetWritableInstanceProperties(Type objectType)
         {
-            if (objectType is null)
-                throw new ArgumentNullException(nameof(objectType));
+            ArgumentNullException.ThrowIfNull(objectType, nameof(objectType));
 
             propertyRegistryLock.EnterReadLock();
             try
             {
-                if (propertyRegistry.ContainsKey(objectType))
-                {
-                    return propertyRegistry[objectType];
-                }
+                if (propertyRegistry.TryGetValue(objectType, out IEnumerable<PropertyInfo>? value))
+                    return value;
             }
             finally
             {
@@ -191,7 +184,7 @@ namespace Etherna.MongODM.Core
             propertyRegistryLock.EnterWriteLock();
             try
             {
-                if (!propertyRegistry.ContainsKey(objectType))
+                if (!propertyRegistry.TryGetValue(objectType, out IEnumerable<PropertyInfo>? value))
                 {
                     var typeStack = new List<Type>();
                     var stackType = objectType;
@@ -200,12 +193,13 @@ namespace Etherna.MongODM.Core
                         typeStack.Add(stackType);
                         stackType = stackType.BaseType;
                     } while (stackType != null);
-
-                    propertyRegistry.Add(objectType, typeStack
+                    
+                    value = typeStack
                         .SelectMany(type => type.GetProperties(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance))
-                        .Where(prop => prop.CanWrite));
+                        .Where(prop => prop.CanWrite);
+                    propertyRegistry.Add(objectType, value);
                 }
-                return propertyRegistry[objectType];
+                return value;
             }
             finally
             {

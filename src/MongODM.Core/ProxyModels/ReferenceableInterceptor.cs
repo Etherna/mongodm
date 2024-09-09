@@ -1,21 +1,23 @@
-﻿//   Copyright 2020-present Etherna Sagl
-//
-//   Licensed under the Apache License, Version 2.0 (the "License");
-//   you may not use this file except in compliance with the License.
-//   You may obtain a copy of the License at
-//
-//       http://www.apache.org/licenses/LICENSE-2.0
-//
-//   Unless required by applicable law or agreed to in writing, software
-//   distributed under the License is distributed on an "AS IS" BASIS,
-//   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-//   See the License for the specific language governing permissions and
-//   limitations under the License.
+﻿// Copyright 2020-present Etherna SA
+// This file is part of MongODM.
+// 
+// MongODM is free software: you can redistribute it and/or modify it under the terms of the
+// GNU Lesser General Public License as published by the Free Software Foundation,
+// either version 3 of the License, or (at your option) any later version.
+// 
+// MongODM is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
+// without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+// See the GNU Lesser General Public License for more details.
+// 
+// You should have received a copy of the GNU Lesser General Public License along with MongODM.
+// If not, see <https://www.gnu.org/licenses/>.
 
 using Castle.DynamicProxy;
 using Etherna.MongODM.Core.Attributes;
 using Etherna.MongODM.Core.Domain.Models;
+using Etherna.MongODM.Core.Extensions;
 using Etherna.MongODM.Core.Repositories;
+using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -28,35 +30,29 @@ namespace Etherna.MongODM.Core.ProxyModels
         where TModel : class, IEntityModel<TKey>
     {
         // Fields.
-        private bool isSummary;
-        private readonly Dictionary<string, bool> settedMemberNames = new(); //<memberName, isFromSummary>
+        private readonly ILogger<ReferenceableInterceptor<TModel, TKey>> logger;
         private readonly IRepository repository;
+        private readonly Dictionary<string, bool> settedMemberNames = new(); //<memberName, isFromSummary>
+
+        private bool isSummary;
 
         // Constructors.
         public ReferenceableInterceptor(
             IEnumerable<Type> additionalInterfaces,
-            IDbContext dbContext)
+            IDbContext dbContext,
+            ILogger<ReferenceableInterceptor<TModel, TKey>> logger)
             : base(additionalInterfaces)
         {
-            if (dbContext is null)
-                throw new ArgumentNullException(nameof(dbContext));
+            ArgumentNullException.ThrowIfNull(dbContext, nameof(dbContext));
 
-            var repositoryModelType = typeof(TModel);
-            while (!dbContext.RepositoryRegistry.RepositoriesByModelType.ContainsKey(repositoryModelType))
-            {
-                if (repositoryModelType == typeof(object))
-                    throw new InvalidOperationException($"Cant find valid repository for model type {typeof(TModel)}");
-                repositoryModelType = repositoryModelType.BaseType;
-            }
-
-            repository = dbContext.RepositoryRegistry.RepositoriesByModelType[repositoryModelType];
+            repository = dbContext.RepositoryRegistry.GetRepositoryByHandledModelType(typeof(TModel));
+            this.logger = logger;
         }
 
         // Protected methods.
         protected override bool InterceptInterface(IInvocation invocation)
         {
-            if (invocation is null)
-                throw new ArgumentNullException(nameof(invocation));
+            ArgumentNullException.ThrowIfNull(invocation, nameof(invocation));
 
             // Intercept ISummarizable invocations
             if (invocation.Method.DeclaringType == typeof(IReferenceable))
@@ -81,7 +77,7 @@ namespace Etherna.MongODM.Core.ProxyModels
                 {
                     isSummary = true;
 
-                    var summaryLoadedMemberNames = (invocation.GetArgumentValue(0) as IEnumerable<string>).ToArray();
+                    var summaryLoadedMemberNames = ((IEnumerable<string>)invocation.GetArgumentValue(0)).ToArray();
                     foreach (var memberName in summaryLoadedMemberNames)
                         settedMemberNames[memberName] = true;
                 }
@@ -97,8 +93,7 @@ namespace Etherna.MongODM.Core.ProxyModels
 
         protected override void InterceptModel(IInvocation invocation)
         {
-            if (invocation is null)
-                throw new ArgumentNullException(nameof(invocation));
+            ArgumentNullException.ThrowIfNull(invocation, nameof(invocation));
 
             // Filter gets.
             if (invocation.Method.Name.StartsWith("get_", StringComparison.InvariantCulture) && isSummary)
@@ -162,6 +157,8 @@ namespace Etherna.MongODM.Core.ProxyModels
                 // Merge full object to current.
                 var fullModel = (await repository.TryFindOneAsync(model.Id).ConfigureAwait(false)) as TModel;
                 MergeFullModel(model, fullModel);
+
+                logger.SummaryModelFullLoaded(typeof(TModel), model.Id.ToString()!);
             }
         }
 

@@ -1,16 +1,16 @@
-﻿//   Copyright 2020-present Etherna Sagl
-//
-//   Licensed under the Apache License, Version 2.0 (the "License");
-//   you may not use this file except in compliance with the License.
-//   You may obtain a copy of the License at
-//
-//       http://www.apache.org/licenses/LICENSE-2.0
-//
-//   Unless required by applicable law or agreed to in writing, software
-//   distributed under the License is distributed on an "AS IS" BASIS,
-//   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-//   See the License for the specific language governing permissions and
-//   limitations under the License.
+﻿// Copyright 2020-present Etherna SA
+// This file is part of MongODM.
+// 
+// MongODM is free software: you can redistribute it and/or modify it under the terms of the
+// GNU Lesser General Public License as published by the Free Software Foundation,
+// either version 3 of the License, or (at your option) any later version.
+// 
+// MongODM is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
+// without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+// See the GNU Lesser General Public License for more details.
+// 
+// You should have received a copy of the GNU Lesser General Public License along with MongODM.
+// If not, see <https://www.gnu.org/licenses/>.
 
 using Etherna.MongoDB.Bson.Serialization;
 using Etherna.MongODM.Core.Domain.Models;
@@ -25,15 +25,14 @@ namespace Etherna.MongODM.Core.Extensions
     {
         public static bool IsEntity(this BsonClassMap classMap)
         {
-            if (classMap is null)
-                throw new ArgumentNullException(nameof(classMap));
+            ArgumentNullException.ThrowIfNull(classMap, nameof(classMap));
 
             return classMap.IdMemberMap != null;
         }
 
         public static void SetBaseClassMap(this BsonClassMap classMap, BsonClassMap baseClassMap)
         {
-            typeof(BsonClassMap).GetField("_baseClassMap", BindingFlags.Instance | BindingFlags.NonPublic)
+            typeof(BsonClassMap).GetField("_baseClassMap", BindingFlags.Instance | BindingFlags.NonPublic)!
                 .SetValue(classMap, baseClassMap);
         }
 
@@ -42,12 +41,10 @@ namespace Etherna.MongODM.Core.Extensions
             Expression<Func<TModel, TMember>> memberLambda,
             IBsonSerializer<TMember> serializer)
         {
-            if (classMap is null)
-                throw new ArgumentNullException(nameof(classMap));
+            ArgumentNullException.ThrowIfNull(classMap, nameof(classMap));
 
             var member = classMap.GetMemberMap(memberLambda);
-            if (member == null)
-                member = classMap.MapMember(memberLambda);
+            member ??= classMap.MapMember(memberLambda);
             return member.SetSerializer(serializer);
         }
 
@@ -58,13 +55,22 @@ namespace Etherna.MongODM.Core.Extensions
         where TMember : class, TSerializer
         where TSerializer : class, IEntityModel<TKey>
         {
-            if (serializer is null)
-                throw new ArgumentNullException(nameof(serializer));
+            ArgumentNullException.ThrowIfNull(serializer, nameof(serializer));
 
             if (typeof(TMember) == typeof(TSerializer))
                 return classMap.SetMemberSerializer(memberLambda, (IBsonSerializer<TMember>)serializer);
             else
-                return classMap.SetMemberSerializer(memberLambda, serializer.GetAdapter<TMember>());
+                return classMap.SetMemberSerializer(memberLambda, new EntityModelSerializerAdapter<TMember, TSerializer, TKey>(serializer));
+        }
+
+        public static IBsonSerializer ToSerializer(
+            this BsonClassMap classMap)
+        {
+            ArgumentNullException.ThrowIfNull(classMap, nameof(classMap));
+            
+            var classMapSerializerDefinition = typeof(BsonClassMapSerializer<>);
+            var classMapSerializerType = classMapSerializerDefinition.MakeGenericType(classMap.ClassType);
+            return (IBsonSerializer)Activator.CreateInstance(classMapSerializerType, classMap)!;
         }
     }
 }

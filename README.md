@@ -1,5 +1,4 @@
-﻿MongODM
-=========
+﻿# MongODM
 
 ## Overview
 
@@ -17,8 +16,6 @@ For these reasons SQL databases are often still prefered to documentals, because
 
 **MongODM has the scope to solve these problems**, and its scope is to **bring efficiency of denormalized documental data also to complex application domains**, without have to worry at all of how data is organized from an application layer!
 
-Moreover, **MongODM uses official [MongoDB's drivers for C#](https://github.com/mongodb/mongo-csharp-driver)**, thus inheriting all the powerful features developed by MongoDB's team, for example descripting data serialization, and keeping compatibility with any new relase of MongoDB Server or MongoDB Atlas.
-
 Here is a non exhaustive list of implemented features by MongODM:
 
 - Create relation between documents, and fine configuration of serialized properties with document denormalization
@@ -34,28 +31,32 @@ Here is a non exhaustive list of implemented features by MongODM:
 
 **Disclaimer**: MongODM is still in a pre-beta phase, new features are going to be implemented, and current interface is still susceptible to heavy changes. At this stage active use in production is discouraged.
 
-Package repositories
---------------------
+## Package repositories
 
 You can get latest public releases from Nuget.org feed. Here you can see our [published packages](https://www.nuget.org/profiles/etherna).
 
 If you'd like to work with latest internal releases, you can use our [custom feed](https://www.myget.org/F/etherna/api/v3/index.json) (NuGet V3) based on MyGet.
 
-Documentation
--------------
+## Documentation
 
 For specific documentation on how to install and use MongODM, visit our [Wiki](https://github.com/Etherna/mongodm/wiki).
 
 Graphic documentation is maintained with https://www.diagrams.net/ software.
 
-Issue reports
--------------
+## Issue reports
 
 If you've discovered a bug, or have an idea for a new feature, please report it to our issue manager based on Jira https://etherna.atlassian.net/projects/MODM.
 
 Detailed reports with stack traces, actual and expected behaviours are welcome.
 
-Questions? Problems?
----------------------
+## Questions? Problems?
 
 For questions or problems please write an email to [info@etherna.io](mailto:info@etherna.io).
+
+## License
+
+![LGPL Logo](https://www.gnu.org/graphics/lgplv3-with-text-154x68.png)
+
+We use the GNU Lesser General Public License v3 (LGPL-3.0) for this project.
+If you require a custom license, you can contact us at [license@etherna.io](mailto:license@etherna.io).
+

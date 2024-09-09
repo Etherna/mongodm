@@ -1,16 +1,16 @@
-﻿//   Copyright 2020-present Etherna Sagl
-//
-//   Licensed under the Apache License, Version 2.0 (the "License");
-//   you may not use this file except in compliance with the License.
-//   You may obtain a copy of the License at
-//
-//       http://www.apache.org/licenses/LICENSE-2.0
-//
-//   Unless required by applicable law or agreed to in writing, software
-//   distributed under the License is distributed on an "AS IS" BASIS,
-//   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-//   See the License for the specific language governing permissions and
-//   limitations under the License.
+﻿// Copyright 2020-present Etherna SA
+// This file is part of MongODM.
+// 
+// MongODM is free software: you can redistribute it and/or modify it under the terms of the
+// GNU Lesser General Public License as published by the Free Software Foundation,
+// either version 3 of the License, or (at your option) any later version.
+// 
+// MongODM is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
+// without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+// See the GNU Lesser General Public License for more details.
+// 
+// You should have received a copy of the GNU Lesser General Public License along with MongODM.
+// If not, see <https://www.gnu.org/licenses/>.
 
 using Etherna.MongoDB.Bson;
 using Etherna.MongoDB.Bson.IO;
@@ -38,8 +38,7 @@ namespace Etherna.MongODM.Core.Serialization.Serializers
         // Methods.
         public override void Serialize(BsonSerializationContext context, BsonSerializationArgs args, object value)
         {
-            if (context is null)
-                throw new ArgumentNullException(nameof(context));
+            ArgumentNullException.ThrowIfNull(context, nameof(context));
 
             if (value is IDictionary<string, object> dictionary)
             {
@@ -60,9 +59,13 @@ namespace Etherna.MongODM.Core.Serialization.Serializers
                 }
                 context.Writer.WriteEndArray();
             }
+            else if (value is null)
+            {
+                context.Writer.WriteNull();
+            }
             else
             {
-                var serializer = dbContext.SerializerRegistry.GetSerializer<object>();
+                var serializer = dbContext.SerializerRegistry.GetSerializer(value.GetType());
                 serializer.Serialize(context, value);
             }
         }
@@ -85,10 +88,7 @@ namespace Etherna.MongODM.Core.Serialization.Serializers
             serializationContext.Writer.WriteEndDocument();
 
             // Lookup for a serializer.
-            if (serializer == null)
-            {
-                serializer = dbContext.SerializerRegistry.GetSerializer<TValue>();
-            }
+            serializer ??= dbContext.SerializerRegistry.GetSerializer<TValue>();
 
             // Deserialize.
             using var documentReader = new BsonDocumentReader(document);

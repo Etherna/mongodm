@@ -1,16 +1,16 @@
-﻿//   Copyright 2020-present Etherna Sagl
-//
-//   Licensed under the Apache License, Version 2.0 (the "License");
-//   you may not use this file except in compliance with the License.
-//   You may obtain a copy of the License at
-//
-//       http://www.apache.org/licenses/LICENSE-2.0
-//
-//   Unless required by applicable law or agreed to in writing, software
-//   distributed under the License is distributed on an "AS IS" BASIS,
-//   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-//   See the License for the specific language governing permissions and
-//   limitations under the License.
+﻿// Copyright 2020-present Etherna SA
+// This file is part of MongODM.
+// 
+// MongODM is free software: you can redistribute it and/or modify it under the terms of the
+// GNU Lesser General Public License as published by the Free Software Foundation,
+// either version 3 of the License, or (at your option) any later version.
+// 
+// MongODM is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
+// without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+// See the GNU Lesser General Public License for more details.
+// 
+// You should have received a copy of the GNU Lesser General Public License along with MongODM.
+// If not, see <https://www.gnu.org/licenses/>.
 
 using Etherna.MongODM.Core.Domain.Models;
 using Etherna.MongODM.Core.Domain.Models.DbMigrationOpAgg;
@@ -18,17 +18,17 @@ using Etherna.MongODM.Core.Serialization;
 
 namespace Etherna.MongODM.Core.Domain.ModelMaps
 {
-    class DbMigrationOperationMap : IModelMapsCollector
+    internal sealed class DbMigrationOperationMap : IModelMapsCollector
     {
         public void Register(IDbContext dbContext)
         {
-            dbContext.SchemaRegistry.AddModelMapsSchema<DbMigrationOperation>("afdb63c9-791b-41f8-8216-556e233df0de");
+            dbContext.MapRegistry.AddModelMap<DbMigrationOperation>("afdb63c9-791b-41f8-8216-556e233df0de");
 
-            dbContext.SchemaRegistry.AddModelMapsSchema<MigrationLogBase>("1696c0c9-d615-44d9-ab9b-4e3618164185");
+            dbContext.MapRegistry.AddModelMap<MigrationLogBase>("1696c0c9-d615-44d9-ab9b-4e3618164185");
 
-            dbContext.SchemaRegistry.AddModelMapsSchema<DocumentMigrationLog>("d2b49514-464e-4b28-8b38-ad2d0cc69d3e");
+            dbContext.MapRegistry.AddModelMap<DocumentMigrationLog>("d2b49514-464e-4b28-8b38-ad2d0cc69d3e");
 
-            dbContext.SchemaRegistry.AddModelMapsSchema<IndexMigrationLog>("24d65670-a3c3-443c-977a-51112df04e2a");
+            dbContext.MapRegistry.AddModelMap<IndexMigrationLog>("24d65670-a3c3-443c-977a-51112df04e2a");
         }
     }
 }

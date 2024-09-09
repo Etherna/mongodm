@@ -1,21 +1,22 @@
-﻿//   Copyright 2020-present Etherna Sagl
-//
-//   Licensed under the Apache License, Version 2.0 (the "License");
-//   you may not use this file except in compliance with the License.
-//   You may obtain a copy of the License at
-//
-//       http://www.apache.org/licenses/LICENSE-2.0
-//
-//   Unless required by applicable law or agreed to in writing, software
-//   distributed under the License is distributed on an "AS IS" BASIS,
-//   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-//   See the License for the specific language governing permissions and
-//   limitations under the License.
+﻿// Copyright 2020-present Etherna SA
+// This file is part of MongODM.
+// 
+// MongODM is free software: you can redistribute it and/or modify it under the terms of the
+// GNU Lesser General Public License as published by the Free Software Foundation,
+// either version 3 of the License, or (at your option) any later version.
+// 
+// MongODM is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
+// without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+// See the GNU Lesser General Public License for more details.
+// 
+// You should have received a copy of the GNU Lesser General Public License along with MongODM.
+// If not, see <https://www.gnu.org/licenses/>.
 
 using Etherna.MongODM.Core.MockHelpers;
 using Etherna.MongODM.Core.Models;
 using Etherna.MongODM.Core.ProxyModels;
 using Etherna.MongODM.Core.Repositories;
+using Microsoft.Extensions.Logging;
 using Moq;
 using System;
 using System.Collections.Generic;
@@ -28,7 +29,7 @@ namespace Etherna.MongODM.Core
     public class ReferenceableInterceptorTest
     {
         private readonly ReferenceableInterceptor<FakeModel, string> interceptor;
-        private readonly Mock<ICollectionRepository<FakeModel, string>> repositoryMock;
+        private readonly Mock<IRepository<FakeModel, string>> repositoryMock;
         private readonly Mock<IDbContext> dbContextMock;
 
         private readonly Mock<Castle.DynamicProxy.IInvocation> getIsSummaryInvocationMock;
@@ -36,18 +37,18 @@ namespace Etherna.MongODM.Core
 
         public ReferenceableInterceptorTest()
         {
-            repositoryMock = new Mock<ICollectionRepository<FakeModel, string>>();
+            repositoryMock = new Mock<IRepository<FakeModel, string>>();
 
             dbContextMock = new Mock<IDbContext>();
-            dbContextMock.Setup(c => c.RepositoryRegistry.RepositoriesByModelType)
-                .Returns(() => new Dictionary<Type, IRepository>
-                {
-                    [typeof(FakeModel)] = repositoryMock.Object
-                });
+            dbContextMock.Setup(c => c.RepositoryRegistry.GetRepositoryByHandledModelType(typeof(FakeModel)))
+                .Returns(() => repositoryMock.Object);
+
+            var loggerMock = new Mock<ILogger<ReferenceableInterceptor<FakeModel, string>>>();
             
             interceptor = new ReferenceableInterceptor<FakeModel, string>(
                 new[] { typeof(IReferenceable) },
-                dbContextMock.Object);
+                dbContextMock.Object,
+                loggerMock.Object);
 
             getIsSummaryInvocationMock = InterceptorMockHelper.GetExternalPropertyGetInvocationMock<FakeModel, IReferenceable, bool>(
                 s => s.IsSummary);
@@ -70,7 +71,7 @@ namespace Etherna.MongODM.Core
             interceptor.Intercept(getIsSummaryInvocationMock.Object);
             interceptor.Intercept(getLoadedMembersInvocationMock.Object);
             Assert.False((bool)getIsSummaryInvocationMock.Object.ReturnValue);
-            Assert.Empty(getLoadedMembersInvocationMock.Object.ReturnValue as IEnumerable<string>);
+            Assert.Empty((IEnumerable<string>)getLoadedMembersInvocationMock.Object.ReturnValue);
 
             // Action.
             interceptor.Intercept(initializeInvocationMock.Object);
@@ -81,7 +82,7 @@ namespace Etherna.MongODM.Core
             Assert.True((bool)getIsSummaryInvocationMock.Object.ReturnValue);
             Assert.Equal(
                 new[] { nameof(FakeModel.Id) },
-                getLoadedMembersInvocationMock.Object.ReturnValue as IEnumerable<string>);
+                (IEnumerable<string>)getLoadedMembersInvocationMock.Object.ReturnValue);
         }
 
         [Theory]
@@ -117,14 +118,14 @@ namespace Etherna.MongODM.Core
                 Assert.True((bool)getIsSummaryInvocationMock.Object.ReturnValue);
                 Assert.Equal(
                     new[] { nameof(FakeModel.IntegerProp) },
-                    getLoadedMembersInvocationMock.Object.ReturnValue as IEnumerable<string>);
+                    (IEnumerable<string>)getLoadedMembersInvocationMock.Object.ReturnValue);
             }
             else
             {
                 interceptor.Intercept(getIsSummaryInvocationMock.Object);
                 interceptor.Intercept(getLoadedMembersInvocationMock.Object);
                 Assert.False((bool)getIsSummaryInvocationMock.Object.ReturnValue);
-                Assert.Empty(getLoadedMembersInvocationMock.Object.ReturnValue as IEnumerable<string>);
+                Assert.Empty((IEnumerable<string>)getLoadedMembersInvocationMock.Object.ReturnValue);
             }
         }
 
@@ -207,7 +208,7 @@ namespace Etherna.MongODM.Core
                 Assert.True((bool)getIsSummaryInvocationMock.Object.ReturnValue);
                 Assert.Equal(
                     new[] { nameof(FakeModel.IntegerProp) },
-                    getLoadedMembersInvocationMock.Object.ReturnValue as IEnumerable<string>);
+                    (IEnumerable<string>)getLoadedMembersInvocationMock.Object.ReturnValue);
             }
             else
             {

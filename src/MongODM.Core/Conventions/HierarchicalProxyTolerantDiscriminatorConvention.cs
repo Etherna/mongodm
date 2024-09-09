@@ -1,16 +1,16 @@
-﻿//   Copyright 2020-present Etherna Sagl
-//
-//   Licensed under the Apache License, Version 2.0 (the "License");
-//   you may not use this file except in compliance with the License.
-//   You may obtain a copy of the License at
-//
-//       http://www.apache.org/licenses/LICENSE-2.0
-//
-//   Unless required by applicable law or agreed to in writing, software
-//   distributed under the License is distributed on an "AS IS" BASIS,
-//   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-//   See the License for the specific language governing permissions and
-//   limitations under the License.
+﻿// Copyright 2020-present Etherna SA
+// This file is part of MongODM.
+// 
+// MongODM is free software: you can redistribute it and/or modify it under the terms of the
+// GNU Lesser General Public License as published by the Free Software Foundation,
+// either version 3 of the License, or (at your option) any later version.
+// 
+// MongODM is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
+// without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+// See the GNU Lesser General Public License for more details.
+// 
+// You should have received a copy of the GNU Lesser General Public License along with MongODM.
+// If not, see <https://www.gnu.org/licenses/>.
 
 using Etherna.ExecContext;
 using Etherna.MongoDB.Bson;
@@ -21,6 +21,7 @@ using Etherna.MongoDB.Bson.Serialization.Serializers;
 using Etherna.MongODM.Core.Utility;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 
 namespace Etherna.MongODM.Core.Conventions
@@ -32,6 +33,8 @@ namespace Etherna.MongODM.Core.Conventions
         private readonly IExecutionContext? executionContext;
 
         // Constructors.
+        [SuppressMessage("Usage", "CA2249:Consider using \'string.Contains\' instead of \'string.IndexOf\'")]
+        [SuppressMessage("Globalization", "CA1307:Specify StringComparison for clarity")]
         public HierarchicalProxyTolerantDiscriminatorConvention(
             IDbContext dbContext,
             string elementName)
@@ -49,6 +52,8 @@ namespace Etherna.MongODM.Core.Conventions
         /// </summary>
         /// <param name="elementName">Discriminator element name</param>
         /// <param name="executionContext">Execution context</param>
+        [SuppressMessage("Usage", "CA2249:Consider using \'string.Contains\' instead of \'string.IndexOf\'")]
+        [SuppressMessage("Globalization", "CA1307:Specify StringComparison for clarity")]
         public HierarchicalProxyTolerantDiscriminatorConvention(
             string elementName,
             IExecutionContext executionContext)
@@ -72,11 +77,8 @@ namespace Etherna.MongODM.Core.Conventions
                 if (executionContext is null)
                     throw new InvalidOperationException();
 
-                var dbContext = DbExecutionContextHandler.TryGetCurrentDbContext(executionContext);
-                if (dbContext is null)
-                    throw new InvalidOperationException();
-
-                return dbContext;
+                return DbExecutionContextHandler.TryGetCurrentDbContext(executionContext)
+                    ?? throw new InvalidOperationException();
             }
         }
         public string ElementName { get; }
@@ -84,8 +86,7 @@ namespace Etherna.MongODM.Core.Conventions
         // Methods.
         public Type GetActualType(IBsonReader bsonReader, Type nominalType)
         {
-            if (bsonReader is null)
-                throw new ArgumentNullException(nameof(bsonReader));
+            ArgumentNullException.ThrowIfNull(bsonReader, nameof(bsonReader));
 
             //the BsonReader is sitting at the value whose actual type needs to be found
             var bsonType = bsonReader.GetCurrentBsonType();
@@ -127,7 +128,7 @@ namespace Etherna.MongODM.Core.Conventions
             actualType = DbContext.ProxyGenerator.PurgeProxyType(actualType);
 
             // Find active class map for model type.
-            var classMap = DbContext.SchemaRegistry.GetActiveClassMap(actualType);
+            var classMap = DbContext.MapRegistry.GetActiveClassMap(actualType);
 
             // Get discriminator from class map.
             if (actualType != nominalType || classMap.DiscriminatorIsRequired || classMap.HasRootClass)

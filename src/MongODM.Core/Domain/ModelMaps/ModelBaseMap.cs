@@ -1,16 +1,16 @@
-﻿//   Copyright 2020-present Etherna Sagl
-//
-//   Licensed under the Apache License, Version 2.0 (the "License");
-//   you may not use this file except in compliance with the License.
-//   You may obtain a copy of the License at
-//
-//       http://www.apache.org/licenses/LICENSE-2.0
-//
-//   Unless required by applicable law or agreed to in writing, software
-//   distributed under the License is distributed on an "AS IS" BASIS,
-//   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-//   See the License for the specific language governing permissions and
-//   limitations under the License.
+﻿// Copyright 2020-present Etherna SA
+// This file is part of MongODM.
+// 
+// MongODM is free software: you can redistribute it and/or modify it under the terms of the
+// GNU Lesser General Public License as published by the Free Software Foundation,
+// either version 3 of the License, or (at your option) any later version.
+// 
+// MongODM is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
+// without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+// See the GNU Lesser General Public License for more details.
+// 
+// You should have received a copy of the GNU Lesser General Public License along with MongODM.
+// If not, see <https://www.gnu.org/licenses/>.
 
 using Etherna.MongoDB.Bson;
 using Etherna.MongoDB.Bson.Serialization.IdGenerators;
@@ -20,21 +20,21 @@ using Etherna.MongODM.Core.Serialization;
 
 namespace Etherna.MongODM.Core.Domain.ModelMaps
 {
-    class ModelBaseMap : IModelMapsCollector
+    internal sealed class ModelBaseMap : IModelMapsCollector
     {
         public void Register(IDbContext dbContext)
         {
             // Register class maps.
-            dbContext.SchemaRegistry.AddModelMapsSchema<ModelBase>("bff55d53-0517-4a93-8fda-7bd448181449");
+            dbContext.MapRegistry.AddModelMap<ModelBase>("bff55d53-0517-4a93-8fda-7bd448181449");
 
-            dbContext.SchemaRegistry.AddModelMapsSchema<EntityModelBase<string>>("586b48f5-ba1f-45e3-a812-744f88c1c969",
-                modelMap =>
+            dbContext.MapRegistry.AddModelMap<EntityModelBase<string>>("586b48f5-ba1f-45e3-a812-744f88c1c969",
+                schema =>
                 {
-                    modelMap.AutoMap();
+                    schema.AutoMap();
 
                     // Set Id representation.
-                    modelMap.IdMemberMap.SetSerializer(new StringSerializer(BsonType.ObjectId))
-                                        .SetIdGenerator(new StringObjectIdGenerator());
+                    schema.IdMemberMap.SetSerializer(new StringSerializer(BsonType.ObjectId))
+                                      .SetIdGenerator(new StringObjectIdGenerator());
                 });
         }
     }

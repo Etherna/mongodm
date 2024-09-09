@@ -1,19 +1,20 @@
-﻿//   Copyright 2020-present Etherna Sagl
-//
-//   Licensed under the Apache License, Version 2.0 (the "License");
-//   you may not use this file except in compliance with the License.
-//   You may obtain a copy of the License at
-//
-//       http://www.apache.org/licenses/LICENSE-2.0
-//
-//   Unless required by applicable law or agreed to in writing, software
-//   distributed under the License is distributed on an "AS IS" BASIS,
-//   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-//   See the License for the specific language governing permissions and
-//   limitations under the License.
+﻿// Copyright 2020-present Etherna SA
+// This file is part of MongODM.
+// 
+// MongODM is free software: you can redistribute it and/or modify it under the terms of the
+// GNU Lesser General Public License as published by the Free Software Foundation,
+// either version 3 of the License, or (at your option) any later version.
+// 
+// MongODM is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
+// without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+// See the GNU Lesser General Public License for more details.
+// 
+// You should have received a copy of the GNU Lesser General Public License along with MongODM.
+// If not, see <https://www.gnu.org/licenses/>.
 
 using Castle.DynamicProxy;
 using Etherna.MongODM.Core.Domain.Models;
+using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -26,6 +27,7 @@ namespace Etherna.MongODM.Core.ProxyModels
     {
         // Fields.
         private bool disposed;
+        private readonly ILoggerFactory loggerFactory;
         private readonly Castle.DynamicProxy.IProxyGenerator proxyGeneratorCore;
 
         private readonly Dictionary<Type,
@@ -37,8 +39,10 @@ namespace Etherna.MongODM.Core.ProxyModels
 
         // Constructor and dispose.
         public ProxyGenerator(
+            ILoggerFactory loggerFactory,
             Castle.DynamicProxy.IProxyGenerator proxyGeneratorCore)
         {
+            this.loggerFactory = loggerFactory;
             this.proxyGeneratorCore = proxyGeneratorCore;
         }
         
@@ -71,10 +75,8 @@ namespace Etherna.MongODM.Core.ProxyModels
             IDbContext dbContext,
             params object[] constructorArguments)
         {
-            if (dbContext is null)
-                throw new ArgumentNullException(nameof(dbContext));
-            if (type is null)
-                throw new ArgumentNullException(nameof(type));
+            ArgumentNullException.ThrowIfNull(dbContext, nameof(dbContext));
+            ArgumentNullException.ThrowIfNull(type, nameof(type));
 
             // If creation of proxy models are disabled, create a simple model instance.
             if (DisableCreationWithProxyTypes)
@@ -84,7 +86,7 @@ namespace Etherna.MongODM.Core.ProxyModels
                     BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance,
                     null,
                     constructorArguments,
-                    null);
+                    null)!;
             }
 
             // Get configuration.
@@ -93,9 +95,9 @@ namespace Etherna.MongODM.Core.ProxyModels
             bool configurationFound = false;
             try
             {
-                if (modelConfigurationDictionary.ContainsKey(type))
+                if (modelConfigurationDictionary.TryGetValue(type, out var conf))
                 {
-                    configuration = modelConfigurationDictionary[type];
+                    configuration = conf;
                     configurationFound = true;
                 }
             }
@@ -109,9 +111,9 @@ namespace Etherna.MongODM.Core.ProxyModels
                 modelConfigurationDictionaryLock.EnterWriteLock();
                 try
                 {
-                    if (modelConfigurationDictionary.ContainsKey(type))
+                    if (modelConfigurationDictionary.TryGetValue(type, out var conf))
                     {
-                        configuration = modelConfigurationDictionary[type];
+                        configuration = conf;
                     }
                     else
                     {
@@ -183,11 +185,10 @@ namespace Etherna.MongODM.Core.ProxyModels
 
         public Type PurgeProxyType(Type type)
         {
-            if (type is null)
-                throw new ArgumentNullException(nameof(type));
+            ArgumentNullException.ThrowIfNull(type, nameof(type));
 
             return IsProxyType(type) ?
-                type.BaseType :
+                type.BaseType! :
                 type;
         }
 
@@ -225,7 +226,7 @@ namespace Etherna.MongODM.Core.ProxyModels
             // Add custom interceptor instancers.
             interceptorInstancers.AddRange(GetCustomInterceptorInstancer(modelType, additionalInterfaces));
 
-            // Add internal interceptor instances.
+            // Add internal interceptor instancers.
             if (modelType.GetInterfaces().Contains(typeof(IEntityModel))) //only if is IEntityModel.
             {
                 var entityModelType = modelType.GetInterfaces().First(
@@ -233,15 +234,23 @@ namespace Etherna.MongODM.Core.ProxyModels
                 var entityModelKeyType = entityModelType.GetGenericArguments().Single();
 
                 //auditableInterceptor
-                interceptorInstancers.Add(dbContext => (IInterceptor)Activator.CreateInstance(
-                    typeof(AuditableInterceptor<>).MakeGenericType(modelType),
-                    additionalInterfaces));
+                var auditableInterceptorType = typeof(AuditableInterceptor<>).MakeGenericType(modelType);
 
-                //summarizableInterceptor
                 interceptorInstancers.Add(dbContext => (IInterceptor)Activator.CreateInstance(
-                    typeof(ReferenceableInterceptor<,>).MakeGenericType(modelType, entityModelKeyType),
+                    auditableInterceptorType,
+                    additionalInterfaces)!);
+
+                //referenceableInterceptor
+                var referenceableInterceptorType = typeof(ReferenceableInterceptor<,>).MakeGenericType(modelType, entityModelKeyType);
+
+                var referenceableInterceptorLoggerType = typeof(Logger<>).MakeGenericType(referenceableInterceptorType);
+                var referenceableInterceptorLogger = Activator.CreateInstance(referenceableInterceptorLoggerType, loggerFactory);
+
+                interceptorInstancers.Add(dbContext => (IInterceptor)Activator.CreateInstance(
+                    referenceableInterceptorType,
                     additionalInterfaces,
-                    dbContext));
+                    dbContext,
+                    referenceableInterceptorLogger)!);
             }
 
             return dbContext => (from instancer in interceptorInstancers

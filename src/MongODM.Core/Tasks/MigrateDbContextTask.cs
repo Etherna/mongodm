@@ -1,16 +1,16 @@
-﻿//   Copyright 2020-present Etherna Sagl
-//
-//   Licensed under the Apache License, Version 2.0 (the "License");
-//   you may not use this file except in compliance with the License.
-//   You may obtain a copy of the License at
-//
-//       http://www.apache.org/licenses/LICENSE-2.0
-//
-//   Unless required by applicable law or agreed to in writing, software
-//   distributed under the License is distributed on an "AS IS" BASIS,
-//   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-//   See the License for the specific language governing permissions and
-//   limitations under the License.
+﻿// Copyright 2020-present Etherna SA
+// This file is part of MongODM.
+// 
+// MongODM is free software: you can redistribute it and/or modify it under the terms of the
+// GNU Lesser General Public License as published by the Free Software Foundation,
+// either version 3 of the License, or (at your option) any later version.
+// 
+// MongODM is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
+// without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+// See the GNU Lesser General Public License for more details.
+// 
+// You should have received a copy of the GNU Lesser General Public License along with MongODM.
+// If not, see <https://www.gnu.org/licenses/>.
 
 using Etherna.MongODM.Core.Domain.Models;
 using Etherna.MongODM.Core.Domain.Models.DbMigrationOpAgg;
@@ -35,7 +35,7 @@ namespace Etherna.MongODM.Core.Tasks
         public async Task RunAsync<TDbContext>(string dbMigrationOpId, string taskId)
             where TDbContext : class, IDbContext
         {
-            var dbContext = (TDbContext)serviceProvider.GetService(typeof(TDbContext));
+            var dbContext = (TDbContext)serviceProvider.GetService(typeof(TDbContext))!;
             var dbMigrationOp = (DbMigrationOperation)await dbContext.DbOperations.FindOneAsync(dbMigrationOpId).ConfigureAwait(false);
             var completedWithErrors = false;
 
@@ -73,7 +73,7 @@ namespace Etherna.MongODM.Core.Tasks
             }
 
             // Build indexes.
-            foreach (var repository in dbContext.RepositoryRegistry.CollectionRepositoriesByModelType.Values)
+            foreach (var repository in dbContext.RepositoryRegistry.Repositories)
             {
                 dbMigrationOp.AddLog(new IndexMigrationLog(
                     repository.Name,

@@ -1,20 +1,21 @@
-﻿//   Copyright 2020-present Etherna Sagl
-//
-//   Licensed under the Apache License, Version 2.0 (the "License");
-//   you may not use this file except in compliance with the License.
-//   You may obtain a copy of the License at
-//
-//       http://www.apache.org/licenses/LICENSE-2.0
-//
-//   Unless required by applicable law or agreed to in writing, software
-//   distributed under the License is distributed on an "AS IS" BASIS,
-//   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-//   See the License for the specific language governing permissions and
-//   limitations under the License.
+﻿// Copyright 2020-present Etherna SA
+// This file is part of MongODM.
+// 
+// MongODM is free software: you can redistribute it and/or modify it under the terms of the
+// GNU Lesser General Public License as published by the Free Software Foundation,
+// either version 3 of the License, or (at your option) any later version.
+// 
+// MongODM is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
+// without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+// See the GNU Lesser General Public License for more details.
+// 
+// You should have received a copy of the GNU Lesser General Public License along with MongODM.
+// If not, see <https://www.gnu.org/licenses/>.
 
 using Etherna.MongoDB.Bson.Serialization;
 using Etherna.MongoDB.Bson.Serialization.Options;
 using Etherna.MongoDB.Bson.Serialization.Serializers;
+using Etherna.MongODM.Core.Serialization.Mapping;
 using System;
 using System.Collections.Generic;
 
@@ -23,8 +24,9 @@ namespace Etherna.MongODM.Core.Serialization.Serializers
     public class ReadOnlyDictionarySerializer<TKey, TValue> :
         DictionarySerializerBase<IReadOnlyDictionary<TKey, TValue>, TKey, TValue>,
         IChildSerializerConfigurable,
-        IReferenceContainerSerializer,
-        IDictionaryRepresentationConfigurable<ReadOnlyDictionarySerializer<TKey, TValue>>
+        IDictionaryRepresentationConfigurable<ReadOnlyDictionarySerializer<TKey, TValue>>,
+        IModelMapsHandlingSerializer
+        where TKey : notnull
     {
         // Constructors.
         public ReadOnlyDictionarySerializer()
@@ -34,29 +36,21 @@ namespace Etherna.MongODM.Core.Serialization.Serializers
             : base(dictionaryRepresentation)
         { }
 
-        public ReadOnlyDictionarySerializer(DictionaryRepresentation dictionaryRepresentation, IBsonSerializerRegistry serializerRegistry)
-            : base(dictionaryRepresentation, serializerRegistry)
-        { }
-
         public ReadOnlyDictionarySerializer(DictionaryRepresentation dictionaryRepresentation, IBsonSerializer<TKey> keySerializer, IBsonSerializer<TValue> valueSerializer)
             : base(dictionaryRepresentation, keySerializer, valueSerializer)
         { }
 
         // Properties.
-        public IEnumerable<BsonClassMap> AllChildClassMaps =>
-            (ValueSerializer as IModelMapsContainerSerializer)?.AllChildClassMaps ??
-            Array.Empty<BsonClassMap>();
-
         public IBsonSerializer ChildSerializer => ValueSerializer;
 
-        public bool UseCascadeDelete =>
-            (ValueSerializer as IReferenceContainerSerializer)?.UseCascadeDelete ?? false;
+        public IEnumerable<IModelMap> HandledModelMaps =>
+            (ValueSerializer as IModelMapsHandlingSerializer)?.HandledModelMaps ??
+            Array.Empty<IModelMap>();
 
         // Public methods.
         public override void Serialize(BsonSerializationContext context, BsonSerializationArgs args, IReadOnlyDictionary<TKey, TValue> value)
         {
-            if (value is null)
-                throw new ArgumentNullException(nameof(value));
+            ArgumentNullException.ThrowIfNull(value, nameof(value));
 
             // Force to exclude enumerable actual type from serialization.
             args = new BsonSerializationArgs(value.GetType(), true, args.SerializeIdFirst);

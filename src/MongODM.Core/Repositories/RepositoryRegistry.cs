@@ -1,17 +1,20 @@
-﻿//   Copyright 2020-present Etherna Sagl
-//
-//   Licensed under the Apache License, Version 2.0 (the "License");
-//   you may not use this file except in compliance with the License.
-//   You may obtain a copy of the License at
-//
-//       http://www.apache.org/licenses/LICENSE-2.0
-//
-//   Unless required by applicable law or agreed to in writing, software
-//   distributed under the License is distributed on an "AS IS" BASIS,
-//   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-//   See the License for the specific language governing permissions and
-//   limitations under the License.
+﻿// Copyright 2020-present Etherna SA
+// This file is part of MongODM.
+// 
+// MongODM is free software: you can redistribute it and/or modify it under the terms of the
+// GNU Lesser General Public License as published by the Free Software Foundation,
+// either version 3 of the License, or (at your option) any later version.
+// 
+// MongODM is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
+// without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+// See the GNU Lesser General Public License for more details.
+// 
+// You should have received a copy of the GNU Lesser General Public License along with MongODM.
+// If not, see <https://www.gnu.org/licenses/>.
 
+using Etherna.MongODM.Core.Domain.Models;
+using Etherna.MongODM.Core.Extensions;
+using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -22,114 +25,81 @@ namespace Etherna.MongODM.Core.Repositories
     public class RepositoryRegistry : IRepositoryRegistry
     {
         // Fields.
-        private IDbContext dbContext = default!;
-        private IReadOnlyDictionary<Type, ICollectionRepository> _collectionRepositoriesByModelType = default!;
-        private IReadOnlyDictionary<Type, IGridFSRepository> _gridFSRepositoriesByModelType = default!;
-        private IReadOnlyDictionary<Type, IRepository> _repositoriesByModelType = default!;
+        private ILogger logger = default!;
+        private Dictionary<Type, IRepository> _repositoriesByModelType = default!;
 
         // Initializer.
-        public void Initialize(IDbContext dbContext)
+        public void Initialize(IDbContext dbContext, ILogger logger)
         {
+            ArgumentNullException.ThrowIfNull(dbContext, nameof(dbContext));
+            this.logger = logger ?? throw new ArgumentNullException(nameof(logger));
+
             if (IsInitialized)
                 throw new InvalidOperationException("Instance already initialized");
-            this.dbContext = dbContext;
+
+            // Initialize repository dictionary.
+            //select IRepository<,> from dbcontext properties
+            var dbContextType = dbContext.GetType();
+            var repos = dbContextType.GetProperties(BindingFlags.Public | BindingFlags.Instance | BindingFlags.FlattenHierarchy)
+                .Where(prop =>
+                {
+                    var propType = prop.PropertyType;
+
+                    if (propType.IsGenericType &&
+                        propType.GetGenericTypeDefinition() == typeof(IRepository<,>))
+                        return true;
+
+                    if (propType.GetInterfaces()
+                                .Where(@interface => @interface.IsGenericType)
+                                .Select(@interface => @interface.GetGenericTypeDefinition())
+                                .Contains(typeof(IRepository<,>)))
+                        return true;
+
+                    return false;
+                });
+
+            //initialize registry
+            _repositoriesByModelType = repos.ToDictionary(
+                prop => ((IRepository)prop.GetValue(dbContext)!).ModelType,
+                prop => (IRepository)prop.GetValue(dbContext)!);
 
             IsInitialized = true;
+
+            this.logger.RepositoryRegistryInitialized(dbContext.Options.DbName);
         }
 
         // Properties.
         public bool IsInitialized { get; private set; }
+        public IEnumerable<IRepository> Repositories => _repositoriesByModelType.Values;
 
-        public IReadOnlyDictionary<Type, ICollectionRepository> CollectionRepositoriesByModelType
+        // Methods.
+        public IRepository<TModel, TKey> GetRepositoryByBaseModelType<TModel, TKey>()
+            where TModel : class, IEntityModel<TKey> =>
+            (IRepository<TModel, TKey>)_repositoriesByModelType[typeof(TModel)];
+
+        public IRepository GetRepositoryByHandledModelType(Type modelType)
         {
-            get
+            ArgumentNullException.ThrowIfNull(modelType, nameof(modelType));
+            
+            while (!_repositoriesByModelType.ContainsKey(modelType))
             {
-                if (_collectionRepositoriesByModelType is null)
-                {
-                    var dbContextType = dbContext.GetType();
-
-                    // Select ICollectionRepository<,> from dbcontext properties.
-                    var repos = dbContextType.GetProperties(BindingFlags.Public | BindingFlags.Instance | BindingFlags.FlattenHierarchy)
-                        .Where(prop =>
-                        {
-                            var propType = prop.PropertyType;
-
-                            if (propType.IsGenericType &&
-                                propType.GetGenericTypeDefinition() == typeof(ICollectionRepository<,>))
-                                return true;
-
-                            if (propType.GetInterfaces()
-                                        .Where(@interface => @interface.IsGenericType)
-                                        .Select(@interface => @interface.GetGenericTypeDefinition())
-                                        .Contains(typeof(ICollectionRepository<,>)))
-                                return true;
-
-                            return false;
-                        });
-
-                    // Initialize registry.
-                    _collectionRepositoriesByModelType = repos.ToDictionary(
-                        prop => ((ICollectionRepository)prop.GetValue(dbContext)).GetModelType,
-                        prop => (ICollectionRepository)prop.GetValue(dbContext));
-                }
-
-                return _collectionRepositoriesByModelType;
+                if (modelType == typeof(object))
+                    throw new InvalidOperationException($"Cant find valid repository for model type {modelType}");
+                modelType = modelType.BaseType!;
             }
+
+            return _repositoriesByModelType[modelType];
         }
-        public IReadOnlyDictionary<Type, IGridFSRepository> GridFSRepositoriesByModelType
+
+        public IRepository? TryGetRepositoryByHandledModelType(Type modelType)
         {
-            get
+            try
             {
-                if (_gridFSRepositoriesByModelType is null)
-                {
-                    var dbContextType = dbContext.GetType();
-
-                    //select ICollectionRepository<,> implementing properties
-                    var repos = dbContextType.GetProperties(BindingFlags.Public | BindingFlags.Instance)
-                        .Where(prop =>
-                        {
-                            var propType = prop.PropertyType;
-
-                            if (propType.IsGenericType &&
-                                propType.GetGenericTypeDefinition() == typeof(IGridFSRepository<>))
-                                return true;
-
-                            if (propType.GetInterfaces()
-                                        .Where(@interface => @interface.IsGenericType)
-                                        .Select(@interface => @interface.GetGenericTypeDefinition())
-                                        .Contains(typeof(IGridFSRepository<>)))
-                                return true;
-
-                            return false;
-                        });
-
-                    //construct registry
-                    _gridFSRepositoriesByModelType = repos.ToDictionary(
-                        prop => ((IGridFSRepository)prop.GetValue(dbContext)).GetModelType,
-                        prop => (IGridFSRepository)prop.GetValue(dbContext));
-                }
-
-                return _gridFSRepositoriesByModelType;
+                return GetRepositoryByHandledModelType(modelType);
             }
-        }
-        public IReadOnlyDictionary<Type, IRepository> RepositoriesByModelType
-        {
-            get
+            catch (InvalidOperationException)
             {
-                if (_repositoriesByModelType is null)
-                {
-                    var repoMap = new Dictionary<Type, IRepository>();
-
-                    foreach (var pair in CollectionRepositoriesByModelType)
-                        repoMap.Add(pair.Key, pair.Value);
-
-                    foreach (var pair in GridFSRepositoriesByModelType)
-                        repoMap.Add(pair.Key, pair.Value);
-
-                    _repositoriesByModelType = repoMap;
-                }
-
-                return _repositoriesByModelType;
+                return null;
             }
         }
     }

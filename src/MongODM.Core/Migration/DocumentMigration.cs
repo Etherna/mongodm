@@ -1,16 +1,16 @@
-﻿//   Copyright 2020-present Etherna Sagl
-//
-//   Licensed under the Apache License, Version 2.0 (the "License");
-//   you may not use this file except in compliance with the License.
-//   You may obtain a copy of the License at
-//
-//       http://www.apache.org/licenses/LICENSE-2.0
-//
-//   Unless required by applicable law or agreed to in writing, software
-//   distributed under the License is distributed on an "AS IS" BASIS,
-//   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-//   See the License for the specific language governing permissions and
-//   limitations under the License.
+﻿// Copyright 2020-present Etherna SA
+// This file is part of MongODM.
+// 
+// MongODM is free software: you can redistribute it and/or modify it under the terms of the
+// GNU Lesser General Public License as published by the Free Software Foundation,
+// either version 3 of the License, or (at your option) any later version.
+// 
+// MongODM is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
+// without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+// See the GNU Lesser General Public License for more details.
+// 
+// You should have received a copy of the GNU Lesser General Public License along with MongODM.
+// If not, see <https://www.gnu.org/licenses/>.
 
 using Etherna.MongoDB.Driver;
 using Etherna.MongODM.Core.Domain.Models;
@@ -24,7 +24,7 @@ namespace Etherna.MongODM.Core.Migration
     public abstract class DocumentMigration
     {
         // Properties.
-        public abstract ICollectionRepository SourceRepository { get; }
+        public abstract IRepository SourceRepository { get; }
 
         // Methods.
         /// <summary>
@@ -46,34 +46,53 @@ namespace Etherna.MongODM.Core.Migration
         where TModel : class, IEntityModel<TKey>
     {
         // Fields.
-        private readonly ICollectionRepository<TModel, TKey> _sourceRepository;
-        private readonly Func<TModel, ICollectionRepository?> destinationRepositorySelector;
-        private readonly Func<TModel, object> modelConverter;
+        private readonly IRepository<TModel, TKey> _sourceRepository;
+        private readonly Func<TModel, Task> sourceModelProcessorActionAsync;
 
         // Constructors.
-        public DocumentMigration(ICollectionRepository<TModel, TKey> repository)
+        public DocumentMigration(IRepository<TModel, TKey> repository)
             : this(repository, repository, m => m)
         { }
 
         public DocumentMigration(
-            ICollectionRepository<TModel, TKey> sourceRepository,
-            ICollectionRepository destinationRepository,
+            IRepository<TModel, TKey> sourceRepository,
+            IRepository destinationRepository,
             Func<TModel, object> modelConverter)
             : this(sourceRepository, _ => destinationRepository, modelConverter)
         { }
 
         public DocumentMigration(
-            ICollectionRepository<TModel, TKey> sourceRepository,
-            Func<TModel, ICollectionRepository?> destinationRepositorySelector,
+            IRepository<TModel, TKey> sourceRepository,
+            Func<TModel, IRepository?> destinationRepositorySelector,
             Func<TModel, object> modelConverter)
+            : this(
+                sourceRepository,
+                async m =>
+                {
+                    var destinationRepository = destinationRepositorySelector(m);
+
+                    // Verify if needs to skip this model.
+                    if (destinationRepository is null)
+                        return;
+
+                    // Replace if it's the same collection, insert one otherwise.
+                    if (sourceRepository == destinationRepository)
+                        await destinationRepository.ReplaceAsync(m, updateDependentDocuments: false).ConfigureAwait(false);
+                    else
+                        await destinationRepository.CreateAsync(modelConverter(m)).ConfigureAwait(false);
+                })
+        { }
+
+        public DocumentMigration(
+            IRepository<TModel, TKey> sourceRepository,
+            Func<TModel, Task> sourceModelProcessorActionAsync)
         {
             _sourceRepository = sourceRepository ?? throw new ArgumentNullException(nameof(sourceRepository));
-            this.destinationRepositorySelector = destinationRepositorySelector ?? throw new ArgumentNullException(nameof(destinationRepositorySelector));
-            this.modelConverter = modelConverter ?? throw new ArgumentNullException(nameof(modelConverter));
+            this.sourceModelProcessorActionAsync = sourceModelProcessorActionAsync;
         }
 
         // Properties.
-        public override ICollectionRepository SourceRepository => _sourceRepository;
+        public override IRepository SourceRepository => _sourceRepository;
 
         // Methods.
         public override Task<MigrationResult> MigrateAsync(
@@ -92,25 +111,15 @@ namespace Etherna.MongODM.Core.Migration
                     await sourceCollection.Find(FilterDefinition<TModel>.Empty, new FindOptions { NoCursorTimeout = true })
                         .ForEachAsync(async model =>
                         {
-                            var destinationRepository = destinationRepositorySelector(model);
-
-                            // Verify if needs to skip this model.
-                            if (destinationRepository is null)
-                                return;
-
-                            // Replace if it's the same collection, insert one otherwise.
-                            if (SourceRepository == destinationRepository)
-                                await destinationRepository.ReplaceAsync(model, updateDependentDocuments: false).ConfigureAwait(false);
-                            else
-                                await destinationRepository.CreateAsync(modelConverter(model)).ConfigureAwait(false);
+                            await sourceModelProcessorActionAsync(model).ConfigureAwait(false);
 
                             // Increment counter.
                             totMigratedDocuments++;
 
                             // Execute callback.
                             if (callbackEveryTotDocuments > 0 &&
-                                    totMigratedDocuments % callbackEveryTotDocuments == 0 &&
-                                    callbackAsync != null)
+                                totMigratedDocuments % callbackEveryTotDocuments == 0 &&
+                                callbackAsync != null)
                                 await callbackAsync(totMigratedDocuments).ConfigureAwait(false);
 
                         }, cancellationToken).ConfigureAwait(false);
