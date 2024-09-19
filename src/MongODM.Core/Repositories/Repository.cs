@@ -119,7 +119,7 @@ namespace Etherna.MongODM.Core.Repositories
                     {
                         try
                         {
-                            var renderedKeys = keys.Render(collection.DocumentSerializer, collection.Settings.SerializerRegistry);
+                            var renderedKeys = keys.Render(new(collection.DocumentSerializer, collection.Settings.SerializerRegistry));
                             options.Name = $"doc_{string.Join("_", renderedKeys.Names)}";
                         }
                         catch (InvalidOperationException)
@@ -419,7 +419,7 @@ namespace Etherna.MongODM.Core.Repositories
             AccessToCollectionAsync(async collection =>
             {
                 var modelMap = DbContext.MapRegistry.GetModelMap(typeof(TModel));
-                var fieldRendered = setField.Render((IBsonSerializer<TModel>)modelMap.ActiveSerializer, DbContext.SerializerRegistry);
+                var fieldRendered = setField.Render(new((IBsonSerializer<TModel>)modelMap.ActiveSerializer, DbContext.SerializerRegistry));
                 
                 // Serialize model.
                 var modelBsonDoc = new BsonDocument();

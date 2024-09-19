@@ -50,13 +50,13 @@ namespace Etherna.MongODM.Core.FilterDefinition
         }
 
         // Methods.
-        public override BsonDocument Render(IBsonSerializer<TDocument> documentSerializer, IBsonSerializerRegistry serializerRegistry, LinqProvider linqProvider)
+        public override BsonDocument Render(RenderArgs<TDocument> args)
         {
             var memberMapFieldDefinition = new MemberMapFieldDefinition<TDocument, TItem>(
                 memberMap,
                 _ => $".{ElemMatchCommand}",
                 _ => throw new MongodmElementPathRenderingException());
-            var renderedField = memberMapFieldDefinition.Render(documentSerializer, serializerRegistry, linqProvider);
+            var renderedField = memberMapFieldDefinition.Render(args);
             var segmentedField = renderedField.FieldName.Split('.');
             var filterDocument = BuildBsonDocument(segmentedField, value, renderedField.ValueSerializer);
             return filterDocument;

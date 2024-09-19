@@ -43,8 +43,8 @@ namespace Etherna.MongODM.Core.FieldDefinition
         public IBsonSerializer UnmappedFieldSerializer { get; }
 
         // Methods.
-        public override RenderedFieldDefinition Render(IBsonSerializer<TDocument> documentSerializer, IBsonSerializerRegistry serializerRegistry, LinqProvider linqProvider) =>
-            new(UnmappedFieldDefinitionHelper.BuildFieldPath(BaseDocumentField, UnmappedFieldName, documentSerializer, serializerRegistry, linqProvider),
+        public override RenderedFieldDefinition Render(RenderArgs<TDocument> args) =>
+            new(UnmappedFieldDefinitionHelper.BuildFieldPath(BaseDocumentField, UnmappedFieldName, args.DocumentSerializer, args.SerializerRegistry, args.LinqProvider),
                 UnmappedFieldSerializer);
 
         public Type? TryGetBaseDocumentType(IBsonSerializer<TDocument> documentSerializer, IBsonSerializerRegistry serializerRegistry) =>
@@ -74,8 +74,8 @@ namespace Etherna.MongODM.Core.FieldDefinition
         public IBsonSerializer<TField> UnmappedFieldSerializer { get; }
 
         // Methods.
-        public override RenderedFieldDefinition<TField> Render(IBsonSerializer<TDocument> documentSerializer, IBsonSerializerRegistry serializerRegistry, LinqProvider linqProvider) =>
-            new(UnmappedFieldDefinitionHelper.BuildFieldPath(BaseDocumentField, UnmappedFieldName, documentSerializer, serializerRegistry, linqProvider),
+        public override RenderedFieldDefinition<TField> Render(RenderArgs<TDocument> args) =>
+            new(UnmappedFieldDefinitionHelper.BuildFieldPath(BaseDocumentField, UnmappedFieldName, args.DocumentSerializer, args.SerializerRegistry, args.LinqProvider),
                 UnmappedFieldSerializer,
                 UnmappedFieldSerializer,
                 UnmappedFieldSerializer);
@@ -96,7 +96,7 @@ namespace Etherna.MongODM.Core.FieldDefinition
             var sb = new StringBuilder();
             if (baseDocumentField is not null)
             {
-                var baseDocRenderedField = baseDocumentField.Render(documentSerializer, serializerRegistry, linqProvider);
+                var baseDocRenderedField = baseDocumentField.Render(new(documentSerializer, serializerRegistry, linqProvider));
                 sb.Append(baseDocRenderedField.FieldName);
             }
             if (sb.Length > 0)
@@ -114,7 +114,7 @@ namespace Etherna.MongODM.Core.FieldDefinition
             if (baseDocumentField is null)
                 return null;
 
-            var renderedBaseDocumentField = baseDocumentField.Render(documentSerializer, serializerRegistry);
+            var renderedBaseDocumentField = baseDocumentField.Render(new(documentSerializer, serializerRegistry));
             var baseDocumentFieldSerializer = renderedBaseDocumentField.FieldSerializer;
 
             // Until serializer is an array serializer, go down to its item serializer.

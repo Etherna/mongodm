@@ -55,7 +55,7 @@ namespace Etherna.MongODM.Core.FieldDefinition
         public bool ReferToFinalItem { get; }
 
         // Methods.
-        public override RenderedFieldDefinition Render(IBsonSerializer<TDocument> documentSerializer, IBsonSerializerRegistry serializerRegistry, LinqProvider linqProvider) =>
+        public override RenderedFieldDefinition Render(RenderArgs<TDocument> args) =>
             new(MemberMap.RenderElementPath(
                     ReferToFinalItem,
                     undefinedArrayIndexSymbolSelector,
@@ -103,10 +103,7 @@ namespace Etherna.MongODM.Core.FieldDefinition
         public bool ReferToFinalItem { get; }
 
         // Methods.
-        public override RenderedFieldDefinition<TField> Render(IBsonSerializer<TDocument> documentSerializer, IBsonSerializerRegistry serializerRegistry, LinqProvider linqProvider) =>
-            Render(documentSerializer, serializerRegistry, linqProvider, false);
-
-        public override RenderedFieldDefinition<TField> Render(IBsonSerializer<TDocument> documentSerializer, IBsonSerializerRegistry serializerRegistry, LinqProvider linqProvider, bool allowScalarValueForArrayField)
+        public override RenderedFieldDefinition<TField> Render(RenderArgs<TDocument> args)
         {
             IBsonSerializer<TField> valueSerializer =
                 customFieldSerializer ??
@@ -114,7 +111,7 @@ namespace Etherna.MongODM.Core.FieldDefinition
                     MemberMap.Serializer,
                     MemberMap.DbContext.SerializerRegistry,
                     typeof(TField),
-                    allowScalarValueForArrayField);
+                    args.PathRenderArgs.AllowScalarValueForArray);
 
             return new RenderedFieldDefinition<TField>(
                 MemberMap.RenderElementPath(
