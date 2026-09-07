@@ -129,8 +129,11 @@ namespace Etherna.Scrinium.Core.Tasks
              * 
              * Different id paths may share also same serializers. 
              * Because of this, we use an external cache for avoid to serialize multiple times with same serializer.
+             * The cache is keyed by serializer instance: the driver serializers compare equal by
+             * type alone, while two reference serializers of the same model type declare
+             * different summaries, each writing its own schema id and members.
              */
-            var serializedDocumentsCache = new Dictionary<IBsonSerializer, BsonDocument>();
+            var serializedDocumentsCache = new Dictionary<IBsonSerializer, BsonDocument>(ReferenceEqualityComparer.Instance);
             var repositoryDictionary = idMemberMaps
                 .SelectMany(idmm => dbContext.RepositoryRegistry.Repositories
                     /* A read-only repository consumes documents owned by another application:
