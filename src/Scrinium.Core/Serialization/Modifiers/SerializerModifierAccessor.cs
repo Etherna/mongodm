@@ -18,7 +18,7 @@ using System;
 namespace Etherna.Scrinium.Core.Serialization.Modifiers
 {
     public class SerializerModifierAccessor(IExecutionContext executionContext)
-        : ISerializerModifierAccessor
+        : IInternalSerializerModifierAccessor, ISerializerModifierAccessor
     {
         // Properties.
         public bool IsReadOnlyReferencedIdEnabled =>
@@ -38,6 +38,16 @@ namespace Etherna.Scrinium.Core.Serialization.Modifiers
             new ReferenceSerializerModifier(executionContext)
             {
                 ReadOnlyId = readOnlyId
+            };
+
+        // Internals.
+        bool IInternalSerializerModifierAccessor.IsDetachedRootEnabled =>
+            CacheSerializerModifier.IsDetachedRootEnabled(executionContext);
+
+        IDisposable IInternalSerializerModifierAccessor.EnableDetachedRootSerializerModifier() =>
+            new CacheSerializerModifier(executionContext)
+            {
+                DetachedRoot = true
             };
     }
 }

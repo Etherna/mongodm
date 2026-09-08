@@ -164,6 +164,55 @@ namespace Etherna.Scrinium.IntegrationTests
             Assert.True(readDbContext.IsMemberLoaded(loadedPost, p => p.Id));
         }
 
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public async Task PreloadUpgradesTheSummaryInstancesItReceives(bool anotherInstanceIsLoaded)
+        {
+            /* SCR-280: the loaded documents merge into the instances registered on the
+             * identity map. A requested summary not registered there (deserialized with the
+             * no cache modifier here) upgrades from the loaded instance of its document - the
+             * one already loaded in the scope, or the fresh one the load registers - instead
+             * of being reported as missing its origin document. */
+
+            // Setup.
+            using var contextHandler = AsyncLocalContext.Instance.InitAsyncLocalContext();
+            var post = new Post("title", "content");
+            await dbContext.Posts.CreateAsync(post);
+            var blog = new Blog("blog");
+            blog.AddPost(post);
+            await dbContext.Blogs.CreateAsync(blog);
+
+            using var readScope = fixture.ServiceProvider.CreateScope();
+            var readDbContext = readScope.ServiceProvider.GetRequiredService<ITestDbContext>();
+            using var readContextHandler = AsyncLocalContext.Instance.InitAsyncLocalContext();
+
+            //the detached summary stays out of the identity map
+            Post detachedPost;
+            using (readDbContext.Engine.SerializerModifierAccessor.EnableCacheSerializerModifier(noCache: true))
+                detachedPost = (await readDbContext.Blogs.FindOneAsync(blog.Id)).LastPost!;
+            Assert.True(((IReferenceable)detachedPost).IsSummary);
+            Assert.Null(readDbContext.TryGetLoadedModel(readDbContext.Posts, post.Id));
+
+            Post? loadedPost = null;
+            if (anotherInstanceIsLoaded)
+                loadedPost = await readDbContext.Posts.FindOneAsync(post.Id);
+
+            // Action.
+            //the blog last post reference denies the missing origin documents: a misreported one fails the preload
+            await readDbContext.LoadValuesAsync(detachedPost, p => p.Content);
+
+            // Assert.
+            //the received instance upgraded, and the identity map keeps its own
+            Assert.False(((IReferenceable)detachedPost).IsSummary);
+            Assert.Equal("content", detachedPost.Content);
+            var identityMapPost = readDbContext.TryGetLoadedModel(readDbContext.Posts, post.Id);
+            Assert.NotNull(identityMapPost);
+            Assert.NotSame(detachedPost, identityMapPost);
+            if (anotherInstanceIsLoaded)
+                Assert.Same(loadedPost, identityMapPost);
+        }
+
         // Helpers.
         private async Task<long> GetServerFindCommandCountAsync()
         {

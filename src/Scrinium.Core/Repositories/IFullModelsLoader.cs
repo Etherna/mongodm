@@ -23,12 +23,15 @@ namespace Etherna.Scrinium.Core.Repositories
     /// Batch loading surface of the library repositories, consumed by the members preload:
     /// load the full documents of the given models by their ids, with one query per
     /// bounded ids chunk. The results merge in place into the scope loaded instances
-    /// through the identity map: summary models upgrade to full. Custom repository
-    /// implementations without this interface preload with per instance loads.
+    /// through the identity map: summary models upgrade to full. The loaded instances
+    /// return by document id (the registered ones, or the fresh ones the load registers,
+    /// with the not found documents absent), so the preload upgrades from them the
+    /// instances the identity map didn't serve. Custom repository implementations without
+    /// this interface preload with per instance loads.
     /// </summary>
     internal interface IFullModelsLoader
     {
-        Task LoadFullModelsAsync(
+        Task<IReadOnlyDictionary<object, IEntityModel>> LoadFullModelsAsync(
             IEnumerable<IEntityModel> models,
             CancellationToken cancellationToken = default);
     }
