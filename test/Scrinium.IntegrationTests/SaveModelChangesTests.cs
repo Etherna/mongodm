@@ -124,6 +124,38 @@ namespace Etherna.Scrinium.IntegrationTests
         }
 
         [Fact]
+        public async Task SaveRefreshKeepsTheCreatedReferenceInstances()
+        {
+            /* SCR-281: a created model registers on the identity map, so the save refresh of a
+             * model referencing it resolves the reference to the created instance itself,
+             * instead of replacing it with a new summary of its document. */
+
+            // Setup.
+            using var contextHandler = AsyncLocalContext.Instance.InitAsyncLocalContext();
+            var blog = new Blog("blog title");
+            await dbContext.Blogs.CreateAsync(blog);
+
+            //load on a new scope, and create the post to add inside it
+            using var saveScope = fixture.ServiceProvider.CreateScope();
+            var saveDbContext = saveScope.ServiceProvider.GetRequiredService<ITestDbContext>();
+            using var saveContextHandler = AsyncLocalContext.Instance.InitAsyncLocalContext();
+
+            var loadedBlog = await saveDbContext.Blogs.FindOneAsync(blog.Id);
+            var post = new Post("post title", "post content");
+            await saveDbContext.Posts.CreateAsync(post);
+
+            // Action.
+            loadedBlog.AddPost(post);
+            await saveDbContext.SaveChangesAsync();
+
+            // Assert.
+            //the refreshed reference members are the created instance, as it is
+            Assert.Same(post, loadedBlog.LastPost);
+            Assert.Same(post, loadedBlog.Posts.Single());
+            Assert.Same(post, saveDbContext.TryGetLoadedModel(saveDbContext.Posts, post.Id));
+        }
+
+        [Fact]
         public async Task SaveRefreshKeepsTheLoadedReferenceInstances()
         {
             /* SCR-280: the save refreshes the saved model from the returned document, whose
@@ -265,12 +297,15 @@ namespace Etherna.Scrinium.IntegrationTests
              * returned document state upgrades the summary to a full model. */
 
             // Setup.
+            //create on a setup scope: the test scope loads the documents fresh
+            using var setupScope = fixture.ServiceProvider.CreateScope();
+            var setupDbContext = setupScope.ServiceProvider.GetRequiredService<ITestDbContext>();
             using var contextHandler = AsyncLocalContext.Instance.InitAsyncLocalContext();
             var post = new Post("post title", "post content");
-            await dbContext.Posts.CreateAsync(post);
+            await setupDbContext.Posts.CreateAsync(post);
             var blog = new Blog("blog title");
             blog.AddPost(post);
-            await dbContext.Blogs.CreateAsync(blog);
+            await setupDbContext.Blogs.CreateAsync(blog);
 
             using var workContextHandler = AsyncLocalContext.Instance.InitAsyncLocalContext();
             var loadedBlog = await dbContext.Blogs.FindOneAsync(blog.Id);

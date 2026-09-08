@@ -580,15 +580,18 @@ namespace Etherna.Scrinium.Core
             ArgumentNullException.ThrowIfNull(model);
 
             bool removed;
+            IRepository? trackedRepository;
             lock (trackingLock)
             {
                 changeCandidates.Remove(model);
-                modelSourceRepositories.Remove(model);
+                modelSourceRepositories.Remove(model, out trackedRepository);
                 removed = modelBsonDocuments.Remove(model);
             }
 
+            /* A created instance carries its source repository only in the dropped binding:
+             * resolving it by model type would fail on a type handled by many repositories. */
             if (removed &&
-                TryGetSourceRepository(model) is { } repository)
+                (trackedRepository ?? TryGetSourceRepository(model)) is { } repository)
                 logger.DbContextUnregisteredChangedModel(engine.Options.DbName, repository.ModelIdToString(model), repository.Name);
         }
 

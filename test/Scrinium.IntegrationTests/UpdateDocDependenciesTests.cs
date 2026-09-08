@@ -34,20 +34,27 @@ namespace Etherna.Scrinium.IntegrationTests
         private readonly ITestDbContext dbContext;
         private readonly IntegrationFixture fixture;
         private readonly IServiceScope serviceScope;
+        private readonly ITestDbContext setupDbContext;
+        private readonly IServiceScope setupScope;
 
         // Constructor and dispose.
         /* Each test runs on its own DI scope, resolving fresh db context instances
-         * like a production request or job would do. */
+         * like a production request or job would do. The documents a test loads are
+         * created through a setup scope of their own: a created instance is the loaded
+         * model of its document on the scope creating it. */
         public UpdateDocDependenciesTests(IntegrationFixture fixture)
         {
             this.fixture = fixture;
             serviceScope = fixture.ServiceProvider.CreateScope();
             dbContext = serviceScope.ServiceProvider.GetRequiredService<ITestDbContext>();
+            setupScope = fixture.ServiceProvider.CreateScope();
+            setupDbContext = setupScope.ServiceProvider.GetRequiredService<ITestDbContext>();
         }
 
         public void Dispose()
         {
             serviceScope.Dispose();
+            setupScope.Dispose();
             GC.SuppressFinalize(this);
         }
 
@@ -97,11 +104,11 @@ namespace Etherna.Scrinium.IntegrationTests
             fixture.TaskRunner.ClearPending();
 
             var post = new Post("original title", "content");
-            await dbContext.Posts.CreateAsync(post);
+            await setupDbContext.Posts.CreateAsync(post);
 
             var blog = new Blog("my blog");
             blog.AddPost(post);
-            await dbContext.Blogs.CreateAsync(blog);
+            await setupDbContext.Blogs.CreateAsync(blog);
 
             // Action: update the referenced post through its repository.
             var loadedPost = await dbContext.Posts.FindOneAsync(post.Id);
@@ -184,10 +191,10 @@ namespace Etherna.Scrinium.IntegrationTests
             fixture.TaskRunner.ClearPending();
 
             var post = new Post("original title", "content");
-            await dbContext.Posts.CreateAsync(post);
+            await setupDbContext.Posts.CreateAsync(post);
             var blog = new Blog("my blog");
             blog.AddPost(post);
-            await dbContext.Blogs.CreateAsync(blog);
+            await setupDbContext.Blogs.CreateAsync(blog);
 
             // Action: update the referenced post, delete it, then execute the enqueued tasks.
             var loadedPost = await dbContext.Posts.FindOneAsync(post.Id);
@@ -274,10 +281,10 @@ namespace Etherna.Scrinium.IntegrationTests
             fixture.TaskRunner.ClearPending();
 
             var post = new Post("original title", "content");
-            await dbContext.Posts.CreateAsync(post);
+            await setupDbContext.Posts.CreateAsync(post);
             var blog = new Blog("my blog");
             blog.AddPost(post);
-            await dbContext.Blogs.CreateAsync(blog);
+            await setupDbContext.Blogs.CreateAsync(blog);
 
             var loadedPost = await dbContext.Posts.FindOneAsync(post.Id);
             loadedPost.Title = "updated title";
@@ -320,10 +327,10 @@ namespace Etherna.Scrinium.IntegrationTests
             fixture.TaskRunner.ClearPending();
 
             var post = new Post("original title", "content");
-            await dbContext.Posts.CreateAsync(post);
+            await setupDbContext.Posts.CreateAsync(post);
             var blog = new Blog("my blog");
             blog.AddPost(post);
-            await dbContext.Blogs.CreateAsync(blog);
+            await setupDbContext.Blogs.CreateAsync(blog);
 
             var loadedPost = await dbContext.Posts.FindOneAsync(post.Id);
             loadedPost.Title = "updated title";
@@ -448,14 +455,14 @@ namespace Etherna.Scrinium.IntegrationTests
             fixture.TaskRunner.ClearPending();
 
             var post = new Post("original title", "content");
-            await dbContext.Posts.CreateAsync(post);
+            await setupDbContext.Posts.CreateAsync(post);
 
             List<Blog> blogs = [];
             for (int i = 0; i < 10; i++)
             {
                 var blog = new Blog($"blog {i}");
                 blog.AddPost(post);
-                await dbContext.Blogs.CreateAsync(blog);
+                await setupDbContext.Blogs.CreateAsync(blog);
                 blogs.Add(blog);
             }
 
@@ -500,7 +507,7 @@ namespace Etherna.Scrinium.IntegrationTests
             fixture.TaskRunner.ClearPending();
 
             var track = new Track("original title");
-            await dbContext.Tracks.CreateAsync(track);
+            await setupDbContext.Tracks.CreateAsync(track);
 
             var mixtape = new Mixtape("my mixtape")
             {
@@ -508,7 +515,7 @@ namespace Etherna.Scrinium.IntegrationTests
                 LabeledTracks = { ["labeled"] = track },
                 Tracks = [track]
             };
-            await dbContext.Mixtapes.CreateAsync(mixtape);
+            await setupDbContext.Mixtapes.CreateAsync(mixtape);
 
             // Action: update the referenced track, and execute the enqueued task.
             var loadedTrack = await dbContext.Tracks.FindOneAsync(track.Id);
