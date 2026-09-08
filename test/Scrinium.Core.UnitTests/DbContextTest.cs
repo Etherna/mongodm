@@ -215,6 +215,43 @@ namespace Etherna.Scrinium.Core
         }
 
         [Fact]
+        public async Task PreloadUpgradesASummaryNotRegisteredAsTheLoadedModel()
+        {
+            /* The loaded documents merge into the instances registered on the identity map:
+             * a requested summary not registered there (deserialized out of the identity
+             * map, or evicted from it) upgrades from the loaded instance of its document,
+             * instead of being reported as missing its origin document. */
+
+            // Setup.
+            using var contextHandler = AsyncLocalContext.Instance.InitAsyncLocalContext();
+
+            var model = NewBoundProxy("id");
+            ((IReferenceable)model).SetAsSummary([], ReactionMode.Throw);
+
+            //the load materializes another instance for the document
+            var loadedModel = NewBoundProxy("id");
+            loadedModel.StringProp = "loaded value";
+            var cursorMock = new Mock<IAsyncCursor<FakeModel>>();
+            cursorMock.SetupSequence(c => c.MoveNextAsync(It.IsAny<CancellationToken>()))
+                .ReturnsAsync(true)
+                .ReturnsAsync(false);
+            cursorMock.SetupGet(c => c.Current)
+                .Returns([loadedModel]);
+            collectionMock.Setup(c => c.FindAsync(
+                    It.IsAny<FilterDefinition<FakeModel>>(),
+                    It.IsAny<FindOptions<FakeModel, FakeModel>>(),
+                    It.IsAny<CancellationToken>()))
+                .ReturnsAsync(cursorMock.Object);
+
+            // Action.
+            await dbContext.LoadValuesAsync(model, m => m.StringProp);
+
+            // Assert.
+            Assert.False(((IReferenceable)model).IsSummary);
+            Assert.Equal("loaded value", model.StringProp);
+        }
+
+        [Fact]
         public async Task ExecuteInTransactionCommitsAndEnlistsOperations()
         {
             // Setup.

@@ -23,6 +23,7 @@ using Etherna.Scrinium.Core.FilterDefinition;
 using Etherna.Scrinium.Core.Migration;
 using Etherna.Scrinium.Core.ProxyModels;
 using Etherna.Scrinium.Core.Serialization.Mapping;
+using Etherna.Scrinium.Core.Serialization.Modifiers;
 using Etherna.Scrinium.Core.Utility;
 using Microsoft.Extensions.Logging;
 using System;
@@ -752,10 +753,13 @@ namespace Etherna.Scrinium.Core.Repositories
 
             var updatedModel = await AccessToCollectionAsync(async collection =>
             {
-                /* Deserialize the returned document detached from the scope, with the no
-                 * cache modifier: the model instance to refresh is already the canonical
-                 * one, and deduplication would return it discarding the fresh state. */
-                using (DbContext.Engine.SerializerModifierAccessor.EnableCacheSerializerModifier(noCache: true))
+                /* Deserialize the returned document with its root detached from the scope:
+                 * the model instance to refresh is already the canonical one, and
+                 * deduplication would return it discarding the fresh state. The references
+                 * it carries resolve through the identity map like any deserialization, so
+                 * the refresh carries the instances the scope already holds, never new
+                 * summaries of their documents. */
+                using (((IInternalSerializerModifierAccessor)DbContext.Engine.SerializerModifierAccessor).EnableDetachedRootSerializerModifier())
                 {
                     return await collection.FindOneAndUpdateAsync(
                         filter,
@@ -1077,7 +1081,9 @@ namespace Etherna.Scrinium.Core.Repositories
             CaptureCreatedModelsDocuments([castedModel]);
         }
 
-        Task IFullModelsLoader.LoadFullModelsAsync(IEnumerable<IEntityModel> models, CancellationToken cancellationToken)
+        async Task<IReadOnlyDictionary<object, IEntityModel>> IFullModelsLoader.LoadFullModelsAsync(
+            IEnumerable<IEntityModel> models,
+            CancellationToken cancellationToken)
         {
             ArgumentNullException.ThrowIfNull(models);
 
@@ -1086,20 +1092,28 @@ namespace Etherna.Scrinium.Core.Repositories
                             .Where(id => id is not null)
                             .Distinct()
                             .ToArray();
+            Dictionary<object, IEntityModel> loadedModels = [];
             if (ids.Length == 0)
-                return Task.CompletedTask;
+                return loadedModels;
 
             /* Read the full documents with one query per ids chunk, keeping the $in filter
              * and each materialized result bounded on any caller batch size. Their
              * deserialization runs on the current scope, merging into the loaded summary
-             * instances through the identity map. The materialized results are that merge,
-             * and don't need to be returned. */
-            return AccessToCollectionAsync(async collection =>
+             * instances through the identity map: the materialized instances are the
+             * registered ones, or the fresh ones the load registers, returned by document id
+             * so the caller can upgrade from them the instances the identity map didn't serve. */
+            await AccessToCollectionAsync(async collection =>
             {
                 foreach (var idsChunk in ids.Chunk(LoadFullModelsChunkSize))
-                    await collection.Find(Builders<TModel>.Filter.In(m => m.Id, idsChunk))
-                                    .ToListAsync(cancellationToken).ConfigureAwait(false);
-            });
+                {
+                    var chunkModels = await collection.Find(Builders<TModel>.Filter.In(m => m.Id, idsChunk))
+                                                      .ToListAsync(cancellationToken).ConfigureAwait(false);
+                    foreach (var model in chunkModels)
+                        loadedModels[model.Id!] = model;
+                }
+            }).ConfigureAwait(false);
+
+            return loadedModels;
         }
 
         // Helpers.

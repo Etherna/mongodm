@@ -124,6 +124,94 @@ namespace Etherna.Scrinium.IntegrationTests
         }
 
         [Fact]
+        public async Task SaveRefreshKeepsTheLoadedReferenceInstances()
+        {
+            /* SCR-280: the save refreshes the saved model from the returned document, whose
+             * references resolve through the identity map like any deserialization: a
+             * referenced instance loaded in the scope stays the value of its member, never
+             * replaced by a new summary of the same document. */
+
+            // Setup.
+            using var contextHandler = AsyncLocalContext.Instance.InitAsyncLocalContext();
+            var firstPost = new Post("first title", "first content");
+            var secondPost = new Post("second title", "second content");
+            await dbContext.Posts.CreateAsync(firstPost);
+            await dbContext.Posts.CreateAsync(secondPost);
+            var blog = new Blog("blog title");
+            blog.AddPost(firstPost);
+            await dbContext.Blogs.CreateAsync(blog);
+
+            //load on a new scope: the referenced post is a summary, the post to add a full instance
+            using var saveScope = fixture.ServiceProvider.CreateScope();
+            var saveDbContext = saveScope.ServiceProvider.GetRequiredService<ITestDbContext>();
+            using var saveContextHandler = AsyncLocalContext.Instance.InitAsyncLocalContext();
+
+            var loadedBlog = await saveDbContext.Blogs.FindOneAsync(blog.Id);
+            var firstPostSummary = loadedBlog.LastPost!;
+            var secondFullPost = await saveDbContext.Posts.FindOneAsync(secondPost.Id);
+            Assert.True(((IReferenceable)firstPostSummary).IsSummary);
+            Assert.False(((IReferenceable)secondFullPost).IsSummary);
+
+            // Action.
+            loadedBlog.AddPost(secondFullPost);
+            await saveDbContext.SaveChangesAsync();
+
+            // Assert.
+            //the refreshed reference members are the instances loaded in the scope, as they are
+            Assert.Same(secondFullPost, loadedBlog.LastPost);
+            var refreshedPosts = loadedBlog.Posts.ToArray();
+            Assert.Equal(2, refreshedPosts.Length);
+            Assert.Same(firstPostSummary, refreshedPosts[0]);
+            Assert.Same(secondFullPost, refreshedPosts[1]);
+            Assert.True(((IReferenceable)firstPostSummary).IsSummary);
+            Assert.False(((IReferenceable)secondFullPost).IsSummary);
+            Assert.Same(firstPostSummary, saveDbContext.TryGetLoadedModel(saveDbContext.Posts, firstPost.Id));
+            Assert.Same(secondFullPost, saveDbContext.TryGetLoadedModel(saveDbContext.Posts, secondPost.Id));
+        }
+
+        [Fact]
+        public async Task SaveRefreshOfASummaryKeepsTheLoadedReferenceInstances()
+        {
+            /* SCR-280: a saved summary upgrades from the returned document, whose references
+             * resolve through the identity map too: the nested reference it carries stays the
+             * instance loaded in the scope, instead of a new summary of the same document. */
+
+            // Setup.
+            using var contextHandler = AsyncLocalContext.Instance.InitAsyncLocalContext();
+            var post = new Post("post title", "post content");
+            await dbContext.Posts.CreateAsync(post);
+            var blog = new Blog("blog title");
+            blog.AddPost(post);
+            await dbContext.Blogs.CreateAsync(blog);
+            var bookmark = new Bookmark("label", blog);
+            await dbContext.Bookmarks.CreateAsync(bookmark);
+
+            //load on a new scope: the blog summary nests the post summary, upgraded by the preload
+            using var saveScope = fixture.ServiceProvider.CreateScope();
+            var saveDbContext = saveScope.ServiceProvider.GetRequiredService<ITestDbContext>();
+            using var saveContextHandler = AsyncLocalContext.Instance.InitAsyncLocalContext();
+
+            var loadedBookmark = await saveDbContext.Bookmarks.FindOneAsync(bookmark.Id);
+            var blogSummary = loadedBookmark.Blog;
+            var nestedPost = blogSummary.LastPost!;
+            await saveDbContext.LoadValuesAsync(nestedPost, p => p.Content);
+            Assert.True(((IReferenceable)blogSummary).IsSummary);
+            Assert.False(((IReferenceable)nestedPost).IsSummary);
+
+            // Action.
+            blogSummary.Title = "updated title";
+            await saveDbContext.SaveChangesAsync();
+
+            // Assert.
+            //the summary upgraded, keeping the nested reference instance loaded in the scope
+            Assert.False(((IReferenceable)blogSummary).IsSummary);
+            Assert.Same(nestedPost, blogSummary.LastPost);
+            Assert.Same(nestedPost, blogSummary.Posts.Single());
+            Assert.False(((IReferenceable)nestedPost).IsSummary);
+            Assert.Same(nestedPost, saveDbContext.TryGetLoadedModel(saveDbContext.Posts, post.Id));
+        }
+
+        [Fact]
         public async Task SavingAModelHostingSummariesDoesNotLoadThem()
         {
             /* SCR-279: the save diffs the model reserializing its members, the summaries of
