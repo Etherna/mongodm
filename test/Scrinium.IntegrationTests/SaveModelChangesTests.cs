@@ -20,6 +20,7 @@ using Etherna.Scrinium.IntegrationTests.Fixtures;
 using Etherna.Scrinium.IntegrationTests.Models;
 using Microsoft.Extensions.DependencyInjection;
 using System;
+using System.Linq;
 using System.Threading.Tasks;
 using Xunit;
 
@@ -123,6 +124,52 @@ namespace Etherna.Scrinium.IntegrationTests
         }
 
         [Fact]
+        public async Task SavingAModelHostingSummariesDoesNotLoadThem()
+        {
+            /* SCR-279: the save diffs the model reserializing its members, the summaries of
+             * its references included. Writing a summary reads its extra elements bag, which
+             * is never loaded data: the write must not load the origin documents, or every
+             * save would cost one query per hosted summary. */
+
+            // Setup.
+            using var contextHandler = AsyncLocalContext.Instance.InitAsyncLocalContext();
+            var firstPost = new Post("first title", "content");
+            var secondPost = new Post("second title", "content");
+            await dbContext.Posts.CreateAsync(firstPost);
+            await dbContext.Posts.CreateAsync(secondPost);
+            var blog = new Blog("blog title");
+            blog.AddPost(firstPost);
+            blog.AddPost(secondPost);
+            await dbContext.Blogs.CreateAsync(blog);
+
+            //load on a new scope: the referenced posts are summaries
+            using var saveScope = fixture.ServiceProvider.CreateScope();
+            var saveDbContext = saveScope.ServiceProvider.GetRequiredService<ITestDbContext>();
+            using var saveContextHandler = AsyncLocalContext.Instance.InitAsyncLocalContext();
+
+            var loadedBlog = await saveDbContext.Blogs.FindOneAsync(blog.Id);
+            var loadedPosts = loadedBlog.Posts.ToArray();
+            Assert.All(loadedPosts, p => Assert.True(((IReferenceable)p).IsSummary));
+
+            // Action.
+            loadedBlog.Title = "updated title";
+            var findCommandsBefore = await GetServerFindCommandCountAsync();
+            await saveDbContext.SaveChangesAsync();
+            var findCommandsAfter = await GetServerFindCommandCountAsync();
+
+            // Assert.
+            //the summaries were written from their denormalized members, without a read
+            Assert.Equal(0, findCommandsAfter - findCommandsBefore);
+            Assert.All(loadedPosts, p => Assert.True(((IReferenceable)p).IsSummary));
+
+            using var readScope = fixture.ServiceProvider.CreateScope();
+            var readDbContext = readScope.ServiceProvider.GetRequiredService<ITestDbContext>();
+            using var readContextHandler = AsyncLocalContext.Instance.InitAsyncLocalContext();
+            var foundBlog = await readDbContext.Blogs.FindOneAsync(blog.Id);
+            Assert.Equal("updated title", foundBlog.Title);
+        }
+
+        [Fact]
         public async Task SavingChangedSummaryUpdatesOnlyItsChangesAndUpgradesIt()
         {
             /* Saving a changed summary reference updates only its changed members, without
@@ -198,6 +245,14 @@ namespace Etherna.Scrinium.IntegrationTests
             var foundNote = await readDbContext.Notes.FindOneAsync(note.Id);
             Assert.Equal("text from A", foundNote.Text);
             Assert.Equal("original tag", foundNote.Tag);
+        }
+
+        // Helpers.
+        private async Task<long> GetServerFindCommandCountAsync()
+        {
+            var serverStatus = await dbContext.Engine.Database.RunCommandAsync<BsonDocument>(
+                new BsonDocument("serverStatus", 1));
+            return serverStatus["metrics"]["commands"]["find"]["total"].ToInt64();
         }
     }
 }

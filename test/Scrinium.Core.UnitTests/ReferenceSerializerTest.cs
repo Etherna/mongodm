@@ -22,6 +22,7 @@ using Etherna.Scrinium.Core.Extensions;
 using Etherna.Scrinium.Core.Models;
 using Etherna.Scrinium.Core.Options;
 using Etherna.Scrinium.Core.ProxyModels;
+using Etherna.Scrinium.Core.Repositories;
 using Etherna.Scrinium.Core.Serialization.Mapping;
 using Etherna.Scrinium.Core.Serialization.Modifiers;
 using Etherna.Scrinium.Core.Serialization.Serializers;
@@ -29,6 +30,7 @@ using Moq;
 using System;
 using System.Collections.Generic;
 using System.Reflection;
+using System.Threading;
 using Xunit;
 
 namespace Etherna.Scrinium.Core
@@ -436,6 +438,56 @@ namespace Etherna.Scrinium.Core
             Assert.NotNull(model.ExtraElements);
             Assert.Empty(model.ExtraElements);
             Assert.False(serializedDocument.Contains("removedProp"));
+        }
+
+        [Fact]
+        public void SerializeDoesNotLazyLoadASummary()
+        {
+            /* SCR-279: the extra elements bag is never loaded data, so a summary never counts
+             * it among its loaded members. Writing a summary reads the bag twice, clearing it
+             * and through the class map extra elements write: neither read may load the
+             * origin document, or every reference write would cost one query per summary. */
+
+            // Setup.
+            var serializer = BuildSerializer(mm => mm.MapMember(m => m.StringProp));
+            dbContextEngineMock.Setup(e => e.ProxyGenerator.IsProxyType(typeof(FakeModelProxy)))
+                .Returns(true);
+            dbContextEngineMock.Setup(e => e.ProxyGenerator.PurgeProxyType(typeof(FakeModelProxy)))
+                .Returns(typeof(FakeModel));
+
+            var sourceDbContextMock = new Mock<IDbContext>();
+            sourceDbContextMock.As<IProxyModelsDbContext>();
+            var sourceRepositoryMock = new Mock<IRepository>();
+            sourceRepositoryMock.Setup(r => r.DbContext)
+                .Returns(sourceDbContextMock.Object);
+            sourceRepositoryMock.Setup(r => r.TryFindOneAsync(It.IsAny<object>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync(new FakeModel { Id = "idVal", IntegerProp = 42, StringProp = "ok" });
+
+            var model = new FakeModelProxy { Id = "idVal", StringProp = "ok" };
+            ((IProxyModel)model).BindProxy(sourceDbContextMock.Object, sourceRepositoryMock.Object);
+            ((IReferenceable)model).ClearSettedMembers();
+            ((IReferenceable)model).SetAsSummary(["StringProp"], ReactionMode.Warn);
+
+            var serializedDocument = new BsonDocument();
+            using var bsonWriter = new BsonDocumentWriter(serializedDocument);
+
+            // Action.
+            serializer.Serialize(
+                BsonSerializationContext.CreateRoot(bsonWriter),
+                new BsonSerializationArgs { NominalType = typeof(FakeModel) },
+                model);
+
+            // Assert.
+            //the summary wrote its denormalized members without reading its origin document
+            sourceRepositoryMock.Verify(r => r.TryFindOneAsync(It.IsAny<object>(), It.IsAny<CancellationToken>()), Times.Never);
+            Assert.True(((IReferenceable)model).IsSummary);
+            var expectedDocument = new BsonDocument
+            {
+                { "_s", "activeSchemaId" },
+                { "_id", "idVal" },
+                { "StringProp", "ok" }
+            };
+            Assert.Equal(0, serializedDocument.CompareTo(expectedDocument));
         }
 
         [Fact]
