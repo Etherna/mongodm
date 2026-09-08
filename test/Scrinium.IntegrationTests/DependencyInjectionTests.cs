@@ -34,9 +34,12 @@ namespace Etherna.Scrinium.IntegrationTests
              * CLR types mapped in more than one db context. */
 
             // Setup.
+            //create on a setup scope: the test scope loads the documents fresh
+            using var setupScope = fixture.ServiceProvider.CreateScope();
+            var setupDbContext = setupScope.ServiceProvider.GetRequiredService<ITestDbContext>();
             using var contextHandler = AsyncLocalContext.Instance.InitAsyncLocalContext();
             var post = new Post("title", "content");
-            await fixture.TestDbContext.Posts.CreateAsync(post);
+            await setupDbContext.Posts.CreateAsync(post);
 
             var loadedPost = await fixture.TestDbContext.Posts.FindOneAsync(post.Id);
             var proxyType = loadedPost.GetType();

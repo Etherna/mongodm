@@ -36,20 +36,27 @@ namespace Etherna.Scrinium.IntegrationTests
         private readonly ITestDbContext dbContext;
         private readonly IntegrationFixture fixture;
         private readonly IServiceScope serviceScope;
+        private readonly ITestDbContext setupDbContext;
+        private readonly IServiceScope setupScope;
 
         // Constructor and dispose.
         /* Each test runs on its own DI scope, resolving fresh db context instances
-         * like a production request or job would do. */
+         * like a production request or job would do. The documents a test loads are
+         * created through a setup scope of their own: a created instance is the loaded
+         * model of its document on the scope creating it. */
         public ReferencedModelsTests(IntegrationFixture fixture)
         {
             this.fixture = fixture;
             serviceScope = fixture.ServiceProvider.CreateScope();
             dbContext = serviceScope.ServiceProvider.GetRequiredService<ITestDbContext>();
+            setupScope = fixture.ServiceProvider.CreateScope();
+            setupDbContext = setupScope.ServiceProvider.GetRequiredService<ITestDbContext>();
         }
 
         public void Dispose()
         {
             serviceScope.Dispose();
+            setupScope.Dispose();
             GC.SuppressFinalize(this);
         }
 
@@ -178,19 +185,19 @@ namespace Etherna.Scrinium.IntegrationTests
             using var contextHandler = AsyncLocalContext.Instance.InitAsyncLocalContext();
             var postA = new Post("title A", "content A");
             var postB = new Post("title B", "content B");
-            await dbContext.Posts.CreateAsync(postA);
-            await dbContext.Posts.CreateAsync(postB);
+            await setupDbContext.Posts.CreateAsync(postA);
+            await setupDbContext.Posts.CreateAsync(postB);
 
             //blog1: LastPost preview is postB, Posts collection references postA by id only
             var blog1 = new Blog("blog 1");
             blog1.AddPost(postA);
             blog1.AddPost(postB);
-            await dbContext.Blogs.CreateAsync(blog1);
+            await setupDbContext.Blogs.CreateAsync(blog1);
 
             //blog2: LastPost preview is postA, with its denormalized Title
             var blog2 = new Blog("blog 2");
             blog2.AddPost(postA);
-            await dbContext.Blogs.CreateAsync(blog2);
+            await setupDbContext.Blogs.CreateAsync(blog2);
 
             // Action.
             using var workContextHandler = AsyncLocalContext.Instance.InitAsyncLocalContext();
@@ -251,9 +258,9 @@ namespace Etherna.Scrinium.IntegrationTests
             // Setup.
             using var contextHandler = AsyncLocalContext.Instance.InitAsyncLocalContext();
             var blog = new Blog("blog title");
-            await dbContext.Blogs.CreateAsync(blog);
+            await setupDbContext.Blogs.CreateAsync(blog);
             var bookmark = new Bookmark("my bookmark", blog);
-            await dbContext.Bookmarks.CreateAsync(bookmark);
+            await setupDbContext.Bookmarks.CreateAsync(bookmark);
             await DeleteDocumentAsync(dbContext.Blogs.Name, blog.Id!);
 
             using var readContextHandler = AsyncLocalContext.Instance.InitAsyncLocalContext();
@@ -324,11 +331,11 @@ namespace Etherna.Scrinium.IntegrationTests
             // Setup.
             using var contextHandler = AsyncLocalContext.Instance.InitAsyncLocalContext();
             var item = new Item("item name");
-            await dbContext.Items.CreateAsync(item);
+            await setupDbContext.Items.CreateAsync(item);
 
             var review = new Review("review text");
             review.SetItem(item);
-            await dbContext.Reviews.CreateAsync(review);
+            await setupDbContext.Reviews.CreateAsync(review);
 
             await DeleteDocumentAsync(dbContext.Items.Name, item.Id!);
 
@@ -442,11 +449,11 @@ namespace Etherna.Scrinium.IntegrationTests
         private async Task<(Blog blog, Post post)> CreateBlogWithPostAsync()
         {
             var post = new Post("post title", "post content");
-            await dbContext.Posts.CreateAsync(post);
+            await setupDbContext.Posts.CreateAsync(post);
 
             var blog = new Blog("blog title");
             blog.AddPost(post);
-            await dbContext.Blogs.CreateAsync(blog);
+            await setupDbContext.Blogs.CreateAsync(blog);
 
             return (blog, post);
         }

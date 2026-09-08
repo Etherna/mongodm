@@ -223,7 +223,7 @@ namespace Etherna.Scrinium.Core.Repositories
 
             logger.RepositoryCreatedDocuments(Name, DbContext.Engine.Options.DbName, modelList.Select(m => m.Id!.ToString()!));
 
-            CaptureCreatedModelsDocuments(modelList);
+            TrackCreatedModels(modelList);
 
             await DbContext.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
         }
@@ -242,7 +242,7 @@ namespace Etherna.Scrinium.Core.Repositories
 
             logger.RepositoryCreatedDocument(Name, DbContext.Engine.Options.DbName, model.Id!.ToString()!);
 
-            CaptureCreatedModelsDocuments([model]);
+            TrackCreatedModels([model]);
 
             await DbContext.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
         }
@@ -263,9 +263,11 @@ namespace Etherna.Scrinium.Core.Repositories
             // Delete model.
             await DeleteOnDBAsync(model, additionalFilters ?? [], cancellationToken).ConfigureAwait(false);
 
-            // Remove from pending changes and loaded models.
-            InternalDbContext.RemoveModelTracking(model);
+            // Remove from loaded models and pending changes.
+            /* The identity map key resolves through the source repository the tracking binds
+             * to a created instance: leave the map before dropping the tracking. */
             DbContext.UnregisterLoadedModel(model.Id!, model);
+            InternalDbContext.RemoveModelTracking(model);
 
             // Propagate the delete to the documents referencing the model.
             DbContext.Engine.DbMaintainer.OnDeletedModel<TKey>(model, this);
@@ -406,10 +408,11 @@ namespace Etherna.Scrinium.Core.Repositories
             CancellationToken cancellationToken = default)
         {
             /* Read through the loaded models of the current scope: a full instance already
-             * loaded satisfies the request without a db round trip. Summary instances still
-             * go to db, to be upgraded in place with the full document by deserialization. */
+             * loaded, or created, satisfies the request without a db round trip. Summary
+             * instances still go to db, to be upgraded in place with the full document by
+             * deserialization. */
             if (DbContext.TryGetLoadedModel(this, id!) is TModel loadedModel &&
-                loadedModel is IReferenceable { IsSummary: false })
+                loadedModel is not IReferenceable { IsSummary: true })
                 return Task.FromResult(loadedModel);
 
             return FindOneOnDBAsync(id, cancellationToken);
@@ -1078,7 +1081,7 @@ namespace Etherna.Scrinium.Core.Repositories
 
             logger.RepositoryCreatedDocument(Name, DbContext.Engine.Options.DbName, castedModel.Id!.ToString()!);
 
-            CaptureCreatedModelsDocuments([castedModel]);
+            TrackCreatedModels([castedModel]);
         }
 
         async Task<IReadOnlyDictionary<object, IEntityModel>> IFullModelsLoader.LoadFullModelsAsync(
@@ -1251,18 +1254,6 @@ namespace Etherna.Scrinium.Core.Repositories
             }
 
             return (scanPaths, unverifiableElementPaths);
-        }
-
-        private void CaptureCreatedModelsDocuments(IEnumerable<TModel> models)
-        {
-            //capture the model documents of the created models, so their later changes are saved.
-            using (new DbExecutionContextHandler(DbContext))
-                foreach (var model in models)
-                    if (TrySerializeModelBsonDocument(model) is { } modelDocument)
-                    {
-                        InternalDbContext.SetModelBsonDocument(model, modelDocument);
-                        InternalDbContext.SetModelSourceRepository(model, this);
-                    }
         }
 
         /// <summary>
@@ -1582,6 +1573,23 @@ namespace Etherna.Scrinium.Core.Repositories
 
             _ = new EntityIdEqFilterDefinition<TModel, TKey>(model.Id).Render(
                 new RenderArgs<TModel>((IBsonSerializer<TModel>)modelSerializer, DbContext.Engine.SerializerRegistry));
+        }
+
+        private void TrackCreatedModels(IEnumerable<TModel> models)
+        {
+            /* A created model enters the scope like a loaded one: its model document is
+             * captured, so its later changes are saved, and it registers as the instance of
+             * its document on the identity map, keyed on the source repository bound here, so
+             * the loads of the scope return it, and the references resolving through the
+             * identity map (the save refresh ones included) keep it as their value. */
+            using (new DbExecutionContextHandler(DbContext))
+                foreach (var model in models)
+                    if (TrySerializeModelBsonDocument(model) is { } modelDocument)
+                    {
+                        InternalDbContext.SetModelBsonDocument(model, modelDocument);
+                        InternalDbContext.SetModelSourceRepository(model, this);
+                        InternalDbContext.RegisterLoadedModel(model.Id!, model);
+                    }
         }
 
         private static bool TryAssignModelId(IEntityModel model, IDbContextEngine engine)

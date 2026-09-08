@@ -15,6 +15,7 @@
 using Etherna.MongoDB.Bson;
 using Etherna.MongoDB.Driver;
 using Etherna.MongoDB.Driver.Linq;
+using Etherna.Scrinium.Core;
 using Etherna.Scrinium.Core.ExecContext.AsyncLocal;
 using Etherna.Scrinium.IntegrationTests.Fixtures;
 using Etherna.Scrinium.IntegrationTests.Models;
@@ -56,11 +57,14 @@ namespace Etherna.Scrinium.IntegrationTests
         public async Task ChangedModelsListContainsOnlyMutatedModels()
         {
             // Setup.
+            //create on a setup scope: the test scope loads the documents fresh
+            using var setupScope = fixture.ServiceProvider.CreateScope();
+            var setupDbContext = setupScope.ServiceProvider.GetRequiredService<ITestDbContext>();
             using var contextHandler = AsyncLocalContext.Instance.InitAsyncLocalContext();
             var post0 = new Post("title0", "content0");
             var post1 = new Post("title1", "content1");
-            await dbContext.Posts.CreateAsync(post0);
-            await dbContext.Posts.CreateAsync(post1);
+            await setupDbContext.Posts.CreateAsync(post0);
+            await setupDbContext.Posts.CreateAsync(post1);
 
             using var workContextHandler = AsyncLocalContext.Instance.InitAsyncLocalContext();
             var loadedPost0 = await dbContext.Posts.FindOneAsync(post0.Id);
@@ -93,6 +97,49 @@ namespace Etherna.Scrinium.IntegrationTests
         }
 
         [Fact]
+        public async Task CreatedInstanceIsTheLoadedModelOfItsDocument()
+        {
+            /* SCR-281: a created model registers on the identity map like a loaded one, so the
+             * loads of its scope return the created instance itself, instead of materializing
+             * another tracked instance of the same document. */
+
+            // Setup.
+            using var contextHandler = AsyncLocalContext.Instance.InitAsyncLocalContext();
+            var post = new Post("title", "content");
+
+            // Action.
+            await dbContext.Posts.CreateAsync(post);
+
+            // Assert.
+            Assert.Same(post, dbContext.TryGetLoadedModel(dbContext.Posts, post.Id!));
+
+            //a load reading the document deduplicates on the created instance
+            var foundPost = await dbContext.Posts.FindOneAsync(p => p.Id == post.Id);
+            Assert.Same(post, foundPost);
+        }
+
+        [Fact]
+        public async Task DeletedCreatedInstanceLeavesTheScope()
+        {
+            /* SCR-281: a created instance leaves the identity map and the change tracking at
+             * its delete, resolving its repository from the binding of the create: its model
+             * type alone can't resolve it, being handled by many repositories. */
+
+            // Setup.
+            using var contextHandler = AsyncLocalContext.Instance.InitAsyncLocalContext();
+            var post = new Post("title", "content");
+            await dbContext.Posts.CreateAsync(post);
+
+            // Action.
+            await dbContext.Posts.DeleteAsync(post);
+
+            // Assert.
+            Assert.Null(dbContext.TryGetLoadedModel(dbContext.Posts, post.Id!));
+            Assert.Null(((IInternalDbContext)dbContext).TryGetModelBsonDocument(post));
+            Assert.Null(await dbContext.Posts.TryFindOneAsync(post.Id));
+        }
+
+        [Fact]
         public async Task DeletedModelIsNotSavedAgain()
         {
             // Setup.
@@ -112,6 +159,30 @@ namespace Etherna.Scrinium.IntegrationTests
             using var readContextHandler = AsyncLocalContext.Instance.InitAsyncLocalContext();
             var foundPost = await dbContext.Posts.TryFindOneAsync(post.Id);
             Assert.Null(foundPost);
+        }
+
+        [Fact]
+        public async Task FindOneReadsThroughCreatedInstances()
+        {
+            /* SCR-281: a created instance is a full instance of its document on the scope, so
+             * FindOneAsync by id returns it without a db round trip, like a loaded full instance:
+             * proved by deleting the document behind the scenes, where a db read would fail. */
+
+            // Setup.
+            using var contextHandler = AsyncLocalContext.Instance.InitAsyncLocalContext();
+            var post = new Post("title", "content");
+            await dbContext.Posts.CreateAsync(post);
+
+            //delete the document behind the scenes
+            var postsCollection = dbContext.Engine.Database.GetCollection<BsonDocument>("posts");
+            await postsCollection.DeleteOneAsync(
+                Builders<BsonDocument>.Filter.Eq("_id", ObjectId.Parse(post.Id)));
+
+            // Action.
+            var foundPost = await dbContext.Posts.FindOneAsync(post.Id);
+
+            // Assert.
+            Assert.Same(post, foundPost);
         }
 
         [Fact]
@@ -179,9 +250,12 @@ namespace Etherna.Scrinium.IntegrationTests
         public async Task NoTrackingModifierSkipsTracking()
         {
             // Setup.
+            //create on a setup scope: the test scope loads the documents fresh
+            using var setupScope = fixture.ServiceProvider.CreateScope();
+            var setupDbContext = setupScope.ServiceProvider.GetRequiredService<ITestDbContext>();
             using var contextHandler = AsyncLocalContext.Instance.InitAsyncLocalContext();
             var post = new Post("title", "content");
-            await dbContext.Posts.CreateAsync(post);
+            await setupDbContext.Posts.CreateAsync(post);
 
             using var workContextHandler = AsyncLocalContext.Instance.InitAsyncLocalContext();
             Post loadedPost;
@@ -204,7 +278,7 @@ namespace Etherna.Scrinium.IntegrationTests
 
             //no cache: loads don't register instances, nor deduplicate between them
             var post2 = new Post("title 2", "content 2");
-            await dbContext.Posts.CreateAsync(post2);
+            await setupDbContext.Posts.CreateAsync(post2);
             using (dbContext.Engine.SerializerModifierAccessor.EnableCacheSerializerModifier(noCache: true))
             {
                 var firstNoCachePost = await dbContext.Posts.FindOneAsync(post2.Id);
