@@ -82,9 +82,12 @@ namespace Etherna.Scrinium.IntegrationTests
              * deleted document, nor enqueue a dependencies update task doomed to fail. */
 
             // Setup.
+            //create on a setup scope: the test scope loads the documents fresh
+            using var setupScope = fixture.ServiceProvider.CreateScope();
+            var setupDbContext = setupScope.ServiceProvider.GetRequiredService<ITestDbContext>();
             using var contextHandler = AsyncLocalContext.Instance.InitAsyncLocalContext();
             var post = new Post("title", "content");
-            await dbContext.Posts.CreateAsync(post);
+            await setupDbContext.Posts.CreateAsync(post);
 
             var loadedPost = await dbContext.Posts.FindOneAsync(post.Id);
             loadedPost.Content = "updated content";

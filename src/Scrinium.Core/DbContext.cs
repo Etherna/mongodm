@@ -283,31 +283,57 @@ namespace Etherna.Scrinium.Core
             }
 
             /* One batched load per source repository: the loaded documents deserialize on
-             * this scope, merging in place into the summary instances through the identity
-             * map. Custom repository implementations without the batch surface load per
-             * instance. */
+             * the scope owning the repository, merging in place into the instances registered
+             * on its identity map. Custom repository implementations without the batch
+             * surface load per instance. */
             foreach (var repositoryGroup in modelsToLoad.GroupBy(pair => pair.Repository))
             {
+                IReadOnlyDictionary<object, IEntityModel> loadedModels;
                 if (repositoryGroup.Key is IFullModelsLoader fullModelsLoader)
                 {
-                    await fullModelsLoader.LoadFullModelsAsync(
+                    loadedModels = await fullModelsLoader.LoadFullModelsAsync(
                         repositoryGroup.Select(pair => pair.Model)).ConfigureAwait(false);
                 }
                 else
                 {
+                    Dictionary<object, IEntityModel> foundModels = [];
                     foreach (var (_, repository, modelId) in repositoryGroup)
-                        await repository.TryFindOneAsync(modelId).ConfigureAwait(false);
+                        if (await repository.TryFindOneAsync(modelId).ConfigureAwait(false) is IEntityModel foundModel)
+                            foundModels[modelId] = foundModel;
+                    loadedModels = foundModels;
+                }
+
+                foreach (var (model, _, modelId) in repositoryGroup)
+                {
+                    /* A requested instance registered on the identity map merged in place,
+                     * giving up the summary state; one invalidated by a document type change
+                     * is outdated, not missing: its fresh instance replaced it as the loaded
+                     * model. */
+                    if (model is not IReferenceable { IsSummary: true } referenceable ||
+                        model is IProxyModel { OutdatedModelType: not null })
+                        continue;
+
+                    /* A requested instance not registered on the identity map (deserialized
+                     * out of it, or evicted from it) is still a summary after the load merged
+                     * into the registered one: upgrade it from the loaded instance, so the
+                     * preload upgrades what it received, invalidating it instead when the
+                     * document carries another type, like the identity map invalidates the
+                     * registered instance. */
+                    if (loadedModels.TryGetValue(modelId, out var loadedModel))
+                    {
+                        var loadedModelType = engine.ProxyGenerator.PurgeProxyType(loadedModel.GetType());
+                        if (loadedModelType == engine.ProxyGenerator.PurgeProxyType(model.GetType()))
+                            referenceable.MergeFullModel(loadedModel);
+                        else
+                            (model as IProxyModel)?.SetOutdatedModelType(loadedModelType);
+                    }
+                    else
+                    {
+                        //the load found no document: the origin document doesn't exist anymore
+                        ((IProxyModelsDbContext)this).OnMissingOriginDocument(model);
+                    }
                 }
             }
-
-            /* A model still summary after its load found no origin document: the loaded
-             * documents merge in place through the identity map, so a completed load always
-             * clears the summary state. An instance invalidated by a document type change is
-             * outdated, not missing: its fresh instance replaced it as the loaded model. */
-            foreach (var (model, _, _) in modelsToLoad)
-                if (model is IReferenceable { IsSummary: true } &&
-                    model is not IProxyModel { OutdatedModelType: not null })
-                    ((IProxyModelsDbContext)this).OnMissingOriginDocument(model);
         }
 
         public virtual async Task SaveChangesAsync(CancellationToken cancellationToken = default)
@@ -554,15 +580,18 @@ namespace Etherna.Scrinium.Core
             ArgumentNullException.ThrowIfNull(model);
 
             bool removed;
+            IRepository? trackedRepository;
             lock (trackingLock)
             {
                 changeCandidates.Remove(model);
-                modelSourceRepositories.Remove(model);
+                modelSourceRepositories.Remove(model, out trackedRepository);
                 removed = modelBsonDocuments.Remove(model);
             }
 
+            /* A created instance carries its source repository only in the dropped binding:
+             * resolving it by model type would fail on a type handled by many repositories. */
             if (removed &&
-                TryGetSourceRepository(model) is { } repository)
+                (trackedRepository ?? TryGetSourceRepository(model)) is { } repository)
                 logger.DbContextUnregisteredChangedModel(engine.Options.DbName, repository.ModelIdToString(model), repository.Name);
         }
 

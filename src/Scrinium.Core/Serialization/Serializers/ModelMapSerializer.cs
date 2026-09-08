@@ -21,6 +21,7 @@ using Etherna.Scrinium.Core.Domain.Models;
 using Etherna.Scrinium.Core.Extensions;
 using Etherna.Scrinium.Core.ProxyModels;
 using Etherna.Scrinium.Core.Serialization.Mapping;
+using Etherna.Scrinium.Core.Serialization.Modifiers;
 using Etherna.Scrinium.Core.Utility;
 using System;
 using System.Collections.Generic;
@@ -140,8 +141,12 @@ namespace Etherna.Scrinium.Core.Serialization.Serializers
              * from summary with the fresh full model, if required. Models deserialized with the
              * no cache serializer modifier, outside of a scope, or without a compatible ambient
              * repository (e.g. projections of another model type on a raw collection read),
-             * stay not deduplicated. */
-            if (!dbContextEngine.SerializerModifierAccessor.IsNoCacheEnabled &&
+             * stay not deduplicated, like the root instance deserialized with the detached root
+             * modifier: a carrier of the document state, refreshing the instance the scope
+             * already holds, whose references keep deduplicating. */
+            var serializerModifierAccessor = dbContextEngine.SerializerModifierAccessor;
+            if (!serializerModifierAccessor.IsNoCacheEnabled &&
+                !((IInternalSerializerModifierAccessor)serializerModifierAccessor).IsDetachedRootEnabled &&
                 dbContextEngine.ProxyGenerator.IsProxyType(model!.GetType()) &&
                 GetDocumentId(model, out var id, out _, out _) && id != null)
             {

@@ -413,7 +413,7 @@ The integration tests need a real MongoDB instance supporting transactions: they
 `SCRINIUM_TEST_DB_URL` environment variable when set, otherwise they spawn a throwaway local `mongod`
 process as a single node replica set (the binary must be on `PATH`).
 
-Versions are computed by [GitVersion](https://gitversion.net/), there are no manual version bumps.
+Versions are computed by [GitVersion](https://gitversion.net/) (GitFlow workflow, tuned by the root `GitVersion.yml`), there are no manual version bumps.
 
 Coding conventions and architecture notes live in [AGENTS.md](AGENTS.md).
 
@@ -461,7 +461,7 @@ For questions or problems please write an email to [info@etherna.io](mailto:info
 
 ## License
 
-![LGPL Logo](https://www.gnu.org/graphics/lgplv3-with-text-154x68.png)
+![LGPL Logo](https://raw.githubusercontent.com/Etherna/scrinium/main/doc/lgplv3-with-text-154x68.png)
 
 We use the GNU Lesser General Public License v3 or later (SPDX `LGPL-3.0-or-later`) for this project:
 [COPYING.LESSER](COPYING.LESSER) adds the lesser terms to the GNU GPL v3 of [COPYING](COPYING).
