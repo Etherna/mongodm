@@ -34,20 +34,27 @@ namespace Etherna.Scrinium.IntegrationTests
         private readonly ITestDbContext dbContext;
         private readonly IntegrationFixture fixture;
         private readonly IServiceScope serviceScope;
+        private readonly ITestDbContext setupDbContext;
+        private readonly IServiceScope setupScope;
 
         // Constructor and dispose.
         /* Each test runs on its own DI scope, resolving fresh db context instances
-         * like a production request or job would do. */
+         * like a production request or job would do. The documents a test loads are
+         * created through a setup scope of their own: a created instance is the loaded
+         * model of its document on the scope creating it. */
         public UpdateDocDependenciesTests(IntegrationFixture fixture)
         {
             this.fixture = fixture;
             serviceScope = fixture.ServiceProvider.CreateScope();
             dbContext = serviceScope.ServiceProvider.GetRequiredService<ITestDbContext>();
+            setupScope = fixture.ServiceProvider.CreateScope();
+            setupDbContext = setupScope.ServiceProvider.GetRequiredService<ITestDbContext>();
         }
 
         public void Dispose()
         {
             serviceScope.Dispose();
+            setupScope.Dispose();
             GC.SuppressFinalize(this);
         }
 
@@ -97,11 +104,11 @@ namespace Etherna.Scrinium.IntegrationTests
             fixture.TaskRunner.ClearPending();
 
             var post = new Post("original title", "content");
-            await dbContext.Posts.CreateAsync(post);
+            await setupDbContext.Posts.CreateAsync(post);
 
             var blog = new Blog("my blog");
             blog.AddPost(post);
-            await dbContext.Blogs.CreateAsync(blog);
+            await setupDbContext.Blogs.CreateAsync(blog);
 
             // Action: update the referenced post through its repository.
             var loadedPost = await dbContext.Posts.FindOneAsync(post.Id);
@@ -184,10 +191,10 @@ namespace Etherna.Scrinium.IntegrationTests
             fixture.TaskRunner.ClearPending();
 
             var post = new Post("original title", "content");
-            await dbContext.Posts.CreateAsync(post);
+            await setupDbContext.Posts.CreateAsync(post);
             var blog = new Blog("my blog");
             blog.AddPost(post);
-            await dbContext.Blogs.CreateAsync(blog);
+            await setupDbContext.Blogs.CreateAsync(blog);
 
             // Action: update the referenced post, delete it, then execute the enqueued tasks.
             var loadedPost = await dbContext.Posts.FindOneAsync(post.Id);
@@ -206,6 +213,62 @@ namespace Etherna.Scrinium.IntegrationTests
         }
 
         [Fact]
+        public async Task EachPathRefreshesWithTheSummaryOfItsOwnReferenceSerializer()
+        {
+            /* SCR-278: a document can reference the same model on two paths through two
+             * reference serializers of the same model type, declaring different summaries
+             * (Blog.LastPost with the preview schema, Blog.Posts with the id only one), and
+             * a task payload can carry both paths together: the same element path expansion
+             * brings in the id member maps of every schema hosting a path. Each path refreshes
+             * with the document of its own serializer, whatever the payload order: the id only
+             * document must never replace the preview one. */
+
+            // Setup.
+            using var contextHandler = AsyncLocalContext.Instance.InitAsyncLocalContext();
+            var post = new Post("original title", "content");
+            await dbContext.Posts.CreateAsync(post);
+            var blog = new Blog("my blog");
+            blog.AddPost(post);
+            await dbContext.Blogs.CreateAsync(blog);
+
+            var loadedPost = await dbContext.Posts.FindOneAsync(post.Id);
+            loadedPost.Title = "updated title";
+            await dbContext.SaveChangesAsync();
+            fixture.TaskRunner.ClearPending();
+
+            //the id member maps of both paths, from every schema hosting them
+            var blogReferenceIdMemberMaps = dbContext.Engine.MapRegistry.GetModelMap(typeof(Blog)).AllDescendingMemberMaps
+                .Where(memberMap => memberMap is { IsEntityReferenceMember: true, IsIdMember: true })
+                .Where(memberMap => memberMap.MemberMapPath.Count() == 2)
+                .ToArray();
+            var lastPostIdMemberMapIds = blogReferenceIdMemberMaps
+                .Where(memberMap => memberMap.ParentMemberMap!.BsonMemberMap.MemberName == nameof(Blog.LastPost))
+                .Select(memberMap => memberMap.Id)
+                .ToArray();
+            var postsIdMemberMapIds = blogReferenceIdMemberMaps
+                .Where(memberMap => memberMap.ParentMemberMap!.BsonMemberMap.MemberName == nameof(Blog.Posts))
+                .Select(memberMap => memberMap.Id)
+                .ToArray();
+
+            // Action: run the task with the id only path first.
+            using var taskScope = fixture.ServiceProvider.CreateScope();
+            var task = taskScope.ServiceProvider.GetRequiredService<IUpdateDocDependenciesTask>();
+            await task.RunAsync<TestDbContext>(typeof(TestDbContext), "posts", post.Id, [.. postsIdMemberMapIds, .. lastPostIdMemberMapIds]);
+
+            // Assert: each path carries the schema id and the members of its own serializer.
+            var blogsCollection = dbContext.Engine.Database.GetCollection<BsonDocument>("blogs");
+            var rawBlog = await blogsCollection.Find(IdFilter(blog.Id)).SingleAsync();
+
+            var rawLastPost = rawBlog["LastPost"].AsBsonDocument;
+            Assert.Equal("8fa8f258-70b2-464f-8b57-11de27ca0b81", rawLastPost["_s"].AsString);
+            Assert.Equal("updated title", rawLastPost["Title"].AsString);
+
+            var rawReferencedPost = rawBlog["Posts"].AsBsonArray[0].AsBsonDocument;
+            Assert.Equal("e7d1fe44-c5d7-4e5b-8ab6-898295619131", rawReferencedPost["_s"].AsString);
+            Assert.False(rawReferencedPost.Contains("Title"));
+        }
+
+        [Fact]
         public async Task ExclusiveAccessDeniesPendingDependenciesUpdates()
         {
             /* The task never holds an exclusive access allowance: executed while another
@@ -218,10 +281,10 @@ namespace Etherna.Scrinium.IntegrationTests
             fixture.TaskRunner.ClearPending();
 
             var post = new Post("original title", "content");
-            await dbContext.Posts.CreateAsync(post);
+            await setupDbContext.Posts.CreateAsync(post);
             var blog = new Blog("my blog");
             blog.AddPost(post);
-            await dbContext.Blogs.CreateAsync(blog);
+            await setupDbContext.Blogs.CreateAsync(blog);
 
             var loadedPost = await dbContext.Posts.FindOneAsync(post.Id);
             loadedPost.Title = "updated title";
@@ -264,10 +327,10 @@ namespace Etherna.Scrinium.IntegrationTests
             fixture.TaskRunner.ClearPending();
 
             var post = new Post("original title", "content");
-            await dbContext.Posts.CreateAsync(post);
+            await setupDbContext.Posts.CreateAsync(post);
             var blog = new Blog("my blog");
             blog.AddPost(post);
-            await dbContext.Blogs.CreateAsync(blog);
+            await setupDbContext.Blogs.CreateAsync(blog);
 
             var loadedPost = await dbContext.Posts.FindOneAsync(post.Id);
             loadedPost.Title = "updated title";
@@ -392,14 +455,14 @@ namespace Etherna.Scrinium.IntegrationTests
             fixture.TaskRunner.ClearPending();
 
             var post = new Post("original title", "content");
-            await dbContext.Posts.CreateAsync(post);
+            await setupDbContext.Posts.CreateAsync(post);
 
             List<Blog> blogs = [];
             for (int i = 0; i < 10; i++)
             {
                 var blog = new Blog($"blog {i}");
                 blog.AddPost(post);
-                await dbContext.Blogs.CreateAsync(blog);
+                await setupDbContext.Blogs.CreateAsync(blog);
                 blogs.Add(blog);
             }
 
@@ -444,7 +507,7 @@ namespace Etherna.Scrinium.IntegrationTests
             fixture.TaskRunner.ClearPending();
 
             var track = new Track("original title");
-            await dbContext.Tracks.CreateAsync(track);
+            await setupDbContext.Tracks.CreateAsync(track);
 
             var mixtape = new Mixtape("my mixtape")
             {
@@ -452,7 +515,7 @@ namespace Etherna.Scrinium.IntegrationTests
                 LabeledTracks = { ["labeled"] = track },
                 Tracks = [track]
             };
-            await dbContext.Mixtapes.CreateAsync(mixtape);
+            await setupDbContext.Mixtapes.CreateAsync(mixtape);
 
             // Action: update the referenced track, and execute the enqueued task.
             var loadedTrack = await dbContext.Tracks.FindOneAsync(track.Id);

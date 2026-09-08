@@ -312,10 +312,22 @@ namespace Etherna.Scrinium.Core.Generators
                 b.AppendLine("        {");
                 if (property.GetterAccessibilityIsEmittable)
                 {
-                    var exposesMutation = property.IsExtraElements ? "false" : $"proxy{property.Name}ExposesMutation";
                     b.AppendLine($"            {WithSpace(property.GetterAccessibility)}get");
                     b.AppendLine("            {");
-                    b.AppendLine($"                OnProxyMemberGet(\"{property.Name}\", {exposesMutation});");
+                    if (property.IsExtraElements)
+                    {
+                        /* The extra elements bag is never loaded data: a summary excludes it from
+                         * its loaded members and clears it at deserialization, and a full document
+                         * clears it once its fix function ran, so a full load could bring nothing
+                         * into it. Its get never loads on a summary, whoever reads it: the
+                         * reference write clearing it, or the class map extra elements write. */
+                        b.AppendLine("                //the extra elements bag is never loaded data: no summary load on its get");
+                        b.AppendLine("                ThrowIfProxyOutdated();");
+                    }
+                    else
+                    {
+                        b.AppendLine($"                OnProxyMemberGet(\"{property.Name}\", proxy{property.Name}ExposesMutation);");
+                    }
                     b.AppendLine($"                return base.{property.Name};");
                     b.AppendLine("            }");
                 }

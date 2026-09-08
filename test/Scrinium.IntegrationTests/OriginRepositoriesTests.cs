@@ -36,20 +36,27 @@ namespace Etherna.Scrinium.IntegrationTests
         private readonly ITestDbContext dbContext;
         private readonly IntegrationFixture fixture;
         private readonly IServiceScope serviceScope;
+        private readonly ITestDbContext setupDbContext;
+        private readonly IServiceScope setupScope;
 
         // Constructor and dispose.
         /* Each test runs on its own DI scope, resolving fresh db context instances
-         * like a production request or job would do. */
+         * like a production request or job would do. The documents a test loads are
+         * created through a setup scope of their own: a created instance is the loaded
+         * model of its document on the scope creating it. */
         public OriginRepositoriesTests(IntegrationFixture fixture)
         {
             this.fixture = fixture;
             serviceScope = fixture.ServiceProvider.CreateScope();
             dbContext = serviceScope.ServiceProvider.GetRequiredService<ITestDbContext>();
+            setupScope = fixture.ServiceProvider.CreateScope();
+            setupDbContext = setupScope.ServiceProvider.GetRequiredService<ITestDbContext>();
         }
 
         public void Dispose()
         {
             serviceScope.Dispose();
+            setupScope.Dispose();
             GC.SuppressFinalize(this);
         }
 
@@ -170,7 +177,7 @@ namespace Etherna.Scrinium.IntegrationTests
             // Setup.
             using var contextHandler = AsyncLocalContext.Instance.InitAsyncLocalContext();
             var post = new Post("title", "content");
-            await dbContext.Posts.CreateAsync(post);
+            await setupDbContext.Posts.CreateAsync(post);
 
             //copy the raw document into the archived collection, with the same id
             var postsCollection = dbContext.Engine.Database.GetCollection<BsonDocument>("posts");
@@ -252,13 +259,15 @@ namespace Etherna.Scrinium.IntegrationTests
             // Setup.
             using var implicitScope = fixture.ServiceProvider.CreateScope();
             var implicitDbContext = implicitScope.ServiceProvider.GetRequiredService<IImplicitSourceDbContext>();
+            using var implicitSetupScope = fixture.ServiceProvider.CreateScope();
+            var implicitSetupDbContext = implicitSetupScope.ServiceProvider.GetRequiredService<IImplicitSourceDbContext>();
             using var contextHandler = AsyncLocalContext.Instance.InitAsyncLocalContext();
 
             var post = new Post("post title", "post content");
-            await implicitDbContext.Posts.CreateAsync(post);
+            await implicitSetupDbContext.Posts.CreateAsync(post);
             var blog = new Blog("blog title");
             blog.AddPost(post);
-            await implicitDbContext.Blogs.CreateAsync(blog);
+            await implicitSetupDbContext.Blogs.CreateAsync(blog);
 
             // Action.
             using var workContextHandler = AsyncLocalContext.Instance.InitAsyncLocalContext();
@@ -283,10 +292,10 @@ namespace Etherna.Scrinium.IntegrationTests
             // Setup.
             using var contextHandler = AsyncLocalContext.Instance.InitAsyncLocalContext();
             var post = new Post("post title", "post content");
-            await dbContext.Posts.CreateAsync(post);
+            await setupDbContext.Posts.CreateAsync(post);
             var blog = new Blog("blog title");
             blog.AddPost(post);
-            await dbContext.Blogs.CreateAsync(blog);
+            await setupDbContext.Blogs.CreateAsync(blog);
 
             // Action.
             using var workContextHandler = AsyncLocalContext.Instance.InitAsyncLocalContext();

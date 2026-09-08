@@ -160,6 +160,32 @@ namespace Etherna.Scrinium.IntegrationTests
         }
 
         [Fact]
+        public async Task ExplicitPreloadDetectsTheTypeChangeOnADetachedInstance()
+        {
+            /* SCR-280: a preloaded summary out of the identity map (deserialized with the no
+             * cache modifier here) invalidates as well when its document carries another type,
+             * like the identity map invalidates the registered instance. */
+
+            // Setup.
+            var (message, _, _) = await CreateMessageAndReplaceEditorAsync();
+
+            using var workScope = fixture.ServiceProvider.CreateScope();
+            var workDbContext = workScope.ServiceProvider.GetRequiredService<ITestDbContext>();
+            using var workContextHandler = AsyncLocalContext.Instance.InitAsyncLocalContext();
+
+            AccountBase staleEditor;
+            using (workDbContext.Engine.SerializerModifierAccessor.EnableCacheSerializerModifier(noCache: true))
+                staleEditor = (await workDbContext.Messages.FindOneAsync(message.Id)).Editor;
+
+            // Action.
+            await workDbContext.LoadValuesAsync(staleEditor, m => m.Username);
+
+            // Assert.
+            Assert.True(workDbContext.IsOutdatedModel(staleEditor));
+            Assert.Throws<ScriniumOutdatedModelTypeException>(() => staleEditor.Username);
+        }
+
+        [Fact]
         public async Task ScopeWithOutdatedModelKeepsSavingUnrelatedChanges()
         {
             /* An outdated instance denies any application interaction, but must not poison

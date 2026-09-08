@@ -110,6 +110,8 @@ namespace Etherna.Scrinium.Core
                 .Returns(() => mapRegistryMock.Object);
             dbContextEngineMock.Setup(c => c.Options.DbName)
                 .Returns("testDb");
+            //the internal facing surface of the accessor, hard cast by the serializers
+            serializerModifierAccessorMock.As<IInternalSerializerModifierAccessor>();
             dbContextEngineMock.Setup(c => c.SerializerModifierAccessor)
                 .Returns(() => serializerModifierAccessorMock.Object);
 

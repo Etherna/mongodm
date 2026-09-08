@@ -37,20 +37,27 @@ namespace Etherna.Scrinium.IntegrationTests
         private readonly IntegrationFixture fixture;
         private readonly IMigrationsDbContext migrationsDbContext;
         private readonly IServiceScope serviceScope;
+        private readonly IMigrationsDbContext setupDbContext;
+        private readonly IServiceScope setupScope;
 
         // Constructor and dispose.
         /* Each test runs on its own DI scope, resolving fresh db context instances
-         * like a production request or job would do. */
+         * like a production request or job would do. The documents a test loads are
+         * created through a setup scope of their own: a created instance is the loaded
+         * model of its document on the scope creating it. */
         public DbMigrationTests(IntegrationFixture fixture)
         {
             this.fixture = fixture;
             serviceScope = fixture.ServiceProvider.CreateScope();
             migrationsDbContext = serviceScope.ServiceProvider.GetRequiredService<IMigrationsDbContext>();
+            setupScope = fixture.ServiceProvider.CreateScope();
+            setupDbContext = setupScope.ServiceProvider.GetRequiredService<IMigrationsDbContext>();
         }
 
         public void Dispose()
         {
             serviceScope.Dispose();
+            setupScope.Dispose();
             GC.SuppressFinalize(this);
         }
 
@@ -270,11 +277,11 @@ namespace Etherna.Scrinium.IntegrationTests
             fixture.TaskRunner.ClearPending();
 
             var note = new Note("first") { Tag = "original" };
-            await migrationsDbContext.Notes.CreateAsync(note);
+            await setupDbContext.Notes.CreateAsync(note);
 
             //a digest denormalizes the tag of the note into its summary
             var digest = new Digest("digest", note);
-            await migrationsDbContext.Digests.CreateAsync(digest);
+            await setupDbContext.Digests.CreateAsync(digest);
 
             migrationsDbContext.DocumentMigrations =
             [
@@ -359,11 +366,11 @@ namespace Etherna.Scrinium.IntegrationTests
             await migrationsDbContext.Notes.DeleteManyAsync(Builders<Note>.Filter.Empty);
 
             var note = new Note("text") { Tag = "original" };
-            await migrationsDbContext.Notes.CreateAsync(note);
+            await setupDbContext.Notes.CreateAsync(note);
 
             //a digest denormalizes the tag of the note into its summary
             var digest = new Digest("digest", note);
-            await migrationsDbContext.Digests.CreateAsync(digest);
+            await setupDbContext.Digests.CreateAsync(digest);
 
             //the default migration replaces each scanned document as it is
             migrationsDbContext.DocumentMigrations =
@@ -406,7 +413,7 @@ namespace Etherna.Scrinium.IntegrationTests
             for (var i = 0; i < 4; i++)
             {
                 var note = new Note($"note {i}");
-                await migrationsDbContext.Notes.CreateAsync(note);
+                await setupDbContext.Notes.CreateAsync(note);
                 noteIds.Add(note.Id);
             }
             noteIds.Sort(StringComparer.Ordinal); //the scan reads them by ascending id
@@ -444,7 +451,7 @@ namespace Etherna.Scrinium.IntegrationTests
             for (var i = 0; i < 5; i++)
             {
                 var note = new Note($"note {i}");
-                await migrationsDbContext.Notes.CreateAsync(note);
+                await setupDbContext.Notes.CreateAsync(note);
                 noteIds.Add(note.Id);
             }
 

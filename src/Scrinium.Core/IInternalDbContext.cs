@@ -37,10 +37,11 @@ namespace Etherna.Scrinium.Core
 
         /// <summary>
         /// Register a model instance as the loaded one for its document on this db context
-        /// instance. Following loads of the same document will return the same instance.
+        /// instance: the instance deserialized from the document, or the one created into it.
+        /// Following loads of the same document will return the same instance.
         /// </summary>
         /// <param name="modelId">The model document id</param>
-        /// <param name="model">The loaded model instance</param>
+        /// <param name="model">The loaded or created model instance</param>
         void RegisterLoadedModel(object modelId, IEntityModel model);
 
         /// <summary>

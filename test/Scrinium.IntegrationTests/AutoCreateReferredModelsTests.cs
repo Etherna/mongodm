@@ -19,6 +19,7 @@ using Etherna.Scrinium.IntegrationTests.Fixtures;
 using Etherna.Scrinium.IntegrationTests.Models;
 using Microsoft.Extensions.DependencyInjection;
 using System;
+using System.Linq;
 using System.Threading.Tasks;
 using Xunit;
 
@@ -29,6 +30,7 @@ namespace Etherna.Scrinium.IntegrationTests
     {
         // Fields.
         private readonly ITestDbContext dbContext;
+        private readonly IntegrationFixture fixture;
         private readonly IServiceScope serviceScope;
 
         // Constructor and dispose.
@@ -36,7 +38,7 @@ namespace Etherna.Scrinium.IntegrationTests
          * like a production request or job would do. */
         public AutoCreateReferredModelsTests(IntegrationFixture fixture)
         {
-            ArgumentNullException.ThrowIfNull(fixture);
+            this.fixture = fixture;
             serviceScope = fixture.ServiceProvider.CreateScope();
             dbContext = serviceScope.ServiceProvider.GetRequiredService<ITestDbContext>();
         }
@@ -67,6 +69,37 @@ namespace Etherna.Scrinium.IntegrationTests
             var rawReview = await reviewsCollection.Find(
                 Builders<BsonDocument>.Filter.Eq("_id", ObjectId.Parse(review.Id))).SingleAsync();
             Assert.Equal("updated text", rawReview["Text"].AsString);
+        }
+
+        [Fact]
+        public async Task AutoCreatedModelIsTheLoadedModelOfItsDocument()
+        {
+            /* SCR-281: an auto created referred model registers on the identity map like an
+             * explicitly created one, so the loads of its scope return the created instance,
+             * and the save refresh of the referencing model keeps it as the reference value. */
+
+            // Setup.
+            using var contextHandler = AsyncLocalContext.Instance.InitAsyncLocalContext();
+            var item = new Item("item name");
+            await dbContext.Items.CreateAsync(item);
+
+            //load on a new scope: the member level save of the loaded item auto creates the review
+            using var saveScope = fixture.ServiceProvider.CreateScope();
+            var saveDbContext = saveScope.ServiceProvider.GetRequiredService<ITestDbContext>();
+            using var saveContextHandler = AsyncLocalContext.Instance.InitAsyncLocalContext();
+
+            var loadedItem = await saveDbContext.Items.FindOneAsync(item.Id);
+            var review = loadedItem.AddReview("late review");
+
+            // Action.
+            await saveDbContext.SaveChangesAsync();
+
+            // Assert.
+            Assert.Same(review, saveDbContext.TryGetLoadedModel(saveDbContext.Reviews, review.Id));
+            Assert.Same(review, await saveDbContext.Reviews.FindOneAsync(review.Id));
+
+            //the refreshed reference member is the auto created instance, as it is
+            Assert.Same(review, loadedItem.Reviews.Single());
         }
 
         [Fact]

@@ -48,10 +48,27 @@ namespace Etherna.Scrinium.Core.Serialization.Modifiers
         }
 
         // Properties.
+        /// <summary>
+        /// Deserialize the root documents detached from the current scope: their instances
+        /// stay out of the identity map and of the change tracking, while the references
+        /// they carry keep resolving through the identity map like any deserialization.
+        /// </summary>
+        public bool DetachedRoot { get; set; }
+
+        /// <summary>
+        /// Deserialize every model out of the identity map and of the change tracking.
+        /// </summary>
         public bool NoCache { get; set; }
 
         // Static methods.
-        public static bool IsNoCacheEnabled(IExecutionContext context)
+        public static bool IsDetachedRootEnabled(IExecutionContext context) =>
+            IsRequested(context, r => r.DetachedRoot);
+
+        public static bool IsNoCacheEnabled(IExecutionContext context) =>
+            IsRequested(context, r => r.NoCache);
+
+        // Helpers.
+        private static bool IsRequested(IExecutionContext context, Func<CacheSerializerModifier, bool> request)
         {
             if (context.Items is null)
                 throw new ExecutionContextNotFoundException();
@@ -61,7 +78,7 @@ namespace Etherna.Scrinium.Core.Serialization.Modifiers
                 return false;
 
             lock (((ICollection)requests).SyncRoot)
-                return requests.Any(r => r.NoCache);
+                return requests.Any(request);
         }
     }
 }
