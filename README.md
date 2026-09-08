@@ -413,7 +413,7 @@ The integration tests need a real MongoDB instance supporting transactions: they
 `SCRINIUM_TEST_DB_URL` environment variable when set, otherwise they spawn a throwaway local `mongod`
 process as a single node replica set (the binary must be on `PATH`).
 
-Versions are computed by [GitVersion](https://gitversion.net/), there are no manual version bumps.
+Versions are computed by [GitVersion](https://gitversion.net/) (GitFlow workflow, tuned by the root `GitVersion.yml`), there are no manual version bumps.
 
 Coding conventions and architecture notes live in [AGENTS.md](AGENTS.md).
 

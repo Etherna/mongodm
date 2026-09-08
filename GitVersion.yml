@@ -1,0 +1,19 @@
+# GitVersion configuration, read by the GitVersion.MsBuild package every packed project references:
+# the GitFlow workflow with one override. Every push of a branch watched by the unstable MyGet deploy
+# (`dev`, `hotfix/**`, `release/**`) publishes one package, so each commit of those branches needs
+# its own package version. The workflow defaults give it to `develop` only (ContinuousDelivery: the
+# pre-release number counts the commits since the version source, `0.26.0-alpha.12`), while `hotfix`
+# and `release` run in ManualDeployment, which keeps `beta.1` until a tag and moves the commit count
+# into build metadata (`0.25.1-beta.1+9`), which NuGet ignores for identity: every push after the
+# first was refused as a duplicate. Same mode on the three branch kinds; the labels stay the workflow
+# ones (`alpha` on `dev`, `beta` on hotfix and release lines), and the stable deploy is unaffected:
+# on a `vX.Y.Z` tag the version is the plain one.
+#
+# The per branch key is `mode`, as printed by `gitversion -showconfig`: GitVersion ignores an unknown
+# key silently, so a misspelled override is a no-op, never an error.
+workflow: GitFlow/v1
+branches:
+  hotfix:
+    mode: ContinuousDelivery
+  release:
+    mode: ContinuousDelivery
