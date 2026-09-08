@@ -171,5 +171,21 @@ namespace Etherna.Scrinium.Core
             if (memberInfo is PropertyInfo propertyInfo && propertyInfo.CanWrite)
                 propertyInfo.SetValue(destination, value);
         }
+
+        /// <summary>
+        /// Set the value of the member selected by a lambda, whatever the accessibility of its setter.
+        /// The member resolves on the runtime type of the destination, so a member declared by an
+        /// interface resolves to the property implementing it.
+        /// </summary>
+        public static void SetValue<TModel, TMember>(
+            TModel destination,
+            Expression<Func<TModel, TMember>> memberLambda,
+            TMember value)
+        {
+            ArgumentNullException.ThrowIfNull(destination);
+
+            var memberInfo = GetMemberInfoFromLambda(memberLambda, destination.GetType());
+            SetValue(destination, memberInfo, value);
+        }
     }
 }
