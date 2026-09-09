@@ -41,6 +41,15 @@ namespace Etherna.Scrinium.Core.Utility
 
         // Tests.
         [Fact]
+        public void AbortDeferralNeedsAnAmbientHandler()
+        {
+            //without an ambient handler the operation persisted: there is nothing to undo
+            using var contextHandler = AsyncLocalContext.Instance.InitAsyncLocalContext();
+
+            Assert.False(DbSessionHandler.TryDeferToTransactionAbort(engineMock.Object, () => { }));
+        }
+
+        [Fact]
         public void AmbientSessionIsResolvedOnlyForItsEngine()
         {
             using var contextHandler = AsyncLocalContext.Instance.InitAsyncLocalContext();
@@ -115,6 +124,23 @@ namespace Etherna.Scrinium.Core.Utility
             handler.RunCommitActions();
 
             Assert.Equal([0, 1], runActions);
+        }
+
+        [Fact]
+        public void DeferredUndoRunsInReverseOrderAtTheAmbientHandlerAbort()
+        {
+            using var contextHandler = AsyncLocalContext.Instance.InitAsyncLocalContext();
+            var runActions = new List<int>();
+
+            using var handler = new DbSessionHandler(engineMock.Object, sessionMock.Object);
+            Assert.True(DbSessionHandler.TryDeferToTransactionAbort(engineMock.Object, () => runActions.Add(0)));
+            Assert.True(DbSessionHandler.TryDeferToTransactionAbort(engineMock.Object, () => runActions.Add(1)));
+            Assert.Empty(runActions);
+
+            handler.RunAbortActions();
+
+            //the undo runs last registered first, unwinding what the operations did in order
+            Assert.Equal([1, 0], runActions);
         }
 
         [Fact]

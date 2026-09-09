@@ -82,12 +82,13 @@ namespace Etherna.Scrinium.IntegrationTests
             await Assert.ThrowsAnyAsync<MongoException>(() => workDbContext.Seals.CreateAsync(createdSeal));
 
             // Assert.
-            //the aborted transaction rolled back the insert: no orphan document survived
+            //the aborted transaction rolled back the insert and undid the create: no orphan document, no id
+            Assert.Null(createdSeal.Id);
             using var readScope = fixture.ServiceProvider.CreateScope();
             var readDbContext = readScope.ServiceProvider.GetRequiredService<ICustomIdDbContext>();
             var sealsCollection = readDbContext.Engine.Database.GetCollection<BsonDocument>("seals");
             Assert.False(await sealsCollection.Find(
-                Builders<BsonDocument>.Filter.Eq("_id", ObjectId.Parse(createdSeal.Id))).AnyAsync());
+                Builders<BsonDocument>.Filter.Eq("ArtifactFingerprint", "scr284-flush-created")).AnyAsync());
         }
 
         [Fact]
@@ -107,12 +108,14 @@ namespace Etherna.Scrinium.IntegrationTests
                 dbContext.Seals.CreateAsync([firstSeal, duplicateSeal]));
 
             // Assert.
-            //the aborted transaction rolled back the first insert too
+            //the aborted transaction rolled back the first insert too, and undid both creates
+            Assert.Null(firstSeal.Id);
+            Assert.Null(duplicateSeal.Id);
             using var readScope = fixture.ServiceProvider.CreateScope();
             var readDbContext = readScope.ServiceProvider.GetRequiredService<ICustomIdDbContext>();
             var sealsCollection = readDbContext.Engine.Database.GetCollection<BsonDocument>("seals");
             Assert.False(await sealsCollection.Find(
-                Builders<BsonDocument>.Filter.Eq("_id", ObjectId.Parse(firstSeal.Id))).AnyAsync());
+                Builders<BsonDocument>.Filter.Eq("ArtifactFingerprint", "scr284-batch-duplicate")).AnyAsync());
         }
     }
 }
