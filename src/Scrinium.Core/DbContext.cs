@@ -180,7 +180,7 @@ namespace Etherna.Scrinium.Core
 
             /* The session handler enlists in the transaction every operation invoked
              * without an explicit session on collections of this engine, for the whole
-             * function execution. */
+             * function execution, and collects the bookkeeping they defer to the commit. */
             using var sessionHandler = new DbSessionHandler(engine, session);
 
             TResult result;
@@ -191,7 +191,9 @@ namespace Etherna.Scrinium.Core
             catch
             {
                 /* Abort with an uncancellable token: the function may have thrown for the
-                 * cancellation itself, and the abort must run anyway. */
+                 * cancellation itself, and the abort must run anyway. The deferred bookkeeping
+                 * drops with the handler: the tracking state stays the one before the
+                 * transaction, with the enlisted saves still pending. */
                 await session.AbortTransactionAsync(CancellationToken.None).ConfigureAwait(false);
                 logger.DbContextAbortedTransaction(engine.Options.DbName);
                 throw;
@@ -199,6 +201,11 @@ namespace Etherna.Scrinium.Core
 
             await session.CommitTransactionAsync(cancellationToken).ConfigureAwait(false);
             logger.DbContextCommittedTransaction(engine.Options.DbName);
+
+            /* The tracking state follows the commit: the saves enlisted in the transaction
+             * refresh their models and clear their change candidates only now, so an abort
+             * leaves every model as it was before the transaction, still tracked and still dirty. */
+            sessionHandler.RunCommitActions();
 
             return result;
         }

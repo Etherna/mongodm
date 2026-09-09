@@ -751,24 +751,38 @@ namespace Etherna.Scrinium.Core.Repositories
                 return;
             }
 
-            // Refresh the model in place with the updated document state.
-            /* A summary model merges the full document, upgrading also its bookkeeping;
-             * a full model refreshes all its members: at this point every local change has
-             * just been persisted, so only concurrent changes from other scopes can differ. */
-            if (model is IReferenceable { IsSummary: true } referenceableModel)
-                referenceableModel.MergeFullModel(updatedModel);
-            else
-                RefreshModel(InternalDbContext, castedModel, updatedModel);
-
-            // Refresh the model document: the saved model now matches the persisted document.
-            if (TrySerializeModelBsonDocument(castedModel) is { } newModelDocument)
-                InternalDbContext.SetModelBsonDocument(model, newModelDocument);
-
             // Update dependent documents.
             DbContext.Engine.DbMaintainer.OnUpdatedModel<TKey>(castedModel, changedMembers, this);
 
-            // Clear the change candidate.
-            InternalDbContext.ClearChangeCandidate(model);
+            // Refresh the tracking with the persisted state, at the commit inside a transaction.
+            /* Enlisted in a transaction, the update persists only at its commit: refreshing the
+             * model and clearing its change candidate before would leave it looking saved after
+             * an abort, with its write rolled back and nothing pending to save. The refresh
+             * defers to the commit of the ambient transaction, and applies right away without one. */
+            void RefreshTracking()
+            {
+                /* Members serialization needs the ambient db execution context: at commit,
+                 * the one of the save is already disposed. */
+                using var refreshDbExecutionContext = new DbExecutionContextHandler(DbContext);
+
+                // Refresh the model in place with the updated document state.
+                /* A summary model merges the full document, upgrading also its bookkeeping;
+                 * a full model refreshes all its members: at this point every local change has
+                 * just been persisted, so only concurrent changes from other scopes can differ. */
+                if (model is IReferenceable { IsSummary: true } referenceableModel)
+                    referenceableModel.MergeFullModel(updatedModel);
+                else
+                    RefreshModel(InternalDbContext, castedModel, updatedModel);
+
+                // Refresh the model document: the saved model now matches the persisted document.
+                if (TrySerializeModelBsonDocument(castedModel) is { } newModelDocument)
+                    InternalDbContext.SetModelBsonDocument(model, newModelDocument);
+
+                // Clear the change candidate.
+                InternalDbContext.ClearChangeCandidate(model);
+            }
+            if (!DbSessionHandler.TryDeferToTransactionCommit(DbContext.Engine, RefreshTracking))
+                RefreshTracking();
 
             logger.RepositorySavedModelChanges(Name, DbContext.Engine.Options.DbName, castedModel.Id!.ToString()!);
         }
@@ -1510,12 +1524,25 @@ namespace Etherna.Scrinium.Core.Repositories
                 }
 
                 // Refresh the change tracking: the replaced document is now the model state.
-                if (TrySerializeModelBsonDocument(model) is { } newModelDocument)
+                /* Deferred to the commit when the replace enlisted in the ambient transaction,
+                 * like the member level save (see SaveChangesAsync): an explicit session enlists
+                 * in it only when it is the ambient one. */
+                void RefreshTracking()
                 {
-                    InternalDbContext.SetModelBsonDocument(model, newModelDocument);
-                    InternalDbContext.SetModelSourceRepository(model, this);
+                    using var refreshDbExecutionContext = new DbExecutionContextHandler(DbContext);
+
+                    if (TrySerializeModelBsonDocument(model) is { } newModelDocument)
+                    {
+                        InternalDbContext.SetModelBsonDocument(model, newModelDocument);
+                        InternalDbContext.SetModelSourceRepository(model, this);
+                    }
+                    InternalDbContext.ClearChangeCandidate(model);
                 }
-                InternalDbContext.ClearChangeCandidate(model);
+                var enlistedInAmbientSession = session is null ||
+                    session == DbSessionHandler.TryGetCurrentSession(DbContext.Engine);
+                if (!enlistedInAmbientSession ||
+                    !DbSessionHandler.TryDeferToTransactionCommit(DbContext.Engine, RefreshTracking))
+                    RefreshTracking();
 
                 logger.RepositoryReplacedDocument(Name, DbContext.Engine.Options.DbName, model.Id!.ToString()!);
             }).ConfigureAwait(false);

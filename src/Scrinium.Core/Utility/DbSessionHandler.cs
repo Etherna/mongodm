@@ -39,6 +39,7 @@ namespace Etherna.Scrinium.Core.Utility
 
         // Fields.
         private readonly IAsyncLocalContextHandler? asyncLocalContextHandler;
+        private readonly List<Action> commitActions = [];
         private readonly ICollection<DbSessionHandler> requests;
 
         // Constructors and dispose.
@@ -73,7 +74,42 @@ namespace Etherna.Scrinium.Core.Utility
         public IClientSessionHandle Session { get; }
 
         // Static methods.
-        public static IClientSessionHandle? TryGetCurrentSession(IDbContextEngine dbContextEngine)
+        public static IClientSessionHandle? TryGetCurrentSession(IDbContextEngine dbContextEngine) =>
+            TryGetCurrentHandler(dbContextEngine)?.Session;
+
+        // Internals.
+        /// <summary>
+        /// Run the bookkeeping the enlisted operations deferred to the commit of the handled
+        /// transaction, in registration order, once the transaction committed.
+        /// </summary>
+        internal void RunCommitActions()
+        {
+            foreach (var action in commitActions)
+                action();
+            commitActions.Clear();
+        }
+
+        /// <summary>
+        /// Defer an operation bookkeeping to the commit of the ambient transaction of the
+        /// engine. Without an ambient session handler nothing defers, and the bookkeeping
+        /// stays with the caller.
+        /// </summary>
+        /// <param name="dbContextEngine">The engine of the enlisted operation</param>
+        /// <param name="action">The bookkeeping to run at commit</param>
+        /// <returns>True if the action deferred to the commit</returns>
+        internal static bool TryDeferToTransactionCommit(IDbContextEngine dbContextEngine, Action action)
+        {
+            ArgumentNullException.ThrowIfNull(action);
+
+            if (TryGetCurrentHandler(dbContextEngine) is not { } currentHandler)
+                return false;
+
+            currentHandler.commitActions.Add(action);
+            return true;
+        }
+
+        // Helpers.
+        private static DbSessionHandler? TryGetCurrentHandler(IDbContextEngine dbContextEngine)
         {
             ArgumentNullException.ThrowIfNull(dbContextEngine);
 
@@ -88,8 +124,7 @@ namespace Etherna.Scrinium.Core.Utility
                 return requests
                     .Where(handler => handler.DbContextEngine == dbContextEngine)
                     .Reverse()
-                    .FirstOrDefault()
-                    ?.Session;
+                    .FirstOrDefault();
         }
     }
 }
