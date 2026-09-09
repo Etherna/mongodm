@@ -15,6 +15,7 @@
 using Etherna.MongoDB.Driver;
 using Etherna.Scrinium.Core.ExecContext.AsyncLocal;
 using Moq;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -54,6 +55,15 @@ namespace Etherna.Scrinium.Core.Utility
         }
 
         [Fact]
+        public void CommitDeferralNeedsAnAmbientHandler()
+        {
+            //without an ambient handler the bookkeeping stays with the caller
+            using var contextHandler = AsyncLocalContext.Instance.InitAsyncLocalContext();
+
+            Assert.False(DbSessionHandler.TryDeferToTransactionCommit(engineMock.Object, () => { }));
+        }
+
+        [Fact]
         public async Task ConcurrentFirstHandlersOnSharedContextRegisterAtomically()
         {
             /* Parallel flows sharing one execution context can construct their first handler
@@ -89,6 +99,22 @@ namespace Etherna.Scrinium.Core.Utility
                     handler.Dispose();
                 Assert.Null(DbSessionHandler.TryGetCurrentSession(engine));
             }
+        }
+
+        [Fact]
+        public void DeferredActionsRunAtTheAmbientHandlerCommit()
+        {
+            using var contextHandler = AsyncLocalContext.Instance.InitAsyncLocalContext();
+            var runActions = new List<int>();
+
+            using var handler = new DbSessionHandler(engineMock.Object, sessionMock.Object);
+            Assert.True(DbSessionHandler.TryDeferToTransactionCommit(engineMock.Object, () => runActions.Add(0)));
+            Assert.True(DbSessionHandler.TryDeferToTransactionCommit(engineMock.Object, () => runActions.Add(1)));
+            Assert.Empty(runActions);
+
+            handler.RunCommitActions();
+
+            Assert.Equal([0, 1], runActions);
         }
 
         [Fact]

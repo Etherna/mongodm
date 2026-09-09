@@ -316,6 +316,56 @@ namespace Etherna.Scrinium.Core
         }
 
         [Fact]
+        public async Task ExecuteInTransactionRunsTheDeferredBookkeepingAfterTheCommit()
+        {
+            // Setup.
+            using var contextHandler = AsyncLocalContext.Instance.InitAsyncLocalContext();
+
+            var committed = false;
+            var sessionMock = new Mock<IClientSessionHandle>();
+            sessionMock.Setup(s => s.CommitTransactionAsync(It.IsAny<CancellationToken>()))
+                .Callback(() => committed = true)
+                .Returns(Task.CompletedTask);
+            mongoClientMock.Setup(c => c.StartSessionAsync(It.IsAny<ClientSessionOptions>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync(sessionMock.Object);
+
+            // Action.
+            bool? committedWhenRun = null;
+            await dbContext.ExecuteInTransactionAsync(() =>
+            {
+                //the bookkeeping deferred by the enlisted operations runs once the commit succeeded
+                Assert.True(DbSessionHandler.TryDeferToTransactionCommit(engine, () => committedWhenRun = committed));
+                Assert.Null(committedWhenRun);
+                return Task.CompletedTask;
+            });
+
+            // Assert.
+            Assert.True(committedWhenRun);
+        }
+
+        [Fact]
+        public async Task ExecuteInTransactionDropsTheDeferredBookkeepingOnAbort()
+        {
+            // Setup.
+            using var contextHandler = AsyncLocalContext.Instance.InitAsyncLocalContext();
+
+            var sessionMock = new Mock<IClientSessionHandle>();
+            mongoClientMock.Setup(c => c.StartSessionAsync(It.IsAny<ClientSessionOptions>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync(sessionMock.Object);
+
+            // Action.
+            var run = false;
+            await Assert.ThrowsAsync<InvalidOperationException>(() => dbContext.ExecuteInTransactionAsync(() =>
+            {
+                Assert.True(DbSessionHandler.TryDeferToTransactionCommit(engine, () => run = true));
+                throw new InvalidOperationException();
+            }));
+
+            // Assert.
+            Assert.False(run);
+        }
+
+        [Fact]
         public async Task SaveChangesRunsIntoTransactionOnReplicaSet()
         {
             // Setup.
