@@ -42,6 +42,7 @@ namespace Etherna.Scrinium.Core.Options
         public int MigrationCallbackEveryTotDocuments { get; set; } = 500;
         public int MigrationEvictEveryTotDocuments { get; set; } = DocumentMigration.DefaultEvictEveryTotDocuments;
         public ReactionMode NotPropagatedReferences { get; set; } = ReactionMode.Warn;
+        public TimeSpan TransactionRetryTimeout { get; set; } = TimeSpan.FromSeconds(120);
 
         // Methods.
         public void ParentFor<TDbContext>() where

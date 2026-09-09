@@ -1632,6 +1632,7 @@ namespace Etherna.Scrinium.Core.Repositories
              * its document on the identity map, keyed on the source repository bound here, so
              * the loads of the scope return it, and the references resolving through the
              * identity map (the save refresh ones included) keep it as their value. */
+            List<TModel> trackedModels = [];
             using (new DbExecutionContextHandler(DbContext))
                 foreach (var model in models)
                     if (TrySerializeModelBsonDocument(model) is { } modelDocument)
@@ -1639,7 +1640,23 @@ namespace Etherna.Scrinium.Core.Repositories
                         InternalDbContext.SetModelBsonDocument(model, modelDocument);
                         InternalDbContext.SetModelSourceRepository(model, this);
                         InternalDbContext.RegisterLoadedModel(model.Id!, model);
+                        trackedModels.Add(model);
                     }
+
+            /* The tracking is an in memory effect of the insert, undone with the abort of the
+             * ambient transaction rolling the insert back: the instance leaves the identity map
+             * and the change tracking, like a deleted one, so nothing in the scope keeps
+             * serving a document that doesn't exist, and a replay creates it anew. */
+            if (trackedModels.Count > 0)
+                DbSessionHandler.TryDeferToTransactionAbort(DbContext.Engine, () =>
+                {
+                    foreach (var model in trackedModels)
+                    {
+                        //the identity map key resolves through the tracking: leave the map first
+                        DbContext.UnregisterLoadedModel(model.Id!, model);
+                        InternalDbContext.RemoveModelTracking(model);
+                    }
+                });
         }
 
         private static bool TryAssignModelId(IEntityModel model, IDbContextEngine engine)
@@ -1659,6 +1676,11 @@ namespace Etherna.Scrinium.Core.Repositories
                 return false;
 
             idProvider.SetDocumentId(model, idGenerator.GenerateId(container: null!, document: model));
+
+            /* The assigned id is an in memory effect of the create, undone with the abort of the
+             * ambient transaction rolling the insert back: the model is new again, so a replay
+             * creates it anew, and discovers it again as a new referred model. */
+            DbSessionHandler.TryDeferToTransactionAbort(engine, () => idProvider.SetDocumentId(model, id));
             return true;
         }
 
