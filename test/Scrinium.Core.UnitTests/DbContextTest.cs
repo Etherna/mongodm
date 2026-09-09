@@ -423,6 +423,75 @@ namespace Etherna.Scrinium.Core
         }
 
         [Fact]
+        public async Task CreateRunsIntoTransactionOnReplicaSet()
+        {
+            /* SCR-284: the insert and the implicit unit of work flush it triggers run into
+             * one implicit transaction, so a failure of the flush rolls back the insert
+             * instead of orphaning its document. */
+
+            // Setup.
+            using var contextHandler = AsyncLocalContext.Instance.InitAsyncLocalContext();
+            SetReplicaSetTopology();
+
+            var sessionMock = new Mock<IClientSessionHandle>();
+            mongoClientMock.Setup(c => c.StartSessionAsync(It.IsAny<ClientSessionOptions>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync(sessionMock.Object);
+            collectionMock.Setup(c => c.InsertOneAsync(sessionMock.Object, It.IsAny<FakeModel>(), It.IsAny<InsertOneOptions>(), It.IsAny<CancellationToken>()))
+                .Returns(Task.CompletedTask);
+
+            // Action.
+            await dbContext.FakeModels.CreateAsync(new FakeModel { Id = "id" });
+
+            // Assert.
+            //the insert enlisted with the transaction session, committed with it
+            sessionMock.Verify(s => s.StartTransaction(It.IsAny<TransactionOptions>()), Times.Once);
+            sessionMock.Verify(s => s.CommitTransactionAsync(It.IsAny<CancellationToken>()), Times.Once);
+            sessionMock.Verify(s => s.AbortTransactionAsync(It.IsAny<CancellationToken>()), Times.Never);
+            collectionMock.Verify(c => c.InsertOneAsync(sessionMock.Object, It.IsAny<FakeModel>(), It.IsAny<InsertOneOptions>(), It.IsAny<CancellationToken>()), Times.Once);
+        }
+
+        [Fact]
+        public async Task CreateSkipsTransactionOnStandalone()
+        {
+            // Setup.
+            //the default mocked topology is standalone
+            using var contextHandler = AsyncLocalContext.Instance.InitAsyncLocalContext();
+            collectionMock.Setup(c => c.InsertOneAsync(It.IsAny<FakeModel>(), It.IsAny<InsertOneOptions>(), It.IsAny<CancellationToken>()))
+                .Returns(Task.CompletedTask);
+
+            // Action.
+            await dbContext.FakeModels.CreateAsync(new FakeModel { Id = "id" });
+
+            // Assert.
+            //no transaction opened: the insert ran session-less
+            collectionMock.Verify(c => c.InsertOneAsync(It.IsAny<FakeModel>(), It.IsAny<InsertOneOptions>(), It.IsAny<CancellationToken>()), Times.Once);
+            mongoClientMock.Verify(c => c.StartSessionAsync(It.IsAny<ClientSessionOptions>(), It.IsAny<CancellationToken>()), Times.Never);
+        }
+
+        [Fact]
+        public async Task CreateSkipsTransactionWhenDisabledByOptions()
+        {
+            // Setup.
+            using var contextHandler = AsyncLocalContext.Instance.InitAsyncLocalContext();
+            SetReplicaSetTopology();
+
+            var noTransactionsDbContext = BuildDbContext(
+                new DbContextOptions { EnableTransactionsWithReplicaSet = false },
+                out var noTransactionsEngine);
+            collectionMock.Setup(c => c.InsertOneAsync(It.IsAny<FakeModel>(), It.IsAny<InsertOneOptions>(), It.IsAny<CancellationToken>()))
+                .Returns(Task.CompletedTask);
+
+            // Action.
+            await noTransactionsDbContext.FakeModels.CreateAsync(new FakeModel { Id = "id" });
+
+            // Assert.
+            collectionMock.Verify(c => c.InsertOneAsync(It.IsAny<FakeModel>(), It.IsAny<InsertOneOptions>(), It.IsAny<CancellationToken>()), Times.Once);
+            mongoClientMock.Verify(c => c.StartSessionAsync(It.IsAny<ClientSessionOptions>(), It.IsAny<CancellationToken>()), Times.Never);
+
+            (noTransactionsEngine as IDisposable)?.Dispose();
+        }
+
+        [Fact]
         public void LoadedModelsAreRegisteredPerInstance()
         {
             // Setup.
