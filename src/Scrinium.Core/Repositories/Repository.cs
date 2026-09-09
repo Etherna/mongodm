@@ -204,47 +204,16 @@ namespace Etherna.Scrinium.Core.Repositories
         public Task CreateAsync(IEnumerable<object> models, CancellationToken cancellationToken = default) =>
             CreateAsync(models.Select(m => (TModel)m), cancellationToken);
 
-        public virtual async Task CreateAsync(IEnumerable<TModel> models, CancellationToken cancellationToken = default)
+        public virtual Task CreateAsync(IEnumerable<TModel> models, CancellationToken cancellationToken = default)
         {
             ArgumentNullException.ThrowIfNull(models);
-            TModel[] modelList = [.. models];
-
-            // Auto create the new referred models, before the insert serializes the references.
-            /* The creating model ids are assigned upfront: references back to them from the new
-             * referred models serialize complete, cycles between new models included. */
-            foreach (var model in modelList)
-                TryAssignModelId(model, DbContext.Engine);
-            List<(IEntityModel Model, IRepository? SourceRepository)> discoveredNewModels = [];
-            foreach (var model in modelList)
-                discoveredNewModels.AddRange(DiscoverNewReferredModels(model));
-            await CreateNewReferredModelsAsync(discoveredNewModels, modelList, cancellationToken).ConfigureAwait(false);
-
-            await CreateOnDBAsync(modelList, cancellationToken).ConfigureAwait(false);
-
-            logger.RepositoryCreatedDocuments(Name, DbContext.Engine.Options.DbName, modelList.Select(m => m.Id!.ToString()!));
-
-            TrackCreatedModels(modelList);
-
-            await DbContext.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
+            return ExecuteAtomicCreateAsync(() => CreateHelperAsync([.. models], cancellationToken), cancellationToken);
         }
 
-        public virtual async Task CreateAsync(TModel model, CancellationToken cancellationToken = default)
+        public virtual Task CreateAsync(TModel model, CancellationToken cancellationToken = default)
         {
             ArgumentNullException.ThrowIfNull(model);
-
-            // Auto create the new referred models, before the insert serializes the references.
-            /* The creating model id is assigned upfront: references back to it from the new
-             * referred models serialize complete, cycles between new models included. */
-            TryAssignModelId(model, DbContext.Engine);
-            await CreateNewReferredModelsAsync(DiscoverNewReferredModels(model), [model], cancellationToken).ConfigureAwait(false);
-
-            await CreateOnDBAsync(model, cancellationToken).ConfigureAwait(false);
-
-            logger.RepositoryCreatedDocument(Name, DbContext.Engine.Options.DbName, model.Id!.ToString()!);
-
-            TrackCreatedModels([model]);
-
-            await DbContext.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
+            return ExecuteAtomicCreateAsync(() => CreateHelperAsync(model, cancellationToken), cancellationToken);
         }
 
         public async Task DeleteAsync(TKey id, CancellationToken cancellationToken = default)
@@ -1329,6 +1298,44 @@ namespace Etherna.Scrinium.Core.Repositories
             }
         }
 
+        private async Task CreateHelperAsync(TModel model, CancellationToken cancellationToken)
+        {
+            // Auto create the new referred models, before the insert serializes the references.
+            /* The creating model id is assigned upfront: references back to it from the new
+             * referred models serialize complete, cycles between new models included. */
+            TryAssignModelId(model, DbContext.Engine);
+            await CreateNewReferredModelsAsync(DiscoverNewReferredModels(model), [model], cancellationToken).ConfigureAwait(false);
+
+            await CreateOnDBAsync(model, cancellationToken).ConfigureAwait(false);
+
+            logger.RepositoryCreatedDocument(Name, DbContext.Engine.Options.DbName, model.Id!.ToString()!);
+
+            TrackCreatedModels([model]);
+
+            await DbContext.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
+        }
+
+        private async Task CreateHelperAsync(TModel[] models, CancellationToken cancellationToken)
+        {
+            // Auto create the new referred models, before the insert serializes the references.
+            /* The creating model ids are assigned upfront: references back to them from the new
+             * referred models serialize complete, cycles between new models included. */
+            foreach (var model in models)
+                TryAssignModelId(model, DbContext.Engine);
+            List<(IEntityModel Model, IRepository? SourceRepository)> discoveredNewModels = [];
+            foreach (var model in models)
+                discoveredNewModels.AddRange(DiscoverNewReferredModels(model));
+            await CreateNewReferredModelsAsync(discoveredNewModels, models, cancellationToken).ConfigureAwait(false);
+
+            await CreateOnDBAsync(models, cancellationToken).ConfigureAwait(false);
+
+            logger.RepositoryCreatedDocuments(Name, DbContext.Engine.Options.DbName, models.Select(m => m.Id!.ToString()!));
+
+            TrackCreatedModels(models);
+
+            await DbContext.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
+        }
+
         private async Task CreateNewReferredModelsAsync(
             IReadOnlyCollection<(IEntityModel Model, IRepository? SourceRepository)> discoveredModels,
             IEnumerable<TModel> persistingModels,
@@ -1402,6 +1409,22 @@ namespace Etherna.Scrinium.Core.Repositories
                 _ = serializer.SerializeToBsonValue(model);
             }
             return newModelsCollector.Models;
+        }
+
+        private Task ExecuteAtomicCreateAsync(Func<Task> createHelper, CancellationToken cancellationToken)
+        {
+            /* The insert and the implicit unit of work flush it triggers are one atomic unit:
+             * a failure of either must leave nothing behind. Without a transaction the insert
+             * persists even when the flush fails, orphaning its document. Wrap them in a single
+             * transaction when transactions are enabled and supported and no session is ambient:
+             * the ambient session enlists the insert, and the implicit flush enlists in it too,
+             * instead of opening its own. Without transactions the sequence stays as before. */
+            var engine = DbContext.Engine;
+            return engine.Options.EnableTransactionsWithReplicaSet &&
+                   engine.SupportsTransactions &&
+                   DbSessionHandler.TryGetCurrentSession(engine) is null
+                ? DbContext.ExecuteInTransactionAsync(createHelper, cancellationToken)
+                : createHelper();
         }
 
         private Task<TModel> FindOneOnDBAsync(
