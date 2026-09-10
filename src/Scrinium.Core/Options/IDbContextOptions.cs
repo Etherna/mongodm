@@ -103,5 +103,14 @@ namespace Etherna.Scrinium.Core.Options
         /// throwing <see cref="Exceptions.ScriniumNotPropagatedReferenceException"/>.
         /// </summary>
         public ReactionMode NotPropagatedReferences { get; }
+
+        /// <summary>
+        /// How long a transaction keeps retrying after its transient failures — a write
+        /// conflict with a concurrent transaction, a primary election — measured from its
+        /// first start: an attempt failing past it throws to the caller. The implicit
+        /// transactions of <see cref="IDbContext.SaveChangesAsync"/> and of the creates retry
+        /// under the same budget. Zero disables the retries.
+        /// </summary>
+        public TimeSpan TransactionRetryTimeout { get; }
     }
 }

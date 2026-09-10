@@ -80,7 +80,10 @@ documents to complex application domains.
 - **Member-level saves** — each changed model is persisted with a single atomic update writing only its
   changed members, so concurrent changes to disjoint members all survive.
 - **ACID transactions** — automatic enlistment of repository operations, plus an implicit transaction
-  around each unit of work flush on deployments supporting them.
+  around each unit of work flush on deployments supporting them. A transient failure (a write conflict
+  with a concurrent transaction, a primary election) retries the transaction like the driver callback
+  API does, within `DbContextOptions.TransactionRetryTimeout` (2 minutes by default): the saves it
+  rolled back stay pending and the creates it rolled back are undone, so the replay starts clean.
 - **Versioned document schemas** — several schema versions coexist in the same collection, each document
   recording the schema that wrote it. Documents written with the previous, deprecated name of that
   element keep loading through it, and the admin dashboard counts and migrates them, collection by

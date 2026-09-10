@@ -85,6 +85,14 @@ namespace Etherna.Scrinium.Core
         /// cluster). The transaction is scoped to the connection of this db context engine:
         /// operations on different db contexts, children included, don't enlist. Sessions
         /// don't support concurrent operations: keep operations sequential inside the action.
+        /// A transient failure — a write conflict with a concurrent transaction, a primary
+        /// election — retries the whole block on a new transaction, within
+        /// <see cref="Options.IDbContextOptions.TransactionRetryTimeout"/>: the block must be
+        /// replayable. The saves enlisted in the transaction refresh their change tracking at
+        /// its commit, and the creates undo their in memory effects at its abort (the assigned
+        /// ids, the identity map and change tracking registrations): after an abort the saved
+        /// models stay pending, saved again by the next flush, and the created models are new
+        /// again, created anew by a replay.
         /// </remarks>
         /// <param name="action">The action to execute into the transaction</param>
         /// <param name="cancellationToken">Cancellation token</param>
@@ -101,6 +109,14 @@ namespace Etherna.Scrinium.Core
         /// cluster). The transaction is scoped to the connection of this db context engine:
         /// operations on different db contexts, children included, don't enlist. Sessions
         /// don't support concurrent operations: keep operations sequential inside the function.
+        /// A transient failure — a write conflict with a concurrent transaction, a primary
+        /// election — retries the whole block on a new transaction, within
+        /// <see cref="Options.IDbContextOptions.TransactionRetryTimeout"/>: the block must be
+        /// replayable. The saves enlisted in the transaction refresh their change tracking at
+        /// its commit, and the creates undo their in memory effects at its abort (the assigned
+        /// ids, the identity map and change tracking registrations): after an abort the saved
+        /// models stay pending, saved again by the next flush, and the created models are new
+        /// again, created anew by a replay.
         /// </remarks>
         /// <param name="func">The function to execute into the transaction</param>
         /// <param name="cancellationToken">Cancellation token</param>
@@ -185,7 +201,11 @@ namespace Etherna.Scrinium.Core
         /// enabled and a deployment supporting transactions, the changed models of this db context
         /// save into a single implicit transaction; when a session is already ambient (e.g. into
         /// <see cref="ExecuteInTransactionAsync(Func{Task}, CancellationToken)"/>), saves enlist
-        /// in it instead. Child db contexts save on their own connections, out of both.
+        /// in it instead. Inside a transaction the saved models refresh and leave the change
+        /// candidates only at its commit: an abort leaves them pending, saved again by the next
+        /// call, and the implicit transaction retries its transient failures within
+        /// <see cref="Options.IDbContextOptions.TransactionRetryTimeout"/>. Child db contexts
+        /// save on their own connections, out of both.
         /// </summary>
         /// <param name="cancellationToken">Cancellation token</param>
         Task SaveChangesAsync(CancellationToken cancellationToken = default);

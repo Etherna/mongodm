@@ -47,6 +47,14 @@ namespace Etherna.Scrinium.Core
         // Consts.
         private const int SeedingLockMinRetries = 4;
         private static readonly TimeSpan SeedingLockRetryDelay = TimeSpan.FromSeconds(5);
+        /* The transient failures retry with the driver policy of its transactions callback
+         * api: an exponential backoff with full jitter between the attempts, from 5 ms up
+         * to 500 ms, and a commit retried on an unknown result. */
+        private const double TransactionRetryBackoffBase = 1.5;
+        private const double TransactionRetryBackoffInitialMs = 5;
+        private const double TransactionRetryBackoffMaxMs = 500;
+        private const string TransientTransactionErrorLabel = "TransientTransactionError";
+        private const string UnknownTransactionCommitResultLabel = "UnknownTransactionCommitResult";
 
         // Fields.
         /* Change tracking state keyed by reference identity: a model is tracked by its
@@ -175,32 +183,75 @@ namespace Etherna.Scrinium.Core
             ArgumentNullException.ThrowIfNull(func);
 
             using var session = await engine.StartSessionAsync(cancellationToken).ConfigureAwait(false);
-            session.StartTransaction();
-            logger.DbContextStartedTransaction(engine.Options.DbName);
 
-            /* The session handler enlists in the transaction every operation invoked
-             * without an explicit session on collections of this engine, for the whole
-             * function execution. */
-            using var sessionHandler = new DbSessionHandler(engine, session);
-
-            TResult result;
-            try
+            /* A transaction failing with the transient error label (a write conflict with a
+             * concurrent transaction, a primary election) is expected to be retried by the
+             * application: the server asks for it, and the driver transactions callback api
+             * retries the callback the same way. The whole function replays on a new
+             * transaction of the session, inside the retry budget measured from the first
+             * start, with the unit of work as the aborted attempt left it: the enlisted saves
+             * still pending, and the enlisted creates undone. */
+            var retryStopwatch = Stopwatch.StartNew();
+            for (var attempt = 1; ; attempt++)
             {
-                result = await func().ConfigureAwait(false);
-            }
-            catch
-            {
-                /* Abort with an uncancellable token: the function may have thrown for the
-                 * cancellation itself, and the abort must run anyway. */
-                await session.AbortTransactionAsync(CancellationToken.None).ConfigureAwait(false);
-                logger.DbContextAbortedTransaction(engine.Options.DbName);
-                throw;
-            }
+                session.StartTransaction();
+                logger.DbContextStartedTransaction(engine.Options.DbName);
 
-            await session.CommitTransactionAsync(cancellationToken).ConfigureAwait(false);
-            logger.DbContextCommittedTransaction(engine.Options.DbName);
+                /* The session handler enlists in the transaction every operation invoked
+                 * without an explicit session on collections of this engine, for the whole
+                 * function execution, and collects the bookkeeping they defer to its outcome. */
+                using var sessionHandler = new DbSessionHandler(engine, session);
 
-            return result;
+                TResult result;
+                try
+                {
+                    result = await func().ConfigureAwait(false);
+                }
+                catch (Exception e)
+                {
+                    /* Abort with an uncancellable token: the function may have thrown for the
+                     * cancellation itself, and the abort must run anyway. The undo deferred to
+                     * the abort runs, and the bookkeeping deferred to the commit drops: the
+                     * tracking state returns to the one before the transaction, with the
+                     * enlisted saves still pending. */
+                    await session.AbortTransactionAsync(CancellationToken.None).ConfigureAwait(false);
+                    logger.DbContextAbortedTransaction(engine.Options.DbName);
+                    sessionHandler.RunAbortActions();
+
+                    if (!TryGetTransactionRetryDelay(e, attempt, retryStopwatch.Elapsed, cancellationToken, out var retryDelay))
+                        throw;
+                    logger.DbContextRetryingTransaction(engine.Options.DbName, attempt, e);
+                    await Task.Delay(retryDelay, cancellationToken).ConfigureAwait(false);
+                    continue;
+                }
+
+                try
+                {
+                    await CommitTransactionWithRetriesAsync(session, retryStopwatch, cancellationToken).ConfigureAwait(false);
+                }
+                catch (Exception e)
+                {
+                    /* A failed commit leaves the session out of the transaction: the server
+                     * aborted it, or may have committed it past the unknown result retries.
+                     * The in memory effects undo like at an abort, and a transient failure
+                     * restarts the transaction on the session, with no abort of its own. */
+                    sessionHandler.RunAbortActions();
+
+                    if (!TryGetTransactionRetryDelay(e, attempt, retryStopwatch.Elapsed, cancellationToken, out var retryDelay))
+                        throw;
+                    logger.DbContextRetryingTransaction(engine.Options.DbName, attempt, e);
+                    await Task.Delay(retryDelay, cancellationToken).ConfigureAwait(false);
+                    continue;
+                }
+                logger.DbContextCommittedTransaction(engine.Options.DbName);
+
+                /* The tracking state follows the commit: the saves enlisted in the transaction
+                 * refresh their models and clear their change candidates only now, so an abort
+                 * leaves every model as it was before the transaction, still tracked and still dirty. */
+                sessionHandler.RunCommitActions();
+
+                return result;
+            }
         }
 
         public Task ExecuteMigrationAsync(string dbMigrationOpId, string? taskId = null, bool throwOnErrors = false) =>
@@ -756,6 +807,32 @@ namespace Etherna.Scrinium.Core
         }
 
         // Helpers.
+        private async Task CommitTransactionWithRetriesAsync(
+            IClientSessionHandle session,
+            Stopwatch retryStopwatch,
+            CancellationToken cancellationToken)
+        {
+            /* A commit of unknown result (a connection lost while committing, for instance)
+             * retries on the same transaction, like the driver transactions callback api: the
+             * server applies a repeated commit once. The api excludes the commits expired on
+             * their max commit time, an option the transactions started here never set. */
+            while (true)
+            {
+                try
+                {
+                    await session.CommitTransactionAsync(cancellationToken).ConfigureAwait(false);
+                    return;
+                }
+                catch (MongoException e) when (
+                    e.HasErrorLabel(UnknownTransactionCommitResultLabel) &&
+                    !cancellationToken.IsCancellationRequested &&
+                    retryStopwatch.Elapsed < engine.Options.TransactionRetryTimeout)
+                {
+                    logger.DbContextRetryingTransactionCommit(engine.Options.DbName, e);
+                }
+            }
+        }
+
         private void ReportToTransientModelsScopes(Action<TransientModelsScope> report)
         {
             /* Report to every open scope, not only to the innermost: a model entering inside a
@@ -823,6 +900,30 @@ namespace Etherna.Scrinium.Core
                 modelMap.ActiveSchema.AllMemberMaps.FirstOrDefault(mm => mm.IsIdMember())?.MemberInfo is { } idMemberInfo)
                 return idMemberInfo;
             return null;
+        }
+
+        [SuppressMessage("Security", "CA5394:Do not use insecure randomness",
+            Justification = "The jitter only spreads the retries of concurrent transactions: no security relies on it")]
+        private bool TryGetTransactionRetryDelay(
+            Exception exception,
+            int attempt,
+            TimeSpan elapsed,
+            CancellationToken cancellationToken,
+            out TimeSpan retryDelay)
+        {
+            /* Only the failures the server labels as transient retry, and only while the
+             * caller still waits: a cancelled flow gives up with its own failure. The backoff
+             * grows with the failed attempts, and the budget bounds the next attempt start. */
+            retryDelay = TimeSpan.Zero;
+            if (exception is not MongoException mongoException ||
+                !mongoException.HasErrorLabel(TransientTransactionErrorLabel) ||
+                cancellationToken.IsCancellationRequested)
+                return false;
+
+            retryDelay = TimeSpan.FromMilliseconds(Random.Shared.NextDouble() * Math.Min(
+                TransactionRetryBackoffMaxMs,
+                TransactionRetryBackoffInitialMs * Math.Pow(TransactionRetryBackoffBase, attempt)));
+            return elapsed + retryDelay < engine.Options.TransactionRetryTimeout;
         }
 
         private void ValidateModelId(object modelId, IEntityModel model, string paramName)

@@ -26,7 +26,8 @@ namespace Etherna.Scrinium.Core.Utility
     /// Associates a database session to the current execution context flow, for the scope
     /// of the handler. While the handler is active, operations invoked without an explicit
     /// session on collections of the same engine enlist automatically in the handled
-    /// session, joining its transaction when one is active.
+    /// session, joining its transaction when one is active, and defer to its outcome the
+    /// bookkeeping of their in memory effects: applied at the commit, or undone at the abort.
     /// </summary>
     /// <remarks>
     /// Database sessions don't support concurrent operations: keep operations sequential
@@ -38,7 +39,9 @@ namespace Etherna.Scrinium.Core.Utility
         private const string HandlerKey = "DbSessionHandler";
 
         // Fields.
+        private readonly List<Action> abortActions = [];
         private readonly IAsyncLocalContextHandler? asyncLocalContextHandler;
+        private readonly List<Action> commitActions = [];
         private readonly ICollection<DbSessionHandler> requests;
 
         // Constructors and dispose.
@@ -73,7 +76,76 @@ namespace Etherna.Scrinium.Core.Utility
         public IClientSessionHandle Session { get; }
 
         // Static methods.
-        public static IClientSessionHandle? TryGetCurrentSession(IDbContextEngine dbContextEngine)
+        public static IClientSessionHandle? TryGetCurrentSession(IDbContextEngine dbContextEngine) =>
+            TryGetCurrentHandler(dbContextEngine)?.Session;
+
+        // Internals.
+        /// <summary>
+        /// Run the undo the enlisted operations deferred to the abort of the handled
+        /// transaction, in reverse registration order, once the transaction aborted or
+        /// failed its commit. The bookkeeping deferred to the commit drops.
+        /// </summary>
+        internal void RunAbortActions()
+        {
+            commitActions.Clear();
+            for (var i = abortActions.Count - 1; i >= 0; i--)
+                abortActions[i]();
+            abortActions.Clear();
+        }
+
+        /// <summary>
+        /// Run the bookkeeping the enlisted operations deferred to the commit of the handled
+        /// transaction, in registration order, once the transaction committed. The undo
+        /// deferred to the abort drops.
+        /// </summary>
+        internal void RunCommitActions()
+        {
+            abortActions.Clear();
+            foreach (var action in commitActions)
+                action();
+            commitActions.Clear();
+        }
+
+        /// <summary>
+        /// Defer the undo of an operation in memory effects to the abort of the ambient
+        /// transaction of the engine. Without an ambient session handler nothing defers:
+        /// without a transaction the operation persisted, and there is nothing to undo.
+        /// </summary>
+        /// <param name="dbContextEngine">The engine of the enlisted operation</param>
+        /// <param name="action">The undo to run at abort</param>
+        /// <returns>True if the action deferred to the abort</returns>
+        internal static bool TryDeferToTransactionAbort(IDbContextEngine dbContextEngine, Action action)
+        {
+            ArgumentNullException.ThrowIfNull(action);
+
+            if (TryGetCurrentHandler(dbContextEngine) is not { } currentHandler)
+                return false;
+
+            currentHandler.abortActions.Add(action);
+            return true;
+        }
+
+        /// <summary>
+        /// Defer an operation bookkeeping to the commit of the ambient transaction of the
+        /// engine. Without an ambient session handler nothing defers, and the bookkeeping
+        /// stays with the caller.
+        /// </summary>
+        /// <param name="dbContextEngine">The engine of the enlisted operation</param>
+        /// <param name="action">The bookkeeping to run at commit</param>
+        /// <returns>True if the action deferred to the commit</returns>
+        internal static bool TryDeferToTransactionCommit(IDbContextEngine dbContextEngine, Action action)
+        {
+            ArgumentNullException.ThrowIfNull(action);
+
+            if (TryGetCurrentHandler(dbContextEngine) is not { } currentHandler)
+                return false;
+
+            currentHandler.commitActions.Add(action);
+            return true;
+        }
+
+        // Helpers.
+        private static DbSessionHandler? TryGetCurrentHandler(IDbContextEngine dbContextEngine)
         {
             ArgumentNullException.ThrowIfNull(dbContextEngine);
 
@@ -88,8 +160,7 @@ namespace Etherna.Scrinium.Core.Utility
                 return requests
                     .Where(handler => handler.DbContextEngine == dbContextEngine)
                     .Reverse()
-                    .FirstOrDefault()
-                    ?.Session;
+                    .FirstOrDefault();
         }
     }
 }

@@ -15,6 +15,7 @@
 using Etherna.MongoDB.Driver;
 using Etherna.Scrinium.Core.ExecContext.AsyncLocal;
 using Moq;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -40,6 +41,15 @@ namespace Etherna.Scrinium.Core.Utility
 
         // Tests.
         [Fact]
+        public void AbortDeferralNeedsAnAmbientHandler()
+        {
+            //without an ambient handler the operation persisted: there is nothing to undo
+            using var contextHandler = AsyncLocalContext.Instance.InitAsyncLocalContext();
+
+            Assert.False(DbSessionHandler.TryDeferToTransactionAbort(engineMock.Object, () => { }));
+        }
+
+        [Fact]
         public void AmbientSessionIsResolvedOnlyForItsEngine()
         {
             using var contextHandler = AsyncLocalContext.Instance.InitAsyncLocalContext();
@@ -51,6 +61,15 @@ namespace Etherna.Scrinium.Core.Utility
             }
 
             Assert.Null(DbSessionHandler.TryGetCurrentSession(engineMock.Object));
+        }
+
+        [Fact]
+        public void CommitDeferralNeedsAnAmbientHandler()
+        {
+            //without an ambient handler the bookkeeping stays with the caller
+            using var contextHandler = AsyncLocalContext.Instance.InitAsyncLocalContext();
+
+            Assert.False(DbSessionHandler.TryDeferToTransactionCommit(engineMock.Object, () => { }));
         }
 
         [Fact]
@@ -89,6 +108,39 @@ namespace Etherna.Scrinium.Core.Utility
                     handler.Dispose();
                 Assert.Null(DbSessionHandler.TryGetCurrentSession(engine));
             }
+        }
+
+        [Fact]
+        public void DeferredActionsRunAtTheAmbientHandlerCommit()
+        {
+            using var contextHandler = AsyncLocalContext.Instance.InitAsyncLocalContext();
+            var runActions = new List<int>();
+
+            using var handler = new DbSessionHandler(engineMock.Object, sessionMock.Object);
+            Assert.True(DbSessionHandler.TryDeferToTransactionCommit(engineMock.Object, () => runActions.Add(0)));
+            Assert.True(DbSessionHandler.TryDeferToTransactionCommit(engineMock.Object, () => runActions.Add(1)));
+            Assert.Empty(runActions);
+
+            handler.RunCommitActions();
+
+            Assert.Equal([0, 1], runActions);
+        }
+
+        [Fact]
+        public void DeferredUndoRunsInReverseOrderAtTheAmbientHandlerAbort()
+        {
+            using var contextHandler = AsyncLocalContext.Instance.InitAsyncLocalContext();
+            var runActions = new List<int>();
+
+            using var handler = new DbSessionHandler(engineMock.Object, sessionMock.Object);
+            Assert.True(DbSessionHandler.TryDeferToTransactionAbort(engineMock.Object, () => runActions.Add(0)));
+            Assert.True(DbSessionHandler.TryDeferToTransactionAbort(engineMock.Object, () => runActions.Add(1)));
+            Assert.Empty(runActions);
+
+            handler.RunAbortActions();
+
+            //the undo runs last registered first, unwinding what the operations did in order
+            Assert.Equal([1, 0], runActions);
         }
 
         [Fact]

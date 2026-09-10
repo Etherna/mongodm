@@ -204,47 +204,16 @@ namespace Etherna.Scrinium.Core.Repositories
         public Task CreateAsync(IEnumerable<object> models, CancellationToken cancellationToken = default) =>
             CreateAsync(models.Select(m => (TModel)m), cancellationToken);
 
-        public virtual async Task CreateAsync(IEnumerable<TModel> models, CancellationToken cancellationToken = default)
+        public virtual Task CreateAsync(IEnumerable<TModel> models, CancellationToken cancellationToken = default)
         {
             ArgumentNullException.ThrowIfNull(models);
-            TModel[] modelList = [.. models];
-
-            // Auto create the new referred models, before the insert serializes the references.
-            /* The creating model ids are assigned upfront: references back to them from the new
-             * referred models serialize complete, cycles between new models included. */
-            foreach (var model in modelList)
-                TryAssignModelId(model, DbContext.Engine);
-            List<(IEntityModel Model, IRepository? SourceRepository)> discoveredNewModels = [];
-            foreach (var model in modelList)
-                discoveredNewModels.AddRange(DiscoverNewReferredModels(model));
-            await CreateNewReferredModelsAsync(discoveredNewModels, modelList, cancellationToken).ConfigureAwait(false);
-
-            await CreateOnDBAsync(modelList, cancellationToken).ConfigureAwait(false);
-
-            logger.RepositoryCreatedDocuments(Name, DbContext.Engine.Options.DbName, modelList.Select(m => m.Id!.ToString()!));
-
-            TrackCreatedModels(modelList);
-
-            await DbContext.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
+            return ExecuteAtomicCreateAsync(() => CreateHelperAsync([.. models], cancellationToken), cancellationToken);
         }
 
-        public virtual async Task CreateAsync(TModel model, CancellationToken cancellationToken = default)
+        public virtual Task CreateAsync(TModel model, CancellationToken cancellationToken = default)
         {
             ArgumentNullException.ThrowIfNull(model);
-
-            // Auto create the new referred models, before the insert serializes the references.
-            /* The creating model id is assigned upfront: references back to it from the new
-             * referred models serialize complete, cycles between new models included. */
-            TryAssignModelId(model, DbContext.Engine);
-            await CreateNewReferredModelsAsync(DiscoverNewReferredModels(model), [model], cancellationToken).ConfigureAwait(false);
-
-            await CreateOnDBAsync(model, cancellationToken).ConfigureAwait(false);
-
-            logger.RepositoryCreatedDocument(Name, DbContext.Engine.Options.DbName, model.Id!.ToString()!);
-
-            TrackCreatedModels([model]);
-
-            await DbContext.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
+            return ExecuteAtomicCreateAsync(() => CreateHelperAsync(model, cancellationToken), cancellationToken);
         }
 
         public async Task DeleteAsync(TKey id, CancellationToken cancellationToken = default)
@@ -782,24 +751,38 @@ namespace Etherna.Scrinium.Core.Repositories
                 return;
             }
 
-            // Refresh the model in place with the updated document state.
-            /* A summary model merges the full document, upgrading also its bookkeeping;
-             * a full model refreshes all its members: at this point every local change has
-             * just been persisted, so only concurrent changes from other scopes can differ. */
-            if (model is IReferenceable { IsSummary: true } referenceableModel)
-                referenceableModel.MergeFullModel(updatedModel);
-            else
-                RefreshModel(InternalDbContext, castedModel, updatedModel);
-
-            // Refresh the model document: the saved model now matches the persisted document.
-            if (TrySerializeModelBsonDocument(castedModel) is { } newModelDocument)
-                InternalDbContext.SetModelBsonDocument(model, newModelDocument);
-
             // Update dependent documents.
             DbContext.Engine.DbMaintainer.OnUpdatedModel<TKey>(castedModel, changedMembers, this);
 
-            // Clear the change candidate.
-            InternalDbContext.ClearChangeCandidate(model);
+            // Refresh the tracking with the persisted state, at the commit inside a transaction.
+            /* Enlisted in a transaction, the update persists only at its commit: refreshing the
+             * model and clearing its change candidate before would leave it looking saved after
+             * an abort, with its write rolled back and nothing pending to save. The refresh
+             * defers to the commit of the ambient transaction, and applies right away without one. */
+            void RefreshTracking()
+            {
+                /* Members serialization needs the ambient db execution context: at commit,
+                 * the one of the save is already disposed. */
+                using var refreshDbExecutionContext = new DbExecutionContextHandler(DbContext);
+
+                // Refresh the model in place with the updated document state.
+                /* A summary model merges the full document, upgrading also its bookkeeping;
+                 * a full model refreshes all its members: at this point every local change has
+                 * just been persisted, so only concurrent changes from other scopes can differ. */
+                if (model is IReferenceable { IsSummary: true } referenceableModel)
+                    referenceableModel.MergeFullModel(updatedModel);
+                else
+                    RefreshModel(InternalDbContext, castedModel, updatedModel);
+
+                // Refresh the model document: the saved model now matches the persisted document.
+                if (TrySerializeModelBsonDocument(castedModel) is { } newModelDocument)
+                    InternalDbContext.SetModelBsonDocument(model, newModelDocument);
+
+                // Clear the change candidate.
+                InternalDbContext.ClearChangeCandidate(model);
+            }
+            if (!DbSessionHandler.TryDeferToTransactionCommit(DbContext.Engine, RefreshTracking))
+                RefreshTracking();
 
             logger.RepositorySavedModelChanges(Name, DbContext.Engine.Options.DbName, castedModel.Id!.ToString()!);
         }
@@ -1329,6 +1312,44 @@ namespace Etherna.Scrinium.Core.Repositories
             }
         }
 
+        private async Task CreateHelperAsync(TModel model, CancellationToken cancellationToken)
+        {
+            // Auto create the new referred models, before the insert serializes the references.
+            /* The creating model id is assigned upfront: references back to it from the new
+             * referred models serialize complete, cycles between new models included. */
+            TryAssignModelId(model, DbContext.Engine);
+            await CreateNewReferredModelsAsync(DiscoverNewReferredModels(model), [model], cancellationToken).ConfigureAwait(false);
+
+            await CreateOnDBAsync(model, cancellationToken).ConfigureAwait(false);
+
+            logger.RepositoryCreatedDocument(Name, DbContext.Engine.Options.DbName, model.Id!.ToString()!);
+
+            TrackCreatedModels([model]);
+
+            await DbContext.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
+        }
+
+        private async Task CreateHelperAsync(TModel[] models, CancellationToken cancellationToken)
+        {
+            // Auto create the new referred models, before the insert serializes the references.
+            /* The creating model ids are assigned upfront: references back to them from the new
+             * referred models serialize complete, cycles between new models included. */
+            foreach (var model in models)
+                TryAssignModelId(model, DbContext.Engine);
+            List<(IEntityModel Model, IRepository? SourceRepository)> discoveredNewModels = [];
+            foreach (var model in models)
+                discoveredNewModels.AddRange(DiscoverNewReferredModels(model));
+            await CreateNewReferredModelsAsync(discoveredNewModels, models, cancellationToken).ConfigureAwait(false);
+
+            await CreateOnDBAsync(models, cancellationToken).ConfigureAwait(false);
+
+            logger.RepositoryCreatedDocuments(Name, DbContext.Engine.Options.DbName, models.Select(m => m.Id!.ToString()!));
+
+            TrackCreatedModels(models);
+
+            await DbContext.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
+        }
+
         private async Task CreateNewReferredModelsAsync(
             IReadOnlyCollection<(IEntityModel Model, IRepository? SourceRepository)> discoveredModels,
             IEnumerable<TModel> persistingModels,
@@ -1402,6 +1423,22 @@ namespace Etherna.Scrinium.Core.Repositories
                 _ = serializer.SerializeToBsonValue(model);
             }
             return newModelsCollector.Models;
+        }
+
+        private Task ExecuteAtomicCreateAsync(Func<Task> createHelper, CancellationToken cancellationToken)
+        {
+            /* The insert and the implicit unit of work flush it triggers are one atomic unit:
+             * a failure of either must leave nothing behind. Without a transaction the insert
+             * persists even when the flush fails, orphaning its document. Wrap them in a single
+             * transaction when transactions are enabled and supported and no session is ambient:
+             * the ambient session enlists the insert, and the implicit flush enlists in it too,
+             * instead of opening its own. Without transactions the sequence stays as before. */
+            var engine = DbContext.Engine;
+            return engine.Options.EnableTransactionsWithReplicaSet &&
+                   engine.SupportsTransactions &&
+                   DbSessionHandler.TryGetCurrentSession(engine) is null
+                ? DbContext.ExecuteInTransactionAsync(createHelper, cancellationToken)
+                : createHelper();
         }
 
         private Task<TModel> FindOneOnDBAsync(
@@ -1487,12 +1524,25 @@ namespace Etherna.Scrinium.Core.Repositories
                 }
 
                 // Refresh the change tracking: the replaced document is now the model state.
-                if (TrySerializeModelBsonDocument(model) is { } newModelDocument)
+                /* Deferred to the commit when the replace enlisted in the ambient transaction,
+                 * like the member level save (see SaveChangesAsync): an explicit session enlists
+                 * in it only when it is the ambient one. */
+                void RefreshTracking()
                 {
-                    InternalDbContext.SetModelBsonDocument(model, newModelDocument);
-                    InternalDbContext.SetModelSourceRepository(model, this);
+                    using var refreshDbExecutionContext = new DbExecutionContextHandler(DbContext);
+
+                    if (TrySerializeModelBsonDocument(model) is { } newModelDocument)
+                    {
+                        InternalDbContext.SetModelBsonDocument(model, newModelDocument);
+                        InternalDbContext.SetModelSourceRepository(model, this);
+                    }
+                    InternalDbContext.ClearChangeCandidate(model);
                 }
-                InternalDbContext.ClearChangeCandidate(model);
+                var enlistedInAmbientSession = session is null ||
+                    session == DbSessionHandler.TryGetCurrentSession(DbContext.Engine);
+                if (!enlistedInAmbientSession ||
+                    !DbSessionHandler.TryDeferToTransactionCommit(DbContext.Engine, RefreshTracking))
+                    RefreshTracking();
 
                 logger.RepositoryReplacedDocument(Name, DbContext.Engine.Options.DbName, model.Id!.ToString()!);
             }).ConfigureAwait(false);
@@ -1582,6 +1632,7 @@ namespace Etherna.Scrinium.Core.Repositories
              * its document on the identity map, keyed on the source repository bound here, so
              * the loads of the scope return it, and the references resolving through the
              * identity map (the save refresh ones included) keep it as their value. */
+            List<TModel> trackedModels = [];
             using (new DbExecutionContextHandler(DbContext))
                 foreach (var model in models)
                     if (TrySerializeModelBsonDocument(model) is { } modelDocument)
@@ -1589,7 +1640,23 @@ namespace Etherna.Scrinium.Core.Repositories
                         InternalDbContext.SetModelBsonDocument(model, modelDocument);
                         InternalDbContext.SetModelSourceRepository(model, this);
                         InternalDbContext.RegisterLoadedModel(model.Id!, model);
+                        trackedModels.Add(model);
                     }
+
+            /* The tracking is an in memory effect of the insert, undone with the abort of the
+             * ambient transaction rolling the insert back: the instance leaves the identity map
+             * and the change tracking, like a deleted one, so nothing in the scope keeps
+             * serving a document that doesn't exist, and a replay creates it anew. */
+            if (trackedModels.Count > 0)
+                DbSessionHandler.TryDeferToTransactionAbort(DbContext.Engine, () =>
+                {
+                    foreach (var model in trackedModels)
+                    {
+                        //the identity map key resolves through the tracking: leave the map first
+                        DbContext.UnregisterLoadedModel(model.Id!, model);
+                        InternalDbContext.RemoveModelTracking(model);
+                    }
+                });
         }
 
         private static bool TryAssignModelId(IEntityModel model, IDbContextEngine engine)
@@ -1609,6 +1676,11 @@ namespace Etherna.Scrinium.Core.Repositories
                 return false;
 
             idProvider.SetDocumentId(model, idGenerator.GenerateId(container: null!, document: model));
+
+            /* The assigned id is an in memory effect of the create, undone with the abort of the
+             * ambient transaction rolling the insert back: the model is new again, so a replay
+             * creates it anew, and discovers it again as a new referred model. */
+            DbSessionHandler.TryDeferToTransactionAbort(engine, () => idProvider.SetDocumentId(model, id));
             return true;
         }
 
