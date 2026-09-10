@@ -20,7 +20,7 @@ namespace Etherna.Scrinium.Core.Extensions
 {
     /*
      * Always group similar log delegates by type, always use incremental event ids.
-     * Last event id is: 76
+     * Last event id is: 78
      */
     public static class LoggerExtensions
     {
@@ -407,6 +407,18 @@ namespace Etherna.Scrinium.Core.Extensions
                 new EventId(41, nameof(DbContextAbortedTransaction)),
                 "DbContext {DbName} aborted transaction");
 
+        private static readonly Action<ILogger, string, int, Exception> _dbContextRetryingTransaction =
+            LoggerMessage.Define<string, int>(
+                LogLevel.Warning,
+                new EventId(77, nameof(DbContextRetryingTransaction)),
+                "DbContext {DbName} retrying its transaction after the transient failure of attempt {Attempt}");
+
+        private static readonly Action<ILogger, string, Exception> _dbContextRetryingTransactionCommit =
+            LoggerMessage.Define<string>(
+                LogLevel.Warning,
+                new EventId(78, nameof(DbContextRetryingTransactionCommit)),
+                "DbContext {DbName} retrying the commit of its transaction after an unknown commit result");
+
         private static readonly Action<ILogger, string, string, string, string, Exception> _dbContextReplacedOutdatedLoadedModel =
             LoggerMessage.Define<string, string, string, string>(
                 LogLevel.Warning,
@@ -509,6 +521,12 @@ namespace Etherna.Scrinium.Core.Extensions
 
         public static void DbContextReplacedOutdatedLoadedModel(this ILogger logger, string dbName, string modelId, string outdatedModelType, string currentModelType) =>
             _dbContextReplacedOutdatedLoadedModel(logger, dbName, modelId, outdatedModelType, currentModelType, null!);
+
+        public static void DbContextRetryingTransaction(this ILogger logger, string dbName, int attempt, Exception exception) =>
+            _dbContextRetryingTransaction(logger, dbName, attempt, exception);
+
+        public static void DbContextRetryingTransactionCommit(this ILogger logger, string dbName, Exception exception) =>
+            _dbContextRetryingTransactionCommit(logger, dbName, exception);
 
         public static void DbContextReturnedLoadedModel(this ILogger logger, string dbName, string modelId, string repositoryName) =>
             _dbContextReturnedLoadedModel(logger, dbName, modelId, repositoryName, null!);

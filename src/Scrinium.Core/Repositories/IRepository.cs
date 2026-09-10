@@ -161,7 +161,9 @@ namespace Etherna.Scrinium.Core.Repositories
         /// updated, with a single atomic statement guarded by the current active model map
         /// schema id, and the model is refreshed in place with the returned document state,
         /// including concurrent changes from other scopes: the save is the synchronization
-        /// point of the unit of work. Documents serialized with a not active schema are
+        /// point of the unit of work. Enlisted in a transaction, the refresh and the change
+        /// candidate clearing wait for its commit: an abort leaves the model pending, saved
+        /// again by the next flush. Documents serialized with a not active schema are
         /// replaced instead, migrating them, like when the repository requires document
         /// replacement on save. Conflict granularity is the member: concurrent changes to
         /// disjoint members all survive, changes to the same member are last writer wins.

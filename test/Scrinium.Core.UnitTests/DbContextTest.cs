@@ -316,6 +316,292 @@ namespace Etherna.Scrinium.Core
         }
 
         [Fact]
+        public async Task ExecuteInTransactionRunsTheDeferredBookkeepingAfterTheCommit()
+        {
+            // Setup.
+            using var contextHandler = AsyncLocalContext.Instance.InitAsyncLocalContext();
+
+            var committed = false;
+            var sessionMock = new Mock<IClientSessionHandle>();
+            sessionMock.Setup(s => s.CommitTransactionAsync(It.IsAny<CancellationToken>()))
+                .Callback(() => committed = true)
+                .Returns(Task.CompletedTask);
+            mongoClientMock.Setup(c => c.StartSessionAsync(It.IsAny<ClientSessionOptions>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync(sessionMock.Object);
+
+            // Action.
+            bool? committedWhenRun = null;
+            await dbContext.ExecuteInTransactionAsync(() =>
+            {
+                //the bookkeeping deferred by the enlisted operations runs once the commit succeeded
+                Assert.True(DbSessionHandler.TryDeferToTransactionCommit(engine, () => committedWhenRun = committed));
+                Assert.Null(committedWhenRun);
+                return Task.CompletedTask;
+            });
+
+            // Assert.
+            Assert.True(committedWhenRun);
+        }
+
+        [Fact]
+        public async Task ExecuteInTransactionDropsTheDeferredBookkeepingOnAbort()
+        {
+            // Setup.
+            using var contextHandler = AsyncLocalContext.Instance.InitAsyncLocalContext();
+
+            var sessionMock = new Mock<IClientSessionHandle>();
+            mongoClientMock.Setup(c => c.StartSessionAsync(It.IsAny<ClientSessionOptions>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync(sessionMock.Object);
+
+            // Action.
+            var run = false;
+            await Assert.ThrowsAsync<InvalidOperationException>(() => dbContext.ExecuteInTransactionAsync(() =>
+            {
+                Assert.True(DbSessionHandler.TryDeferToTransactionCommit(engine, () => run = true));
+                throw new InvalidOperationException();
+            }));
+
+            // Assert.
+            Assert.False(run);
+        }
+
+        [Fact]
+        public async Task ExecuteInTransactionRunsTheDeferredUndoOnAbort()
+        {
+            // Setup.
+            using var contextHandler = AsyncLocalContext.Instance.InitAsyncLocalContext();
+
+            var sessionMock = new Mock<IClientSessionHandle>();
+            mongoClientMock.Setup(c => c.StartSessionAsync(It.IsAny<ClientSessionOptions>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync(sessionMock.Object);
+
+            // Action.
+            var undone = false;
+            await Assert.ThrowsAsync<InvalidOperationException>(() => dbContext.ExecuteInTransactionAsync(() =>
+            {
+                Assert.True(DbSessionHandler.TryDeferToTransactionAbort(engine, () => undone = true));
+                throw new InvalidOperationException();
+            }));
+
+            // Assert.
+            Assert.True(undone);
+        }
+
+        [Fact]
+        public async Task ExecuteInTransactionDropsTheDeferredUndoOnCommit()
+        {
+            // Setup.
+            using var contextHandler = AsyncLocalContext.Instance.InitAsyncLocalContext();
+
+            var sessionMock = new Mock<IClientSessionHandle>();
+            mongoClientMock.Setup(c => c.StartSessionAsync(It.IsAny<ClientSessionOptions>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync(sessionMock.Object);
+
+            // Action.
+            var undone = false;
+            await dbContext.ExecuteInTransactionAsync(() =>
+            {
+                Assert.True(DbSessionHandler.TryDeferToTransactionAbort(engine, () => undone = true));
+                return Task.CompletedTask;
+            });
+
+            // Assert.
+            Assert.False(undone);
+        }
+
+        [Fact]
+        public async Task ExecuteInTransactionRetriesOnTransientError()
+        {
+            /* SCR-285: a transaction failing with the transient error label replays its function
+             * on a new transaction, like the driver transactions callback api. The undo deferred
+             * by the aborted attempt runs before the replay, and only the bookkeeping deferred by
+             * the committed attempt runs at the commit. */
+
+            // Setup.
+            using var contextHandler = AsyncLocalContext.Instance.InitAsyncLocalContext();
+
+            var sessionMock = new Mock<IClientSessionHandle>();
+            mongoClientMock.Setup(c => c.StartSessionAsync(It.IsAny<ClientSessionOptions>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync(sessionMock.Object);
+
+            // Action.
+            var attempts = 0;
+            List<string> runActions = [];
+            var result = await dbContext.ExecuteInTransactionAsync(() =>
+            {
+                var attempt = ++attempts;
+                Assert.True(DbSessionHandler.TryDeferToTransactionAbort(engine, () => runActions.Add($"undo {attempt}")));
+                Assert.True(DbSessionHandler.TryDeferToTransactionCommit(engine, () => runActions.Add($"commit {attempt}")));
+                if (attempt == 1)
+                    throw NewLabeledMongoException("TransientTransactionError");
+                return Task.FromResult(42);
+            });
+
+            // Assert.
+            Assert.Equal(42, result);
+            Assert.Equal(2, attempts);
+            Assert.Equal(["undo 1", "commit 2"], runActions);
+            sessionMock.Verify(s => s.StartTransaction(It.IsAny<TransactionOptions>()), Times.Exactly(2));
+            sessionMock.Verify(s => s.AbortTransactionAsync(It.IsAny<CancellationToken>()), Times.Once);
+            sessionMock.Verify(s => s.CommitTransactionAsync(It.IsAny<CancellationToken>()), Times.Once);
+        }
+
+        [Fact]
+        public async Task ExecuteInTransactionRestartsOnTransientCommitError()
+        {
+            /* A commit failing with the transient label ends the transaction on the session:
+             * the function replays on a new one, with no abort of its own. */
+
+            // Setup.
+            using var contextHandler = AsyncLocalContext.Instance.InitAsyncLocalContext();
+
+            var commits = 0;
+            var sessionMock = new Mock<IClientSessionHandle>();
+            sessionMock.Setup(s => s.CommitTransactionAsync(It.IsAny<CancellationToken>()))
+                .Returns(() => ++commits == 1
+                    ? Task.FromException(NewLabeledMongoException("TransientTransactionError"))
+                    : Task.CompletedTask);
+            mongoClientMock.Setup(c => c.StartSessionAsync(It.IsAny<ClientSessionOptions>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync(sessionMock.Object);
+
+            // Action.
+            var attempts = 0;
+            List<string> runActions = [];
+            await dbContext.ExecuteInTransactionAsync(() =>
+            {
+                var attempt = ++attempts;
+                Assert.True(DbSessionHandler.TryDeferToTransactionAbort(engine, () => runActions.Add($"undo {attempt}")));
+                Assert.True(DbSessionHandler.TryDeferToTransactionCommit(engine, () => runActions.Add($"commit {attempt}")));
+                return Task.CompletedTask;
+            });
+
+            // Assert.
+            Assert.Equal(2, attempts);
+            Assert.Equal(["undo 1", "commit 2"], runActions);
+            sessionMock.Verify(s => s.StartTransaction(It.IsAny<TransactionOptions>()), Times.Exactly(2));
+            sessionMock.Verify(s => s.AbortTransactionAsync(It.IsAny<CancellationToken>()), Times.Never);
+            sessionMock.Verify(s => s.CommitTransactionAsync(It.IsAny<CancellationToken>()), Times.Exactly(2));
+        }
+
+        [Fact]
+        public async Task ExecuteInTransactionRetriesTheCommitOnUnknownCommitResult()
+        {
+            /* A commit of unknown result retries on the same transaction: the function doesn't
+             * replay, and its bookkeeping runs once the commit succeeds. */
+
+            // Setup.
+            using var contextHandler = AsyncLocalContext.Instance.InitAsyncLocalContext();
+
+            var commits = 0;
+            var sessionMock = new Mock<IClientSessionHandle>();
+            sessionMock.Setup(s => s.CommitTransactionAsync(It.IsAny<CancellationToken>()))
+                .Returns(() => ++commits == 1
+                    ? Task.FromException(NewLabeledMongoException("UnknownTransactionCommitResult"))
+                    : Task.CompletedTask);
+            mongoClientMock.Setup(c => c.StartSessionAsync(It.IsAny<ClientSessionOptions>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync(sessionMock.Object);
+
+            // Action.
+            var attempts = 0;
+            List<string> runActions = [];
+            await dbContext.ExecuteInTransactionAsync(() =>
+            {
+                var attempt = ++attempts;
+                Assert.True(DbSessionHandler.TryDeferToTransactionAbort(engine, () => runActions.Add($"undo {attempt}")));
+                Assert.True(DbSessionHandler.TryDeferToTransactionCommit(engine, () => runActions.Add($"commit {attempt}")));
+                return Task.CompletedTask;
+            });
+
+            // Assert.
+            Assert.Equal(1, attempts);
+            Assert.Equal(["commit 1"], runActions);
+            sessionMock.Verify(s => s.StartTransaction(It.IsAny<TransactionOptions>()), Times.Once);
+            sessionMock.Verify(s => s.AbortTransactionAsync(It.IsAny<CancellationToken>()), Times.Never);
+            sessionMock.Verify(s => s.CommitTransactionAsync(It.IsAny<CancellationToken>()), Times.Exactly(2));
+        }
+
+        [Fact]
+        public async Task ExecuteInTransactionDoesNotRetryUnlabeledFailures()
+        {
+            // Setup.
+            using var contextHandler = AsyncLocalContext.Instance.InitAsyncLocalContext();
+
+            var sessionMock = new Mock<IClientSessionHandle>();
+            mongoClientMock.Setup(c => c.StartSessionAsync(It.IsAny<ClientSessionOptions>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync(sessionMock.Object);
+
+            // Action.
+            //a driver failure without the transient label throws to the caller at its first attempt
+            var attempts = 0;
+            await Assert.ThrowsAsync<MongoException>(() => dbContext.ExecuteInTransactionAsync(() =>
+            {
+                attempts++;
+                throw new MongoException("failure");
+            }));
+
+            // Assert.
+            Assert.Equal(1, attempts);
+            sessionMock.Verify(s => s.AbortTransactionAsync(It.IsAny<CancellationToken>()), Times.Once);
+            sessionMock.Verify(s => s.CommitTransactionAsync(It.IsAny<CancellationToken>()), Times.Never);
+        }
+
+        [Fact]
+        public async Task ExecuteInTransactionStopsRetryingPastTheTimeout()
+        {
+            // Setup.
+            using var contextHandler = AsyncLocalContext.Instance.InitAsyncLocalContext();
+            options.TransactionRetryTimeout = TimeSpan.FromMilliseconds(500);
+
+            var sessionMock = new Mock<IClientSessionHandle>();
+            mongoClientMock.Setup(c => c.StartSessionAsync(It.IsAny<ClientSessionOptions>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync(sessionMock.Object);
+
+            // Action.
+            var attempts = 0;
+            var exception = await Assert.ThrowsAsync<MongoException>(() => dbContext.ExecuteInTransactionAsync(async () =>
+            {
+                attempts++;
+                //the second attempt outlives the budget: a third one would be a retry past it
+                if (attempts == 2)
+                    await Task.Delay(TimeSpan.FromSeconds(1));
+                if (attempts > 2)
+                    throw new InvalidOperationException("retried past the budget");
+                throw NewLabeledMongoException("TransientTransactionError");
+            }));
+
+            // Assert.
+            Assert.Equal(2, attempts);
+            Assert.True(exception.HasErrorLabel("TransientTransactionError"));
+        }
+
+        [Fact]
+        public async Task ExecuteInTransactionDoesNotRetryWhenCancelled()
+        {
+            // Setup.
+            using var contextHandler = AsyncLocalContext.Instance.InitAsyncLocalContext();
+            using var cancellation = new CancellationTokenSource();
+
+            var sessionMock = new Mock<IClientSessionHandle>();
+            mongoClientMock.Setup(c => c.StartSessionAsync(It.IsAny<ClientSessionOptions>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync(sessionMock.Object);
+
+            // Action.
+            //the flow gets cancelled while its attempt fails transiently: no replay, the failure throws
+            var attempts = 0;
+            await Assert.ThrowsAsync<MongoException>(() => dbContext.ExecuteInTransactionAsync(async () =>
+            {
+                attempts++;
+                await cancellation.CancelAsync();
+                throw NewLabeledMongoException("TransientTransactionError");
+            }, cancellation.Token));
+
+            // Assert.
+            Assert.Equal(1, attempts);
+            //the abort runs anyway, with an uncancellable token
+            sessionMock.Verify(s => s.AbortTransactionAsync(CancellationToken.None), Times.Once);
+        }
+
+        [Fact]
         public async Task SaveChangesRunsIntoTransactionOnReplicaSet()
         {
             // Setup.
@@ -417,6 +703,75 @@ namespace Etherna.Scrinium.Core
 
             // Assert.
             repositoryMock.Verify(r => r.SaveChangesAsync(modelMock.Object, It.IsAny<CancellationToken>()), Times.Once);
+            mongoClientMock.Verify(c => c.StartSessionAsync(It.IsAny<ClientSessionOptions>(), It.IsAny<CancellationToken>()), Times.Never);
+
+            (noTransactionsEngine as IDisposable)?.Dispose();
+        }
+
+        [Fact]
+        public async Task CreateRunsIntoTransactionOnReplicaSet()
+        {
+            /* SCR-284: the insert and the implicit unit of work flush it triggers run into
+             * one implicit transaction, so a failure of the flush rolls back the insert
+             * instead of orphaning its document. */
+
+            // Setup.
+            using var contextHandler = AsyncLocalContext.Instance.InitAsyncLocalContext();
+            SetReplicaSetTopology();
+
+            var sessionMock = new Mock<IClientSessionHandle>();
+            mongoClientMock.Setup(c => c.StartSessionAsync(It.IsAny<ClientSessionOptions>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync(sessionMock.Object);
+            collectionMock.Setup(c => c.InsertOneAsync(sessionMock.Object, It.IsAny<FakeModel>(), It.IsAny<InsertOneOptions>(), It.IsAny<CancellationToken>()))
+                .Returns(Task.CompletedTask);
+
+            // Action.
+            await dbContext.FakeModels.CreateAsync(new FakeModel { Id = "id" });
+
+            // Assert.
+            //the insert enlisted with the transaction session, committed with it
+            sessionMock.Verify(s => s.StartTransaction(It.IsAny<TransactionOptions>()), Times.Once);
+            sessionMock.Verify(s => s.CommitTransactionAsync(It.IsAny<CancellationToken>()), Times.Once);
+            sessionMock.Verify(s => s.AbortTransactionAsync(It.IsAny<CancellationToken>()), Times.Never);
+            collectionMock.Verify(c => c.InsertOneAsync(sessionMock.Object, It.IsAny<FakeModel>(), It.IsAny<InsertOneOptions>(), It.IsAny<CancellationToken>()), Times.Once);
+        }
+
+        [Fact]
+        public async Task CreateSkipsTransactionOnStandalone()
+        {
+            // Setup.
+            //the default mocked topology is standalone
+            using var contextHandler = AsyncLocalContext.Instance.InitAsyncLocalContext();
+            collectionMock.Setup(c => c.InsertOneAsync(It.IsAny<FakeModel>(), It.IsAny<InsertOneOptions>(), It.IsAny<CancellationToken>()))
+                .Returns(Task.CompletedTask);
+
+            // Action.
+            await dbContext.FakeModels.CreateAsync(new FakeModel { Id = "id" });
+
+            // Assert.
+            //no transaction opened: the insert ran session-less
+            collectionMock.Verify(c => c.InsertOneAsync(It.IsAny<FakeModel>(), It.IsAny<InsertOneOptions>(), It.IsAny<CancellationToken>()), Times.Once);
+            mongoClientMock.Verify(c => c.StartSessionAsync(It.IsAny<ClientSessionOptions>(), It.IsAny<CancellationToken>()), Times.Never);
+        }
+
+        [Fact]
+        public async Task CreateSkipsTransactionWhenDisabledByOptions()
+        {
+            // Setup.
+            using var contextHandler = AsyncLocalContext.Instance.InitAsyncLocalContext();
+            SetReplicaSetTopology();
+
+            var noTransactionsDbContext = BuildDbContext(
+                new DbContextOptions { EnableTransactionsWithReplicaSet = false },
+                out var noTransactionsEngine);
+            collectionMock.Setup(c => c.InsertOneAsync(It.IsAny<FakeModel>(), It.IsAny<InsertOneOptions>(), It.IsAny<CancellationToken>()))
+                .Returns(Task.CompletedTask);
+
+            // Action.
+            await noTransactionsDbContext.FakeModels.CreateAsync(new FakeModel { Id = "id" });
+
+            // Assert.
+            collectionMock.Verify(c => c.InsertOneAsync(It.IsAny<FakeModel>(), It.IsAny<InsertOneOptions>(), It.IsAny<CancellationToken>()), Times.Once);
             mongoClientMock.Verify(c => c.StartSessionAsync(It.IsAny<ClientSessionOptions>(), It.IsAny<CancellationToken>()), Times.Never);
 
             (noTransactionsEngine as IDisposable)?.Dispose();
@@ -1289,6 +1644,13 @@ namespace Etherna.Scrinium.Core
             cursorMock.Setup(c => c.MoveNextAsync(It.IsAny<CancellationToken>()))
                 .ReturnsAsync(false);
             return cursorMock.Object;
+        }
+
+        private static MongoException NewLabeledMongoException(string errorLabel)
+        {
+            var exception = new MongoException("labeled failure");
+            exception.AddErrorLabel(errorLabel);
+            return exception;
         }
 
         private static Mock<IRepository> NewSourceRepositoryMock()
