@@ -170,6 +170,7 @@ Private properties never mix with the public ones either: they go in their own `
 
 - `virtual` on all properties and methods for proxy support
 - Protected parameterless constructor for deserialization
+- Models deserialize through that constructor and their member setters, never through a domain constructor: the schema drops the class map creators the driver maps from the public constructors whose parameters match the members. It keeps them only for a model that has no parameterless constructor, or whose creator feeds a member with no setter, since those can't be built otherwise. On such a model a new constructor parameter makes the documents written before it unreadable, so it needs a new schema id
 - Collection encapsulation with a private backing field exposed as `IEnumerable<T>`, never `null` (at most empty)
 - No manual lazy-load annotations: the proxy models source generator analyzes each domain method body and computes the properties it alters (direct backing field accesses included, following non virtual helpers), triggering the full load when such a method runs on a summary model. A method without analyzable source (compiled cross-assembly bases) conservatively full loads on summaries. Collections stay encapsulated (read-only interface, non public setter), mutated only through domain methods, so a snapshot diff always detects the change
 - Prefer immutable exposure. A getter that hands out mutable state (a `List<T>`/`Dictionary<>`, or a complex value with public setters or business methods) is legal, but **reading it flags the model for a diff at save** — a change could otherwise escape interception. Expose collections read-only and make embedded value objects immutable (records, get/init-only, no mutating methods) to keep reads free; entity references never count (tracked on their own repository). `ProxyModels/MutabilityAnalyzer` computes this; casting a read-only collection back to mutable to bypass it is unsupported
@@ -223,5 +224,6 @@ Private properties never mix with the public ones either: they go in their own `
 - `[Fact]` for basic tests, `[Theory]` with `[InlineData]`/`[MemberData]` for parameterized cases
 - xUnit assertions: `Assert.Equal()`, `Assert.NotNull()`, `Assert.ThrowsAsync<T>()`
 - Moq for mocking: `new Mock<IDbContext>()`
+- Deserialization tests carry one raw source document per version that wrote it, each commented with its schema id and that version, and listed from the newest down: the recent schemas are the ones a reader comes looking for
 - **No `ConfigureAwait` in test code** — inside tests write plain `await foo()`; the library rule applies to `src/` only
 - The test project mirrors the `Scrinium.Core` layout
