@@ -93,6 +93,18 @@ namespace Etherna.Scrinium.Core
             public virtual string Id { get; set; } = null!;
             public virtual IDictionary<string, ChildModel>? LabeledChildren { get; set; }
         }
+        /* A domain constructor runs its own logic on the arguments it takes from the
+         * document, so a deserialization going through it doesn't rebuild the stored state. */
+        public class DomainConstructorModel
+        {
+            public DomainConstructorModel(string name)
+            {
+                Name = name + "-constructed";
+            }
+            protected DomainConstructorModel() { }
+
+            public string? Name { get; protected set; }
+        }
         public class EntityChildHostModel
         {
             public ChildModel? Child { get; set; }
@@ -146,6 +158,15 @@ namespace Etherna.Scrinium.Core
             public override void Serialize(BsonSerializationContext context, BsonSerializationArgs args, KeyModel value) =>
                 context.Writer.WriteString(value.Value);
         }
+        public class NoParameterlessConstructorModel
+        {
+            public NoParameterlessConstructorModel(string name)
+            {
+                Name = name + "-constructed";
+            }
+
+            public string? Name { get; protected set; }
+        }
         public class OuterLayerModel
         {
             public InnerLayerModel? Inner { get; set; }
@@ -164,6 +185,16 @@ namespace Etherna.Scrinium.Core
             {
                 public string? Name { get; set; }
             }
+        }
+        public class ReadOnlyMemberModel
+        {
+            public ReadOnlyMemberModel(string name)
+            {
+                Name = name;
+            }
+            protected ReadOnlyMemberModel() { }
+
+            public string? Name { get; }
         }
         public class SecondModel
         {
@@ -217,10 +248,55 @@ namespace Etherna.Scrinium.Core
 
         // Tests.
         [Fact]
+        public void ActiveSchemasBuildModelsWithTheirParameterlessConstructor()
+        {
+            /* SCR-287: the constructor a model declares for deserialization builds it, so the
+             * domain logic of its public constructors doesn't run on the stored values, and an
+             * element the document doesn't carry doesn't fail the read of the whole model. */
+
+            // Setup.
+            var modelMap = (IModelMap)mapRegistry.AddModelMap<DomainConstructorModel>("domainConstructorSchemaId");
+            mapRegistry.Freeze();
+
+            // Action.
+            var deserializedModel = DeserializeModel<DomainConstructorModel>(
+                modelMap.ActiveSchema.Serializer,
+                new BsonDocument("Name", "stored"));
+
+            // Assert.
+            Assert.Equal("stored", deserializedModel.Name);
+        }
+
+        [Fact]
+        public void ActiveSchemasKeepTheCreatorsOfModelsThatNeedThem()
+        {
+            /* SCR-287: a model with no parameterless constructor, or carrying a member with no
+             * setter, is reachable only through its own constructor. */
+
+            // Setup.
+            var noParameterlessConstructorMap = (IModelMap)mapRegistry.AddModelMap<NoParameterlessConstructorModel>(
+                "noParameterlessConstructorSchemaId");
+            var readOnlyMemberMap = (IModelMap)mapRegistry.AddModelMap<ReadOnlyMemberModel>("readOnlyMemberSchemaId");
+            mapRegistry.Freeze();
+
+            // Action.
+            var deserializedNoParameterlessConstructorModel = DeserializeModel<NoParameterlessConstructorModel>(
+                noParameterlessConstructorMap.ActiveSchema.Serializer,
+                new BsonDocument("Name", "stored"));
+            var deserializedReadOnlyMemberModel = DeserializeModel<ReadOnlyMemberModel>(
+                readOnlyMemberMap.ActiveSchema.Serializer,
+                new BsonDocument("Name", "stored"));
+
+            // Assert.
+            Assert.Equal("stored-constructed", deserializedNoParameterlessConstructorModel.Name);
+            Assert.Equal("stored", deserializedReadOnlyMemberModel.Name);
+        }
+
+        [Fact]
         public void ActiveSchemasCreateInstancesWithProxyGeneratorOnlyForEntityModels()
         {
             /* SCR-189: only entity model schemas replace their creators with the proxy
-             * generator; any other model keeps its natural class map creators. */
+             * generator; any other model is built by its own parameterless constructor. */
 
             // Setup.
             var proxyInstance = new FakeModel();
