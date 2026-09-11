@@ -111,21 +111,7 @@ namespace Etherna.Scrinium.Core.Serialization.Mapping
                 if (ModelMap.ModelType.IsAbstract)
                     throw new InvalidOperationException("Can't generate proxy of an abstract model");
 
-                // Remove CreatorMaps.
-                while (bsonClassMap.CreatorMaps.Any())
-                {
-                    var memberInfo = bsonClassMap.CreatorMaps.First().MemberInfo;
-                    switch (memberInfo)
-                    {
-                        case ConstructorInfo constructorInfo:
-                            bsonClassMap.UnmapConstructor(constructorInfo);
-                            break;
-                        case MethodInfo methodInfo:
-                            bsonClassMap.UnmapFactoryMethod(methodInfo);
-                            break;
-                        default: throw new InvalidOperationException();
-                    }
-                }
+                RemoveCreatorMaps();
 
                 // Set creator.
                 bsonClassMap.SetCreator(() => dbContextEngine.ProxyGenerator.CreateInstance(ModelMap.ModelType));
@@ -137,8 +123,7 @@ namespace Etherna.Scrinium.Core.Serialization.Mapping
 
             // Verify if can use proxy model.
             /* Only concrete entity models deserialize as proxies: lazy loading and change
-             * candidate marking only apply to them. Any other model keeps its natural
-             * class map creators. */
+             * candidate marking only apply to them. */
             if (ModelMap.ModelType is { IsClass: true, IsAbstract: false } &&
                 typeof(IEntityModel).IsAssignableFrom(ModelMap.ModelType))
             {
@@ -146,6 +131,37 @@ namespace Etherna.Scrinium.Core.Serialization.Mapping
                 return true;
             }
 
+            /* Any other model builds through the parameterless constructor it declares for
+             * deserialization, and its member setters: the driver would otherwise build it
+             * with one of the class map creators it maps from the public constructors, which
+             * runs the domain logic of the constructor on the stored values, and fails the
+             * read of a document written before one of its arguments existed.
+             * The creators stay on a model that can't be built without them: with no
+             * parameterless constructor the driver would build uninitialized instances,
+             * skipping the field initializers, and a member with no setter takes its value
+             * only as a creator argument. */
+            ExecuteConfigAction(() =>
+            {
+                var parameterlessConstructor = ModelMap.ModelType.GetConstructor(
+                    BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic,
+                    null,
+                    Type.EmptyTypes,
+                    null);
+                if (parameterlessConstructor is null)
+                    return;
+
+                if (bsonClassMap.CreatorMaps
+                    .SelectMany(creatorMap => creatorMap.Arguments)
+                    .Any(argument => argument switch
+                    {
+                        PropertyInfo propertyInfo => !propertyInfo.CanWrite,
+                        FieldInfo fieldInfo => fieldInfo.IsInitOnly,
+                        _ => true
+                    }))
+                    return;
+
+                RemoveCreatorMaps();
+            });
             return false;
         }
 
@@ -168,6 +184,29 @@ namespace Etherna.Scrinium.Core.Serialization.Mapping
 
         // Internal methods.
         internal void AddGeneratedMemberMap(IMemberMap memberMap) => _generatedMemberMaps.Add(memberMap);
+
+        // Helpers.
+        /// <summary>
+        /// Drop the class map creators of the schema, so the models build through their
+        /// parameterless constructor and their member setters.
+        /// </summary>
+        private void RemoveCreatorMaps()
+        {
+            while (bsonClassMap.CreatorMaps.Any())
+            {
+                var memberInfo = bsonClassMap.CreatorMaps.First().MemberInfo;
+                switch (memberInfo)
+                {
+                    case ConstructorInfo constructorInfo:
+                        bsonClassMap.UnmapConstructor(constructorInfo);
+                        break;
+                    case MethodInfo methodInfo:
+                        bsonClassMap.UnmapFactoryMethod(methodInfo);
+                        break;
+                    default: throw new InvalidOperationException();
+                }
+            }
+        }
     }
 
     public class ModelMapSchema<TModel> : ModelMapSchema, IModelMapSchema<TModel>
