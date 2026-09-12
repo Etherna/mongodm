@@ -78,12 +78,14 @@
         var stopAtFirstError = card.querySelector('[data-role="stop-at-first-error"]').checked;
         //the lease duration is validated server side too: the control only bounds the ordinary case
         var lockLeaseDurationMinutes = card.querySelector('[data-role="lock-lease-duration"]').value;
+        //a start migrates what the application declares, and nothing else: say it before it runs
+        var scope = 'It runs the document migrations the application declares, and nothing else.';
         var message = dryRun
-            ? 'Start migration dry run on "' + identifier + '"?\n\n' +
-              'The dry run simulates the migration without persisting anything, reporting the ' +
-              'failing documents. Data stays accessible while it runs.'
-            : 'Start migration on "' + identifier + '"?\n\n' +
-              'While the migration is running, the db context denies concurrent access to data.';
+            ? 'Start migration dry run on "' + identifier + '"?\n\n' + scope +
+              '\n\nThe dry run simulates them without persisting anything, reporting the failing ' +
+              'documents, and skips the index steps. Data stays accessible while it runs.'
+            : 'Start migration on "' + identifier + '"?\n\n' + scope +
+              '\n\nWhile the migration is running, the db context denies concurrent access to data.';
         message += stopAtFirstError
             ? '\n\nIt stops at the first failing document.'
             : '\n\nFailing documents are skipped and reported, without stopping the scan.';

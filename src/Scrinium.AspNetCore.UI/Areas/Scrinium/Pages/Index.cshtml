@@ -98,6 +98,18 @@
             }
             else
             {
+                <p class="muted">
+                    The document migrations the application declares, with the index prune and build around them.
+                    @{
+                        RenderInfoTip(@<text>
+                            Nothing else is migrated: the documents left on a deprecated schema are rewritten
+                            only by a migration declared on <code>IDbContext.DocumentMigrationList</code>
+                            addressing them. A dry run simulates them without persisting anything, and skips
+                            the index steps.
+                        </text>);
+                    }
+                </p>
+
                 <details class="migration-advanced">
                     <summary>Advanced</summary>
 
